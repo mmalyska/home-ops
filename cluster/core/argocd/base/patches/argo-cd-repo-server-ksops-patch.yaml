@@ -32,7 +32,7 @@ spec:
           env:
             - name: HELM_SECRETS_VERSION
             # renovate: datasource=github-releases depName=jkroepke/helm-secrets
-              value: "v3.15.0"
+              value: "v4.1.1"
             - name: SOPS_VERSION
             # renovate: datasource=github-releases depName=mozilla/sops
               value: "v3.7.3"
