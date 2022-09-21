@@ -1,0 +1,16 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: {{ template "keycloak.server.fullname" . }}
+  namespace: identity
+spec:
+  secretName: {{ template "keycloak.server.ingress.cert" . }}
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ .Values.server.ingress.host | quote }}
+  dnsNames:
+    - {{ .Values.server.ingress.host | quote }}

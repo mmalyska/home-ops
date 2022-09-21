@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# additional resources like ingress rules, cluster and repository secrets.
+resources:
+  - resources/nfs-ebooks.yaml
+  - resources/nfs-movies.yaml
+  - resources/nfs-tv-series.yaml

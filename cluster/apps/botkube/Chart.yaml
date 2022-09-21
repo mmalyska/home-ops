@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: botkube-subchart
+type: application
+version: 1.0.0
+appVersion: "0.12.4"
+dependencies:
+  - name: botkube
+    version: v0.13.0
+    repository: https://charts.botkube.io

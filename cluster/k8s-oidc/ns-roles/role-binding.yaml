@@ -1,0 +1,13 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: oidc-rb
+  namespace: your-namespace
+subjects:
+- kind: Group
+  name: oidc:<YOUR_KEYCLOAK_GROUP>
+  apiGroup: ""
+roleRef:
+  kind: Role
+  name: oidc-role
+  apiGroup: ""

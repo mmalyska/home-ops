@@ -1,0 +1,36 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+data:
+  url: "https://argocd.<secret:private-domain>"
+  admin.enabled: "false"
+  statusbadge.enabled: "true"
+  resource.customizations.useOpenLibs.cert-manager.io_Certificate: "true"
+  users.session.duration: "24h"
+  accounts.mmalyska: apiKey,login
+  oidc.config: |
+    name: Keycloak
+    issuer: https://l.<secret:private-domain>/realms/home
+    clientID: argocd
+    clientSecret: $oidc.keycloak.clientSecret
+    requestedScopes: ["openid", "profile", "email", "groups"]
+  kustomize.buildOptions: "--enable-alpha-plugins"
+  helm.valuesFileSchemes: >-
+    secrets+gpg-import, secrets+gpg-import-kubernetes,
+    secrets+age-import, secrets+age-import-kubernetes,
+    secrets,
+    https
+  configManagementPlugins: |
+    - name: replacer-helm
+      init:
+        command: ["/bin/sh", "-c"]
+        args: ["helm dependency build"]
+      generate:
+        command: [sh, -c]
+        args: ["helm template --release-name $ARGOCD_APP_NAME --namespace $ARGOCD_APP_NAMESPACE . | argocd-secret-replacer sops -f $ARGOCD_ENV_SOPS_FILE"]
+    - name: replacer-kustomize
+      generate:
+        command: ["sh", "-c"]
+        args: ["kustomize build --enable-alpha-plugins . | argocd-secret-replacer sops -f $ARGOCD_ENV_SOPS_FILE"]

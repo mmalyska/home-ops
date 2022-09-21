@@ -1,0 +1,34 @@
+{{- $serviceName := include "grocy.server.fullname" . -}}
+{{- $servicePort := .Values.server.service.servicePortHttp -}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+{{- if .Values.server.ingress.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.server.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+  name: {{ template "grocy.server.fullname" . }}
+  labels:
+    {{- include "grocy.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+    {{- if .Values.server.ingress.labels }}
+    {{- toYaml .Values.server.ingress.labels | nindent 4 }}
+    {{- end }}
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.server.ingress.host }}
+      secretName: {{ template "grocy.server.fullname" . }}-cert
+  rules:
+  - host: {{ .Values.server.ingress.host }}
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: {{ $serviceName }}
+              port:
+                number: {{ $servicePort }}

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: renovate-config
+  namespace: renovate
+data:
+  config.json: |-
+    {
+      "platform": "gitea",
+      "repositories": ["home/k8s-deployments"],
+      "endpoint": "<secret:endpoint>",
+      "gitAuthor": "Renovate Bot <bot@renovateapp.com>"
+    }

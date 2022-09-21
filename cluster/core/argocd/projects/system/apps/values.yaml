@@ -1,0 +1,112 @@
+---
+project: system
+destination:
+  server: https://kubernetes.default.svc
+source:
+  repoURL: https://github.com/mmalyska/k8s-deployments
+  path: cluster/system
+apps:
+  - name: cert-manager
+    namespace: cert-manager
+    path: cert-manager
+    plugin:
+      name: replacer-kustomize
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+    path: dashboard
+    plugin:
+      name: replacer-kustomize
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: dyndns
+    namespace: dyndns
+    path: dyndns
+    plugin:
+      name: replacer-kustomize
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: keycloak
+    namespace: identity
+    path: identity/keycloak
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: kured
+    namespace: kured
+    path: kured
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: metrics-server
+    namespace: metrics-server
+    path: metrics-server
+  - name: nfs-subdir-external-provisioner
+    namespace: nfs-subdir-provisioner
+    path: nfs-subdir-external-provisioner
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    path: oauth2-proxy
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: postgres-operator
+    namespace: postgres-operator
+    path: postgres-operator
+    selfHeal: false
+  - name: prometheus-stack-apps
+    namespace: monitoring
+    path: prometheus-stack-apps
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+    path: rook-ceph/rook-ceph-cluster
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+    extraSyncOptions:
+      - RespectIgnoreDifferences=true
+    ignoreDifferences:
+      - group: ceph.rook.io
+        kind: CephCluster
+        jsonPointers:
+          - /spec/monitoring/rulesNamespaceOverride
+      - group: ceph.rook.io
+        kind: CephCluster
+        jsonPointers:
+          - /spec/monitoring/createPrometheusRules
+  - name: rook-ceph-operator
+    namespace: rook-ceph
+    path: rook-ceph/rook-ceph-operator
+  - name: traefik-internal
+    namespace: traefik-internal
+    path: traefik-internal
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: traefik
+    namespace: traefik
+    path: traefik
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml

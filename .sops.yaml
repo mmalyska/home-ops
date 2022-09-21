@@ -1,0 +1,17 @@
+---
+creation_rules:
+  - path_regex: secret.sops.yaml
+    unencrypted_regex: "^(kind)$"
+    age: >-
+      age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf
+  - path_regex: provision(\\|/).*\.sops\.ya?ml
+    unencrypted_regex: "^(kind)$"
+    age: >-
+      age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf
+  - path_regex: cluster(\\|/).*\.sec\.(ya?ml|json)
+    encrypted_regex: "^(data|stringData)$"
+    age: >-
+      age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf
+  - path_regex: cluster(\\|/).*\.sops\.ya?ml
+    age: >-
+      age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf

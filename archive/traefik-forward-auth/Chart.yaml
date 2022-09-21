@@ -1,0 +1,6 @@
+---
+apiVersion: v2
+name: traefik-forward-auth
+type: application
+version: 0.0.1
+appVersion: "2.2.0"

@@ -1,0 +1,48 @@
+host: oauth.<secret:private-domain>
+oauth2-proxy:
+  extraArgs:
+    exclude-logging-path: "/ping"
+  config:
+    existingSecret: oauth-secret
+    configFile: |-
+      email_domains = [ "*" ]
+      upstreams = [ "static://202" ]
+      provider = "keycloak-oidc"
+      redirect_url = "https://oauth.<secret:private-domain>/oauth2/callback"
+      oidc_issuer_url = "https://l.<secret:private-domain>/realms/home"
+      reverse_proxy = true
+      cookie_domains = ".<secret:private-domain>"
+      whitelist_domains = ".<secret:private-domain>"
+      pass_access_token = true
+      pass_basic_auth = true
+      pass_user_headers = true
+      set_xauthrequest = true
+      skip_provider_button = true
+      set_authorization_header = true
+  metrics:
+    servicemonitor:
+      enabled: true
+      namespace: monitoring
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: traefik
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    hosts:
+      - "oauth.<secret:private-domain>"
+    tls:
+      - secretName: oauth-domain
+        hosts:
+          - oauth.<secret:private-domain>
+  sessionStorage:
+    type: redis
+    redis:
+      clientType: standalone
+      existingSecret: oauth-secret
+  redis:
+    enabled: true
+    architecture: standalone
+    auth:
+      existingSecret: oauth-secret
+      existingSecretPasswordKey: redis-password

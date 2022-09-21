@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/ingressEndpoint.hostname: {{ .Values.ingress.host }}
+    kubernetes.io/ingress.class: traefik
+  name: hass-proxy
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.ingress.host }}
+      secretName: hass-domain
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: hass-proxy
+              port:
+                name: hass-proxy

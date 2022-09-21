@@ -1,0 +1,114 @@
+global:
+  additionalLabels: {}
+  podAnnotations: {}
+  podLabels: {}
+  image:
+    imagePullPolicy: IfNotPresent
+server:
+  name: server
+  replicas: 1
+  podAnnotations: {}
+  podLabels: {}
+  containerPort: 8080
+  env:
+    - name: KC_HOSTNAME
+      value: "l.<secret:private-domain>"
+    - name: KC_PROXY
+      value: "edge"
+    - name: KC_DB
+      value: "postgres"
+    - name: KC_DB_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: keycloakdb-pguser-keycloakdb
+          key: user
+    - name: KC_DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: keycloakdb-pguser-keycloakdb
+          key: password
+    - name: KC_DB_URL_DATABASE
+      valueFrom:
+        secretKeyRef:
+          name: keycloakdb-pguser-keycloakdb
+          key: dbname
+    - name: KC_DB_URL_HOST
+      valueFrom:
+        secretKeyRef:
+          name: keycloakdb-pguser-keycloakdb
+          key: pgbouncer-host
+    - name: KC_FEATURES
+      value: "docker"
+    - name: KC_METRICS_ENABLED
+      value: "true"
+  envFrom: []
+  image:
+    imagePullPolicy: IfNotPresent
+    repository: quay.io/keycloak/keycloak
+    tag: "19.0.2"
+  service:
+    type: ClusterIP
+    servicePortHttpName: http
+    servicePortHttp: 80
+    namedTargetPort: true
+  ingress:
+    host: l.<secret:private-domain>
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: l.<secret:private-domain>
+    external:
+      annotations:
+        kubernetes.io/ingress.class: traefik
+    internal:
+      annotations:
+        kubernetes.io/ingress.class: traefik-internal
+  readinessProbe:
+    enabled: true
+    failureThreshold: 5
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 2
+  livenessProbe:
+    enabled: true
+    failureThreshold: 5
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 2
+  resources: {}
+postgres:
+  name: keycloakdb
+  postgresVersion: 14
+  image:
+    imagePullPolicy: IfNotPresent
+    repository: registry.developers.crunchydata.com/crunchydata/crunchy-postgres
+    tag: "ubi8-14.4-0"
+  instances:
+    - name: main
+      replicas: 1
+      storage: 5Gi
+  backup:
+    image:
+      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
+      tag: "ubi8-2.38-2"
+    global:
+      repo1-retention-full: "14"
+      repo1-retention-full-type: time
+      repo2-retention-full: "14"
+      repo2-retention-full-type: time
+    repos:
+      - name: repo1
+        storageClass: ""
+        storage: 5Gi
+      - name: repo2
+        storageClass: nfs
+        storage: 5Gi
+  proxy:
+    name: pgbouncer
+    port: 5432
+    replicas: 1
+    image:
+      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
+      tag: "ubi8-1.16-4"

@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: metrics-server-subchart
+type: application
+version: 1.0.0
+appVersion: "0.6.0"
+dependencies:
+  - name: metrics-server
+    version: 3.8.2
+    repository: https://kubernetes-sigs.github.io/metrics-server/

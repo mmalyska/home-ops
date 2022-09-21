@@ -1,0 +1,3 @@
+metrics-server:
+  args:
+    - --kubelet-insecure-tls

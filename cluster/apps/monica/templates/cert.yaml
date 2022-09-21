@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: monica-domain
+spec:
+  secretName: monica-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'monica.<secret:private-domain>'
+  dnsNames:
+  - 'monica.<secret:private-domain>'

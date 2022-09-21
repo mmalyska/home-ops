@@ -1,0 +1,14 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ template "traefik-forward-auth.server.fullname" . }}
+  labels: {{- include "traefik-forward-auth.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  forwardAuth:
+    address: {{ printf "%s%s.%s.%s" "http://" (include "traefik-forward-auth.server.fullname" .) .Release.Namespace "svc.cluster.local" }}
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Forwarded-User

@@ -1,0 +1,54 @@
+harbor:
+  expose:
+    tls:
+      certSource: secret
+      secret:
+        secretName: "harbor-domain"
+        notarySecretName: "notary-domain"
+    ingress:
+      annotations: {
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure,
+        traefik.ingress.kubernetes.io/router.tls: "true"
+      }
+      harbor:
+        annotations: {
+          traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "harbor.<secret:private-domain>",
+          kubernetes.io/ingress.class: traefik-internal
+        }
+      notary:
+        annotations: {
+          traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "notary.<secret:private-domain>",
+          kubernetes.io/ingress.class: traefik-internal
+        }
+      hosts:
+        core: harbor.<secret:private-domain>
+        notary: notary.<secret:private-domain>
+
+  externalURL: https://harbor.<secret:private-domain>
+
+#  internalTLS:
+#    enabled: true
+  persistence:
+    persistentVolumeClaim:
+      registry:
+        size: 50Gi
+        storageClass: nfs
+      chartmuseum:
+        size: 10Gi
+        storageClass: nfs
+      jobservice:
+        size: 2Gi
+        storageClass: ceph-block
+      database:
+        size: 2Gi
+        storageClass: ceph-block
+      redis:
+        size: 2Gi
+        storageClass: ceph-block
+      trivy:
+        size: 2Gi
+        storageClass: ceph-block
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true

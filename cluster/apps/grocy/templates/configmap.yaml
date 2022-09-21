@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grocy-config-cm
+  labels:
+    {{- include "grocy.labels" (dict "context" . "component" .Values.server.name "name" "rbac-cm") | nindent 4 }}
+data:
+  config.php: |
+    <?php
+    Setting('MODE', '{{ .Values.server.config.mode }}');
+    Setting('DEFAULT_LOCALE', '{{ .Values.server.config.locale }}');
+    Setting('CALENDAR_FIRST_DAY_OF_WEEK', '{{ .Values.server.config.firstDayOfWeek }}');
+    Setting('CURRENCY', '{{ .Values.server.config.currency }}');
+    Setting('BASE_PATH', '{{ .Values.server.config.basePath }}');
+    Setting('BASE_URL', '{{ .Values.server.config.baseUrl }}');
+    Setting('STOCK_BARCODE_LOOKUP_PLUGIN', '{{ .Values.server.config.barcodePlugin }}');
+    Setting('MEAL_PLAN_FIRST_DAY_OF_WEEK', '{{ .Values.server.config.firstDayOfWeek }}');
+    Setting('AUTH_CLASS', 'Grocy\Middleware\{{ .Values.server.config.authClass }}');
+    Setting('REVERSE_PROXY_AUTH_HEADER', '{{ .Values.server.config.reverseProxyAuthHeader }}'); // The name of the HTTP header which your reverse proxy uses to pass the username (on successful authentication)

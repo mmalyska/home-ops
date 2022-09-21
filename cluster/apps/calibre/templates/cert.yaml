@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: calibre-domain
+  namespace: calibre
+spec:
+  secretName: calibre-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'calibre.<secret:private-domain>'
+  dnsNames:
+  - 'calibre.<secret:private-domain>'

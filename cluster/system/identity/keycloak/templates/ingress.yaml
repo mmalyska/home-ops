@@ -1,0 +1,51 @@
+{{- $serviceName := include "keycloak.server.fullname" . -}}
+{{- $servicePort := .Values.server.service.servicePortHttp -}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+{{- if or .Values.server.ingress.annotations .Values.server.ingress.external.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.server.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.server.ingress.external.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+  name: {{ template "keycloak.server.fullname" . }}
+  labels:
+    {{- include "keycloak.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+    {{- if .Values.server.ingress.labels }}
+      {{- toYaml .Values.server.ingress.labels | nindent 4 }}
+    {{- end }}
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.server.ingress.host }}
+      secretName: {{ template "keycloak.server.ingress.cert" . }}
+  rules:
+    - host: {{ .Values.server.ingress.host }}
+      http:
+        paths:
+          - path: /realms
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $serviceName }}
+                port:
+                  number: {{ $servicePort }}
+          - path: /resources
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $serviceName }}
+                port:
+                  number: {{ $servicePort }}
+          - path: /robots.txt
+            pathType: Exact
+            backend:
+              service:
+                name: {{ $serviceName }}
+                port:
+                  number: {{ $servicePort }}

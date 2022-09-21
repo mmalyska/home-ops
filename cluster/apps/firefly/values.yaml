@@ -1,0 +1,110 @@
+global:
+  additionalLabels: {}
+  podAnnotations: {}
+  podLabels: {}
+  image:
+    imagePullPolicy: IfNotPresent
+postgres:
+  name: fireflydb
+  postgresVersion: 14
+  image:
+    imagePullPolicy: IfNotPresent
+    repository: registry.developers.crunchydata.com/crunchydata/crunchy-postgres
+    tag: "ubi8-14.4-0"
+  instances:
+    - name: main
+      replicas: 1
+      storage: 5Gi
+  backup:
+    image:
+      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
+      tag: "ubi8-2.38-2"
+    repos:
+      - name: repo1
+        storage: 5Gi
+  proxy:
+    name: pgbouncer
+    port: 5432
+    replicas: 1
+    image:
+      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
+      tag: "ubi8-1.16-4"
+
+firefly-iii:
+  # -- Set to false to not deploy Firefly III
+  enabled: true
+  image:
+    repository: "fireflyiii/core"
+    pullPolicy: IfNotPresent
+    tag: version-5.6.14
+  persistence:
+    enabled: true
+    class: ceph-block
+    storage: 1Gi
+  cronjob:
+    enabled: true
+    auth:
+      existingSecret: firefly-secrets
+  ingress:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "money.<secret:private-domain>"
+      traefik.ingress.kubernetes.io/router.middlewares: oauth2-proxy-forward-auth@kubernetescrd
+      kubernetes.io/ingress.class: traefik
+    hosts:
+      - "money.<secret:private-domain>"
+    tls:
+      - secretName: money-domain
+        hosts:
+          - money.<secret:private-domain>
+  config:
+    existingSecret: "firefly-secrets"
+    env:
+      DB_CONNECTION: pgsql
+      DEFAULT_LANGUAGE: pl
+      TZ: CET
+      AUTHENTICATION_GUARD: "remote_user_guard"
+      AUTHENTICATION_GUARD_HEADER: "HTTP_X_AUTH_REQUEST_PREFERRED_USERNAME"
+      AUTHENTICATION_GUARD_EMAIL: "HTTP_X_AUTH_REQUEST_EMAIL"
+    envValueFrom:
+      DB_USERNAME:
+        secretKeyRef:
+          name: fireflydb-pguser-fireflydb
+          key: user
+      DB_PASSWORD:
+        secretKeyRef:
+          name: fireflydb-pguser-fireflydb
+          key: password
+      DB_DATABASE:
+        secretKeyRef:
+          name: fireflydb-pguser-fireflydb
+          key: dbname
+      DB_HOST:
+        secretKeyRef:
+          name: fireflydb-pguser-fireflydb
+          key: pgbouncer-host
+importer:
+  enabled: true
+  env:
+    DEFAULT_LANGUAGE: pl
+    TZ: CET
+    JSON_CONFIGURATION_DIR: "/configurations"
+  fireflyiii:
+    auth:
+      existingSecret: firefly-importer-secrets
+  ingress:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "money-import.<secret:private-domain>"
+      traefik.ingress.kubernetes.io/router.middlewares: oauth2-proxy-forward-auth@kubernetescrd
+      kubernetes.io/ingress.class: traefik
+    hosts:
+      - "money-import.<secret:private-domain>"
+    tls:
+      - secretName: money-import-domain
+        hosts:
+          - money-import.<secret:private-domain>

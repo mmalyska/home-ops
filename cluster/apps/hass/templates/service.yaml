@@ -1,0 +1,16 @@
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: hass-proxy
+  name: hass-proxy
+spec:
+  type: ExternalName
+  ports:
+    - name: hass-proxy
+      port: 8123
+      targetPort: 80
+  externalName: 192.168.50.9
+  selector:
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/name: traefik

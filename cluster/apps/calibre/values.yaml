@@ -1,0 +1,55 @@
+image:
+  repository: linuxserver/calibre-web
+  tag: 0.6.19
+  pullPolicy: IfNotPresent
+env:
+  TZ: CET
+  PUID: "1001"
+  PGID: "1001"
+  DOCKER_MODS: linuxserver/calibre-web:calibre
+  OAUTHLIB_RELAX_TOKEN_SCOPE: 1
+service:
+  main:
+    ports:
+      http:
+        port: 8083
+persistence:
+  config:
+    enabled: true
+    storageClass: ceph-block
+    size: 2Gi
+  books:
+    enabled: true
+    existingClaim: calibre-ebooks-pvc
+    subPath:
+      - path: library
+        mountPath: /books
+  gmail:
+    enabled: true
+    type: custom
+    volumeSpec:
+      secret:
+        secretName: gmail-secret
+    subPath:
+      - path: gmail
+        mountPath: /config/gmail.json
+ingress:
+  main:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "calibre.<secret:private-domain>"
+      traefik.ingress.kubernetes.io/router.middlewares: oauth2-proxy-forward-auth@kubernetescrd
+      kubernetes.io/ingress.class: traefik
+    hosts:
+      - host: calibre.<secret:private-domain>
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              port: 8083
+    tls:
+      - secretName: calibre-domain
+        hosts:
+          - "calibre.<secret:private-domain>"

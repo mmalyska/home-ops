@@ -1,0 +1,25 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: argocd
+
+namespace: argocd
+
+# additional resources like ingress rules, cluster and repository secrets.
+resources:
+  - resources/cert.yaml
+  - resources/ingress.yaml
+  - resources/ingress-internal.yaml
+  - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.4.12
+  - resources/app-of-apps.yaml
+
+# changes to config maps
+patchesStrategicMerge:
+  - patches/argocd-cm.yaml
+  - patches/argocd-rbac-cm.yaml
+  - patches/argocd-cmd-params-cm.yaml
+  - patches/argo-cd-repo-server-ksops-patch.yaml
+
+generators:
+  - generators/secret-generator.yaml

@@ -1,0 +1,70 @@
+global:
+  additionalLabels: {}
+  podAnnotations: {}
+  podLabels: {}
+  image:
+    imagePullPolicy: IfNotPresent
+server:
+  name: server
+  replicas: 1
+  podAnnotations: {}
+  podLabels: {}
+  containerPort: 80
+  config:
+    mode: production
+    locale: pl
+    currency: PLN
+    firstDayOfWeek: 1
+    basePath: ""
+    baseUrl: "/"
+    barcodePlugin: DemoBarcodeLookupPlugin
+    # default is `DefaultAuthMiddleware`, reverse proxy is `ReverseProxyAuthMiddleware`
+    authClass: ReverseProxyAuthMiddleware
+    reverseProxyAuthHeader: x-auth-request-preferred-username
+  env:
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+    - name: TZ
+      value: CET
+  envFrom: []
+  image:
+    imagePullPolicy: IfNotPresent
+    repository: lscr.io/linuxserver/grocy
+    tag: ""
+  service:
+    type: ClusterIP
+    servicePortHttpName: http
+    servicePortHttp: 80
+    namedTargetPort: true
+  ingress:
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: grocy.<secret:private-domain>
+      traefik.ingress.kubernetes.io/router.middlewares: oauth2-proxy-forward-auth@kubernetescrd
+      kubernetes.io/ingress.class: traefik
+    host: grocy.<secret:private-domain>
+  readinessProbe:
+    enabled: false
+    failureThreshold: 5
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 2
+  livenessProbe:
+    enabled: false
+    failureThreshold: 5
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 2
+  resources: {}
+persistance:
+  storageClassName: ceph-block
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

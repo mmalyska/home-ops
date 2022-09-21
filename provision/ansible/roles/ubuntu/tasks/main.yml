@@ -1,0 +1,12 @@
+---
+- include: checks.yml
+  tags:
+    - checks
+
+- include: locale.yml
+  tags:
+    - locale
+
+- include: network.yml
+  tags:
+    - network

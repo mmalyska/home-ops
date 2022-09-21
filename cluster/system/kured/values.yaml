@@ -1,0 +1,26 @@
+kured:
+  image:
+    tag: 1.9.2
+    pullPolicy: IfNotPresent
+  maxUnavailable: 1
+  updateStrategy: RollingUpdate
+  configuration:
+    rebootCommand: "/usr/bin/systemctl reboot"
+    startTime: "00:00"
+    endTime: "04:00"
+    rebootDays: [mon, tue, wed, thu, fri]
+    timeZone: CET
+    # prometheusUrl: http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090
+    # alertFilterRegexp: ^(RebootRequired|Watchdog|InfoInhibitor|CPUThrottlingHigh|CephNodeInconsistentMTU)$
+  extraEnvVars:
+    - name: KURED_NOTIFY_URL
+      valueFrom:
+        secretKeyRef:
+          name: kured-secret
+          key: notify_url
+  metrics:
+    create: true
+    namespace: monitoring
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"

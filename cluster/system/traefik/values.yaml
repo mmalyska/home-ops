@@ -1,0 +1,39 @@
+---
+traefik:
+  ports:
+    web:
+      redirectTo: websecure
+
+  # Options for the main traefik service, where the entrypoints traffic comes
+  # from.
+  service:
+    annotations: {
+      metallb.universe.tf/loadBalancerIPs: "192.168.48.21"
+    }
+
+  ingressClass:
+    enabled: true
+    fallbackApiVersion: v1
+
+  ingressRoute:
+    dashboard:
+      enabled: false
+
+  providers:
+    kubernetesCRD:
+      ingressClass: traefik
+      allowCrossNamespace: true
+      allowExternalNameServices: true
+    kubernetesIngress:
+      allowExternalNameServices: true
+      publishedService:
+        enabled: true
+  additionalArguments:
+    - "--providers.kubernetesingress.ingressclass=traefik"
+
+  logs:
+    access:
+      enabled: true
+      filters:
+        statuscodes: "400-405,500"
+        minDuration: "10ms"

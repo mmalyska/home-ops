@@ -1,0 +1,22 @@
+# Trash
+.DS_Store
+Thumbs.db
+# k8s
+kubeconfig
+# vscode-sops
+.decrypted~*.*
+.config.env
+*.agekey
+*.pub
+*.key
+github-deploy-key*
+# Ansible
+xanmanning.k3s*
+# Terraform
+.terraform
+.terraform.tfstate*
+terraform.tfstate*
+.terraform.lock.hcl
+# Helm
+Chart.lock
+*.tgz

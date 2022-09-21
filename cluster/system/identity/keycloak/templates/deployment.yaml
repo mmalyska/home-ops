@@ -1,0 +1,67 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "keycloak.server.fullname" . }}
+  labels: {{- include "keycloak.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }} # yamllint disable-line
+spec:
+  replicas: {{ .Values.server.replicas }}
+  selector:
+    matchLabels:
+      {{- include "keycloak.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+      {{- with (mergeOverwrite (deepCopy .Values.global.podAnnotations) .Values.server.podAnnotations) }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+      {{- include "keycloak.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 8 }}
+      {{- with (mergeOverwrite (deepCopy .Values.global.podLabels) .Values.server.podLabels) }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext: {{- toYaml .Values.global.securityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.server.name }}
+          imagePullPolicy: {{ default .Values.global.image.imagePullPolicy .Values.server.image.imagePullPolicy }}
+          image: {{ default .Values.global.image.repository .Values.server.image.repository }}:{{ default (include "keycloak.defaultTag" .) .Values.server.image.tag }}
+          args: ["start --auto-build"]
+          env:
+          {{- toYaml .Values.server.env | nindent 12 }}
+          {{- with .Values.server.envFrom }}
+          envFrom: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: {{ .Values.server.name }}
+              containerPort: {{ .Values.server.containerPort }}
+          {{- if .Values.server.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /realms/master
+              port: {{ .Values.server.containerPort }}
+            initialDelaySeconds: {{ .Values.server.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.server.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /realms/master
+              port: {{ .Values.server.containerPort }}
+            initialDelaySeconds: {{ .Values.server.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.server.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.server.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.server.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.server.readinessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}

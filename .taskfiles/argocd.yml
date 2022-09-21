@@ -1,0 +1,13 @@
+---
+version: "3"
+
+tasks:
+  login:
+    desc: Login into argocd
+    cmds:
+      - argocd login https://argocd.$PRIVATE_DOMAIN --sso
+    silent: true
+  sync:
+    desc: Sync argocd with the Git Repository
+    cmds:
+      - argocd app sync {{.CLI_ARGS}}

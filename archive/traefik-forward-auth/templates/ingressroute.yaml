@@ -1,0 +1,19 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ template "traefik-forward-auth.server.fullname" . }}
+  labels: {{- include "traefik-forward-auth.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: {{ printf "%s%s%s" "Host(`" .Values.server.ingress.host "`)" }}
+      services:
+        - name: {{ template "traefik-forward-auth.server.fullname" . }}
+          port: {{ .Values.server.service.servicePortHttp }}
+  tls:
+    secretName: {{ template "traefik-forward-auth.server.ingress.cert" . }}

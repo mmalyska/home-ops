@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: plex-domain
+  namespace: plex
+spec:
+  secretName: plex-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'plex.<secret:private-domain>'
+  dnsNames:
+  - 'plex.<secret:private-domain>'

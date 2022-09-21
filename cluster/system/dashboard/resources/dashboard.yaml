@@ -1,0 +1,30 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: mytransport
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+spec:
+  serverName: "dashboard.internal.<secret:private-domain>"
+  insecureSkipVerify: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dashboard
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`dashboard.internal.<secret:private-domain>`)
+      kind: Rule
+      services:
+        - name: kubernetes-dashboard
+          port: 443
+          serversTransport: mytransport
+  tls:
+    secretName: kubernetes-dashboard-domain

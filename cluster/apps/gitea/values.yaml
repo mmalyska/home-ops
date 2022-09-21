@@ -1,0 +1,102 @@
+global:
+  additionalLabels: {}
+  podAnnotations: {}
+  podLabels: {}
+  image:
+    imagePullPolicy: IfNotPresent
+name: gitea
+gitea:
+  image:
+    repository: gitea/gitea
+    tag: 1.17.2
+    pullPolicy: IfNotPresent
+    rootless: false # only possible when running 1.14 or later
+  gitea:
+    config:
+      APP_NAME: "Gitea: Git with a cup of tea"
+      RUN_MODE: "prod"
+      RUN_USER: "git"
+      server:
+        APP_DATA_PATH: "/data"
+        DOMAIN: git.<secret:private-domain>
+        SSH_DOMAIN: git.<secret:private-domain>
+        HTTP_PORT: 3000
+        ROOT_URL: https://git.<secret:private-domain>/
+        LFS_START_SERVER: true
+      database:
+        DB_TYPE: postgres
+        HOST: 127.0.0.1:3306
+        SSL_MODE: require
+      service:
+        DISABLE_REGISTRATION: true
+        ENABLE_CAPTCHA: true
+        DEFAULT_KEEP_EMAIL_PRIVATE: true
+        DEFAULT_ALLOW_CREATE_ORGANIZATION: false
+      cors:
+        ENABLED: true
+        SCHEME: https
+        ALLOW_DOMAIN: <secret:private-domain>
+        ALLOW_SUBDOMAIN: true
+        METHODS: "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS"
+        MAX_AGE: 10m
+        ALLOW_CREDENTIALS: false
+  postgresql:
+    enabled: false
+  persistence:
+    enabled: true
+    storageClass: ceph-block
+  statefulset:
+    env:
+      - name: ENV_TO_INI__database__DB_TYPE
+        value: postgres
+      - name: ENV_TO_INI__database__HOST
+        valueFrom:
+          secretKeyRef:
+            name: giteadb-pguser-giteadb
+            key: pgbouncer-host
+      - name: ENV_TO_INI__database__NAME
+        valueFrom:
+          secretKeyRef:
+            name: giteadb-pguser-giteadb
+            key: dbname
+      - name: ENV_TO_INI__database__USER
+        valueFrom:
+          secretKeyRef:
+            name: giteadb-pguser-giteadb
+            key: user
+      - name: ENV_TO_INI__database__PASSWD
+        valueFrom:
+          secretKeyRef:
+            name: giteadb-pguser-giteadb
+            key: password
+postgres:
+  name: giteadb
+  postgresVersion: 14
+  image:
+    imagePullPolicy: IfNotPresent
+    repository: registry.developers.crunchydata.com/crunchydata/crunchy-postgres
+    tag: "ubi8-14.4-0"
+  instances:
+    - name: main-ceph
+      replicas: 1
+      storage:
+        resource: 5Gi
+        class: ceph-block
+  backup:
+    image:
+      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
+      tag: "ubi8-2.38-2"
+    global:
+      repo1-retention-full: "14"
+      repo1-retention-full-type: time
+    repos:
+      - name: repo1
+        storageClass: ceph-block
+        storage: 5Gi
+  proxy:
+    name: pgbouncer
+    port: 5432
+    replicas: 1
+    image:
+      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
+      tag: "ubi8-1.16-4"

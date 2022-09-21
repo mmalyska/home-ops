@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: plex-subchart
+type: application
+version: 1.0.0
+appVersion: "6.2.0"
+dependencies:
+  - name: plex
+    repository: https://k8s-at-home.com/charts/
+    version: 6.4.3

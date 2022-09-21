@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dyndns-deployment
+  labels:
+    app: dyndns-updater
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dyndns-updater
+  template:
+    metadata:
+      labels:
+        app: dyndns-updater
+    spec:
+      containers:
+        - name: dyndns-updater
+          imagePullPolicy: IfNotPresent
+          image: ghcr.io/joshuaavalon/cloudflare-ddns:2.9.2
+          volumeMounts:
+            - name: dyndns-updater
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 10m
+            limits:
+              memory: 128Mi
+              cpu: 100m
+      volumes:
+        - name: dyndns-updater
+          secret:
+            secretName: dyndns-secret

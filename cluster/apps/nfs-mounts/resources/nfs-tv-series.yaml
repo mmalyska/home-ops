@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-tv-series-pv
+  namespace: nfs-mounts
+spec:
+  storageClassName: tv-series
+  claimRef:
+    name: nfs-tv-series-pvc
+    namespace: nfs-mounts
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: qnap.<secret:private-domain>
+    path: "/tv-series"
+  mountOptions:
+    - nfsvers=4.2
+    - tcp
+    - intr
+    - hard
+    - noatime
+    - nodiratime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-tv-series-pvc
+  namespace: nfs-mounts
+spec:
+  volumeName: nfs-tv-series-pv
+  accessModes:
+    - ReadWriteMany
+  storageClassName: tv-series
+  resources:
+    requests:
+      storage: 50Gi

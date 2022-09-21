@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: oauth-domain
+spec:
+  secretName: oauth-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ .Values.host | quote }}
+  dnsNames:
+  - {{ .Values.host | quote }}

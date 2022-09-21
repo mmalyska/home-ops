@@ -1,0 +1,10 @@
+nfs-subdir-external-provisioner:
+  nfs:
+    server: qnap.<secret:private-domain>
+    path: /nfs
+
+  storageClass:
+    create: true
+    defaultClass: false
+    name: nfs
+    accessModes: ReadWriteMany

@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: internal-traefik-subchart
+type: application
+version: 1.0.0
+appVersion: "2.6.1"
+dependencies:
+  - name: traefik
+    version: 10.24.3
+    repository: https://helm.traefik.io/traefik

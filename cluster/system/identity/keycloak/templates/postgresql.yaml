@@ -1,0 +1,75 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: {{ .Values.postgres.name }}
+  labels:
+    {{- include "keycloak.labels" (dict "context" . "component" .Values.postgres.name "name" .Values.postgres.name) | nindent 4 }}
+spec:
+  image: {{ default .Values.global.image.repository .Values.postgres.image.repository }}:{{ default (include "keycloak.defaultTag" .) .Values.postgres.image.tag }}
+  postgresVersion: {{ .Values.postgres.postgresVersion }}
+  {{- with .Values.global.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  imagePullPolicy: {{ default .Values.global.image.imagePullPolicy .Values.postgres.image.imagePullPolicy }}
+  instances:
+  {{- range  .Values.postgres.instances }}
+    - name: {{ .name }}
+      replicas: {{ .replicas }}
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: {{ .storage }}
+        volumeName: "pvc-ae772ff0-cb19-4aca-8685-d828be0ed33c"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  postgres-operator.crunchydata.com/cluster: {{ $.Values.postgres.name }}
+                  postgres-operator.crunchydata.com/instance-set: {{ .name }}
+  {{- end }}
+  backups:
+    pgbackrest:
+      image: {{ default .Values.global.image.repository .Values.postgres.backup.image.repository }}:{{ default (include "keycloak.defaultTag" .) .Values.postgres.backup.image.tag }}
+      {{- with .Values.postgres.backup.global }}
+      global:
+        {{- range $key, $val := . }}
+        {{ $key }}: {{ $val | quote }}
+        {{- end }}
+      {{- end }}
+      repos:
+      {{- range  .Values.postgres.backup.repos }}
+        - name: {{ .name }}
+          volume:
+            volumeClaimSpec:
+              storageClassName: {{ .storageClass }}
+              accessModes:
+              - "ReadWriteOnce"
+              resources:
+                requests:
+                  storage: {{ .storage }}
+      {{- end }}
+  proxy:
+    pgBouncer:
+      image: {{ default .Values.global.image.repository .Values.postgres.proxy.image.repository }}:{{ default (include "keycloak.defaultTag" .) .Values.postgres.proxy.image.tag }}
+      port: {{ .Values.postgres.proxy.port }}
+      replicas: {{ .Values.postgres.proxy.replicas }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    postgres-operator.crunchydata.com/cluster: {{ .Values.postgres.name }}
+                    postgres-operator.crunchydata.com/role: pgbouncer
+                topologyKey: kubernetes.io/hostname
+              weight: 1

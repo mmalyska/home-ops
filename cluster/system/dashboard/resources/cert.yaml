@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: dashboard-internal-domain
+  namespace: kubernetes-dashboard
+spec:
+  secretName: kubernetes-dashboard-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'dashboard.internal.<secret:private-domain>'
+  dnsNames:
+    - 'dashboard.internal.<secret:private-domain>'

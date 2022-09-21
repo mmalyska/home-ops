@@ -1,0 +1,31 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: harbor-domain
+  namespace: harbor
+spec:
+  secretName: harbor-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'harbor.<secret:private-domain>'
+  dnsNames:
+  - 'harbor.<secret:private-domain>'
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: notary-domain
+  namespace: harbor
+spec:
+  secretName: notary-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'notary.<secret:private-domain>'
+  dnsNames:
+  - 'notary.<secret:private-domain>'

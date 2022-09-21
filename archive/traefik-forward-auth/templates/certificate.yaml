@@ -1,0 +1,15 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: {{ template "traefik-forward-auth.server.fullname" . }}
+spec:
+  secretName: {{ template "traefik-forward-auth.server.ingress.cert" . }}
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ .Values.server.ingress.host | quote }}
+  dnsNames:
+    - {{ .Values.server.ingress.host | quote }}

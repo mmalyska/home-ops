@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kubernetes-dashboard
+
+# additional resources like ingress rules, cluster and repository secrets.
+resources:
+  - resources/cert.yaml
+  # renovate: datasource=github-releases depName=kubernetes/dashboard
+  - https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
+  - resources/kd-user-service.yaml
+  - resources/cluster-role-binding.yaml
+  - resources/dashboard.yaml

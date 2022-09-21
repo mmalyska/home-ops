@@ -1,0 +1,87 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "grocy.server.fullname" . }}
+  labels: {{- include "grocy.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: {{ .Values.server.replicas }}
+  selector:
+    matchLabels:
+      {{- include "grocy.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- include "grocy.checksumAnnotations" . | nindent 8 }}
+        {{- with (mergeOverwrite (deepCopy .Values.global.podAnnotations) .Values.server.podAnnotations) }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "grocy.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 8 }}
+        {{- with (mergeOverwrite (deepCopy .Values.global.podLabels) .Values.server.podLabels) }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.securityContext }}
+      securityContext: {{- toYaml .Values.global.securityContext | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.server.name }}
+        imagePullPolicy: {{ default .Values.global.image.imagePullPolicy .Values.server.image.imagePullPolicy }}
+        image: {{ default .Values.global.image.repository .Values.server.image.repository }}:{{ default (include "grocy.defaultTag" .) .Values.server.image.tag }}
+        env:
+        {{- toYaml .Values.server.env | nindent 8 }}
+        {{- with .Values.server.envFrom }}
+        envFrom: {{- toYaml . | nindent 8 }}
+        {{- end }}
+        ports:
+          - name: {{ .Values.server.name }}
+            containerPort: {{ .Values.server.containerPort }}
+            protocol: TCP
+        volumeMounts:
+          - name: config
+            mountPath: /config/data
+          - name: app-config
+            mountPath: /config/data/config.php
+            subPath: config.php
+          - name: viewcache
+            mountPath: /config/data/viewcache
+        {{- if .Values.server.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.server.containerPort }}
+          initialDelaySeconds: {{ .Values.server.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.server.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.server.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.server.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.server.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.server.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.server.server.containerPort }}
+          initialDelaySeconds: {{ .Values.server.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.server.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.server.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.server.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.server.readinessProbe.failureThreshold }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.server.resources | nindent 10 }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ template "grocy.server.fullname" . }}-config
+        - name: app-config
+          configMap:
+            name: grocy-config-cm
+        - name: viewcache
+          emptyDir: {}

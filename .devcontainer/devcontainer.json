@@ -1,0 +1,53 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
+{
+    "name": "Ubuntu",
+    "build": {
+        "dockerfile": "Dockerfile",
+        // Update 'VARIANT' to pick an Ubuntu version: jammy / ubuntu-22.04, focal / ubuntu-20.04, bionic /ubuntu-18.04
+        // Use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon.
+        "args": { "VARIANT": "ubuntu-22.04" }
+    },
+    "runArgs": ["--init"],
+    "remoteEnv": {
+        "SYNC_LOCALHOST_CONFIG": "true"
+    },
+    "mounts": [
+        "source=${localEnv:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind",
+        "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind"
+    ],
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+
+    // Use 'postCreateCommand' to run commands after the container is created.
+    "postCreateCommand": "bash .devcontainer/scripts/postCreateCommand.sh",
+
+    //Install task and required dependencies via homebrew. Install precommit tasks.
+    "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
+
+    // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+    "remoteUser": "vscode",
+    "features": {
+        "homebrew": "latest",
+        "ghcr.io/devcontainers/features/go:1": "latest"
+    },
+    "customizations": {
+        "vscode": {
+            // Set *default* container specific settings.json values on container create.
+            "settings": {},
+            "extensions": [
+                "HashiCorp.terraform",
+                "britesnow.vscode-toggle-quotes",
+                "mitchdenny.ecdc",
+                "ms-kubernetes-tools.vscode-kubernetes-tools",
+                "oderwat.indent-rainbow",
+                "redhat.ansible",
+                "signageos.signageos-vscode-sops",
+                "usernamehw.errorlens",
+                "fcrespo82.markdown-table-formatter",
+                "redhat.ansible"
+            ]
+    }
+}
+}

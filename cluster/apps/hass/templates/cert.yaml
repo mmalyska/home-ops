@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: hass-proxy
+spec:
+  secretName: hass-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ .Values.ingress.host | quote }}
+  dnsNames:
+  - {{ .Values.ingress.host | quote }}

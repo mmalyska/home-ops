@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "grocy.server.fullname" . }}-config
+  labels:
+    {{- include "grocy.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+spec:
+  {{- toYaml .Values.persistance | nindent 2 }}

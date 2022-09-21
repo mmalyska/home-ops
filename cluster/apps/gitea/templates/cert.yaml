@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: git-domain
+  namespace: gitea
+spec:
+  secretName: git-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'git.<secret:private-domain>'
+  dnsNames:
+  - 'git.<secret:private-domain>'

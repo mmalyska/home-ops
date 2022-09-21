@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-ebooks-pv
+  namespace: nfs-mounts
+spec:
+  storageClassName: ebooks
+  claimRef:
+    name: nfs-ebooks-pvc
+    namespace: nfs-mounts
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: qnap.<secret:private-domain>
+    path: "/ebooks"
+  mountOptions:
+    - nfsvers=4.2
+    - tcp
+    - intr
+    - hard
+    - noatime
+    - nodiratime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-ebooks-pvc
+  namespace: nfs-mounts
+spec:
+  volumeName: nfs-ebooks-pv
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ebooks
+  resources:
+    requests:
+      storage: 50Gi

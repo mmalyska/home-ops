@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-movies-pv
+  namespace: nfs-mounts
+spec:
+  storageClassName: movies
+  claimRef:
+    name: nfs-movies-pvc
+    namespace: nfs-mounts
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: qnap.<secret:private-domain>
+    path: "/movies"
+  mountOptions:
+    - nfsvers=4.2
+    - tcp
+    - intr
+    - hard
+    - noatime
+    - nodiratime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-movies-pvc
+  namespace: nfs-mounts
+spec:
+  volumeName: nfs-movies-pv
+  accessModes:
+    - ReadWriteMany
+  storageClassName: movies
+  resources:
+    requests:
+      storage: 50Gi

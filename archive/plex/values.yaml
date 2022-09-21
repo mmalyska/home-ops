@@ -1,0 +1,59 @@
+o: o
+plex:
+  image:
+    repository: plexinc/pms-docker
+    tag: 1.25.6.5577-c8bd13540
+    pullPolicy: IfNotPresent
+  env:
+    TZ: CET
+  podSecurityContext:
+    supplementalGroups:
+      - 44
+      - 109
+      - 100
+  service:
+    main:
+      ports:
+        http:
+          port: 32400
+    dnla-tcp:
+      enabled: false
+    dnla-udp:
+      enabled: false
+  persistence:
+    config:
+      enabled: true
+      size: 25Gi
+    movies:
+      enabled: true
+      existingClaim: plex-movies-pvc
+      subPath:
+        - path: library
+          mountPath: /data/movies
+    tv-series:
+      enabled: true
+      existingClaim: plex-tv-series-pvc
+      subPath:
+        - path: library
+          mountPath: /data/tv-series
+    tmp:
+      enabled: true
+      type: emptyDir
+      medium: Memory
+  ingress:
+    main:
+      enabled: true
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "plex.<secret:private-domain>"
+        kubernetes.io/ingress.class: traefik
+      hosts:
+        - host: plex.<secret:private-domain>
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: plex-domain
+          hosts:
+            - "plex.<secret:private-domain>"

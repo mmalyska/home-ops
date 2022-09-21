@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: plex-tv-series-pv
+spec:
+  storageClassName: tv-series
+  claimRef:
+    name: plex-tv-series-pvc
+    namespace: plex
+  capacity:
+    storage: 200Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: <secret:qnap>
+    path: "/tv-series"
+  mountOptions:
+    - nfsvers=4.2
+    - tcp
+    - intr
+    - hard
+    - noatime
+    - nodiratime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-tv-series-pvc
+spec:
+  volumeName: plex-tv-series-pv
+  accessModes:
+    - ReadWriteMany
+  storageClassName: tv-series
+  resources:
+    requests:
+      storage: 200Gi

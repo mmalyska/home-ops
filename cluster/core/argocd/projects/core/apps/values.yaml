@@ -1,0 +1,22 @@
+---
+project: core
+destination:
+  server: https://kubernetes.default.svc
+source:
+  repoURL: https://github.com/mmalyska/k8s-deployments
+  path: cluster/core
+apps:
+  - name: argocd
+    namespace: argocd
+    path: argocd/base
+    plugin:
+      name: replacer-kustomize
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
+  - name: flannel
+    namespace: kube-system
+    path: kube-system/flannel
+  - name: metallb
+    namespace: metallb-system
+    path: metallb-system/metallb

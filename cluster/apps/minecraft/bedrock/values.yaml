@@ -1,0 +1,25 @@
+minecraft-bedrock:
+  persistence:
+    storageClass: ceph-block
+    dataDir:
+      enabled: true
+      Size: 10Gi
+  resources:
+    requests:
+      memory: 250Mi
+      cpu: 200m
+    limits:
+      memory: 1Gi
+  minecraftServer:
+    eula: "TRUE"
+    version: "LATEST"
+    difficulty: normal
+    gameMode: survival
+    levelName: jaskinia
+    serverName: "Jaskinia"
+    cheats: true
+    serviceType: LoadBalancer
+    loadBalancerIP: 192.168.48.23
+    ops: <secret:ops>
+    defaultPermission: visitor
+    whitelistUsers: <secret:whitelistUsers>

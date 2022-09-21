@@ -1,0 +1,23 @@
+kind: Secret
+qnap_address: ENC[AES256_GCM,data:9d5FsOS517VCweEL,iv:60z864Q2/jpBNgy3Iw+4TeuPDxR+LMUd2vJBpDQjxnk=,tag:aKTrUA4gDrQ4u3VJl9WZXQ==,type:str]
+qnap_domain: ENC[AES256_GCM,data:Lz4MtNoEsKQmCAHJiy4KFus=,iv:bVFF3gdsmSeD2+ZIKn0GXH2psCVsN4d3gdvxxnHj+9U=,tag:C3x+qjB4xFLs/24hKhP49Q==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBxMWFuR1BCSWZtZHo4ZTNm
+            RTdOb1lHdFVqSmN5YW02bkNnSXFCdjVFV2pzCmFVKy9TZGRMTnZKVk16ZDRsUXBN
+            UkF2SkhNUElUR0w4eVZtby8wQmtPUnMKLS0tIGxaRDFFbWFPM0l0ZExHK3MranVw
+            OVpJZWUwN3lQc3RKeFRHa3ZsRCtiOWcKubFd6w9rJYL4s+19vaK3fpnMOoEIbyQo
+            7l0h360eL84PD51oqH20onwKWSRuE375DVjDXXdSLms/1648voIywg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2022-09-20T11:35:18Z"
+    mac: ENC[AES256_GCM,data:OjNMJQFFeCocBj9S/SJk6sxynkVkB2h6aMG0tPhnLDsKYAsT/OYzvAwLUje7tIJGdoY9Qjldp2QDtNx7pSOOFEO9Ct0MWfZv5/jpNgKiyobdDqKSRVpuaKV5El1yPe+4rf4G86TAaQnbHnHcxTXYmksqHvJUugqDd8NYuuiG+/w=,iv:hnvQIJf3wwFdsGlZckWKmzpygPCMTDHcHmUNAZ3ShcE=,tag:Z0SdV+HzLK0GSZGPKXNagQ==,type:str]
+    pgp: []
+    unencrypted_regex: ^(kind)$
+    version: 3.7.3

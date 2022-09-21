@@ -1,0 +1,55 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forward-auth
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  chain:
+    middlewares:
+      - name: forward-auth-redirect
+#    - name: forward-auth-error
+#    - name: forward-auth-auth
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forward-auth-auth
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  forwardAuth:
+    address: https://oauth.<secret:private-domain>/oauth2/auth
+    trustForwardHeader: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forward-auth-error
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  errors:
+    status:
+      - "401-403"
+    query: "/oauth2/sign_in"
+    service:
+      name: oauth2-proxy
+      port: http
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forward-auth-redirect
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  forwardAuth:
+    address: {{ printf "%s%s.%s.%s" "http://" "oauth2-proxy" .Release.Namespace "svc.cluster.local" }}
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+      - X-Auth-Request-Groups
+      - X-Auth-Request-Preferred-Username
+      - Authorization

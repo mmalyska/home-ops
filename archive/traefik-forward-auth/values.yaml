@@ -1,0 +1,54 @@
+global:
+  additionalLabels: {}
+  podAnnotations: {}
+  podLabels: {}
+  image:
+    imagePullPolicy: IfNotPresent
+server:
+  name: forward-auth
+  replicas: 1
+  podAnnotations: {}
+  podLabels: {}
+  containerPort: 4181
+  cookieDomain: <secret:private-domain>
+  provider:
+    clientId: oauth-proxy
+    issuerUrl: https://l.<secret:private-domain>/realms/home
+  env: []
+  envFrom:
+    - secretRef:
+        name: traefik-forward-auth
+  image:
+    imagePullPolicy: IfNotPresent
+    repository: thomseddon/traefik-forward-auth
+    tag: "2.2.0"
+  service:
+    type: ClusterIP
+    servicePortHttpName: http
+    servicePortHttp: 80
+    namedTargetPort: true
+  ingress:
+    host: auth.<secret:private-domain>
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: auth.<secret:private-domain>
+      kubernetes.io/ingress.class: traefik
+  readinessProbe:
+    enabled: true
+    failureThreshold: 5
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 2
+  livenessProbe:
+    enabled: true
+    failureThreshold: 5
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 2
+  resources:
+    limits:
+      memory: '10Mi'
+      cpu: '100m'
