@@ -3,7 +3,7 @@ project: system
 destination:
   server: https://kubernetes.default.svc
 source:
-  repoURL: https://github.com/mmalyska/k8s-deployments
+  repoURL: https://github.com/mmalyska/home-ops
   path: cluster/system
 apps:
   - name: cert-manager

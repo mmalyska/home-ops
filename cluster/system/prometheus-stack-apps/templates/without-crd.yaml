@@ -6,7 +6,7 @@ metadata:
 spec:
   project: system
   source:
-    repoURL: 'https://github.com/mmalyska/k8s-deployments'
+    repoURL: 'https://github.com/mmalyska/home-ops'
     path: cluster/system/prometheus-stack-apps/prometheus-stack
     targetRevision: main
     plugin:

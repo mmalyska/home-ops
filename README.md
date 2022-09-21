@@ -4,11 +4,11 @@ Deploying a cluster with [Ansible](https://www.ansible.com) and [Terraform](http
 
 ## Overview
 
-- [Components](https://github.com/mmalyska/k8s-deployments#-components)
-- [Setup](https://github.com/mmalyska/k8s-deployments#-setup)
-- [Repository structure](https://github.com/mmalyska/k8s-deployments#-repository-structure)
-- [Deployment](https://github.com/mmalyska/k8s-deployments#-deployment)
-- [Post installation](https://github.com/mmalyska/k8s-deployments#-post-installation)
+- [Components](https://github.com/mmalyska/home-ops#-components)
+- [Setup](https://github.com/mmalyska/home-ops#-setup)
+- [Repository structure](https://github.com/mmalyska/home-ops#-repository-structure)
+- [Deployment](https://github.com/mmalyska/home-ops#-deployment)
+- [Post installation](https://github.com/mmalyska/home-ops#-post-installation)
 
 ## 🧱 Components
 

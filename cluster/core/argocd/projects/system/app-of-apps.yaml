@@ -12,7 +12,7 @@ spec:
   project: system
   source:
     path: cluster/core/argocd/projects/system/apps
-    repoURL: https://github.com/mmalyska/k8s-deployments
+    repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:
     automated:
