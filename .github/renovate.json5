@@ -86,13 +86,13 @@
     {
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["minor"],
-      "semanticCommitType": "feat",
+      "semanticCommitType": "feat(images): ",
       "labels": ["renovate/image", "dep/minor"]
     },
     {
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["patch"],
-      "semanticCommitType": "fix",
+      "semanticCommitType": "fix(images): ",
       "labels": ["renovate/image", "dep/patch"]
     },
     {
@@ -104,13 +104,13 @@
     {
       "matchDatasources": ["helm"],
       "matchUpdateTypes": ["minor"],
-      "semanticCommitType": "feat",
+      "semanticCommitType": "feat(charts): ",
       "labels": ["renovate/helm", "dep/minor"]
     },
     {
       "matchDatasources": ["helm"],
       "matchUpdateTypes": ["patch"],
-      "semanticCommitType": "fix",
+      "semanticCommitType": "fix(charts): ",
       "labels": ["renovate/helm", "dep/patch"]
     },
     // pin package versions
