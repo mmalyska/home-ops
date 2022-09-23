@@ -13,6 +13,7 @@ resources:
   - resources/ingress-internal.yaml
   - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.4.12
   - resources/app-of-apps.yaml
+  - resources/repository.yaml
 
 # changes to config maps
 patchesStrategicMerge:
@@ -20,6 +21,4 @@ patchesStrategicMerge:
   - patches/argocd-rbac-cm.yaml
   - patches/argocd-cmd-params-cm.yaml
   - patches/argo-cd-repo-server-ksops-patch.yaml
-
-generators:
-  - generators/secret-generator.yaml
+  - patches/argocd-secret.yaml
