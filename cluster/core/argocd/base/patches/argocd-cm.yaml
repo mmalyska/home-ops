@@ -16,12 +16,6 @@ data:
     clientID: argocd
     clientSecret: $oidc.keycloak.clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
-  kustomize.buildOptions: "--enable-alpha-plugins"
-  helm.valuesFileSchemes: >-
-    secrets+gpg-import, secrets+gpg-import-kubernetes,
-    secrets+age-import, secrets+age-import-kubernetes,
-    secrets,
-    https
   configManagementPlugins: |
     - name: replacer-helm
       init:
