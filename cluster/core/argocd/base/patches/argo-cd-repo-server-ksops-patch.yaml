@@ -15,46 +15,23 @@ spec:
             secretName: sops-age
       # 2. Use an init container to download/copy custom binaries into the emptyDir
       initContainers:
-        - name: install-ksops
-          image: viaductoss/ksops:v3.0.2
-          command: ["/bin/sh", "-c"]
-          args:
-            - echo "Installing KSOPS...";
-              mv ksops /custom-tools/;
-              mv $GOPATH/bin/kustomize /custom-tools/;
-              echo "Done.";
-          volumeMounts:
-            - mountPath: /custom-tools
-              name: custom-tools
         - name: download-tools
           image: alpine:latest
           command: [sh, -ec]
           env:
-            - name: HELM_SECRETS_VERSION
-            # renovate: datasource=github-releases depName=jkroepke/helm-secrets
-              value: "v3.15.0"
             - name: SOPS_VERSION
             # renovate: datasource=github-releases depName=mozilla/sops
               value: "v3.7.3"
-            - name: KUBECTL_VERSION
-              value: "1.23.5"
             - name: REPLACER_VERSION
             # renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
               value: "v0.1.0"
           args:
             - |
               echo "Initializing custom tools...";
-              mkdir -p /custom-tools/helm-plugins
-
-              echo "Downloading helm secrets...";
-              wget -qO- https://github.com/jkroepke/helm-secrets/releases/download/${HELM_SECRETS_VERSION}/helm-secrets.tar.gz | tar -C /custom-tools/helm-plugins -xzf-;
 
               echo "Downloading sops...";
               wget -qO /custom-tools/sops https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux
-              
-              echo "Downloading kubectl...";
-              wget -qO /custom-tools/kubectl https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
-              
+
               echo "Downloading secret replacer...";
               wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-x64.tar.gz | tar -C /custom-tools -xzf-;
 
@@ -71,48 +48,16 @@ spec:
       containers:
         - name: argocd-repo-server
           volumeMounts:
-            - mountPath: /usr/local/bin/kustomize
-              name: custom-tools
-              subPath: kustomize
-              # Verify this matches a XDG_CONFIG_HOME=/.config env variable
-            - mountPath: /.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
-              name: custom-tools
-              subPath: ksops
-            - mountPath: /custom-tools/helm-plugins
-              name: custom-tools
-              subPath: helm-plugins
             - mountPath: /custom-tools/sops
               name: custom-tools
               subPath: sops
-            - mountPath: /custom-tools/kubectl
-              name: custom-tools
-              subPath: kubectl
             - mountPath: /sops-age/key
               name: sops-age
               subPath: age.agekey
             - mountPath: /usr/local/bin/argocd-secret-replacer
               name: custom-tools
               subPath: argocd-secret-replacer
-          # 4. Set the XDG_CONFIG_HOME env variable to allow kustomize to detect the plugin
           env:
-            - name: XDG_CONFIG_HOME
-              value: /.config
-            - name: HELM_PLUGINS
-              value: /custom-tools/helm-plugins/
-            # In case wrapper scripts are used, HELM_SECRETS_HELM_PATH needs to be the path of the real helm binary
-            - name: HELM_SECRETS_HELM_PATH
-              value: /usr/local/bin/helm
-            - name: HELM_SECRETS_SOPS_PATH
-              value: /custom-tools/sops
-            - name: HELM_SECRETS_KUBECTL_PATH
-              value: /custom-tools/kubectl
-            # https://github.com/jkroepke/helm-secrets/wiki/Security-in-shared-environments
-            - name: HELM_SECRETS_VALUES_ALLOW_SYMLINKS
-              value: "false"
-            - name: HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH
-              value: "false"
-            - name: HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL
-              value: "false"
             - name: SOPS_AGE_KEY_FILE
               value: /sops-age/key
             - name: ARGOCD_ENV_SOPS_EXE
