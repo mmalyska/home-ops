@@ -12,9 +12,8 @@ apps:
     syncPolicy: false
     selfHeal: false
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: calibre
     namespace: calibre
