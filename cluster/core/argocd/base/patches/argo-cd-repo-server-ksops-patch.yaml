@@ -8,6 +8,9 @@ spec:
     spec:
       # 1. Define an emptyDir volume which will hold the custom binaries
       volumes:
+        - configMap:
+            name: sops-replacer-plugin
+          name: sops-replacer-plugin
         - name: custom-tools
           emptyDir: {}
         - name: sops-age
@@ -20,10 +23,10 @@ spec:
           command: [sh, -ec]
           env:
             - name: SOPS_VERSION
-            # renovate: datasource=github-releases depName=mozilla/sops
+              # renovate: datasource=github-releases depName=mozilla/sops
               value: "v3.7.3"
             - name: REPLACER_VERSION
-            # renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
+              # renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
               value: "v0.1.0"
           args:
             - |
@@ -62,3 +65,77 @@ spec:
               value: /sops-age/key
             - name: ARGOCD_ENV_SOPS_EXE
               value: /custom-tools/sops
+        - name: sops-replacer-plugin-kustomize
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: alpine/k8s:1.23.10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          resources:
+            limits:
+              cpu: 50m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /sops-age/key
+            - name: ARGOCD_ENV_SOPS_EXE
+              value: /custom-tools/sops
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /tmp
+              name: tmp-sops-replacer-plugin
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              name: sops-replacer-plugin
+              subPath: sops-replacer-plugin-kustomize.yaml
+            - mountPath: /custom-tools/sops
+              name: custom-tools
+              subPath: sops
+            - mountPath: /sops-age/key
+              name: sops-age
+              subPath: age.agekey
+            - mountPath: /usr/local/bin/argocd-secret-replacer
+              name: custom-tools
+              subPath: argocd-secret-replacer
+        - name: sops-replacer-plugin-helm
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: alpine/k8s:1.23.10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          resources:
+            limits:
+              cpu: 50m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /sops-age/key
+            - name: ARGOCD_ENV_SOPS_EXE
+              value: /custom-tools/sops
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /tmp
+              name: tmp-sops-replacer-plugin
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              name: sops-replacer-plugin
+              subPath: sops-replacer-plugin-helm.yaml
+            - mountPath: /custom-tools/sops
+              name: custom-tools
+              subPath: sops
+            - mountPath: /sops-age/key
+              name: sops-age
+              subPath: age.agekey
+            - mountPath: /usr/local/bin/argocd-secret-replacer
+              name: custom-tools
+              subPath: argocd-secret-replacer

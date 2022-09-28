@@ -14,6 +14,7 @@ resources:
   - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.4.12
   - resources/app-of-apps.yaml
   - resources/repository.yaml
+  - resources/sops-replacer-plugin.yaml
 
 # changes to config maps
 patchesStrategicMerge:
