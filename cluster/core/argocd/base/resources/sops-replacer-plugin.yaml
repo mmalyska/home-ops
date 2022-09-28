@@ -16,7 +16,7 @@ data:
           command:
             - sh
             - "-c"
-            - "find . -name 'kustomization.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
+            - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'kustomization.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
       generate:
         command:
           - bash
@@ -36,7 +36,7 @@ data:
           command:
             - sh
             - "-c"
-            - "find . -name 'Chart.yaml' && find . -name 'values.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'""
+            - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'Chart.yaml' && find . -name 'values.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
       generate:
         command:
           - bash
