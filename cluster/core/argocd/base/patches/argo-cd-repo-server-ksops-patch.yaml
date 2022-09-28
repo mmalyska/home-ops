@@ -13,6 +13,8 @@ spec:
           name: sops-replacer-plugin
         - name: custom-tools
           emptyDir: {}
+        - name: tmp-sops-replacer-plugin
+          emptyDir: {}
         - name: sops-age
           secret:
             secretName: sops-age
