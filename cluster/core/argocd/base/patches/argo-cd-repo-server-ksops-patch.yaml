@@ -38,7 +38,7 @@ spec:
               wget -qO /custom-tools/sops https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux
 
               echo "Downloading secret replacer...";
-              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-x64.tar.gz | tar -C /custom-tools -xzf-;
+              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-musl-linux-x64.tar.gz | tar -C /custom-tools -xzf-;
 
               echo "Setting executable mode...";
               chmod +x /custom-tools/*
