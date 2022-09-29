@@ -38,10 +38,15 @@ spec:
               wget -qO /custom-tools/sops https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux
 
               echo "Downloading secret replacer...";
-              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-musl-x64.tar.gz | tar -C /custom-tools -xzf-;
+              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-x64.tar.gz | tar -C /custom-tools -xzf-;
+
+              echo "Downloading secret replacer musl...";
+              mkdir /custom-tools/musl
+              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-musl-x64.tar.gz | tar -C /custom-tools/musl -xzf-;
 
               echo "Setting executable mode...";
               chmod +x /custom-tools/*
+              chmod +x /custom-tools/musl/*
 
               echo "Listing downloaded tools";
               ls -la /custom-tools
@@ -103,7 +108,7 @@ spec:
               subPath: age.agekey
             - mountPath: /usr/local/bin/argocd-secret-replacer
               name: custom-tools
-              subPath: argocd-secret-replacer
+              subPath: musl/argocd-secret-replacer
         - name: sops-replacer-plugin-helm
           command: [/var/run/argocd/argocd-cmp-server]
           image: alpine/k8s:1.23.10
@@ -140,4 +145,4 @@ spec:
               subPath: age.agekey
             - mountPath: /usr/local/bin/argocd-secret-replacer
               name: custom-tools
-              subPath: argocd-secret-replacer
+              subPath: musl/argocd-secret-replacer
