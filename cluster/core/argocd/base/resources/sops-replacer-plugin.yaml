@@ -21,8 +21,8 @@ data:
         command:
           - bash
           - "-c"
-          - |
-            kustomize build --enable-alpha-plugins . | argocd-secret-replacer sops -f $ARGOCD_ENV_SOPS_SECRET_FILE
+          - |-
+            kustomize build --enable-alpha-plugins . | argocd-secret-replacer sops -f "$ARGOCD_ENV_SOPS_SECRET_FILE"
       lockRepo: false
   sops-replacer-plugin-helm.yaml: |
     apiVersion: argoproj.io/v1alpha1
@@ -41,6 +41,6 @@ data:
         command:
           - bash
           - "-c"
-          - |
-            helm template --release-name $ARGOCD_APP_NAME --namespace $ARGOCD_APP_NAMESPACE . | argocd-secret-replacer sops -f $ARGOCD_ENV_SOPS_SECRET_FILE
+          - |-
+            helm template --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" . | argocd-secret-replacer sops -f "$ARGOCD_ENV_SOPS_SECRET_FILE"
       lockRepo: false
