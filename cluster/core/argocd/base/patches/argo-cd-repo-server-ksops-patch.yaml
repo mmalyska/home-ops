@@ -29,7 +29,7 @@ spec:
               value: "v3.7.3"
             - name: REPLACER_VERSION
               # renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
-              value: "v0.1.0"
+              value: "v0.1.1"
           args:
             - |
               echo "Initializing custom tools...";
