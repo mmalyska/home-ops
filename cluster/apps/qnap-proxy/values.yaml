@@ -1,0 +1,4 @@
+ingresses:
+  - name: s3
+    host: s3.<secret:private-domain>
+    port: 8280

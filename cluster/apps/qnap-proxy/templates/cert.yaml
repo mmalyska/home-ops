@@ -1,0 +1,18 @@
+---
+{{ range $k, $v := $.Values.ingresses }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: {{ $v.name }}
+spec:
+  secretName: {{ $v.name }}-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ $v.host | quote }}
+  dnsNames:
+  - {{ $v.host | quote }}
+---
+{{ end }}

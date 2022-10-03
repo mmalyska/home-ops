@@ -1,0 +1,29 @@
+---
+{{ range $k, $v := $.Values.ingresses }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/ingressEndpoint.hostname: {{ $v.host }}
+    kubernetes.io/ingress.class: traefik
+  name: {{ $v.name }}
+spec:
+  tls:
+    - hosts:
+      - {{ $v.host }}
+      secretName: {{ $v.name }}-domain
+  rules:
+  - host: {{ $v.host }}
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: {{ $v.name }}
+              port:
+                name: {{ $v.name }}
+---
+{{ end }}

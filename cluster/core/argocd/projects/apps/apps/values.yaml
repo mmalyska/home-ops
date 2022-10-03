@@ -79,3 +79,11 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
+  - name: qnap-proxy
+    namespace: qnap-proxy
+    path: qnap-proxy
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
