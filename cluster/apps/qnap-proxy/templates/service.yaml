@@ -12,7 +12,7 @@ spec:
     - name: {{ $v.name }}
       port: {{ $v.port }}
       targetPort: {{ $v.targetPort }}
-  externalName: 192.168.50.9
+  externalName: 192.168.50.8
   selector:
     app.kubernetes.io/instance: traefik
     app.kubernetes.io/name: traefik
