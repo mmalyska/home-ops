@@ -59,10 +59,10 @@ jobs:
         run: |
           hr_live_path="live/${{ matrix.file }}"
           hr_pr_path="pr/${{ matrix.file }}"
-          resources_live=$(helm template "$hr_live_path" --dependency-update --kube-version $kube_version || true)
+          resources_live=$(helm template "$hr_live_path" --dependency-update --kube-version "$kube_version" || true)
           echo "$resources_live"
           echo "#####################################################"
-          resources_pr=$(helm template "$hr_pr_path" --dependency-update --kube-version $kube_version || true)
+          resources_pr=$(helm template "$hr_pr_path" --dependency-update --kube-version "$kube_version" || true)
           echo "$resources_pr"
           echo "#####################################################"
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
