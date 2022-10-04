@@ -11,7 +11,7 @@ on: # yamllint disable-line rule:truthy
 env:
   conf_live_branch: main
   conf_ignore_known_labels_containing_versions: true
-  kube_version: 1.23
+  kube_version: 1.20
 
 jobs:
   changes:
