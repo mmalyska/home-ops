@@ -5,7 +5,6 @@ kind: Service
 metadata:
   name: {{ $v.name }}
 spec:
-  type: ExternalName
   ports:
     - name: {{ $v.name }}
       port: {{ $v.port }}
