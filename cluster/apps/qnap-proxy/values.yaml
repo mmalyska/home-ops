@@ -1,4 +1,5 @@
 ingresses:
   - name: s3
     host: s3.<secret:private-domain>
-    port: 8280
+    port: 80
+    targetPort: 8100
