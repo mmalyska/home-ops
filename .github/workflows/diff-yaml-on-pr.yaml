@@ -11,7 +11,7 @@ on: # yamllint disable-line rule:truthy
 env:
   conf_live_branch: main
   conf_ignore_known_labels_containing_versions: true
-  kube_version: v1.20.4
+  kube_version: 1.23.4
   kube_api_versions: |
     acme.cert-manager.io/v1
     admissionregistration.k8s.io/v1
