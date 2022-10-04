@@ -8,6 +8,7 @@ subsets:
   - addresses:
       - ip: {{ $v.externalService }}
     ports:
-      - port: {{ $v.targetPort }}
+      - name: {{ $v.name }}
+        port: {{ $v.targetPort }}
 ---
 {{ end }}

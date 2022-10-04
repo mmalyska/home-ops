@@ -1,6 +1,6 @@
 ingresses:
   - name: s3
     host: s3.<secret:private-domain>
-    port: 8100
+    port: 80
     externalService: 192.168.50.8
     targetPort: 8100
