@@ -1,10 +1,8 @@
 ---
 {{ range $k, $v := $.Values.ingresses }}
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
-  labels:
-    k8s-app: {{ $v.name }}
   name: {{ $v.name }}
 spec:
   type: ExternalName
@@ -12,9 +10,5 @@ spec:
     - name: {{ $v.name }}
       port: {{ $v.port }}
       targetPort: {{ $v.targetPort }}
-  externalName: {{ $.Values.externalService }}
-  selector:
-    app.kubernetes.io/instance: traefik
-    app.kubernetes.io/name: traefik
 ---
 {{ end }}

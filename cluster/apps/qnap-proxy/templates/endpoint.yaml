@@ -1,0 +1,13 @@
+---
+{{ range $k, $v := $.Values.ingresses }}
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ $v.name }}
+subsets:
+  - addresses:
+      - ip: {{ $v.externalService }}
+    ports:
+      - port: {{ $v.targetPort }}
+---
+{{ end }}
