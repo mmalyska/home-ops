@@ -45,7 +45,7 @@ server:
   image:
     imagePullPolicy: IfNotPresent
     repository: quay.io/keycloak/keycloak
-    tag: "19.0.2"
+    tag: "19.0.3"
   service:
     type: ClusterIP
     servicePortHttpName: http
