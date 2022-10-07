@@ -10,7 +10,7 @@ gitea:
     repository: gitea/gitea
     tag: 1.17.2
     pullPolicy: IfNotPresent
-    rootless: false # only possible when running 1.14 or later
+    rootless: true # only possible when running 1.14 or later
   gitea:
     config:
       APP_NAME: "Gitea: Git with a cup of tea"
