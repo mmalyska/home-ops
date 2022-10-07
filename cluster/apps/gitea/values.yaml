@@ -45,7 +45,7 @@ gitea:
   persistence:
     enabled: true
     storageClass: ceph-block
-  replicaCount: 0
+  replicaCount: 1
   statefulset:
     env:
       - name: ENV_TO_INI__database__DB_TYPE
