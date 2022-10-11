@@ -153,6 +153,13 @@
       "datasources": ["git-tags"],
       "versionScheme": "regex:^kube-prometheus-stack-0\\.(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
       "packageNames": ["hotio/readarrs"]
+    },
+    // Disable datasources
+    {
+      description: "Disable kubernetes-api",
+      matchManagers: ["kubernetes"],
+      matchDatasources: ["kubernetes-api"],
+      enabled: false,
     }
   ],
   "reviewers": [
