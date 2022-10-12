@@ -1,0 +1,35 @@
+{
+  "packageRules": [
+    {
+      "description": "Rook-Ceph image and chart",
+      "matchDatasources": ["helm", "docker"],
+      "matchPackagePatterns": ["^rook.ceph"],
+      "groupName": "rook-ceph-suite",
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
+    },
+    {
+      "matchDatasources": ["github-tags", "docker"],
+      "matchPackagePatterns": ["rancher/system-upgrade-controller"],
+      "groupName": "system-upgrade-controller-suite",
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Prometheus stack",
+      "matchDatasources": ["github-tags", "helm"],
+      "matchPackagePatterns": [".*kube-prometheus-stack.*"],
+      "groupName": "kube-prometheus-stack",
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Metallb image and chart",
+      "matchDatasources": ["github-tags", "helm"],
+      "matchPackagePatterns": [".*metallb.*"],
+      "groupName": "metallb",
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
+    }
+  ]
+}

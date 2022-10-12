@@ -1,0 +1,16 @@
+{
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "commitMessageSuffix": "",
+  "packageRules": [
+    {
+      "datasources": ["helm"],
+      "commitMessageTopic": "Helm chart {{depName}}"
+    },
+    {
+      "datasources": ["docker"],
+      "commitMessageTopic": "Docker image {{depName}}",
+      "commitMessageExtra": "to {{#if isSingleVersion}}{{{toVersion}}}{{else}}{{{newValue}}}{{/if}}"
+    }
+  ]
+}

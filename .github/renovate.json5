@@ -1,168 +1,20 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "enabled": true,
   "extends": [
     "config:base",
-    ":disableRateLimiting"
-  ],
-  "semanticCommits": "enabled",
-  "dependencyDashboard": true,
-  "dependencyDashboardTitle": "Renovate Dashboard",
-  "suppressNotifications": ["prIgnoreNotification"],
-  "rebaseWhen": "conflicted",
-  "ignoreDeps": [
-  ],
-  "pre-commit": {
-    "enabled": true
-  },
-  "timezone": "CET",
-  "commitMessageTopic": "{{depName}}",
-  "commitMessageExtra": "to {{newVersion}}",
-  "commitMessageSuffix": "",
-  "argocd": {
-    "fileMatch": [
-      //"cluster/.+\\.ya?ml$"
-    ]
-  },
-  "helm-values": {
-    "fileMatch": [
-      "cluster/.+\\.ya?ml$"
-    ]
-  },
-  "kubernetes": {
-    "fileMatch": [
-      "cluster/.+\\.ya?ml$"
-    ]
-  },
-  "regexManagers": [
-    // Read and process GitHub Releases
-    {
-      "fileMatch": [
-        "cluster/.+\\.ya?ml$"
-      ],
-      "matchStrings": [
-        "datasource=(?<datasource>.*?)( versioning=(?<versioning>.*?))?\n *url: https:\/\/github\\.com\/(?<depName>.*?)\\.git\n *ref:\n *tag: (?<currentValue>.*)\n",
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)\n.*\\/(?<currentValue>v.*?)\\/", //for kustomize https://github.com/dep/dep/v1.0.0/folder/sub/folder
-        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\n.*?\"(?<currentValue>.*)\"",
-      ],
-      "datasourceTemplate": "{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}",
-      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-    },
-    // regexManager to read and process kustomize
-    {
-      "fileMatch": [
-        "cluster/.+\\.ya?ml$"
-      ],
-      "matchStrings": [
-        "registryUrl=(?<registryUrl>.*?) chart=(?<depName>.*?)\n.*\\/(?<currentValue>.*?)\\/",
-        "registryUrl=(?<registryUrl>.*?)\n *targetRevision: (?<depName>[a-zA-Z-]+)-(?<currentValue>.*)\n"
-      ],
-      "datasourceTemplate": "helm"
-    }
-  ],
-  "packageRules": [
-    // Setup datasources
-    {
-      "datasources": ["helm"],
-      "commitMessageTopic": "Helm chart {{depName}}",
-      "semanticCommitScope": "charts",
-      "separateMinorPatch": true,
-      "ignoreDeprecated": true
-    },
-    {
-      "datasources": ["docker"],
-      "commitMessageTopic": "Docker image {{depName}}",
-      "commitMessageExtra": "to {{#if isSingleVersion}}{{{toVersion}}}{{else}}{{{newValue}}}{{/if}}",
-      "updateTypes": ["major", "minor", "patch"],
-      "enabled": true
-    },
-    // add labels according to package and update types
-    {
-      "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["major"],
-      "commitMessagePrefix": "feat(images)!: ",
-      "labels": ["renovate/image", "dep/major"]
-    },
-    {
-      "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["minor"],
-      "semanticCommitType": "feat(images): ",
-      "labels": ["renovate/image", "dep/minor"]
-    },
-    {
-      "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["patch"],
-      "semanticCommitType": "fix(images): ",
-      "labels": ["renovate/image", "dep/patch"]
-    },
-    {
-      "matchDatasources": ["helm"],
-      "matchUpdateTypes": ["major"],
-      "commitMessagePrefix": "feat(charts)!: ",
-      "labels": ["renovate/helm", "dep/major"]
-    },
-    {
-      "matchDatasources": ["helm"],
-      "matchUpdateTypes": ["minor"],
-      "semanticCommitType": "feat(charts): ",
-      "labels": ["renovate/helm", "dep/minor"]
-    },
-    {
-      "matchDatasources": ["helm"],
-      "matchUpdateTypes": ["patch"],
-      "semanticCommitType": "fix(charts): ",
-      "labels": ["renovate/helm", "dep/patch"]
-    },
-    // pin package versions
-    {
-      "matchDatasources": ["docker"],
-      "allowedVersions": "<1",
-      "matchPackageNames": ["linuxserver/calibre-web"]
-    },
-    // group packages
-    {
-      "matchDatasources": ["helm", "docker"],
-      "matchPackagePatterns": ["^rook.ceph"],
-      "groupName": "rook-ceph-suite",
-      "additionalBranchPrefix": "",
-      "separateMinorPatch": true
-    },
-    {
-      "matchDatasources": ["github-tags", "docker"],
-      "matchPackagePatterns": ["rancher/system-upgrade-controller"],
-      "groupName": "system-upgrade-controller-suite",
-      "additionalBranchPrefix": "",
-      "separateMinorPatch": true
-    },
-    {
-      "matchDatasources": ["github-tags", "helm"],
-      "matchPackagePatterns": [".*kube-prometheus-stack.*"],
-      "groupName": "kube-prometheus-stack",
-      "additionalBranchPrefix": "",
-      "separateMinorPatch": true
-    },
-    {
-      "matchDatasources": ["github-tags", "helm"],
-      "matchPackagePatterns": [".*metallb.*"],
-      "groupName": "metallb",
-      "additionalBranchPrefix": "",
-      "separateMinorPatch": true
-    },
-    // Custom versions
-    {
-      "datasources": ["git-tags"],
-      "versionScheme": "regex:^kube-prometheus-stack-0\\.(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "packageNames": ["hotio/readarrs"]
-    },
-    // Disable datasources
-    {
-      description: "Disable kubernetes-api",
-      matchManagers: ["kubernetes"],
-      matchDatasources: ["kubernetes-api"],
-      enabled: false,
-    }
-  ],
-  "reviewers": [
-    "mmalyska"
+    ":semanticCommits",
+    ":enablePreCommit",
+    ":disableRateLimiting",
+    ":automergeBranch",
+    ":gitSignOff",
+    "local>mmalyska/home-ops//.github/renovate/allowedVersions.json5",
+    "local>mmalyska/home-ops//.github/renovate/autoMerge.json5",
+    "local>mmalyska/home-ops//.github/renovate/base.json5",
+    "local>mmalyska/home-ops//.github/renovate/commitMessage.json5",
+    "local>mmalyska/home-ops//.github/renovate/disabledDatasources.json5",
+    "local>mmalyska/home-ops//.github/renovate/groups.json5",
+    "local>mmalyska/home-ops//.github/renovate/labels.json5",
+    "local>mmalyska/home-ops//.github/renovate/managers.json5",
+    "local>mmalyska/home-ops//.github/renovate/semanticCommits.json5"
   ]
 }

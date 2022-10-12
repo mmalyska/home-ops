@@ -1,0 +1,13 @@
+{
+  "packageRules": [
+    {
+      "description": "Auto merge GitHub Actions",
+      "matchDatasources": ["github-tags"],
+      "automerge": true,
+      "automergeType": "branch",
+      "requiredStatusChecks": null,
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": ["yokawasa/action-setup-kube-tools"]
+    }
+  ]
+}
