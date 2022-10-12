@@ -1,0 +1,12 @@
+{
+  "gitAuthor": "Michał Małyska <mmalyska@users.noreply.github.com>",
+  "commitBodyTable": true,
+  "dependencyDashboardTitle": "Renovate Dashboard",
+  "suppressNotifications": ["prIgnoreNotification"],
+  "rebaseWhen": "conflicted",
+  "ignorePaths": ["archive/**"],
+  "reviewers": [
+    "mmalyska"
+  ],
+  "timezone": "CET"
+}
