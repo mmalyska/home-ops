@@ -16,6 +16,7 @@ data:
     clientID: argocd
     clientSecret: $oidc.keycloak.clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
+    cliClientID: argocd-cli
   configManagementPlugins: |
     - name: replacer-helm
       init:
