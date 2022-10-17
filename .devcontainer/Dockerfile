@@ -6,5 +6,6 @@ FROM mcr.microsoft.com/devcontainers/base:0-${VARIANT}
 
 # [Optional] Uncomment this section to install additional OS packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install gnupg2 gcc --no-install-recommends && ln -s /bin/gcc /bin/gcc-5 \
+    && apt-get -y install gnupg2 gcc xdg-utils --no-install-recommends \
+    && ln -s /bin/gcc /bin/gcc-5 \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
