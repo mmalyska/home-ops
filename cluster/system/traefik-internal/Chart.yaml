@@ -6,5 +6,5 @@ version: 1.0.0
 appVersion: "2.6.1"
 dependencies:
   - name: traefik
-    version: 15.1.0
+    version: 17.0.5
     repository: https://helm.traefik.io/traefik
