@@ -3,7 +3,7 @@ botkube:
   settings:
     clusterName: k8s-at-home
   sources:
-    'k8s-events':
+    'k8s-all-events':
       kubernetes:
         recommendations:
           # -- Recommendations for Pod Kubernetes resource.
