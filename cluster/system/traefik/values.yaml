@@ -24,11 +24,10 @@ traefik:
       allowCrossNamespace: true
       allowExternalNameServices: true
     kubernetesIngress:
+      ingressClass: traefik
       allowExternalNameServices: true
       publishedService:
         enabled: true
-  additionalArguments:
-    - "--providers.kubernetesingress.ingressclass=traefik"
 
   logs:
     access:
