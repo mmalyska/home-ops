@@ -12,7 +12,6 @@ traefik:
 
   ingressClass:
     enabled: true
-    fallbackApiVersion: v1
 
   ingressRoute:
     dashboard:
