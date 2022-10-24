@@ -1,6 +1,6 @@
 #!/bin/bash -i
 # Copies localhost's ~/.kube/config file into the container
-if [ "$SYNC_LOCALHOST_CONFIG" = "true" ] && [ -d "/usr/local/share/kube-localhost" ]; then
+if [ "$SYNC_LOCALHOST_CONFIGS" = "true" ]; then
     mkdir -p "$HOME"/.kube
     sudo cp -r /usr/local/share/kube-localhost/* "$HOME"/.kube
     sudo chown -R "$(id -u)" "$HOME"/.kube

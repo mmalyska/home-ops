@@ -10,11 +10,11 @@
     },
     "runArgs": ["--init"],
     "remoteEnv": {
-        "SYNC_LOCALHOST_CONFIG": "true"
+        "SYNC_LOCALHOST_CONFIGS": "true"
     },
     "mounts": [
         "source=${localEnv:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind",
-        "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind"
+        "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind",
     ],
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -23,7 +23,7 @@
     //Install task and required dependencies via homebrew. Install precommit tasks.
     "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
 
-    "updateContentCommand": "",
+    "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
 
     // Use 'postCreateCommand' to run commands after the container is created.
     "postCreateCommand": "bash .devcontainer/scripts/postCreateCommand.sh",
@@ -31,7 +31,6 @@
     // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "vscode",
     "features": {
-        "homebrew": "latest",
         "ghcr.io/devcontainers/features/go:1": "latest"
     },
     "customizations": {
