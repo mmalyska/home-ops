@@ -9,6 +9,7 @@ traefik:
     annotations: {
       metallb.universe.tf/loadBalancerIPs: "192.168.48.20"
     }
+    single: false
 
   ingressClass:
     enabled: true
