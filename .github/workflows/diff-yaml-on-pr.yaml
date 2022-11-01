@@ -88,7 +88,7 @@ jobs:
         file: ${{ fromJson(needs.changes.outputs.helm_files) }}
       fail-fast: false
     steps:
-      - uses: yokawasa/action-setup-kube-tools@v0.9.0
+      - uses: yokawasa/action-setup-kube-tools@v0.9.1
         with:
           setup-tools: |
             helm
@@ -155,7 +155,7 @@ jobs:
         file: ${{ fromJson(needs.changes.outputs.kustomize_files) }}
       fail-fast: false
     steps:
-      - uses: yokawasa/action-setup-kube-tools@v0.9.0
+      - uses: yokawasa/action-setup-kube-tools@v0.9.1
         with:
           kubectl: '1.24.0'
           setup-tools: |
