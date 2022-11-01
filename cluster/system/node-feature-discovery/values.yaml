@@ -1,0 +1,15 @@
+node-feature-discovery:
+  nodeFeatureRule:
+    createCRD: true
+  worker:
+    config:
+      core:
+        labelSources:
+          - "custom"
+          - "pci"
+        custom:
+          - name: intel-gpu
+            matchOn:
+              - pciId:
+                  class: ["0300"]
+                  vendor: ["8086"]

@@ -110,3 +110,6 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
+  - name: node-feature-discovery
+    namespace: node-feature-discovery
+    path: node-feature-discovery
