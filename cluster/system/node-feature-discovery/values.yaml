@@ -7,10 +7,10 @@ node-feature-discovery:
         labelSources:
           - custom
           - pci
-        sources:
-          custom:
-            - name: intel-gpu
-              matchOn:
-                - pciId:
-                    class: ["0300"]
-                    vendor: ["8086"]
+      sources:
+        custom:
+          - name: intel-gpu
+            matchOn:
+              - pciId:
+                  class: ["0300"]
+                  vendor: ["8086"]
