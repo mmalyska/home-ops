@@ -3,3 +3,4 @@ intel-device-plugins-gpu:
     spec:
       sharedDevNum: 2
       enableMonitoring: true
+      resourceManager: false
