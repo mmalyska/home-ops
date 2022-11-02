@@ -126,3 +126,10 @@ apps:
   - name: intel-gpu-plugin
     namespace: intel-gpu-plugin
     path: intel-gpu-plugin
+    extraSyncOptions:
+      - RespectIgnoreDifferences=true
+    ignoreDifferences:
+      - group: deviceplugin.intel.com
+        kind: GpuDevicePlugin
+        jsonPointers:
+          - /spec/resourceManager
