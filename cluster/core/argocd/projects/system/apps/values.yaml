@@ -119,4 +119,4 @@ apps:
       - group: apps
         kind: DaemonSet
         jsonPointers:
-          - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+          - /spec/template/metadata/annotations
