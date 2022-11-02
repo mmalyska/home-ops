@@ -123,3 +123,6 @@ apps:
   - name: intel-device-plugins-operator
     namespace: intel-device-plugins-operator
     path: intel-device-plugins-operator
+  - name: intel-gpu-plugin
+    namespace: intel-gpu-plugin
+    path: intel-gpu-plugin
