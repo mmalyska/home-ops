@@ -4,5 +4,4 @@ intel-device-plugins-gpu:
       sharedDevNum: 2
       enableMonitoring: true
       resourceManager: false
-      nodeSelector:
-        feature.node.kubernetes.io/custom-intel-gpu: 'true'
+    nodeFeatureRule: true
