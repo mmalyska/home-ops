@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: intel-device-plugins-operator-subchart
+type: application
+version: 1.0.0
+appVersion: "0.24.1"
+dependencies:
+  - name: intel-device-plugins-operator
+    version: 0.24.1
+    repository: https://intel.github.io/helm-charts

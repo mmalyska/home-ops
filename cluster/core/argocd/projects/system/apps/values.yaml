@@ -120,3 +120,6 @@ apps:
         kind: DaemonSet
         jsonPointers:
           - /spec/template/metadata/annotations
+  - name: intel-device-plugins-operator
+    namespace: intel-device-plugins-operator
+    path: intel-device-plugins-operator
