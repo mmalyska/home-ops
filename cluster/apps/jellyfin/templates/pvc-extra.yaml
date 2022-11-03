@@ -8,6 +8,7 @@ metadata:
 spec:
   claimRef:
     name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
+    namespace: {{ $.Release.Namespace }}
   capacity:
     storage: 50Gi
   accessModes:
