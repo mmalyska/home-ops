@@ -5,7 +5,7 @@ image:
   pullPolicy: IfNotPresent
   registry: lscr.io
   repository: linuxserver/jellyfin
-  tag: "10.8.7"
+  tag: "2021.12.16"
 jellyfin:
   annotations: {}
   replicaCount: 1
