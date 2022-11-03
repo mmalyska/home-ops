@@ -1,0 +1,15 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  name: {{ template "jellyfin.fullname" . }}
+spec:
+  secretName: {{ template "jellyfin.fullname" . }}-cert
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ .Values.ingress.host | quote }}
+  dnsNames:
+    - {{ .Values.ingress.host | quote }}

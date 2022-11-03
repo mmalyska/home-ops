@@ -1,0 +1,57 @@
+global:
+  additionalLabels: {}
+  imageRegistry: ""
+image:
+  pullPolicy: IfNotPresent
+  registry: lscr.io
+  repository: linuxserver/jellyfin
+  tag: "10.8.7"
+jellyfin:
+  annotations: {}
+  replicaCount: 1
+  env:
+    TZ: CET
+    PUID: "1001"
+    PGID: "1001"
+    JELLYFIN_PublishedServerUrl: qnap.<secret:jellyfin-service-ip>
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+persistence:
+  config:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    storageClass: ceph-block
+  extraMounts:
+    - name: tv-shows
+      mountPath: /data/tvshows
+      nfsPath: /tv-series
+      nfsServer: qnap.<secret:private-domain>
+      readOnly: false
+    - name: movies
+      mountPath: /data/movies
+      nfsPath: /movies
+      nfsServer: qnap.<secret:private-domain>
+      readOnly: false
+resources:
+  requests:
+    gpu.intel.com/i915: 1
+    cpu: 100m
+    memory: 1000Mi
+  limits:
+    gpu.intel.com/i915: 1
+    memory: 6000Mi
+nodeSelector: {}
+tolerations: []
+affinity: {}
+ingress:
+  host: jellyfin.<secret:private-domain>
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/ingressEndpoint.hostname: jellyfin.<secret:private-domain>
+    kubernetes.io/ingress.class: traefik
+  labels: {}

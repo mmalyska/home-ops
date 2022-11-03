@@ -1,0 +1,24 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ include "jellyfin.fullname" . }}
+  labels: {{- include "jellyfin.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "jellyfin.selectorLabels" . | nindent 4 }}
+  ports:
+  - port: 8096
+    targetPort: 8096
+    name: http
+    protocol: TCP
+  - port: 1900
+    targetPort: 1900
+    name: dlna-udp
+    protocol: UDP
+  - port: 7359
+    targetPort: 7359
+    name: discovery-udp
+    protocol: UDP
+  type: LoadBalancer
+  loadBalancerIP: {{ .Values.jellyfin.env.JELLYFIN_PublishedServerUrl }}
+  sessionAffinity: ClientIP

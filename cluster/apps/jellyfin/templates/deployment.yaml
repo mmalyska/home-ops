@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jellyfin.fullname" . }}
+  labels: {{- include "jellyfin.labels" . | nindent 4 }}
+  {{- if .Values.jellyfin.annotations }}
+  annotations:
+    {{- toYaml .Values.jellyfin.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  strategy: {{ toYaml .Values.jellyfin.strategy | nindent 4 }}
+  replicas: {{ .Values.jellyfin.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "jellyfin.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "jellyfin.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ include "jellyfin.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          {{- toYaml .Values.jellyfin.env | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8096
+              protocol: TCP
+            - name: dlna-udp
+              containerPort: 1900
+              protocol: UDP
+            - name: discovery-udp
+              containerPort: 7359
+              protocol: UDP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            {{- range .Values.persistence.extraMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              readOnly: {{ .readOnly }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+        {{- if .Values.persistence.config.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.config.existingClaim }}{{ .Values.persistence.config.existingClaim }}{{- else }}{{ include "jellyfin.fullname" . }}-config{{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        {{- range .Values.persistence.extraMounts }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ include "jellyfin.fullname" $ }}-{{ .name }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{ toYaml . | indent 8 }}
+      {{- end }}

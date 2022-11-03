@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  {{- if .Values.ingress.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  name: {{ template "jellyfin.fullname" . }}
+  labels:
+    {{- include "jellyfin.labels" . | nindent 4 }}
+    {{- if .Values.ingress.labels }}
+      {{- toYaml .Values.ingress.labels | nindent 4 }}
+    {{- end }}
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.ingress.host }}
+      secretName: {{ template "jellyfin.fullname" . }}-cert
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "jellyfin.fullname" . }}
+                port:
+                  name: http

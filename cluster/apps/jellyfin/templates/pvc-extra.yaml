@@ -1,0 +1,39 @@
+{{- range .Values.persistence.extraMounts }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
+  labels: {{- include "jellyfin.labels" $ | nindent 4 }}
+spec:
+  claimRef:
+    name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: {{ .nfsServer }}
+    path: {{ .nfsPath | quote }}
+  mountOptions:
+    - nfsvers=4.2
+    - tcp
+    - intr
+    - hard
+    - noatime
+    - nodiratime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
+  labels: {{- include "jellyfin.labels" $ | nindent 4 }}
+spec:
+  volumeName: {{ template "jellyfin.fullname" $ }}-{{ .name }}
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+{{- end }}

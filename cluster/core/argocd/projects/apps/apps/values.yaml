@@ -87,3 +87,11 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
+  - name: jellyfin
+    namespace: jellyfin
+    path: jellyfin
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
