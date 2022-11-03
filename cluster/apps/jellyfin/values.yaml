@@ -17,7 +17,7 @@ jellyfin:
     - name: PGID
       value: "1001"
     - name: JELLYFIN_PublishedServerUrl
-      value: qnap.<secret:jellyfin-service-ip>
+      value: <secret:jellyfin-service-ip>
   strategy:
     rollingUpdate:
       maxSurge: 1
