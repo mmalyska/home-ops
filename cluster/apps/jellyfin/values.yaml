@@ -10,15 +10,21 @@ jellyfin:
   annotations: {}
   replicaCount: 1
   env:
-    TZ: CET
-    PUID: "1001"
-    PGID: "1001"
-    JELLYFIN_PublishedServerUrl: qnap.<secret:jellyfin-service-ip>
+    - name: TZ
+      value: CET
+    - name: PUID
+      value: "1001"
+    - name: PGID
+      value: "1001"
+    - name: JELLYFIN_PublishedServerUrl
+      value: qnap.<secret:jellyfin-service-ip>
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
     type: RollingUpdate
+  service:
+    ip: <secret:jellyfin-service-ip>
 persistence:
   config:
     enabled: true

@@ -20,5 +20,5 @@ spec:
     name: discovery-udp
     protocol: UDP
   type: LoadBalancer
-  loadBalancerIP: {{ .Values.jellyfin.env.JELLYFIN_PublishedServerUrl }}
+  loadBalancerIP: {{ .Values.jellyfin.service.ip }}
   sessionAffinity: ClientIP
