@@ -1,8 +1,10 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ include "jellyfin.fullname" . }}
+  name: {{ include "jellyfin.fullname" . }}-tcp
   labels: {{- include "jellyfin.labels" . | nindent 4 }}
+  annotations:
+    metallb.universe.tf/allow-shared-ip: {{ include "jellyfin.fullname" . }}
 spec:
   selector:
     {{- include "jellyfin.selectorLabels" . | nindent 4 }}
@@ -11,6 +13,21 @@ spec:
     targetPort: 8096
     name: http
     protocol: TCP
+  type: LoadBalancer
+  loadBalancerIP: {{ .Values.jellyfin.service.ip }}
+  sessionAffinity: ClientIP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ include "jellyfin.fullname" . }}-udp
+  labels: {{- include "jellyfin.labels" . | nindent 4 }}
+  annotations:
+    metallb.universe.tf/allow-shared-ip: {{ include "jellyfin.fullname" . }}
+spec:
+  selector:
+    {{- include "jellyfin.selectorLabels" . | nindent 4 }}
+  ports:
   - port: 1900
     targetPort: 1900
     name: dlna-udp
