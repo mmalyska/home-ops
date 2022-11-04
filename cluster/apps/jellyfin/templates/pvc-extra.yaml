@@ -1,4 +1,4 @@
-{{- range .Values.persistence.extraMounts }}
+{{- range .Values.persistence.extraNfsMounts }}
 ---
 apiVersion: v1
 kind: PersistentVolume

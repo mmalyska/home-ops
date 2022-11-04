@@ -41,9 +41,11 @@ spec:
             tcpSocket:
               port: http
           volumeMounts:
+            - mountPath: /transcoding
+              name: transcoding
             - mountPath: /config
               name: config
-            {{- range .Values.persistence.extraMounts }}
+            {{- range .Values.persistence.extraNfsMounts }}
             - name: {{ .name }}
               mountPath: {{ .mountPath }}
               readOnly: {{ .readOnly }}
@@ -58,11 +60,13 @@ spec:
         {{- else }}
           emptyDir: {}
         {{- end }}
-        {{- range .Values.persistence.extraMounts }}
+        {{- range .Values.persistence.extraNfsMounts }}
         - name: {{ .name }}
           persistentVolumeClaim:
             claimName: {{ include "jellyfin.fullname" $ }}-{{ .name }}
         {{- end }}
+        - name: transcoding
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{ toYaml . | indent 8 }}

@@ -31,7 +31,7 @@ persistence:
     accessMode: ReadWriteOnce
     size: 1Gi
     storageClass: ceph-block
-  extraMounts:
+  extraNfsMounts:
     - name: tv-shows
       mountPath: /data/tvshows
       nfsPath: /tv-series
