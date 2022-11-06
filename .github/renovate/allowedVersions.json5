@@ -5,6 +5,12 @@
       "matchDatasources": ["docker"],
       "allowedVersions": "<1",
       "matchPackageNames": ["linuxserver/calibre-web"]
+    },
+    {
+      "description": "Lock version because they changed versioning",
+      "matchDatasources": ["docker"],
+      "allowedVersions": "/^v.*$/",
+      "matchPackageNames": ["linuxserver/jellyfin"]
     }
   ]
 }
