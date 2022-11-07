@@ -2,11 +2,14 @@
 - include: checks.yml
   tags:
     - checks
+    - prepare
 
 - include: locale.yml
   tags:
     - locale
+    - prepare
 
 - include: network.yml
   tags:
     - network
+    - prepare
