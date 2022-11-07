@@ -10,7 +10,7 @@
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
       "allowedVersions": "/^v.*$/",
-      "matchPackageNames": ["linuxserver/jellyfin"]
+      "matchPackageNames": ["lscr.io/linuxserver/jellyfin"]
     }
   ]
 }
