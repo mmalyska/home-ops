@@ -14,7 +14,7 @@
     },
     "mounts": [
         "source=${localEnv:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind",
-        "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind",
+        "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind"
     ],
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
