@@ -33,10 +33,7 @@
     name: "{{ item }}"
     value: "{{ sysctl_settings[item] }}"
     sysctl_set: true
+    reload: true
   loop: "{{ sysctl_settings | flatten }}"
-  notify: netplan apply config
   tags:
     - sysctl
-
-- name: "Flush handlers"
-  ansible.builtin.meta: flush_handlers
