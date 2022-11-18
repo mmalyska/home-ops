@@ -33,3 +33,9 @@
   tags:
     - sysctl
     - prepare
+
+- name: Apply modprobe configuration
+  ansible.builtin.include_tasks: modprobe.yml
+  tags:
+    - modprobe
+    - prepare
