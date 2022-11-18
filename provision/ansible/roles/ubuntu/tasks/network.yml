@@ -22,6 +22,9 @@
   ansible.builtin.template:
     src: "etc/netplan/50-cloud-init.yaml.j2"
     dest: "/etc/netplan/50-user-configuration.yaml"
+    owner: root
+    group: root
+    mode: 0644
   notify: netplan apply config
   tags:
     - user
