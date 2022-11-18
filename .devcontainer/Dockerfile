@@ -36,4 +36,5 @@ RUN brew install \
     yamllint \
     yq \
     argocd \
-    int128/kubelogin/kubelogin
+    int128/kubelogin/kubelogin \
+    ansible-lint

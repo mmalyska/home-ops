@@ -1,0 +1,12 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ ansible_default_ipv4.interface }}:
+      dhcp4: no
+      addresses:
+        - {{ ansible_host }}/{{ network_subnet }}
+      gateway4: {{ network_gateway }}
+      nameservers:
+        addresses:
+          - {{ network_nameserver }}

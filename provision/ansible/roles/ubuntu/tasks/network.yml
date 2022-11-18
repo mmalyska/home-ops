@@ -13,3 +13,14 @@
     line: "{{ qnap_address }} {{ qnap_domain }}"
     state: present
   when: qnap_address is defined
+
+- name: "Network configured for host {{ inventory_hostname }}"
+  ansible.builtin.template:
+    src: "etc/netplan/50-cloud-init.yaml.j2"
+    dest: "/etc/netplan/50-user-configuration.yaml"
+  tags:
+    - user
+    - sudo
+  notify: netplan apply config
+
+- meta: flush_handlers

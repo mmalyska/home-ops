@@ -1,0 +1,8 @@
+# Set to "false" if package cache should not be updated
+ubuntu_update_cache: true
+
+# Set package cache valid time
+ubuntu_cache_valid_time: 3600
+
+# optional_packages:
+#   - ...
