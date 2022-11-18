@@ -30,6 +30,8 @@
       - software-properties-common
       - unzip
     install_recommends: false
+  tags:
+    - apt
 
 - name: "Install optional packages"
   ansible.builtin.package:
@@ -39,9 +41,9 @@
   retries: 2
   delay: 5
   tags:
-    - install
+    - apt
 
-- name: "({{ ansible_distribution }}) Update APT package cache"
+- name: "Update APT package cache"
   ansible.builtin.apt:
     update_cache: "{{ ubuntu_update_cache }}"
     cache_valid_time: "{{ ubuntu_cache_valid_time }}"
@@ -50,7 +52,7 @@
   tags:
     - apt
 
-- name: "({{ ansible_distribution }}) Upgrade APT to the latest packages"
+- name: "Upgrade APT to the latest packages"
   ansible.builtin.apt:
     upgrade: safe
   retries: 2
@@ -58,7 +60,7 @@
   tags:
     - apt
 
-- name: "({{ ansible_distribution }}) Adjust APT update intervals"
+- name: "Adjust APT update intervals"
   ansible.builtin.copy:
     src: etc/apt/apt.conf.d/10periodic
     dest: /etc/apt/apt.conf.d/10periodic

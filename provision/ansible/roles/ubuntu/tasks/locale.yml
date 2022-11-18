@@ -4,3 +4,5 @@
     name: "{{ timezone }}"
   when:
     - timezone is defined
+  tags:
+    - locale

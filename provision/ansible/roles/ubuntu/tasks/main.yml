@@ -1,20 +1,23 @@
----
-- include: packages.yml
+- name: Apply package configuration
+  ansible.builtin.include_tasks: packages.yml
   tags:
     - packages
     - prepare
 
-- include: checks.yml
+- name: Run checks
+  ansible.builtin.include_tasks: checks.yml
   tags:
     - checks
     - prepare
 
-- include: locale.yml
+- name: Apply locales
+  ansible.builtin.include_tasks: locale.yml
   tags:
     - locale
     - prepare
 
-- include: network.yml
+- name: Apply network configuration
+  ansible.builtin.include_tasks: network.yml
   tags:
     - network
     - prepare
@@ -26,10 +29,14 @@
     - sysctl
 
 - name: Sysctl settings
-  ansible.builtin.sysctl:
+  ansible.posix.sysctl:
     name: "{{ item }}"
     value: "{{ sysctl_settings[item] }}"
     sysctl_set: true
   loop: "{{ sysctl_settings | flatten }}"
+  notify: netplan apply config
   tags:
     - sysctl
+
+- name: "Flush handlers"
+  ansible.builtin.meta: flush_handlers
