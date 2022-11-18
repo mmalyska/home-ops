@@ -1,3 +1,9 @@
+- name: Disable swap
+  ansible.builtin.include_tasks: swap.yml
+  tags:
+    - swap
+    - prepare
+
 - name: Apply package configuration
   ansible.builtin.include_tasks: packages.yml
   tags:
