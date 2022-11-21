@@ -7,7 +7,7 @@
 - name: Apply package configuration
   ansible.builtin.include_tasks: packages.yml
   tags:
-    - packages
+    - apt
     - prepare
 
 - name: Run checks

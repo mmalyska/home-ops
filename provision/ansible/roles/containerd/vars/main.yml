@@ -1,0 +1,10 @@
+# use 'present' to install package, use 'latest' to update package
+containerd_package_state: present
+
+# to update package change to 'true'
+containerd_package_allow_change_held_packages: false
+
+containerd_service_state: started
+containerd_service_enabled: true
+containerd_config_default_write: true
+containerd_config_cgroup_driver_systemd: true

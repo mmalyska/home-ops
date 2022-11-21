@@ -29,6 +29,8 @@
       - socat
       - software-properties-common
       - unzip
+      - gnupg
+      - lsb-release
     install_recommends: false
   tags:
     - apt
