@@ -9,6 +9,12 @@ tasks:
     cmds:
       - "terraform init"
 
+  upgrade:cloudflare:
+    desc: Initialize terraform
+    dir: provision/terraform/cloudflare
+    cmds:
+      - "terraform init -upgrade"
+
   plan:cloudflare:
     desc: Plan cloudflare DNS
     dir: provision/terraform/cloudflare

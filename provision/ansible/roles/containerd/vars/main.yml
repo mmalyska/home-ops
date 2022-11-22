@@ -6,5 +6,5 @@ containerd_package_allow_change_held_packages: false
 
 containerd_service_state: started
 containerd_service_enabled: true
-containerd_config_default_write: true
+containerd_config_default_write: false
 containerd_config_cgroup_driver_systemd: true

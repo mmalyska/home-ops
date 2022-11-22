@@ -11,8 +11,14 @@
     - checks
     - containerd
 
-- name: Configure containerd
-  ansible.builtin.include_tasks: configure.yml
+- name: Configure default containerd
+  ansible.builtin.include_tasks: configure-default.yml
   tags:
     - containerd
-  when: not containerd_config_register.stat.exists
+  when: not containerd_config_register.stat.exists and containerd_config_default_write
+
+- name: Configure custom containerd
+  ansible.builtin.include_tasks: configure-custom.yml
+  tags:
+    - containerd
+  when: containerd_config_register.stat.exists and not containerd_config_default_write
