@@ -93,7 +93,7 @@ postgres:
     repos:
       - name: repo1
         storageClass: ceph-block
-        storage: 5Gi
+        storage: 10Gi
   proxy:
     name: pgbouncer
     port: 5432
