@@ -1,0 +1,9 @@
+- name: Install packages
+  ansible.builtin.include_tasks: packages.yml
+  tags:
+    - apt
+
+- name: Check if Kubernetes has already been initialized.
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubernetes_init_stat
