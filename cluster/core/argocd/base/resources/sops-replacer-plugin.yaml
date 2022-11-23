@@ -10,6 +10,7 @@ data:
     metadata:
       name: sops-replacer-plugin-kustomize
     spec:
+      version: v1.0
       allowConcurrency: true
       discover:
         find:
@@ -30,6 +31,7 @@ data:
     metadata:
       name: sops-replacer-plugin-helm
     spec:
+      version: v1.0
       allowConcurrency: true
       discover:
         find:
@@ -37,6 +39,11 @@ data:
             - sh
             - "-c"
             - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'Chart.yaml' && find . -name 'values.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
+      init:
+        command:
+          - bash
+          - "-c"
+          - helm dependency update
       generate:
         command:
           - bash

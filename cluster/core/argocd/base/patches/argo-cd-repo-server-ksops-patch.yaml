@@ -127,6 +127,12 @@ spec:
               value: /sops-age/key
             - name: ARGOCD_ENV_SOPS_EXE
               value: /custom-tools/sops
+            - name: HELM_CACHE_HOME
+              value: /helm-working-dir
+            - name: HELM_CONFIG_HOME
+              value: /helm-working-dir
+            - name: HELM_DATA_HOME
+              value: /helm-working-dir
           volumeMounts:
             - mountPath: /var/run/argocd
               name: var-files
@@ -146,3 +152,5 @@ spec:
             - mountPath: /usr/local/bin/argocd-secret-replacer
               name: custom-tools
               subPath: musl/argocd-secret-replacer
+            - name: helm-working-dir
+              mountPath: /helm-working-dir
