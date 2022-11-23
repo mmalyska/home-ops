@@ -6,6 +6,3 @@
     group: root
     mode: 0644
   notify: Restart containerd
-
-- name: "Flush handlers"
-  ansible.builtin.meta: flush_handlers

@@ -35,7 +35,9 @@
     name:
       - containerd.io
     install_recommends: false
+    update_cache: true
     state: "{{ containerd_package_state }}"
+  notify: Restart containerd
   tags:
     - apt
 

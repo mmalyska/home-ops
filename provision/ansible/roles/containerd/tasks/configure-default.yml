@@ -57,6 +57,3 @@
     path: /tmp/containerd_config.toml
     state: absent
   changed_when: false
-
-- name: Ensure containerd is restarted immediately if necessary.
-  ansible.builtin.meta: flush_handlers

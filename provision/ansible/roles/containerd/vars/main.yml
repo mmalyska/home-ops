@@ -1,6 +1,6 @@
 # use 'present' to install package, use 'latest' to update package
-containerd_package_state: present
-containerd_package_version: '1.5.14'
+containerd_package_state: latest
+containerd_package_version: '1.6.10'
 # to update package change to 'true'
 containerd_package_allow_change_held_packages: false
 
