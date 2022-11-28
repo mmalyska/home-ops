@@ -1,0 +1,21 @@
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - keepalived
+      - haproxy
+    install_recommends: false
+    state: present
+  tags:
+    - apt
+
+- name: Add haproxy configuration
+  ansible.builtin.template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: 0644
+
+- name: Ensure keepalived is started and enabled at boot.
+  ansible.builtin.service:
+    name: keepalived
+    state: started
+    enabled: true

@@ -3,6 +3,11 @@
   tags:
     - apt
 
+- name: Install haproxy
+  ansible.builtin.include_tasks: haproxy.yml
+  tags:
+    - haproxy
+
 - name: Check if Kubernetes has already been initialized.
   ansible.builtin.stat:
     path: /etc/kubernetes/admin.conf

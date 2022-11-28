@@ -1,6 +1,7 @@
 kind: Secret
 kubevip_address: ENC[AES256_GCM,data:bIyL6q1ioFbOmjWq,iv:9k+cLNyqp9j+bdfxq/GrXoRbwsxA8g1yJY4wsbQNXAs=,tag:LRBPmXXHAKzeSxTmuydFuA==,type:str]
 kubevip_domain: ENC[AES256_GCM,data:+Gwn65nFWl7JOIrSpEiOSp1S,iv:nPlcxrAzZ3sIyQqrpRE6lPr1mkK7D/g5WiEXTSwfMEU=,tag:E2WSK/sEXtig3RHNjShsbA==,type:str]
+kubevip_auth_pass: ENC[AES256_GCM,data:EPvLDMkNMm76M7QgO8+/+/nPaCg=,iv:ckbV9Id4z47iYM63LNMJB8fHtMUf93FlyUeyM9ho1KM=,tag:KVzxWq93hyA0NfAMxRqYhQ==,type:str]
 sops:
     kms: []
     gcp_kms: []
@@ -16,8 +17,8 @@ sops:
             eDBkTHhLaTRUZlFHRnEwTWFVWkVRd2cK0uguZyuIxnBx3UKvqKydJMGpHuYv+GTe
             RTPGQUryybc0vGnZsX+Q/6QzHNcsZ+kDRHgwNgWLrDlcs4MQcWWh1A==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2022-11-18T10:19:52Z"
-    mac: ENC[AES256_GCM,data:Zw3sok2zXVJ3odtg2c+A0r+ka2cd8vNHeyEDgReRivo/uO3UJmzNhE2gFk0plRKRQZ0mIF9ZcX2UDIdzpTVGSwdL8r2sNz9o90CSIaxNx2vzAEVHePB52q0rHZfwJaZE85P6PG5qIR713uPqrQsvIw6HlNZeSiAyup2naBMkapQ=,iv:gYtenXgihkOrfN2EVjYPMwICo+rJE9nypZCa8JLn42w=,tag:JUUkr+LcdJ44Zi2XdpP4Ew==,type:str]
+    lastmodified: "2022-11-28T14:55:07Z"
+    mac: ENC[AES256_GCM,data:Fhhe0Sh/qtp+mdVUI77s12i7xzozVkJw0vOOwAuOrecNUD9s21g68GOn+7cNaJVdPawEcDgv/Cio5+/F7BuEnGpBDdrFnVSvVQrIIFiJjcCZDcab7m/t9zLuUnOhugtx0otCtuXPWr9GzO3XBmw3nZEkrZmm1K42WNUzPCs1/F4=,iv:9Frb47hkifgiux0c0mbDEof2kdcmmsav+aBYzoQU7lI=,tag:Q7GidCwJhZgd6ZLI5qoioQ==,type:str]
     pgp: []
     unencrypted_regex: ^(kind)$
     version: 3.7.3
