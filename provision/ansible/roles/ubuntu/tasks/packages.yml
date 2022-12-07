@@ -1,4 +1,31 @@
 ---
+- name: "Update APT package cache"
+  ansible.builtin.apt:
+    update_cache: "{{ ubuntu_update_cache }}"
+    cache_valid_time: "{{ ubuntu_cache_valid_time }}"
+  retries: 2
+  delay: 5
+  tags:
+    - apt
+
+- name: "Upgrade APT to the latest packages"
+  ansible.builtin.apt:
+    upgrade: safe
+  retries: 2
+  delay: 5
+  tags:
+    - apt
+
+- name: "Adjust APT update intervals"
+  ansible.builtin.copy:
+    src: etc/apt/apt.conf.d/10periodic
+    dest: /etc/apt/apt.conf.d/10periodic
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - apt
+
 - name: "Install package unattended-upgrades"
   ansible.builtin.package:
     pkg: "unattended-upgrades"
@@ -42,32 +69,5 @@
   when: optional_packages is defined
   retries: 2
   delay: 5
-  tags:
-    - apt
-
-- name: "Update APT package cache"
-  ansible.builtin.apt:
-    update_cache: "{{ ubuntu_update_cache }}"
-    cache_valid_time: "{{ ubuntu_cache_valid_time }}"
-  retries: 2
-  delay: 5
-  tags:
-    - apt
-
-- name: "Upgrade APT to the latest packages"
-  ansible.builtin.apt:
-    upgrade: safe
-  retries: 2
-  delay: 5
-  tags:
-    - apt
-
-- name: "Adjust APT update intervals"
-  ansible.builtin.copy:
-    src: etc/apt/apt.conf.d/10periodic
-    dest: /etc/apt/apt.conf.d/10periodic
-    owner: root
-    group: root
-    mode: 0644
   tags:
     - apt

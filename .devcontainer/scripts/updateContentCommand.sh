@@ -19,7 +19,7 @@ fi
 task init
 task precommit:init
 task ansible:init
-task terraform:init:cloudflare
+task terraform:upgrade:cloudflare
 
 direnv allow
 

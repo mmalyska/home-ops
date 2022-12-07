@@ -4,7 +4,7 @@
     regexp: "^{{ kubevip_address }}"
     line: "{{ kubevip_address }} {{ kubevip_domain }}"
     state: present
-  when: kubevip_address is defined
+  when: kubevip_address is defined and kubevip_domain is defined
   tags:
     - hosts
 
@@ -21,7 +21,7 @@
 - name: "Network configured for host {{ inventory_hostname }}"
   ansible.builtin.template:
     src: "etc/netplan/50-cloud-init.yaml.j2"
-    dest: "/etc/netplan/50-user-configuration.yaml"
+    dest: "/etc/netplan/90-user-configuration.yaml"
     owner: root
     group: root
     mode: 0644

@@ -28,14 +28,14 @@
     - network
     - prepare
 
-- name: Apply sysctl configuration
-  ansible.builtin.include_tasks: sysctl.yml
-  tags:
-    - sysctl
-    - prepare
-
 - name: Apply modprobe configuration
   ansible.builtin.include_tasks: modprobe.yml
   tags:
     - modprobe
+    - prepare
+
+- name: Apply sysctl configuration
+  ansible.builtin.include_tasks: sysctl.yml
+  tags:
+    - sysctl
     - prepare

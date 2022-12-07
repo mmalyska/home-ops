@@ -5,7 +5,7 @@ vrrp_script chk_haproxy {
 }
 vrrp_instance VI_1 {
     state {{ 'MASTER' if groups.master.index(inventory_hostname) == 0 else 'BACKUP' }}
-    interface {{ ansible_default_ipv4.interface }}
+    interface {{ kubevip_interface | default(ansible_default_ipv4.interface) }}
     virtual_router_id 1
     priority {{ 100 - groups.master.index(inventory_hostname) }}
     advert_int 1
