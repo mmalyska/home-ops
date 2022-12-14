@@ -21,6 +21,6 @@ backend k8s-api
     mode tcp
     balance roundrobin
     default-server verify none check-ssl inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 5000 maxqueue 5000 weight 100
-    {% for server in groups['master'] %}
+    {% for server in groups['control_plane'] %}
     server {{ hostvars[server]['inventory_hostname'] }} {{ hostvars[server]['ansible_facts']['hostname'] }} {{ hostvars[server]['ansible_facts']['default_ipv4']['address'] }}:6443 check
     {% endfor %}

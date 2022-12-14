@@ -1,0 +1,50 @@
+- name: Create the directory for the kubernetes_config_file
+  ansible.builtin.file:
+    path: "{{ kubernetes_kubeadm_kubelet_config_file_path | dirname }}"
+    state: directory
+    mode: 0644
+
+- name: Deploy the config-file for kubeadm and kubelet
+  ansible.builtin.template:
+    src: "kubeadm-kubelet-config.j2"
+    dest: "{{ kubernetes_kubeadm_kubelet_config_file_path }}"
+    mode: 0644
+
+- name: Initialize Kubernetes control plane with kubeadm init
+  ansible.builtin.command: >
+    kubeadm init
+    --config {{ kubernetes_kubeadm_kubelet_config_file_path }}
+    {{ kubernetes_kubeadm_init_extra_opts }}
+  register: kubeadmin_init
+  when: (not kubernetes_init_stat.stat.exists) and (kubernetes_ignore_preflight_errors is not defined)
+
+- name: Print the init output to screen.
+  ansible.builtin.debug:
+    var: kubeadmin_init.stdout
+    verbosity: 2
+  when: not kubernetes_init_stat.stat.exists
+
+- name: Ensure .kube directory exists.
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+    mode: 0755
+
+- name: Symlink the kubectl admin.conf to ~/.kube/conf.
+  ansible.builtin.file:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/.kube/config
+    state: link
+    mode: 0644
+
+- name: Configure Flannel networking.
+  ansible.builtin.command: "kubectl apply -f {{ kubernetes_flannel_manifest_file }}"
+  register: flannel_result
+  changed_when: "'created' in flannel_result.stdout"
+  when: kubernetes_pod_network.cni == 'flannel' and (not kubernetes_init_stat.stat.exists)
+
+- name: Allow pods on control plane (if configured).
+  ansible.builtin.command: "kubectl taint nodes --all node-role.kubernetes.io/control-plane-"
+  when:
+    - kubernetes_allow_pods_on_control_plane | bool
+    - not kubernetes_init_stat.stat.exists

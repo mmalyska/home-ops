@@ -12,4 +12,4 @@
       See this link on how to set static interface names across your nodes by using netplan
       https://askubuntu.com/a/1317043
   when:
-    "'master' in group_names"
+    "'control_plane' in group_names"

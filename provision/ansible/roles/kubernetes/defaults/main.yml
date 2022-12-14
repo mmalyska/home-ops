@@ -1,2 +1,55 @@
 sysctl_settings:
   "net.ipv4.ip_nonlocal_bind": 1
+
+kubernetes_packages:
+  - name: kubelet
+    state: present
+  - name: kubectl
+    state: present
+  - name: kubeadm
+    state: present
+  - name: kubernetes-cni
+    state: present
+
+kubernetes_version: '1.23.4'
+kubernetes_version_kubeadm: '{{ kubernetes_version }}'
+
+kubernetes_pod_network:
+  cni: 'flannel'
+  cidr: '10.244.0.0/16'
+# Flannel config file.
+
+# renovate: datasource=github-releases depName=flannel-io/flannel
+kubernetes_flannel_manifest_file: https://raw.githubusercontent.com/flannel-io/flannel/v0.20.1/Documentation/kube-flannel.yml
+
+kubernetes_kubeadm_init_extra_opts: ""
+kubernetes_join_command_extra_opts: ""
+
+kubernetes_allow_pods_on_control_plane: true
+
+kubernetes_kubeadm_kubelet_config_file_path: '/etc/kubernetes/kubeadm-kubelet-config.yaml'
+
+kubernetes_config_init_configuration:
+  localAPIEndpoint:
+    advertiseAddress: "{{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}"
+
+kubernetes_config_cluster_configuration:
+  networking:
+    podSubnet: "{{ kubernetes_pod_network.cidr }}"
+  kubernetesVersion: "{{ kubernetes_version_kubeadm }}"
+  controlPlaneEndpoint: "{{ kubevip_domain }}:8443"
+  apiServer:
+    certSANs:
+      - "{{ kubevip_domain }}"
+    extraArgs:
+      oidc-issuer-url: "{{ kubernetes_oidc_url | default('') }}"
+      oidc-client-id: "{{ kubernetes_oidc_client_id | default('') }}"
+      oidc-username-claim: email
+      oidc-username-prefix: "oidc:"
+      oidc-groups-claim: groups
+      oidc-groups-prefix: "oidc:"
+
+kubernetes_config_kubelet_configuration:
+  cgroupDriver: "systemd"
+
+kubernetes_config_kube_proxy_configuration: {}

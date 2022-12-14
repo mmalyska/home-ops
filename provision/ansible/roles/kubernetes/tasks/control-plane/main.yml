@@ -1,0 +1,4 @@
+- name: Install haproxy and keepalived
+  ansible.builtin.include_tasks: haproxy.yml
+  tags:
+    - haproxy

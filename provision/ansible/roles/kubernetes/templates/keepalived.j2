@@ -4,10 +4,10 @@ vrrp_script chk_haproxy {
     weight 2 # add 2 points if OK
 }
 vrrp_instance VI_1 {
-    state {{ 'MASTER' if groups.master.index(inventory_hostname) == 0 else 'BACKUP' }}
+    state {{ 'MASTER' if groups.control_plane.index(inventory_hostname) == 0 else 'BACKUP' }}
     interface {{ kubevip_interface | default(ansible_default_ipv4.interface) }}
     virtual_router_id 1
-    priority {{ 100 - groups.master.index(inventory_hostname) }}
+    priority {{ 100 - groups.control_plane.index(inventory_hostname) }}
     advert_int 1
     nopreempt
     authentication {

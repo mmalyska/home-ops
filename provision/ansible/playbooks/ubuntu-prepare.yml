@@ -1,7 +1,7 @@
 ---
 - hosts:
-    - master
-    - worker
+    - control_plane
+    - node
   become: true
   gather_facts: true
   any_errors_fatal: true

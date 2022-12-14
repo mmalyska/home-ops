@@ -42,7 +42,7 @@
 
 - name: Add haproxy configuration
   ansible.builtin.template:
-    src: keepalived.j2
+    src: haproxy.j2
     dest: /etc/haproxy/haproxy.conf
     mode: 0644
 

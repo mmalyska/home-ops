@@ -1,0 +1,2 @@
+kubernetes_oidc_url: https://l.mmalyska.cloud/auth/realms/home
+kubernetes_oidc_client_id: k8s
