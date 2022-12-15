@@ -16,11 +16,11 @@ if [ "$SYNC_LOCALHOST_CONFIGS" = "true" ]; then
     sudo chmod 644 "$HOME"/.ssh/known_hosts
 fi
 
+direnv allow
+
 task init
 task precommit:init
 task ansible:init
 task terraform:upgrade:cloudflare
-
-direnv allow
 
 echo "Done!"

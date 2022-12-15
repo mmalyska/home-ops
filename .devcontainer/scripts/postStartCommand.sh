@@ -16,6 +16,8 @@ if [ "$SYNC_LOCALHOST_CONFIGS" = "true" ]; then
     sudo chmod 644 "$HOME"/.ssh/known_hosts
 fi
 
+direnv allow
+
 brew update
 brew upgrade
 
