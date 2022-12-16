@@ -1,0 +1,22 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+{% if kubevip_domain is defined %}
+    apiServerEndpoint: "{{ kubevip_domain }}:8443"
+{% else %}
+    apiServerEndpoint: {{ kubernetes_apiserver_advertise_address }}:6443
+{% endif %}
+    token: {{ kubeadm_token }}
+    caCertHashes: {{ kubeadm_ca_cert_hash }}
+  tlsBootstrapToken: {{ kubeadm_token }}
+controlPlane:
+  certificateKey: {{ kubeadm_certificate_key }}
+nodeRegistration:
+{% if inventory_hostname in groups['control_plane'] and inventory_hostname not in groups['node'] %}
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+{% else %}
+  taints: []
+{% endif %}

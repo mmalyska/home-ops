@@ -3,31 +3,10 @@
   tags:
     - apt
 
-- name: Check if Kubernetes has already been initialized.
-  ansible.builtin.stat:
-    path: /etc/kubernetes/admin.conf
-  register: kubernetes_init_stat
-
 - name: Initialize control_plane
   ansible.builtin.include_tasks: control-plane/main.yml
   when: "'control_plane' in group_names"
 
-# - name: Get the kubeadm join command from the Kubernetes control plane.
-#   ansible.builtin.command: kubeadm token create --print-join-command
-#   changed_when: false
-#   when: "'control_plane' in group_names"
-#   register: kubernetes_join_command_result
-
-# - name: Set the kubeadm join command globally.
-#   ansible.builtin.set_fact:
-#     kubernetes_join_command: >
-#       {{ kubernetes_join_command_result.stdout }}
-#       {{ kubernetes_join_command_extra_opts }}
-#   when: kubernetes_join_command_result.stdout is defined
-#   delegate_to: "{{ item }}"
-#   delegate_facts: true
-#   with_items: "{{ groups['all'] }}"
-
 # - name: Initialize nodes
 #   ansible.builtin.include_tasks: node-setup.yml
-#   when: kubernetes_role == 'node'
+#   when: "'node' in group_names"

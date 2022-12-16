@@ -1,0 +1,27 @@
+- name: Deploy the controlplane config
+  ansible.builtin.template:
+    src: "kubeadm-controlplane.j2"
+    dest: "{{ kubernetes_config_dir }}/kubeadm-controlplane.yaml"
+    mode: 0644
+  when:
+    - inventory_hostname != first_control_plane
+    - not kubeadm_already_run.stat.exists
+
+- name: Wait for k8s apiserver
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 6443
+    timeout: 180
+
+- name: Joining control plane node to the cluster.
+  ansible.builtin.command: >-
+    kubeadm join
+    --config {{ kubernetes_config_dir }}/kubeadm-controlplane.yaml
+    --ignore-preflight-errors=all
+  register: kubeadm_join_control_plane
+  retries: 3
+  throttle: 1
+  until: kubeadm_join_control_plane is succeeded
+  when:
+    - inventory_hostname != first_control_plane
+    - kubeadm_already_run is not defined or not kubeadm_already_run.stat.exists
