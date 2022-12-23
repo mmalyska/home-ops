@@ -3,8 +3,6 @@
     path: /etc/containerd
     state: directory
     mode: 0755
-    owner: root
-    group: root
   register: containerd_dir
 
 - name: Get defaults from containerd.
@@ -17,8 +15,6 @@
   ansible.builtin.copy:
     dest: /tmp/containerd_config.toml
     content: "{{ containerd_config_default.stdout }}"
-    owner: root
-    group: root
     mode: 0644
   when: containerd_config_default_write
   changed_when: false
@@ -46,8 +42,6 @@
     remote_src: true
     src: /tmp/containerd_config.toml
     dest: /etc/containerd/config.toml
-    owner: root
-    group: root
     mode: 0644
   notify: Restart containerd
   when: containerd_config_default_write

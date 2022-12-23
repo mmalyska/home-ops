@@ -14,12 +14,12 @@
   block:
     - name: Apt key
       ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/{{ansible_distribution|lower}}/gpg
+        url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
         state: present
 
     - name: Apt source
       ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ansible_distribution|lower}} {{ ansible_distribution_release }} stable"
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
         filename: docker
         state: present
         update_cache: true
@@ -36,7 +36,7 @@
       - containerd.io
     install_recommends: false
     update_cache: true
-    state: "{{ containerd_package_state }}"
+    state: "{{ containerd_package_state | default('present') }}"
   notify: Restart containerd
   tags:
     - apt
@@ -44,5 +44,5 @@
 - name: Ensure containerd is started and enabled at boot.
   ansible.builtin.service:
     name: containerd
-    state: "{{ containerd_service_state }}"
+    state: "{{ containerd_service_state | default('present') }}"
     enabled: "{{ containerd_service_enabled }}"

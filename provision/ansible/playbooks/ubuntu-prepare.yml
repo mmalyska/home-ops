@@ -11,3 +11,5 @@
         seconds: 5
   roles:
     - ubuntu
+  tags:
+    - system

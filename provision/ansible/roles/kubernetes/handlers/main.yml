@@ -2,3 +2,8 @@
   ansible.builtin.service:
     name: kubelet
     state: restarted
+
+- name: Restart haproxy
+  ansible.builtin.service:
+    name: haproxy
+    state: restarted

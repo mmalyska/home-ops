@@ -24,8 +24,6 @@
   ansible.builtin.copy:
     src: etc/sysctl.d/99-haproxy.conf
     dest: /etc/sysctl.d/99-haproxy.conf
-    owner: root
-    group: root
     mode: 0644
   tags:
     - sysctl
@@ -43,8 +41,9 @@
 - name: Add haproxy configuration
   ansible.builtin.template:
     src: haproxy.j2
-    dest: /etc/haproxy/haproxy.conf
+    dest: /etc/haproxy/haproxy.cfg
     mode: 0644
+  notify: Restart haproxy
 
 - name: Ensure haproxy is started and enabled at boot.
   ansible.builtin.service:
