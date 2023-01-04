@@ -8,15 +8,18 @@ discovery:
     apiServerEndpoint: {{ kubernetes_apiserver_advertise_address }}:6443
 {% endif %}
     token: {{ kubeadm_token }}
-    caCertHashes: {{ kubeadm_ca_cert_hash }}
+    caCertHashes:
+      - sha256:{{ kubeadm_ca_cert_hash }}
   tlsBootstrapToken: {{ kubeadm_token }}
 controlPlane:
   certificateKey: {{ kubeadm_certificate_key }}
+  localAPIEndpoint:
+    advertiseAddress: {{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}
 nodeRegistration:
 {% if inventory_hostname in groups['control_plane'] and inventory_hostname not in groups['node'] %}
   taints:
-  - effect: NoSchedule
-    key: node-role.kubernetes.io/master
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
 {% else %}
   taints: []
 {% endif %}

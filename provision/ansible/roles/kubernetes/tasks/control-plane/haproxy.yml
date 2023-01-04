@@ -50,3 +50,6 @@
     name: haproxy
     state: started
     enabled: true
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

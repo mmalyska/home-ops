@@ -7,11 +7,9 @@
     - inventory_hostname != first_control_plane
     - not kubeadm_already_run.stat.exists
 
-- name: Wait for k8s apiserver
-  ansible.builtin.wait_for:
-    host: 127.0.0.1
-    port: 6443
-    timeout: 180
+- name: Check already run
+  ansible.builtin.debug:
+    msg: "{{ kubeadm_already_run.stat.exists }}"
 
 - name: Joining control plane node to the cluster.
   ansible.builtin.command: >-

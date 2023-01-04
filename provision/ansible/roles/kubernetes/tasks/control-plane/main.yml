@@ -16,7 +16,6 @@
 
 - name: Install first control_plane
   ansible.builtin.include_tasks: control-plane/install.yml
-  when: not kubeadm_already_run.stat.exists
 
 - name: Update control_plane
   ansible.builtin.include_tasks: control-plane/update.yml

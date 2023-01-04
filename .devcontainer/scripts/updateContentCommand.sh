@@ -18,9 +18,6 @@ fi
 
 direnv allow
 
-task init
-task precommit:init
-task ansible:init
 task terraform:upgrade:cloudflare
 
 echo "Done!"
