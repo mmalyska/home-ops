@@ -5,6 +5,7 @@ all:
     network_nameserver: 1.1.1.1
     timezone: CET
     ansible_user: vagrant
+    kubernetes_version: '1.25.5'
 
 kubernetes:
   vars:

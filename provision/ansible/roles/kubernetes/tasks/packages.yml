@@ -36,7 +36,6 @@
     update_cache: true
     state: "{{ item.state | default('present') }}"
   with_items: "{{ kubernetes_packages }}"
-  notify: Restart kubelet
   tags:
     - apt
 

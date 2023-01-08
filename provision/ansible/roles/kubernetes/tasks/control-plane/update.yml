@@ -1,0 +1,68 @@
+---
+- name: Check api is up
+  ansible.builtin.uri:
+    url: "https://{{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}:6443/healthz"
+    validate_certs: false
+  when: inventory_hostname in groups['control_plane']
+  register: _result
+  retries: 60
+  delay: 5
+  until: _result.status == 200
+
+- name: Plan upgrade
+  ansible.builtin.command: >-
+    kubeadm
+    upgrade plan {{ kubernetes_version }}
+    --allow-experimental-upgrades
+  register: kubeadm_plan
+  # Retry is because upload config sometimes fails
+  retries: 3
+  until: kubeadm_plan.rc == 0
+  when: inventory_hostname == first_control_plane
+  failed_when: kubeadm_plan.rc != 0 and "field is immutable" not in kubeadm_plan.stderr
+
+- name: Print the update output to screen.
+  ansible.builtin.debug:
+    var: kubeadm_plan.stdout
+  when: inventory_hostname == first_control_plane
+
+- name: Pause until verification of upgrade
+  ansible.builtin.pause:
+  when: inventory_hostname == first_control_plane
+
+- name: Upgrade first master
+  ansible.builtin.command: >-
+    kubeadm
+    upgrade apply -y {{ kubernetes_version }}
+    --certificate-renewal={{ kubernetes_upgrade_auto_cert_renewal }}
+    --allow-experimental-upgrades
+    --etcd-upgrade=true
+  register: kubeadm_upgrade
+  # Retry is because upload config sometimes fails
+  retries: 3
+  until: kubeadm_upgrade.rc == 0
+  when: inventory_hostname == first_control_plane
+  failed_when: kubeadm_upgrade.rc != 0 and "field is immutable" not in kubeadm_upgrade.stderr
+  notify: Restart kubelet
+
+- name: Upgrade other masters
+  ansible.builtin.command: >-
+    kubeadm
+    upgrade apply -y {{ kubernetes_version }}
+    --certificate-renewal={{ kubernetes_upgrade_auto_cert_renewal }}
+    --allow-experimental-upgrades
+    --etcd-upgrade=true
+  register: kubeadm_upgrade
+  when: inventory_hostname != first_control_plane
+  failed_when:
+    - kubeadm_upgrade.rc != 0
+    - '"field is immutable" not in kubeadm_upgrade.stderr'
+  notify: Restart kubelet
+
+- name: Clean kubectl cache to refresh api types
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /root/.kube/cache
+    - /root/.kube/http-cache

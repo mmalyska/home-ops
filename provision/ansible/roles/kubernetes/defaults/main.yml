@@ -3,13 +3,13 @@ sysctl_settings:
 
 kubernetes_packages:
   - name: kubelet
-    state: present
+    state: latest
   - name: kubectl
-    state: present
+    state: latest
   - name: kubeadm
-    state: present
+    state: latest
   - name: kubernetes-cni
-    state: present
+    state: latest
 
 kubernetes_version: '1.23.4'
 kubernetes_version_kubeadm: '{{ kubernetes_version }}'
@@ -32,3 +32,5 @@ kubernetes_config_dir: '/etc/kubernetes'
 kubernetes_config_kubelet_configuration: {}
 
 kubernetes_config_kube_proxy_configuration: {}
+
+kubernetes_upgrade_auto_cert_renewal: true

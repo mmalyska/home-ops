@@ -55,15 +55,9 @@
   ansible.builtin.command: "kubectl apply -f {{ kubernetes_flannel_manifest_file }}"
   register: flannel_result
   changed_when: "'created' in flannel_result.stdout"
-  when:
-    - kubernetes_pod_network.cni == 'flannel'
-    - not kubeadm_already_run.stat.exists
-    - inventory_hostname == first_control_plane
+  when: kubernetes_pod_network.cni == 'flannel' and not kubeadm_already_run.stat.exists and inventory_hostname == first_control_plane
 
 - name: Allow pods on control plane (if configured).
   ansible.builtin.command: "kubectl taint nodes --all node-role.kubernetes.io/control-plane-"
-  when:
-    - kubernetes_allow_pods_on_control_plane | bool
-    - not kubeadm_already_run.stat.exists
-    - inventory_hostname == first_control_plane
+  when: kubernetes_allow_pods_on_control_plane | bool and not kubeadm_already_run.stat.exists and inventory_hostname == first_control_plane
   failed_when: false
