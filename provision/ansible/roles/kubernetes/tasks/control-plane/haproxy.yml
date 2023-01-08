@@ -1,0 +1,55 @@
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - keepalived
+      - haproxy
+    install_recommends: false
+    state: present
+  tags:
+    - apt
+
+- name: Add keepalived configuration
+  ansible.builtin.template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: 0644
+
+- name: Ensure keepalived is started and enabled at boot.
+  ansible.builtin.service:
+    name: keepalived
+    state: started
+    enabled: true
+
+- name: Sysctl config
+  ansible.builtin.copy:
+    src: etc/sysctl.d/99-haproxy.conf
+    dest: /etc/sysctl.d/99-haproxy.conf
+    mode: 0644
+  tags:
+    - sysctl
+
+- name: Sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "{{ sysctl_settings[item] }}"
+    sysctl_set: true
+    reload: true
+  loop: "{{ sysctl_settings | flatten }}"
+  tags:
+    - sysctl
+
+- name: Add haproxy configuration
+  ansible.builtin.template:
+    src: haproxy.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 0644
+  notify: Restart haproxy
+
+- name: Ensure haproxy is started and enabled at boot.
+  ansible.builtin.service:
+    name: haproxy
+    state: started
+    enabled: true
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

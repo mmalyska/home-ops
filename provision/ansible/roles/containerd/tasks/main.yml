@@ -1,0 +1,24 @@
+- name: Install packages
+  ansible.builtin.include_tasks: packages.yml
+  tags:
+    - apt
+
+- name: Check for containerd configuration file
+  ansible.builtin.stat:
+    path: /etc/containerd/config.toml
+  register: containerd_config_register
+  tags:
+    - checks
+    - containerd
+
+- name: Configure default containerd
+  ansible.builtin.include_tasks: configure-default.yml
+  tags:
+    - containerd
+  when: not containerd_config_register.stat.exists and containerd_config_default_write
+
+- name: Configure custom containerd
+  ansible.builtin.include_tasks: configure-custom.yml
+  tags:
+    - containerd
+  when: containerd_config_register.stat.exists and not containerd_config_default_write

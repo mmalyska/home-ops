@@ -1,8 +1,35 @@
 ---
-- name: Upgrade all system packages
+- name: "Update APT package cache"
   ansible.builtin.apt:
-    upgrade: full
-    update_cache: true
+    update_cache: "{{ ubuntu_update_cache }}"
+    cache_valid_time: "{{ ubuntu_cache_valid_time }}"
+  retries: 2
+  delay: 5
+  tags:
+    - apt
+
+- name: "Upgrade APT to the latest packages"
+  ansible.builtin.apt:
+    upgrade: safe
+  retries: 2
+  delay: 5
+  tags:
+    - apt
+
+- name: "Adjust APT update intervals"
+  ansible.builtin.copy:
+    src: etc/apt/apt.conf.d/10periodic
+    dest: /etc/apt/apt.conf.d/10periodic
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - apt
+
+- name: "Install package unattended-upgrades"
+  ansible.builtin.package:
+    pkg: "unattended-upgrades"
+    state: present
 
 - name: Install common packages
   ansible.builtin.apt:
@@ -28,9 +55,19 @@
       - smartmontools
       - socat
       - software-properties-common
-      - unattended-upgrades
       - unzip
+      - gnupg
+      - lsb-release
     install_recommends: false
+  tags:
+    - apt
 
-- name: Restart node if necessary
-  ansible.builtin.meta: flush_handlers
+- name: "Install optional packages"
+  ansible.builtin.package:
+    pkg: "{{ optional_packages }}"
+    state: present
+  when: optional_packages is defined
+  retries: 2
+  delay: 5
+  tags:
+    - apt

@@ -1,0 +1,12 @@
+- name: Install packages
+  ansible.builtin.include_tasks: packages.yml
+  tags:
+    - apt
+
+- name: Initialize control_plane
+  ansible.builtin.include_tasks: control-plane/main.yml
+  when: "'control_plane' in group_names"
+
+# - name: Initialize nodes
+#   ansible.builtin.include_tasks: node-setup.yml
+#   when: "'node' in group_names"

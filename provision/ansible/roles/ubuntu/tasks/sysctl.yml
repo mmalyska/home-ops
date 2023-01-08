@@ -1,0 +1,25 @@
+- name: "Sysctl config"
+  ansible.builtin.copy:
+    src: etc/sysctl.d/99-kubernetes-cri.conf
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - sysctl
+
+- name: Combine sysctl_settings and sysctl_settings_user (if defined)
+  ansible.builtin.set_fact:
+    sysctl_settings: "{{ sysctl_settings | combine(sysctl_settings_user | default({})) }}"
+  tags:
+    - sysctl
+
+- name: Sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "{{ sysctl_settings[item] }}"
+    sysctl_set: true
+    reload: true
+  loop: "{{ sysctl_settings | flatten }}"
+  tags:
+    - sysctl

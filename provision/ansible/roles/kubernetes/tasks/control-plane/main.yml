@@ -1,0 +1,22 @@
+- name: Install haproxy and keepalived
+  ansible.builtin.include_tasks: haproxy.yml
+  tags:
+    - haproxy
+
+- name: Define nodes already joined to existing cluster and first_control_plane
+  ansible.builtin.include_tasks: define-first-kube-control.yml
+
+- name: Check if kubeadm has already run
+  ansible.builtin.stat:
+    path: "/var/lib/kubelet/config.yaml"
+    get_attributes: false
+    get_checksum: false
+    get_mime: false
+  register: kubeadm_already_run
+
+- name: Install first control_plane
+  ansible.builtin.include_tasks: control-plane/install.yml
+
+- name: Update control_plane
+  ansible.builtin.include_tasks: control-plane/update.yml
+  when: kubeadm_already_run.stat.exists

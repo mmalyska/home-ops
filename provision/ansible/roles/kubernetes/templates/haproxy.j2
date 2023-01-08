@@ -1,0 +1,26 @@
+defaults
+    maxconn 20000
+    mode    tcp
+    option  dontlognull
+    timeout http-request 10s
+    timeout queue        1m
+    timeout connect      10s
+    timeout client       4h
+    timeout server       4h
+    timeout tunnel       86400s
+
+frontend k8s-api
+    bind {{ kubevip_address }}:8443
+    mode tcp
+    default_backend k8s-api
+
+backend k8s-api
+    option  httpchk GET /readyz HTTP/1.0
+    option  log-health-checks
+    http-check expect status 200
+    mode tcp
+    balance roundrobin
+    default-server verify none check-ssl inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 5000 maxqueue 5000 weight 100
+    {% for server in groups['control_plane'] %}
+server {{ hostvars[server]['inventory_hostname'] }} {{ hostvars[server]['kubernetes_apiserver_advertise_address'] }}:6443 check
+    {% endfor %}

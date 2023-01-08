@@ -1,0 +1,53 @@
+- name: Ensure containerd config directory exists.
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: 0755
+  register: containerd_dir
+
+- name: Get defaults from containerd.
+  ansible.builtin.command: containerd config default
+  changed_when: false
+  register: containerd_config_default
+  when: containerd_config_default_write
+
+- name: Prepare containerd/config.toml from default config
+  ansible.builtin.copy:
+    dest: /tmp/containerd_config.toml
+    content: "{{ containerd_config_default.stdout }}"
+    mode: 0644
+  when: containerd_config_default_write
+  changed_when: false
+
+- name: Set Cgroup driver to systemd
+  ansible.builtin.lineinfile:
+    insertafter: '.*\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]$'
+    line: '            SystemdCgroup = true'
+    state: present
+    path: /tmp/containerd_config.toml
+  when: containerd_config_default_write and containerd_config_cgroup_driver_systemd
+  changed_when: false
+
+- name: Make sure SystemdCgroup = false is not set
+  ansible.builtin.lineinfile:
+    path: /tmp/containerd_config.toml
+    state: absent
+    line: '            SystemdCgroup = false'
+  notify: Restart containerd
+  when: containerd_config_default_write and containerd_config_cgroup_driver_systemd
+  changed_when: false
+
+- name: Copy config.toml to /etc/containerd
+  ansible.builtin.copy:
+    remote_src: true
+    src: /tmp/containerd_config.toml
+    dest: /etc/containerd/config.toml
+    mode: 0644
+  notify: Restart containerd
+  when: containerd_config_default_write
+
+- name: Cleanup temporary file
+  ansible.builtin.file:
+    path: /tmp/containerd_config.toml
+    state: absent
+  changed_when: false

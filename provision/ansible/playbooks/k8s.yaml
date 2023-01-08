@@ -1,0 +1,22 @@
+---
+- hosts:
+    - control_plane
+    - node
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  roles:
+    - containerd
+  tags:
+    - containerd
+
+- hosts:
+    - control_plane
+    - node
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  roles:
+    - kubernetes
+  tags:
+    - kubernetes

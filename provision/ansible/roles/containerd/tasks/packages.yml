@@ -1,0 +1,48 @@
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    install_recommends: false
+    state: present
+  tags:
+    - apt
+
+- name: Add Docker apt repository
+  block:
+    - name: Apt key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+        state: present
+
+    - name: Apt source
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+        update_cache: true
+
+- name: Add containerd apt preferences file to pin a version.
+  ansible.builtin.template:
+    src: apt-preferences-containerd.j2
+    dest: /etc/apt/preferences.d/containerd
+    mode: 0644
+
+- name: Install containerd package
+  ansible.builtin.apt:
+    name:
+      - containerd.io
+    install_recommends: false
+    update_cache: true
+    state: "{{ containerd_package_state | default('present') }}"
+  notify: Restart containerd
+  tags:
+    - apt
+
+- name: Ensure containerd is started and enabled at boot.
+  ansible.builtin.service:
+    name: containerd
+    state: "{{ containerd_service_state | default('present') }}"
+    enabled: "{{ containerd_service_enabled }}"

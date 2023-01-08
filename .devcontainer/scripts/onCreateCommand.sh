@@ -5,6 +5,8 @@ brew install go-task/tap/go-task
 
 task init
 task precommit:init
+task ansible:init
+task terraform:init:cloudflare
 
 # shellcheck disable=SC2016
 echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc

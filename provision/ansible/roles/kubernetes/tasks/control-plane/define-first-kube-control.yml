@@ -1,0 +1,17 @@
+- name: Check which kube-control nodes are already members of the cluster
+  ansible.builtin.command: "kubectl get nodes --selector=node-role.kubernetes.io/control-plane -o json"
+  register: control_planes_raw
+  ignore_errors: true
+  changed_when: false
+
+- name: Set fact joined_control_planes
+  ansible.builtin.set_fact:
+    joined_control_planes: "{{ ((control_planes_raw.stdout | from_json)['items']) | default([]) | map(attribute='metadata') | map(attribute='name') | list }}"
+  delegate_to: item
+  loop: "{{ groups['control_plane'] }}"
+  when: control_planes_raw is succeeded
+  run_once: true
+
+- name: Set fact first_control_plane
+  ansible.builtin.set_fact:
+    first_control_plane: "{{ joined_control_planes | default([]) | first | default(groups['control_plane'] | first) }}"

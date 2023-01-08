@@ -1,0 +1,46 @@
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+    install_recommends: false
+    state: present
+  tags:
+    - apt
+
+- name: Add kubernetes apt repository
+  block:
+    - name: Apt key
+      ansible.builtin.apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Apt source
+      ansible.builtin.apt_repository:
+        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+        filename: kubernetes
+        state: present
+        update_cache: true
+
+- name: Add kubernetes apt preferences file to pin a version.
+  ansible.builtin.template:
+    src: apt-preferences-kubernetes.j2
+    dest: /etc/apt/preferences.d/kubernetes
+    mode: 0644
+
+- name: Install Kubernetes package
+  ansible.builtin.apt:
+    name: "{{ item.name | default(item) }}"
+    install_recommends: false
+    update_cache: true
+    state: "{{ item.state | default('present') }}"
+  with_items: "{{ kubernetes_packages }}"
+  tags:
+    - apt
+
+- name: Ensure kubelet is started and enabled at boot.
+  ansible.builtin.service:
+    name: kubelet
+    state: started
+    enabled: true

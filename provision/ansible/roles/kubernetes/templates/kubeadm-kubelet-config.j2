@@ -1,0 +1,52 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}
+nodeRegistration:
+{% if inventory_hostname in groups['control_plane'] and inventory_hostname not in groups['node'] %}
+  taints:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+{% else %}
+  taints: []
+{% endif %}
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+networking:
+  podSubnet: "{{ kubernetes_pod_network.cidr }}"
+kubernetesVersion: "{{ kubernetes_version_kubeadm }}"
+{% if kubevip_domain is defined %}
+controlPlaneEndpoint: "{{ kubevip_domain }}:8443"
+{% else %}
+controlPlaneEndpoint: {{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}:6443
+{% endif %}
+apiServer:
+  certSANs:
+{% if kubevip_domain is defined %}
+    - {{ kubevip_domain }}
+{% else %}
+    - {{ kubernetes_apiserver_advertise_address | default(ansible_default_ipv4.address, true) }}
+{% endif %}
+  extraArgs:
+{% if kubernetes_oidc_url is defined %}
+    oidc-issuer-url: "{{ kubernetes_oidc_url | default('') }}"
+    oidc-client-id: "{{ kubernetes_oidc_client_id | default('') }}"
+    oidc-username-claim: email
+    oidc-username-prefix: "oidc:"
+    oidc-groups-claim: groups
+    oidc-groups-prefix: "oidc:"
+{% endif %}
+{% if kubernetes_config_kubelet_configuration|length > 0 %}
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+{{ kubernetes_config_kubelet_configuration | to_nice_yaml }}
+{% endif %}
+{% if kubernetes_config_kube_proxy_configuration|length > 0 %}
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+{{ kubernetes_config_kube_proxy_configuration | to_nice_yaml }}
+{% endif %}

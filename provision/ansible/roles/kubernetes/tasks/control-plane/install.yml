@@ -1,0 +1,63 @@
+- name: Create the directory for the kubernetes_config_file
+  ansible.builtin.file:
+    path: "{{ kubernetes_config_dir }}"
+    state: directory
+    mode: 0644
+
+- name: Deploy the config-file for kubeadm and kubelet
+  ansible.builtin.template:
+    src: "kubeadm-kubelet-config.j2"
+    dest: "{{ kubernetes_config_dir }}/kubeadm-kubelet-config.yaml"
+    mode: 0644
+
+- name: Initialize Kubernetes control plane with kubeadm init
+  ansible.builtin.command: >
+    kubeadm init
+    --config {{ kubernetes_config_dir }}/kubeadm-kubelet-config.yaml
+    {{ kubernetes_kubeadm_init_extra_opts }}
+  register: kubeadmin_init
+  until: kubeadmin_init is succeeded or "field is immutable" in kubeadmin_init.stderr
+  failed_when: kubeadmin_init.rc != 0 and "field is immutable" not in kubeadmin_init.stderr
+  when: inventory_hostname == first_control_plane and not kubeadm_already_run.stat.exists
+  notify: Restart kubelet
+
+- name: Print the init output to screen.
+  ansible.builtin.debug:
+    var: kubeadmin_init.stdout
+    verbosity: 2
+  when: not kubeadm_already_run.stat.exists
+
+- name: Set kubeadm certificate key
+  ansible.builtin.set_fact:
+    kubeadm_certificate_key: "{{ item | regex_search('--certificate-key ([^ ]+)', '\\1') | first }}"
+  with_items: "{{ hostvars[groups['control_plane'][0]]['kubeadmin_init'].stdout_lines | default([]) }}"
+  when:
+    - kubeadm_certificate_key is not defined
+    - (item | trim) is match('.*--certificate-key.*')
+
+- name: Install other control_plane
+  ansible.builtin.include_tasks: control-plane/install-secondary.yml
+
+- name: Ensure .kube directory exists.
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+    mode: 0755
+
+- name: Symlink the kubectl admin.conf to ~/.kube/conf.
+  ansible.builtin.file:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/.kube/config
+    state: link
+    mode: 0644
+
+- name: Configure Flannel networking.
+  ansible.builtin.command: "kubectl apply -f {{ kubernetes_flannel_manifest_file }}"
+  register: flannel_result
+  changed_when: "'created' in flannel_result.stdout"
+  when: kubernetes_pod_network.cni == 'flannel' and not kubeadm_already_run.stat.exists and inventory_hostname == first_control_plane
+
+- name: Allow pods on control plane (if configured).
+  ansible.builtin.command: "kubectl taint nodes --all node-role.kubernetes.io/control-plane-"
+  when: kubernetes_allow_pods_on_control_plane | bool and not kubeadm_already_run.stat.exists and inventory_hostname == first_control_plane
+  failed_when: false

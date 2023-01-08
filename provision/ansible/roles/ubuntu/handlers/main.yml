@@ -9,3 +9,8 @@
     daemon_reload: true
     enabled: true
     state: restarted
+
+- name: Applying Netplan Configuration
+  command: netplan apply
+  listen: netplan apply config
+  become: true

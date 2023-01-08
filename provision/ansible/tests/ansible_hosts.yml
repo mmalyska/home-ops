@@ -1,0 +1,25 @@
+all:
+  vars:
+    network_gateway: 10.0.2.2
+    network_subnet: 24
+    network_nameserver: 1.1.1.1
+    timezone: CET
+    ansible_user: vagrant
+    kubernetes_version: '1.25.5'
+
+kubernetes:
+  vars:
+    kubevip_address: 10.0.0.10
+    kubevip_auth_pass: agfasg45gerg
+    kubevip_interface: eth1
+    kubevip_domain: k8s-vagrant-local
+  children:
+    control_plane:
+      hosts:
+        tm1:
+          ansible_host: 10.0.0.11
+          kubernetes_apiserver_advertise_address: 10.0.0.11
+        tm2:
+          ansible_host: 10.0.0.12
+          kubernetes_apiserver_advertise_address: 10.0.0.12
+    node:

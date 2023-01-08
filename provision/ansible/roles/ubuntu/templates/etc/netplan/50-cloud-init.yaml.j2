@@ -1,0 +1,16 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {{ kubevip_interface | default(ansible_default_ipv4.interface) }}:
+      dhcp4: no
+      addresses:
+        - {{ ansible_host }}/{{ network_subnet }}
+      routes:
+      - to: default
+        via: {{ network_gateway }}
+{% if network_nameserver is defined and network_nameserver | length > 0 %}
+      nameservers:
+        addresses:
+          - {{ network_nameserver }}
+{% endif %}

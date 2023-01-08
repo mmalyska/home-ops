@@ -20,3 +20,5 @@ terraform.tfstate*
 # Helm
 Chart.lock
 *.tgz
+# Vagrant
+.vagrant

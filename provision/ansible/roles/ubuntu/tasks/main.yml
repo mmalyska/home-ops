@@ -1,12 +1,41 @@
----
-- include: checks.yml
+- name: Disable swap
+  ansible.builtin.include_tasks: swap.yml
+  tags:
+    - swap
+    - prepare
+
+- name: Apply package configuration
+  ansible.builtin.include_tasks: packages.yml
+  tags:
+    - apt
+    - prepare
+
+- name: Run checks
+  ansible.builtin.include_tasks: checks.yml
   tags:
     - checks
+    - prepare
 
-- include: locale.yml
+- name: Apply locales
+  ansible.builtin.include_tasks: locale.yml
   tags:
     - locale
+    - prepare
 
-- include: network.yml
+- name: Apply network configuration
+  ansible.builtin.include_tasks: network.yml
   tags:
     - network
+    - prepare
+
+- name: Apply modprobe configuration
+  ansible.builtin.include_tasks: modprobe.yml
+  tags:
+    - modprobe
+    - prepare
+
+- name: Apply sysctl configuration
+  ansible.builtin.include_tasks: sysctl.yml
+  tags:
+    - sysctl
+    - prepare
