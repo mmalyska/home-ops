@@ -1,3 +1,62 @@
+- name: Upload certificates so they are fresh and not expired
+  ansible.builtin.command: >-
+    kubeadm init phase
+    --config {{ kubernetes_config_dir }}/kubeadm-kubelet-config.yaml
+    upload-certs
+    --upload-certs
+  register: kubeadm_upload_cert
+  when:
+    - inventory_hostname == first_control_plane
+
+- name: Parse certificate key if not set
+  ansible.builtin.set_fact:
+    kubeadm_certificate_key: "{{ hostvars[groups['control_plane'][0]]['kubeadm_upload_cert'].stdout_lines[-1] | trim }}"
+  run_once: true
+  when:
+    - hostvars[groups['control_plane'][0]]['kubeadm_upload_cert'] is defined
+    - hostvars[groups['control_plane'][0]]['kubeadm_upload_cert'] is not skipped
+
+- name: Create hardcoded kubeadm token for joining nodes with 24h expiration (if defined)
+  ansible.builtin.shell: >-
+    kubeadm --kubeconfig {{ kubernetes_config_dir }}/admin.conf token delete {{ kubeadm_token }} || :;
+    kubeadm --kubeconfig {{ kubernetes_config_dir }}/admin.conf token create {{ kubeadm_token }}
+  changed_when: false
+  when:
+    - inventory_hostname == first_control_plane
+    - kubeadm_token is defined
+    - kubeadm_refresh_token
+
+- name: Create kubeadm token for joining nodes with 24h expiration (default)
+  ansible.builtin.command: "kubeadm --kubeconfig {{ kubernetes_config_dir }}/admin.conf token create"
+  changed_when: false
+  register: temp_token
+  retries: 5
+  delay: 5
+  until: temp_token is succeeded
+  delegate_to: "{{ first_control_plane }}"
+  when: kubeadm_token is not defined
+
+- name: Set kubeadm_token
+  ansible.builtin.set_fact:
+    kubeadm_token: "{{ temp_token.stdout }}"
+  when: temp_token.stdout is defined
+
+- name: Create certificate public hash
+  ansible.builtin.shell: >-
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt |
+    openssl rsa -pubin -outform der 2>/dev/null |
+    openssl dgst -sha256 -hex |
+    sed 's/^.* //'
+  changed_when: false
+  register: temp_cert_hash
+  until: temp_cert_hash is succeeded
+  delegate_to: "{{ first_control_plane }}"
+
+- name: Set kubeadm_ca_cert_hash
+  ansible.builtin.set_fact:
+    kubeadm_ca_cert_hash: "{{ temp_cert_hash.stdout }}"
+  when: temp_cert_hash.stdout is defined
+
 - name: Deploy the controlplane config
   ansible.builtin.template:
     src: "kubeadm-controlplane.j2"
