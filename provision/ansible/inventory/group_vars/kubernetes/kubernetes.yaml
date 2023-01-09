@@ -1,1 +1,7 @@
 kubernetes_allow_pods_on_control_plane: true
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+kubernetes_version: "1.23.4"
+# renovate: datasource=github-releases depName=containerd/containerd
+containerd_package_version: '1.6.10'
+# renovate: datasource=github-releases depName=flannel-io/flannel
+kubernetes_flannel_manifest_file: https://raw.githubusercontent.com/flannel-io/flannel/v0.20.1/Documentation/kube-flannel.yml
