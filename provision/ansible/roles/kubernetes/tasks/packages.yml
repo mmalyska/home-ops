@@ -9,6 +9,12 @@
   tags:
     - apt
 
+- name: Add kubernetes apt preferences file to pin a version.
+  ansible.builtin.template:
+    src: apt-preferences-kubernetes.j2
+    dest: /etc/apt/preferences.d/kubernetes
+    mode: 0644
+
 - name: Add kubernetes apt repository
   block:
     - name: Apt key
@@ -22,12 +28,6 @@
         filename: kubernetes
         state: present
         update_cache: true
-
-- name: Add kubernetes apt preferences file to pin a version.
-  ansible.builtin.template:
-    src: apt-preferences-kubernetes.j2
-    dest: /etc/apt/preferences.d/kubernetes
-    mode: 0644
 
 - name: Install Kubernetes package
   ansible.builtin.apt:
