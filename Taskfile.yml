@@ -51,3 +51,4 @@ tasks:
         argocd
         int128/kubelogin/kubelogin
         ansible-lint
+        k9s

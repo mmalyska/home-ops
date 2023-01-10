@@ -1,2 +1,22 @@
-kubernetes_oidc_url: https://l.mmalyska.cloud/auth/realms/home
-kubernetes_oidc_client_id: k8s
+kubernetes_oidc_url: ENC[AES256_GCM,data:Qs3uz+M4OxMnSHefOhCPwDxZUguF185yt7vTGnJpJ134ic2XiMAuiMw=,iv:sqNwj4nlU6n9jyyjFi5q3O8iRJz7FuYY1H0egYGwXC8=,tag:n1U83NnyJNa0VT81H2V8SQ==,type:str]
+kubernetes_oidc_client_id: ENC[AES256_GCM,data:HreE,iv:ifSeN2Pm+RBb9kmLjSKzaVLTZLXEfkSVCaNghq0NoeY=,tag:ul59+dUlcR4KJD6gLTMdnQ==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBQdTFId2RkWTlwenBqMUoz
+            VVYyVWtqS05HT3RzWE44WlBGRitzTnFKMlE4Cjl4UTk2UjFiaGt0bnB1MnNzaEp4
+            TWhkY3JNS1haVU00VEdaemp1cnVORDgKLS0tIFlUZ3JBTFpnR2hZNEE3TGVydDhK
+            UUt0MUVDOXRkWmNtUzJESktnTnBwWGcKt+uDCG7i/+bB+7f+JnfiuYcwmQHEsNeS
+            6vn2d6siMrvKYmkyzFhpwn2KIMvaxKyDOZ/D79vBh+o5tnZvJ5agag==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2023-01-09T20:32:00Z"
+    mac: ENC[AES256_GCM,data:drp4ecN5DVhSaUe7H+BjokueyS3L+oQ2LOlP6mvwbB1pxxcNnvjM8WyXZYoBhHvkra0D6lzRKTynklrMwLtfL8EJcjI58/TaovGhUVU/l5w6Qdb4dCOPCFSpKS+1hfUXcjcfMpDcic5CaKJ6YQBrapDSRgX2sCrkwAGHnEpCh5Q=,iv:6Bw26ocvHQWq/7G4BO7ZS+qyx5SE+7ns3M1WIhA5CaU=,tag:62ZTizW7LfIhZpoLONoMSg==,type:str]
+    pgp: []
+    unencrypted_regex: ^(kind)$
+    version: 3.7.3

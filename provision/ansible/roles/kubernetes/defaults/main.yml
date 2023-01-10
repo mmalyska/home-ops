@@ -19,7 +19,6 @@ kubernetes_pod_network:
   cidr: '10.244.0.0/16'
 # Flannel config file.
 
-# renovate: datasource=github-releases depName=flannel-io/flannel
 kubernetes_flannel_manifest_file: https://raw.githubusercontent.com/flannel-io/flannel/v0.20.1/Documentation/kube-flannel.yml
 
 kubernetes_kubeadm_init_extra_opts: ""

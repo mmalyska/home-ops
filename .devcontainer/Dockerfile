@@ -37,4 +37,5 @@ RUN brew install \
     yq \
     argocd \
     int128/kubelogin/kubelogin \
-    ansible-lint
+    ansible-lint \
+    k9s
