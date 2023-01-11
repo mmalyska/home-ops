@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: factorio-subchart
+type: application
+version: 1.0.0
+appVersion: "0.12.4"
+dependencies:
+  - name: factorio-server-charts
+    version: 1.2.3
+    repository: https://sqljames.github.io/factorio-server-charts/

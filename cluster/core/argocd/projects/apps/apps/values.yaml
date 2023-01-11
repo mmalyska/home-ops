@@ -95,3 +95,11 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
+  - name: factorio
+    namespace: factorio
+    path: factorio
+    plugin:
+      name: replacer-helm
+      env:
+        - name: SOPS_FILE
+          value: secret.sec.yaml
