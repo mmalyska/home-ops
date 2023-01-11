@@ -2,12 +2,25 @@
   "packageRules": [
     {
       "description": "Auto merge GitHub Actions",
-      "matchDatasources": ["github-tags"],
+      "matchDatasources": ["github-releases", "github-tags"],
       "automerge": true,
       "automergeType": "branch",
-      "requiredStatusChecks": null,
       "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": ["yokawasa/action-setup-kube-tools"]
+    },
+    {
+      "description": "Auto merge terraform providers",
+      "matchDatasources": ["terraform-provider"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Auto merge ansible galaxy",
+      "matchDatasources": ["galaxy", "galaxy-collection"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["minor", "patch"]
     }
   ]
 }
