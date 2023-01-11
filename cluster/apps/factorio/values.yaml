@@ -50,10 +50,6 @@ factorio-server-charts:
     water: 1.5
     starting_area: 2
     autoplace_controls:
-      hot:
-        size: 0.5
-      cold:
-        size: 0.5
     property_expression_names:
       control-setting:moisture:bias: '0.05'
       control-setting:aux:bias: '-0.35'
