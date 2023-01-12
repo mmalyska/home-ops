@@ -7,7 +7,7 @@ namespace: kubernetes-dashboard
 resources:
   - resources/cert.yaml
   # renovate: datasource=github-releases depName=kubernetes/dashboard
-  - https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
+  - https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
   - resources/kd-user-service.yaml
   - resources/cluster-role-binding.yaml
   - resources/dashboard.yaml
