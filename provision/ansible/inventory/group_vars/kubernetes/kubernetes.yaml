@@ -1,6 +1,6 @@
 kubernetes_allow_pods_on_control_plane: true
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-kubernetes_version: "1.25.5"
+kubernetes_version: "v1.26.0"
 # renovate: datasource=github-releases depName=containerd/containerd
 containerd_package_version: '1.6.10'
 # renovate: datasource=github-releases depName=flannel-io/flannel
