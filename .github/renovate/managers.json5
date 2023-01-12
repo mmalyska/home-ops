@@ -18,7 +18,9 @@
     // Read and process GitHub Releases
     {
       "fileMatch": [
-        "cluster/.+\\.ya?ml$"
+        "cluster/.+\\.ya?ml$",
+        ".github/renovate/allowedVersions.json5",
+        "provision/ansible/inventory/group_vars/kubernetes/kubernetes.yaml"
       ],
       "matchStrings": [
         "datasource=(?<datasource>.*?)( versioning=(?<versioning>.*?))?\n *url: https:\/\/github\\.com\/(?<depName>.*?)\\.git\n *ref:\n *tag: (?<currentValue>.*)\n",

@@ -11,6 +11,13 @@
       "matchDatasources": ["docker"],
       "allowedVersions": "/^v.*$/",
       "matchPackageNames": ["lscr.io/linuxserver/jellyfin"]
+    },
+    {
+      "description": "Lock version to cluster version",
+      "matchDatasources": ["docker"],
+      // renovate: datasource=github-releases depName=kubernetes/kubernetes
+      "allowedVersions": "=1.25.5",
+      "matchPackageNames": ["alpine/k8s"]
     }
   ]
 }
