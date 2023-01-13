@@ -3,12 +3,15 @@ dashboard:
 
 rook-ceph-cluster:
   operatorNamespace: rook-ceph
+  configOverride: |
+    [mon]
+    mon_data_avail_warn = 10
   monitoring:
     enabled: true
     createPrometheusRules: true
     rulesNamespaceOverride: monitoring
   toolbox:
-    enabled: true
+    enabled: false
     resources:
       limits:
         cpu: "500m"
@@ -16,7 +19,6 @@ rook-ceph-cluster:
       requests:
         cpu: "100m"
         memory: "128Mi"
-
   cephClusterSpec:
     resources:
       mgr:
@@ -81,7 +83,6 @@ rook-ceph-cluster:
       deviceFilter: "sda"
     dashboard:
       ssl: false
-
   cephFileSystems:
     - name: ceph-filesystem
       spec:

@@ -18,6 +18,6 @@ fi
 
 direnv allow
 
-task terraform:upgrade:cloudflare
+git gc --prune=now
 
 echo "Done!"
