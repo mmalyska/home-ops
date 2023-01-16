@@ -91,6 +91,7 @@ jobs:
           setup-tools: |
             helm
             yq
+          helm: '3.10.3'
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.conf_live_branch }}
