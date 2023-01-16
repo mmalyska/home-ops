@@ -7,4 +7,4 @@ appVersion: "2.6.1"
 dependencies:
   - name: traefik
     version: 20.8.0
-    repository: https://helm.traefik.io/traefik
+    repository: https://traefik.github.io/charts
