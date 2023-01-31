@@ -1,12 +1,20 @@
 {
   "packageRules": [
     {
-      "description": "Auto merge GitHub Actions",
+      "description": "Auto merge GitHub Actions and pre-commits",
       "matchDatasources": ["github-releases", "github-tags"],
       "automerge": true,
       "automergeType": "branch",
       "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": ["yokawasa/action-setup-kube-tools"]
+      "matchPackageNames": [
+        "yokawasa/action-setup-kube-tools",
+        "sirosen/texthooks",
+        "gruntwork-io/pre-commit",
+        "zricethezav/gitleaks",
+        "Lucas-C/pre-commit-hooks",
+        "adrienverge/yamllint",
+        "pre-commit/pre-commit-hooks"
+      ]
     },
     {
       "description": "Auto merge terraform providers",
