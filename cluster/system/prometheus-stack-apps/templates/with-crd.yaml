@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://github.com/prometheus-community/helm-charts.git
     # renovate: registryUrl=https://prometheus-community.github.io/helm-charts
-    targetRevision: kube-prometheus-stack-44.3.0
+    targetRevision: kube-prometheus-stack-44.3.1
     path: charts/kube-prometheus-stack/crds/
   destination:
     server: 'https://kubernetes.default.svc'
