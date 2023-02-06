@@ -28,6 +28,10 @@ kube-prometheus-stack:
       enabled: true
       size: 10Gi
       accessModes: ["ReadWriteOnce"]
+    dashboards:
+      default:
+        cncf:
+          url: https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/docs/src/samples/monitoring/grafana-dashboard.json
   alertmanager:
     alertmanagerSpec:
       storage:
