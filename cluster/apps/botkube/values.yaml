@@ -11,3 +11,7 @@ botkube:
   actions:
     'show-logs-on-error':
       enabled: true
+  executors:
+    'kubectl-read-only':
+      kubectl:
+        enabled: true
