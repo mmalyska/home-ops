@@ -14,6 +14,9 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
+  - name: cloudnative-pg
+    namespace: cnpg
+    path: cloudnative-pg
   - name: kubernetes-dashboard
     namespace: kubernetes-dashboard
     path: dashboard

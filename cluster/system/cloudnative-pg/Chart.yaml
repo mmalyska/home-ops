@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: cloudnative-pg-subchart
+type: application
+version: 1.0.0
+appVersion: "1.18.1"
+dependencies:
+  - name: cloudnative-pg
+    version: 0.16.1
+    repository: https://cloudnative-pg.github.io/charts
