@@ -195,7 +195,7 @@ jobs:
           fi
           echo "::set-output name=message::$(echo "$message" | jq --raw-input --slurp)"
           mkdir ${{ runner.temp }}/diff_items
-          echo $message > ${{ runner.temp }}/diff_items/message
+          (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/message
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
