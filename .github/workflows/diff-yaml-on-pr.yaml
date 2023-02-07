@@ -194,6 +194,8 @@ jobs:
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
           echo "::set-output name=message::$(echo "$message" | jq --raw-input --slurp)"
+          mkdir ${{ runner.temp }}/diff_items
+          echo $message > ${{ runner.temp }}/diff_items/message
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
@@ -205,5 +207,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: "${{ fromJSON(steps.diff.outputs.message) }}"
+          body-file: ${{ runner.temp }}/diff_items/message
           edit-mode: replace
