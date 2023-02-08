@@ -199,7 +199,7 @@ jobs:
             diff_filename=echo "${{ matrix.file }}" | sed 's,/,_,g'
             echo "::set-output name=diff-filename::$diff_filename"
             echo $message > ${{ runner.temp }}/diff_items/$diff_filename.diff
-            echo "The message was to long. You can find it in artifacts of action `${{ github.run_id }}`" > ${{ runner.temp }}/diff_items/message.txt
+            echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was to long. You can find it in artifacts of action \`${{ github.run_id }}\`" > ${{ runner.temp }}/diff_items/message.txt
           else
             echo $message > ${{ runner.temp }}/diff_items/message.txt
           fi
