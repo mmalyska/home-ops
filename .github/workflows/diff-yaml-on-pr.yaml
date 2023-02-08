@@ -196,10 +196,10 @@ jobs:
           message=$(echo "$message" | jq --raw-input --slurp)
           if [ ${#message} > 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
-            diff_filename=echo ${{ matrix.file }} | sed 's,/,_,g'
+            diff_filename=echo "${{ matrix.file }}" | sed 's,/,_,g'
             echo "::set-output name=diff-filename::$diff_filename"
             echo $message > ${{ runner.temp }}/diff_items/$diff_filename.diff
-            echo "The message was to long. You can find it in artifacts of action $diff_filename" > ${{ runner.temp }}/diff_items/message.txt
+            echo "The message was to long. You can find it in artifacts of action `${{ github.run_id }}`" > ${{ runner.temp }}/diff_items/message.txt
           else
             echo $message > ${{ runner.temp }}/diff_items/message.txt
           fi
