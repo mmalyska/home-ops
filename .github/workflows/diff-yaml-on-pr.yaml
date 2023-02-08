@@ -197,17 +197,18 @@ jobs:
             mkdir ${{ runner.temp }}/diff_items
             diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
             echo "::set-output name=diff-filename::$diff_filename"
-            echo -e $message > ${{ runner.temp }}/diff_items/$diff_filename.diff
-            echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was to long. You can find it in artifacts of action https://github.com/mmalyska/home-ops/actions/runs/${{ github.run_id }}#artifacts" > ${{ runner.temp }}/diff_items/message.txt
+            echo -e "$message" > ${{ runner.temp }}/diff_items/$diff_filename.txt
+            echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was too long. You can find it in artifacts of action https://github.com/mmalyska/home-ops/actions/runs/${{ github.run_id }}#artifacts" > ${{ runner.temp }}/diff_items/message.txt
           else
             echo $message > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
         uses: actions/upload-artifact@v3
-        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.txt
         with:
-          name: ${{ steps.diff.outputs.diff-filename }}.diff
-          path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+          name: ${{ steps.diff.outputs.diff-filename }}
+          path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.txt
+          retention-days: 14
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
