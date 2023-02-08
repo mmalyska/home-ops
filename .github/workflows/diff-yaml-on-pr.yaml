@@ -131,7 +131,7 @@ jobs:
           if [ ${#message} > 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
             diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
-            diff_no_changes=$((diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
+            diff_no_changes=$( (diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
             echo "::set-output name=diff-filename::$diff_filename"
             echo -e "$message" > ${{ runner.temp }}/diff_items/$diff_filename.diff
             echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was too long. Diff contains \`$diff_no_changes\` changes. You can find it in artifacts of action https://github.com/mmalyska/home-ops/actions/runs/${{ github.run_id }}#artifacts" > ${{ runner.temp }}/diff_items/message.txt
@@ -201,7 +201,7 @@ jobs:
             resources_live=$(echo "$resources_live" | yq e "del($labels)" -)
             resources_pr=$(echo "$resources_pr" | yq e "del($labels)" -)
           fi
-          diff=$((diff -u <(echo "$resources_live") <(echo "$resources_pr") || true) | tail +3)
+          diff=$( (diff -u <(echo "$resources_live") <(echo "$resources_pr") || true) | tail +3)
           # echo "$diff"
           message="Path: \`${{ matrix.file }}\`"$'\n'$'\n'
           if [ -z "$diff" ]; then
@@ -212,7 +212,7 @@ jobs:
           if [ ${#message} > 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
             diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
-            diff_no_changes=$((diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
+            diff_no_changes=$( (diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
             echo "::set-output name=diff-filename::$diff_filename"
             echo -e "$message" > ${{ runner.temp }}/diff_items/$diff_filename.diff
             echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was too long. Diff contains \`$diff_no_changes\` changes. You can find it in artifacts of action https://github.com/mmalyska/home-ops/actions/runs/${{ github.run_id }}#artifacts" > ${{ runner.temp }}/diff_items/message.txt
