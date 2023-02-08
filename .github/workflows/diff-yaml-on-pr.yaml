@@ -104,11 +104,11 @@ jobs:
           hr_live_path="live/${{ matrix.file }}"
           hr_pr_path="pr/${{ matrix.file }}"
           resources_live=$(helm template "$hr_live_path" --dependency-update --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
-          echo "$resources_live"
-          echo "#####################################################"
+          # echo "$resources_live"
+          # echo "#####################################################"
           resources_pr=$(helm template "$hr_pr_path" --dependency-update --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
-          echo "$resources_pr"
-          echo "#####################################################"
+          # echo "$resources_pr"
+          # echo "#####################################################"
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
             labels='.metadata.labels."helm.sh/chart"'
             labels+=',.metadata.labels.chart'
@@ -121,14 +121,30 @@ jobs:
             resources_pr=$(echo "$resources_pr" | yq e "del($labels)" -)
           fi
           diff=$( (diff -u <(echo "$resources_live") <(echo "$resources_pr") || true) | tail +3)
-          echo "$diff"
+          # echo "$diff"
           message="Path: \`${{ matrix.file }}\`"$'\n'$'\n'
           if [ -z "$diff" ]; then
             message="$message"'```'$'\n'"No changes detected in resources"$'\n''```'
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          echo "::set-output name=message::$(echo "$message" | jq --raw-input --slurp)"
+          if [ ${#message} > 10000 ]; then
+            mkdir ${{ runner.temp }}/diff_items
+            diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
+            diff_no_changes=$( (diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
+            echo "::set-output name=diff-filename::$diff_filename"
+            echo -e "$message" > ${{ runner.temp }}/diff_items/$diff_filename.diff
+            echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was too long. Diff contains \`$diff_no_changes\` changes. You can find it in artifacts of action https://github.com/mmalyska/home-ops/actions/runs/${{ github.run_id }}#artifacts" > ${{ runner.temp }}/diff_items/message.txt
+          else
+            echo "$message" > ${{ runner.temp }}/diff_items/message.txt
+          fi
+      - name: Add diff item
+        uses: actions/upload-artifact@v3
+        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+        with:
+          name: helm_diff_files
+          path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+          retention-days: 14
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
@@ -140,7 +156,7 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: "${{ fromJSON(steps.diff.outputs.message) }}"
+          body-file: ${{ runner.temp }}/diff_items/message.txt
           edit-mode: replace
 
   kustomize-release-diff:
@@ -173,11 +189,11 @@ jobs:
           k_live_path="live/${{ matrix.file }}"
           k_pr_path="pr/${{ matrix.file }}"
           resources_live=$(kubectl kustomize "$k_live_path" || true)
-          echo "$resources_live"
-          echo "#####################################################"
+          # echo "$resources_live"
+          # echo "#####################################################"
           resources_pr=$(kubectl kustomize "$k_pr_path" || true)
-          echo "$resources_pr"
-          echo "#####################################################"
+          # echo "$resources_pr"
+          # echo "#####################################################"
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
             labels='.metadata.labels."app.kubernetes.io/version"'
             labels+=',.spec.template.metadata.labels."app.kubernetes.io/version"'
@@ -186,14 +202,30 @@ jobs:
             resources_pr=$(echo "$resources_pr" | yq e "del($labels)" -)
           fi
           diff=$( (diff -u <(echo "$resources_live") <(echo "$resources_pr") || true) | tail +3)
-          echo "$diff"
+          # echo "$diff"
           message="Path: \`${{ matrix.file }}\`"$'\n'$'\n'
           if [ -z "$diff" ]; then
             message="$message"'```'$'\n'"No changes detected in resources"$'\n''```'
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          echo "::set-output name=message::$(echo "$message" | jq --raw-input --slurp)"
+          if [ ${#message} > 10000 ]; then
+            mkdir ${{ runner.temp }}/diff_items
+            diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
+            diff_no_changes=$( (diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
+            echo "::set-output name=diff-filename::$diff_filename"
+            echo -e "$message" > ${{ runner.temp }}/diff_items/$diff_filename.diff
+            echo "Path: \`${{ matrix.file }}\`"$'\n'$'\n'"The message was too long. Diff contains \`$diff_no_changes\` changes. You can find it in artifacts of action https://github.com/mmalyska/home-ops/actions/runs/${{ github.run_id }}#artifacts" > ${{ runner.temp }}/diff_items/message.txt
+          else
+            echo "$message" > ${{ runner.temp }}/diff_items/message.txt
+          fi
+      - name: Add diff item
+        uses: actions/upload-artifact@v3
+        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+        with:
+          name: kustomize_diff_files
+          path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+          retention-days: 14
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
@@ -205,5 +237,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: "${{ fromJSON(steps.diff.outputs.message) }}"
+          body-file: ${{ runner.temp }}/diff_items/message.txt
           edit-mode: replace
