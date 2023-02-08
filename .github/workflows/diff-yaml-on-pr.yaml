@@ -196,17 +196,19 @@ jobs:
           message=$(echo "$message" | jq --raw-input --slurp)
           if [ ${#message} > 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
-            echo $message > ${{ runner.temp }}/diff_items/diff_${{ matrix.file//\//_ }}.txt
-            echo "The message was to long. You can find it in artifacts of action diff_${{ matrix.file//\//_ }}" > ${{ runner.temp }}/diff_items/message.txt
+            diff_filename=${{ matrix.file }} | sed 's,/,_,g'
+            echo "::set-output name=diff-filename::$diff_filename"
+            echo $message > ${{ runner.temp }}/diff_items/$diff_filename.diff
+            echo "The message was to long. You can find it in artifacts of action $diff_filename" > ${{ runner.temp }}/diff_items/message.txt
           else
             echo $message > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
         uses: actions/upload-artifact@v3
-        if: test -f ${{ runner.temp }}/diff_items/diff_${{ matrix.file//\//_ }}.txt
+        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
         with:
-          name: diff_${{ matrix.file//\//_ }}
-          path: ${{ runner.temp }}/diff_items/diff_${{ matrix.file//\//_ }}.txt
+          name: ${{ steps.diff.outputs.diff-filename }}.diff
+          path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
