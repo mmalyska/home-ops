@@ -186,26 +186,26 @@ jobs:
             resources_pr=$(echo "$resources_pr" | yq e "del($labels)" -)
           fi
           diff=$( (diff -u <(echo "$resources_live") <(echo "$resources_pr") || true) | tail +3)
-          echo "$diff"
+          # echo "$diff"
           message="Path: \`${{ matrix.file }}\`"$'\n'$'\n'
           if [ -z "$diff" ]; then
             message="$message"'```'$'\n'"No changes detected in resources"$'\n''```'
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          if [ (echo "$message" | jq --raw-input --slurp | wc -m) > 60000 ]; then
+          if [ (echo "$message" | jq --raw-input --slurp | wc -m) > 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
-            (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/diff.txt
-            echo "The message was to long. You can find it in artifacts of action {linkHere}" > ${{ runner.temp }}/diff_items/message.txt
+            (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/diff_${{ matrix.file }}.txt
+            echo "The message was to long. You can find it in artifacts of action diff_${{ matrix.file }}" > ${{ runner.temp }}/diff_items/message.txt
           else
             (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
         uses: actions/upload-artifact@v3
-        if: test -f ${{ runner.temp }}/diff_items/diff.txt
+        if: test -f ${{ runner.temp }}/diff_items/diff_${{ matrix.file }}.txt
         with:
-          name: diff
-          path: ${{ runner.temp }}/diff_items/diff.txt
+          name: diff_${{ matrix.file }}
+          path: ${{ runner.temp }}/diff_items/diff_${{ matrix.file }}.txt
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
