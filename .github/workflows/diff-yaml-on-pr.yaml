@@ -173,11 +173,11 @@ jobs:
           k_live_path="live/${{ matrix.file }}"
           k_pr_path="pr/${{ matrix.file }}"
           resources_live=$(kubectl kustomize "$k_live_path" || true)
-          echo "$resources_live"
-          echo "#####################################################"
+          # echo "$resources_live"
+          # echo "#####################################################"
           resources_pr=$(kubectl kustomize "$k_pr_path" || true)
-          echo "$resources_pr"
-          echo "#####################################################"
+          # echo "$resources_pr"
+          # echo "#####################################################"
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
             labels='.metadata.labels."app.kubernetes.io/version"'
             labels+=',.spec.template.metadata.labels."app.kubernetes.io/version"'
@@ -193,19 +193,20 @@ jobs:
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          if [ (echo "$message" | jq --raw-input --slurp | wc -m) > 10000 ]; then
+          message=$(echo "$message" | jq --raw-input --slurp)
+          if [ ${#message} > 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
-            (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/diff_${{ matrix.file }}.txt
-            echo "The message was to long. You can find it in artifacts of action diff_${{ matrix.file }}" > ${{ runner.temp }}/diff_items/message.txt
+            echo $message > ${{ runner.temp }}/diff_items/diff_${{ matrix.file//\//_ }}.txt
+            echo "The message was to long. You can find it in artifacts of action diff_${{ matrix.file//\//_ }}" > ${{ runner.temp }}/diff_items/message.txt
           else
-            (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/message.txt
+            echo $message > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
         uses: actions/upload-artifact@v3
-        if: test -f ${{ runner.temp }}/diff_items/diff_${{ matrix.file }}.txt
+        if: test -f ${{ runner.temp }}/diff_items/diff_${{ matrix.file//\//_ }}.txt
         with:
-          name: diff_${{ matrix.file }}
-          path: ${{ runner.temp }}/diff_items/diff_${{ matrix.file }}.txt
+          name: diff_${{ matrix.file//\//_ }}
+          path: ${{ runner.temp }}/diff_items/diff_${{ matrix.file//\//_ }}.txt
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
