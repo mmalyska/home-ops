@@ -193,9 +193,19 @@ jobs:
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          echo "::set-output name=message::$(echo "$message" | jq --raw-input --slurp)"
-          mkdir ${{ runner.temp }}/diff_items
-          (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/message
+          if [ (echo "$message" | jq --raw-input --slurp | wc -m) > 60000 ]; then
+            mkdir ${{ runner.temp }}/diff_items
+            (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/diff.txt
+            echo "The message was to long. You can find it in artifacts of action {linkHere}" > ${{ runner.temp }}/diff_items/message.txt
+          else
+            (echo "$message" | jq --raw-input --slurp) > ${{ runner.temp }}/diff_items/message.txt
+          fi
+      - name: Add diff item
+        uses: actions/upload-artifact@v3
+        if: test -f ${{ runner.temp }}/diff_items/diff.txt
+        with:
+          name: diff
+          path: ${{ runner.temp }}/diff_items/diff.txt
       - name: Find Comment
         uses: peter-evans/find-comment@v2
         id: fc
@@ -207,5 +217,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body-file: ${{ runner.temp }}/diff_items/message
+          body-file: ${{ runner.temp }}/diff_items/message.txt
           edit-mode: replace
