@@ -128,7 +128,7 @@ jobs:
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          if [ ${#message} > 10000 ]; then
+          if [ ${#message} -gt 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
             diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
             diff_no_changes=$( (diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
@@ -209,7 +209,7 @@ jobs:
           else
             message="$message"'```diff'$'\n'"$diff"$'\n''```'
           fi
-          if [ ${#message} > 10000 ]; then
+          if [ ${#message} -gt 10000 ]; then
             mkdir ${{ runner.temp }}/diff_items
             diff_filename=$(echo "${{ matrix.file }}" | sed 's,/,_,g')
             diff_no_changes=$( (diff -y --suppress-common-lines <(echo "$resources_live") <(echo "$resources_pr") || true) | wc -l)
