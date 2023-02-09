@@ -38,14 +38,16 @@ server:
     servicePortHttpName: http
     servicePortHttp: 80
     namedTargetPort: true
-  ingress:
-    annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      traefik.ingress.kubernetes.io/router.tls: "true"
-      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: grocy.<secret:private-domain>
-      traefik.ingress.kubernetes.io/router.middlewares: oauth2-proxy-forward-auth@kubernetescrd
-      kubernetes.io/ingress.class: traefik
-    host: grocy.<secret:private-domain>
+  host: grocy.<secret:private-domain>
+  ingresses:
+    - annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/ingressEndpoint.hostname: grocy.<secret:private-domain>
+        traefik.ingress.kubernetes.io/router.middlewares: oauth2-proxy-forward-auth@kubernetescrd
+        kubernetes.io/ingress.class: traefik
+      paths:
+        - path: /
   readinessProbe:
     enabled: false
     failureThreshold: 5
