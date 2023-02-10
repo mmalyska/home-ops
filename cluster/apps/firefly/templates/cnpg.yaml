@@ -13,7 +13,7 @@ spec:
   backup:
     retentionPolicy: "10d"
     barmanObjectStore:
-      destinationPath: "s3://k8s@home-backup/cnpg/firefly"
+      destinationPath: "s3://k8s-at-home-backup/cnpg/firefly"
       endpointURL: <secret:s3_endpoint>
       s3Credentials:
         accessKeyId:
