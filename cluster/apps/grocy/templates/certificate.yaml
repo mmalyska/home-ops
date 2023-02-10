@@ -1,14 +1,25 @@
+{{ range $k, $v := $.Values.server.ingresses }}
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
-  name: {{ template "grocy.server.fullname" . }}-cert
+  {{- if $v.name}}
+  name: {{ printf "%s-%s-cert" (include "grocy.server.fullname" $) $v.name }}
+  {{- else }}
+  name: {{ template "grocy.server.fullname" $ }}-cert
+  {{- end }}
 spec:
-  secretName: {{ template "grocy.server.fullname" . }}-cert
+  {{- if $v.name}}
+  secretName: {{ printf "%s-%s-cert" (include "grocy.server.fullname" $) $v.name }}
+  {{- else }}
+  secretName: {{ template "grocy.server.fullname" $ }}-cert
+  {{- end }}
   issuerRef:
     name: lets-encrypt-dns01-production-cf
     kind: ClusterIssuer
-  commonName: {{ .Values.server.host | quote }}
+  commonName: {{ $v.host | quote }}
   dnsNames:
-  - {{ .Values.server.host | quote }}
+  - {{ $v.host | quote }}
+{{ end }}

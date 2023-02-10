@@ -53,3 +53,14 @@ spec:
       - X-Auth-Request-Groups
       - X-Auth-Request-Preferred-Username
       - Authorization
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forward-auth-strip-headers
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  headers:
+    customRequestHeaders:
+      X-Auth-Request-Preferred-Username: "" # Removes

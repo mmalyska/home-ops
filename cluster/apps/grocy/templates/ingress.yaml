@@ -24,10 +24,14 @@ metadata:
 spec:
   tls:
     - hosts:
-      - {{ $.Values.server.host }}
+      - {{ $v.host }}
+      {{- if $v.name}}
+      secretName: {{ printf "%s-%s-cert" (include "grocy.server.fullname" $) $v.name }}
+      {{- else }}
       secretName: {{ template "grocy.server.fullname" $ }}-cert
+      {{- end }}
   rules:
-  - host: {{ $.Values.server.host }}
+  - host: {{ $v.host }}
     http:
     {{ range $pk, $pv := $v.paths }}
       paths:
