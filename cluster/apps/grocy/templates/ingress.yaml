@@ -11,7 +11,11 @@ metadata:
     {{ $key }}: {{ $value | quote }}
   {{- end }}
 {{- end }}
+  {{- if $v.name}}
+  name: {{ printf "%s-%s" (include "grocy.server.fullname" $) $v.name }}
+  {{- else }}
   name: {{ template "grocy.server.fullname" $ }}
+  {{- end }}
   labels:
     {{- include "grocy.labels" (dict "context" $ "component" $.Values.server.name "name" $.Values.server.name) | nindent 4 }}
     {{- if $v.labels }}
