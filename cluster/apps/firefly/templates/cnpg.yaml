@@ -1,0 +1,34 @@
+# Example of PostgreSQL cluster
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: fireflydb-test-cnpg
+spec:
+  instances: 1
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: 1Gi
+  monitoring:
+    enablePodMonitor: true
+  backup:
+    retentionPolicy: "10d"
+    barmanObjectStore:
+      destinationPath: "s3://k8s@home-backup/cnpg/firefly"
+      endpointURL: <secret:s3_endpoint>
+      s3Credentials:
+        accessKeyId:
+          name: firefly-secrets
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: firefly-secrets
+          key: ACCESS_SECRET_KEY
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: fireflydb-test-cnpg-backup
+spec:
+  schedule: "0 0 0 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: fireflydb-test-cnpg
