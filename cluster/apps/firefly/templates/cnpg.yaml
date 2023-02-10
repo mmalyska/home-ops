@@ -28,6 +28,7 @@ kind: ScheduledBackup
 metadata:
   name: fireflydb-test-cnpg-backup
 spec:
+  immediate: true
   schedule: "0 0 0 * * *"
   backupOwnerReference: self
   cluster:
