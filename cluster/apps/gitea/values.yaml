@@ -63,37 +63,6 @@ gitea:
             key: password
 postgres:
   name: giteadb
-  postgresVersion: 14
-  image:
-    imagePullPolicy: IfNotPresent
-    repository: registry.developers.crunchydata.com/crunchydata/crunchy-postgres
-    tag: "ubi8-14.4-0"
-  instances:
-    - name: main-ceph
-      replicas: 1
-      storage:
-        resource: 5Gi
-        class: ceph-block
-  backup:
-    image:
-      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
-      tag: "ubi8-2.38-2"
-    global:
-      repo1-retention-full: "14"
-      repo1-retention-full-type: time
-    repos:
-      - name: repo1
-        storageClass: ceph-block
-        storage: 10Gi
-  proxy:
-    name: pgbouncer
-    port: 5432
-    replicas: 1
-    image:
-      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
-      tag: "ubi8-1.16-4"
-postgresCnpg:
-  name: giteadb
   instances: 1
   storage:
     size: 5Gi
