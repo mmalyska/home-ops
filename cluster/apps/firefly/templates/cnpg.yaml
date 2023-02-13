@@ -37,6 +37,6 @@ spec:
   cluster:
     name: {{ printf "%s-%s" $.Values.postgres.name "cnpg" }}
   {{- with $v.spec }}
-    {{- toYaml . | nindent 4 }}
+    {{- toYaml . | nindent 2 }}
   {{- end }}
 {{ end }}
