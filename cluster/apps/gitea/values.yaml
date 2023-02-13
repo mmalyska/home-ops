@@ -117,7 +117,7 @@ postgresCnpg:
   externalClusters:
     - name: crunchy-cluster
       connectionParameters:
-        host: giteadb-primary.identity.svc
+        host: giteadb-primary.gitea.svc
         user: giteadb
         dbname: giteadb
       password:
