@@ -36,6 +36,8 @@ apps:
   - name: keycloak
     namespace: identity
     path: identity/keycloak
+    syncPolicy: false
+    selfHeal: false
     plugin:
       name: replacer-helm
       env:
