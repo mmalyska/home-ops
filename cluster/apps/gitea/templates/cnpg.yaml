@@ -1,0 +1,42 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ printf "%s-%s" .Values.postgresCnpg.name "cnpg" }}
+spec:
+  instances: {{ .Values.postgresCnpg.instances }}
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: {{ .Values.postgresCnpg.storage.size }}
+  postgresql:
+    parameters:
+      pgaudit.log: "all, -misc"
+      pgaudit.log_catalog: "off"
+      pgaudit.log_parameter: "on"
+      pgaudit.log_relation: "on"
+  {{- with .Values.postgresCnpg.bootstrap }}
+  bootstrap:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.postgresCnpg.externalClusters }}
+  externalClusters:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  monitoring:
+    enablePodMonitor: {{ .Values.postgresCnpg.monitoring.enablePodMonitor }}
+  {{- with .Values.postgresCnpg.backup }}
+  backup:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{ range $k, $v := .Values.postgresCnpg.scheduledBackups }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ $v.name }}
+spec:
+  cluster:
+    name: {{ printf "%s-%s" $.Values.postgresCnpg.name "cnpg" }}
+  {{- with $v.spec }}
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{ end }}
