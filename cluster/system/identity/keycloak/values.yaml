@@ -128,7 +128,7 @@ postgresCnpg:
   externalClusters:
     - name: crunchy-cluster
       connectionParameters:
-        host: keycloakdb-primary.firefly.svc
+        host: keycloakdb-primary.identity.svc
         user: keycloakdb
         dbname: keycloakdb
       password:
