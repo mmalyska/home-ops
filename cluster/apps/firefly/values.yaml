@@ -68,23 +68,17 @@ firefly-iii:
       AUTHENTICATION_GUARD: "remote_user_guard"
       AUTHENTICATION_GUARD_HEADER: "HTTP_X_AUTH_REQUEST_PREFERRED_USERNAME"
       AUTHENTICATION_GUARD_EMAIL: "HTTP_X_AUTH_REQUEST_EMAIL"
+      DB_DATABASE: fireflydb
+      DB_HOST: fireflydb-cnpg
     envValueFrom:
       DB_USERNAME:
         secretKeyRef:
-          name: fireflydb-pguser-fireflydb
-          key: user
+          name: fireflydb-test-cnpg-app
+          key: username
       DB_PASSWORD:
         secretKeyRef:
-          name: fireflydb-pguser-fireflydb
+          name: fireflydb-test-cnpg-app
           key: password
-      DB_DATABASE:
-        secretKeyRef:
-          name: fireflydb-pguser-fireflydb
-          key: dbname
-      DB_HOST:
-        secretKeyRef:
-          name: fireflydb-pguser-fireflydb
-          key: pgbouncer-host
 importer:
   enabled: true
   env:
