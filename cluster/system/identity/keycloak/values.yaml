@@ -74,41 +74,7 @@ server:
   resources: {}
 postgres:
   name: keycloakdb
-  postgresVersion: 14
-  image:
-    imagePullPolicy: IfNotPresent
-    repository: registry.developers.crunchydata.com/crunchydata/crunchy-postgres
-    tag: "ubi8-14.4-0"
-  instances:
-    - name: main
-      replicas: 1
-      storage: 5Gi
-  backup:
-    image:
-      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
-      tag: "ubi8-2.38-2"
-    global:
-      repo1-retention-full: "14"
-      repo1-retention-full-type: time
-      repo2-retention-full: "14"
-      repo2-retention-full-type: time
-    repos:
-      - name: repo1
-        storageClass: ""
-        storage: 5Gi
-      - name: repo2
-        storageClass: nfs
-        storage: 5Gi
-  proxy:
-    name: pgbouncer
-    port: 5432
-    replicas: 1
-    image:
-      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
-      tag: "ubi8-1.16-4"
-postgresCnpg:
-  name: keycloakdb
-  instances: 1
+  instances: 2
   storage:
     size: 2Gi
   bootstrap:
