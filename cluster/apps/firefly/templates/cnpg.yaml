@@ -19,7 +19,7 @@ spec:
       import:
         type: microservice
         databases:
-          - firefly
+          - fireflydb
         source:
           externalCluster: crunchy-cluster
   externalClusters:
