@@ -25,7 +25,8 @@ gitea:
         LFS_START_SERVER: true
       database:
         DB_TYPE: postgres
-        HOST: 127.0.0.1:3306
+        HOST: giteadb-cnpg-rw
+        NAME: app
         SSL_MODE: require
       service:
         DISABLE_REGISTRATION: true
@@ -50,25 +51,15 @@ gitea:
     env:
       - name: ENV_TO_INI__database__DB_TYPE
         value: postgres
-      - name: ENV_TO_INI__database__HOST
-        valueFrom:
-          secretKeyRef:
-            name: giteadb-pguser-giteadb
-            key: pgbouncer-host
-      - name: ENV_TO_INI__database__NAME
-        valueFrom:
-          secretKeyRef:
-            name: giteadb-pguser-giteadb
-            key: dbname
       - name: ENV_TO_INI__database__USER
         valueFrom:
           secretKeyRef:
-            name: giteadb-pguser-giteadb
-            key: user
+            name: giteadb-cnpg-app
+            key: username
       - name: ENV_TO_INI__database__PASSWD
         valueFrom:
           secretKeyRef:
-            name: giteadb-pguser-giteadb
+            name: giteadb-cnpg-app
             key: password
 postgres:
   name: giteadb
