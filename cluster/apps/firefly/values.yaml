@@ -73,11 +73,11 @@ firefly-iii:
     envValueFrom:
       DB_USERNAME:
         secretKeyRef:
-          name: fireflydb-test-cnpg-app
+          name: fireflydb-cnpg-app
           key: username
       DB_PASSWORD:
         secretKeyRef:
-          name: fireflydb-test-cnpg-app
+          name: fireflydb-cnpg-app
           key: password
 importer:
   enabled: true
