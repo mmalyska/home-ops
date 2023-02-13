@@ -20,23 +20,17 @@ server:
     - name: KC_DB_USERNAME
       valueFrom:
         secretKeyRef:
-          name: keycloakdb-pguser-keycloakdb
-          key: user
+          name: keycloakdb-cnpg-app
+          key: username
     - name: KC_DB_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: keycloakdb-pguser-keycloakdb
+          name: keycloakdb-cnpg-app
           key: password
     - name: KC_DB_URL_DATABASE
-      valueFrom:
-        secretKeyRef:
-          name: keycloakdb-pguser-keycloakdb
-          key: dbname
+      value: App
     - name: KC_DB_URL_HOST
-      valueFrom:
-        secretKeyRef:
-          name: keycloakdb-pguser-keycloakdb
-          key: pgbouncer-host
+      value: keycloakdb-cnpg-rw
     - name: KC_FEATURES
       value: "docker"
     - name: KC_METRICS_ENABLED
