@@ -69,7 +69,7 @@ firefly-iii:
       AUTHENTICATION_GUARD_HEADER: "HTTP_X_AUTH_REQUEST_PREFERRED_USERNAME"
       AUTHENTICATION_GUARD_EMAIL: "HTTP_X_AUTH_REQUEST_EMAIL"
       DB_DATABASE: fireflydb
-      DB_HOST: fireflydb-cnpg
+      DB_HOST: fireflydb-cnpg-rw
     envValueFrom:
       DB_USERNAME:
         secretKeyRef:
