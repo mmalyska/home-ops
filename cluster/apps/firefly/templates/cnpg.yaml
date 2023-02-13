@@ -1,58 +1,42 @@
-# Example of PostgreSQL cluster
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: fireflydb-cnpg
+  name: {{ printf "%s-%s" .Values.postgres.name "cnpg" }}
 spec:
-  instances: 1
+  instances: {{ .Values.postgres.instances }}
   primaryUpdateStrategy: unsupervised
   storage:
-    size: 1Gi
+    size: {{ .Values.postgres.storage.size }}
   postgresql:
     parameters:
       pgaudit.log: "all, -misc"
       pgaudit.log_catalog: "off"
       pgaudit.log_parameter: "on"
       pgaudit.log_relation: "on"
-  # bootstrap:
-  #   initdb:
-  #     import:
-  #       type: microservice
-  #       databases:
-  #         - fireflydb
-  #       source:
-  #         externalCluster: crunchy-cluster
-  # externalClusters:
-  #   - name: crunchy-cluster
-  #     connectionParameters:
-  #       host: fireflydb-primary.firefly.svc
-  #       user: fireflydb
-  #       dbname: fireflydb
-  #     password:
-  #       name: fireflydb-pguser-fireflydb
-  #       key: password
+  {{- with .Values.postgres.bootstrap }}
+  bootstrap:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.postgres.externalClusters }}
+  externalClusters:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   monitoring:
-    enablePodMonitor: true
+    enablePodMonitor: {{ .Values.postgres.monitoring.enablePodMonitor }}
+  {{- with .Values.postgres.backup }}
   backup:
-    retentionPolicy: "10d"
-    barmanObjectStore:
-      destinationPath: "s3://k8s-at-home-backup/cnpg/firefly"
-      endpointURL: <secret:s3_endpoint>
-      s3Credentials:
-        accessKeyId:
-          name: firefly-secrets
-          key: ACCESS_KEY_ID
-        secretAccessKey:
-          name: firefly-secrets
-          key: ACCESS_SECRET_KEY
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{ range $k, $v := .Values.postgres.scheduledBackups }}
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: fireflydb-cnpg-backup
+  name: {{ $v.name }}
 spec:
-  immediate: true
-  schedule: "0 0 0 * * *"
-  backupOwnerReference: self
   cluster:
-    name: fireflydb-cnpg
+    name: {{ printf "%s-%s" $.Values.postgres.name "cnpg" }}
+  {{- with $v.spec }}
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{ end }}

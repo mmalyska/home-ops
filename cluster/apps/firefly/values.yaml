@@ -6,29 +6,46 @@ global:
     imagePullPolicy: IfNotPresent
 postgres:
   name: fireflydb
-  postgresVersion: 14
-  image:
-    imagePullPolicy: IfNotPresent
-    repository: registry.developers.crunchydata.com/crunchydata/crunchy-postgres
-    tag: "ubi8-14.4-0"
-  instances:
-    - name: main
-      replicas: 1
-      storage: 5Gi
+  instances: 1
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      import:
+        type: microservice
+        databases:
+          - fireflydb
+        source:
+          externalCluster: crunchy-cluster
+  externalClusters:
+    - name: crunchy-cluster
+      connectionParameters:
+        host: fireflydb-primary.firefly.svc
+        user: fireflydb
+        dbname: fireflydb
+      password:
+        name: fireflydb-pguser-fireflydb
+        key: password
+  monitoring:
+    enablePodMonitor: true
   backup:
-    image:
-      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
-      tag: "ubi8-2.38-2"
-    repos:
-      - name: repo1
-        storage: 5Gi
-  proxy:
-    name: pgbouncer
-    port: 5432
-    replicas: 1
-    image:
-      repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
-      tag: "ubi8-1.16-4"
+    retentionPolicy: "10d"
+    barmanObjectStore:
+      destinationPath: "s3://k8s-at-home-backup/cnpg/firefly"
+      endpointURL: <secret:s3_endpoint>
+      s3Credentials:
+        accessKeyId:
+          name: firefly-secrets
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: firefly-secrets
+          key: ACCESS_SECRET_KEY
+  scheduledBackups:
+    - name: fireflydb-cnpg-backup
+      spec:
+        immediate: true
+        schedule: "0 0 0 * * *"
+        backupOwnerReference: self
 firefly-iii:
   # -- Set to false to not deploy Firefly III
   enabled: true
