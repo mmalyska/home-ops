@@ -8,6 +8,23 @@ spec:
   primaryUpdateStrategy: unsupervised
   storage:
     size: 1Gi
+  bootstrap:
+    initdb:
+      import:
+        type: microservice
+        databases:
+          - fireflydb
+        source:
+          externalCluster: crunchy-cluster
+  externalClusters:
+    - name: crunchy-cluster
+      connectionParameters:
+        host: fireflydb-primary.firefly.svc
+        user: postgres
+        dbname: fireflydb
+      password:
+        name: fireflydb-pguser-fireflydb
+        key: password
   monitoring:
     enablePodMonitor: true
   backup:
