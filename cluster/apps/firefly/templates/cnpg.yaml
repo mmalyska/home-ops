@@ -20,7 +20,7 @@ spec:
     - name: crunchy-cluster
       connectionParameters:
         host: fireflydb-primary.firefly.svc
-        user: postgres
+        user: fireflydb
         dbname: fireflydb
       password:
         name: fireflydb-pguser-fireflydb
