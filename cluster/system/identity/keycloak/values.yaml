@@ -28,7 +28,7 @@ server:
           name: keycloakdb-cnpg-app
           key: password
     - name: KC_DB_URL_DATABASE
-      value: App
+      value: app
     - name: KC_DB_URL_HOST
       value: keycloakdb-cnpg-rw
     - name: KC_FEATURES
