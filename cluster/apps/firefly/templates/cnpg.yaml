@@ -19,7 +19,7 @@ spec:
       import:
         type: microservice
         databases:
-          - fireflydb
+          - firefly
         source:
           externalCluster: crunchy-cluster
   externalClusters:
@@ -49,10 +49,10 @@ spec:
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: fireflydb-test-cnpg-backup
+  name: fireflydb-cnpg-backup
 spec:
   immediate: true
   schedule: "0 0 0 * * *"
   backupOwnerReference: self
   cluster:
-    name: fireflydb-test-cnpg
+    name: fireflydb-cnpg
