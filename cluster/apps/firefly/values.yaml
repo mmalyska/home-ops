@@ -68,7 +68,7 @@ firefly-iii:
       AUTHENTICATION_GUARD: "remote_user_guard"
       AUTHENTICATION_GUARD_HEADER: "HTTP_X_AUTH_REQUEST_PREFERRED_USERNAME"
       AUTHENTICATION_GUARD_EMAIL: "HTTP_X_AUTH_REQUEST_EMAIL"
-      DB_DATABASE: fireflydb
+      DB_DATABASE: app
       DB_HOST: fireflydb-cnpg-rw
     envValueFrom:
       DB_USERNAME:
