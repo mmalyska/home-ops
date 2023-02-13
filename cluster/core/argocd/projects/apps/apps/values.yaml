@@ -26,6 +26,8 @@ apps:
   - name: firefly
     namespace: firefly
     path: firefly
+    syncPolicy: false
+    selfHeal: false
     plugin:
       name: replacer-helm
       env:
