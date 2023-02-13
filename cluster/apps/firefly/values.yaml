@@ -29,7 +29,6 @@ postgres:
     image:
       repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
       tag: "ubi8-1.16-4"
-
 firefly-iii:
   # -- Set to false to not deploy Firefly III
   enabled: true

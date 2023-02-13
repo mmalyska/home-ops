@@ -14,23 +14,23 @@ spec:
       pgaudit.log_catalog: "off"
       pgaudit.log_parameter: "on"
       pgaudit.log_relation: "on"
-  bootstrap:
-    initdb:
-      import:
-        type: microservice
-        databases:
-          - fireflydb
-        source:
-          externalCluster: crunchy-cluster
-  externalClusters:
-    - name: crunchy-cluster
-      connectionParameters:
-        host: fireflydb-primary.firefly.svc
-        user: fireflydb
-        dbname: fireflydb
-      password:
-        name: fireflydb-pguser-fireflydb
-        key: password
+  # bootstrap:
+  #   initdb:
+  #     import:
+  #       type: microservice
+  #       databases:
+  #         - fireflydb
+  #       source:
+  #         externalCluster: crunchy-cluster
+  # externalClusters:
+  #   - name: crunchy-cluster
+  #     connectionParameters:
+  #       host: fireflydb-primary.firefly.svc
+  #       user: fireflydb
+  #       dbname: fireflydb
+  #     password:
+  #       name: fireflydb-pguser-fireflydb
+  #       key: password
   monitoring:
     enablePodMonitor: true
   backup:
