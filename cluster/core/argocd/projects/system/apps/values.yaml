@@ -70,10 +70,6 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
-  - name: postgres-operator
-    namespace: postgres-operator
-    path: postgres-operator
-    selfHeal: false
   - name: prometheus-stack-apps
     namespace: monitoring
     path: prometheus-stack-apps

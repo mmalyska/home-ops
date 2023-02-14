@@ -48,7 +48,6 @@ env:
     node.k8s.io/v1
     objectbucket.io/v1alpha1
     policy/v1
-    postgres-operator.crunchydata.com/v1beta1
     rbac.authorization.k8s.io/v1
     scheduling.k8s.io/v1
     storage.k8s.io/v1
