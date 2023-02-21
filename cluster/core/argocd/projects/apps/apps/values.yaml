@@ -34,8 +34,6 @@ apps:
   - name: gitea
     namespace: gitea
     path: gitea
-    syncPolicy: false
-    selfHeal: false
     plugin:
       name: replacer-helm
       env:
