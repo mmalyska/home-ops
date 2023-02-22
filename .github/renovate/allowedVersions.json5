@@ -6,12 +6,12 @@
       "allowedVersions": "<1",
       "matchPackageNames": ["linuxserver/calibre-web"]
     },
-    {
-      "description": "Lock version because they changed versioning",
-      "matchDatasources": ["docker"],
-      "allowedVersions": "/^v.*$/",
-      "matchPackageNames": ["lscr.io/linuxserver/jellyfin"]
-    },
+    //{
+    //  "description": "Lock version because they changed versioning",
+    //  "matchDatasources": ["docker"],
+    //  "allowedVersions": "/^v.*$/",
+    //  "matchPackageNames": ["lscr.io/linuxserver/jellyfin"]
+    //},
     {
       "description": "Lock version to cluster version",
       "matchDatasources": ["docker", "github-releases"],
