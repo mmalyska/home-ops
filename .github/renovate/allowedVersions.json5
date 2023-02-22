@@ -10,7 +10,7 @@
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
       "allowedVersions": "<2000",
-      "matchPackageNames": ["lscr.io/linuxserver/jellyfin"]
+      "matchPackageNames": ["linuxserver/jellyfin"]
     },
     {
       "description": "Lock version to cluster version",
