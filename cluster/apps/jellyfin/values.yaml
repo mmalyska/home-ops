@@ -4,7 +4,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: linuxserver/jellyfin
-  tag: "10.8.7"
+  tag: "10.8.9"
 jellyfin:
   annotations: {}
   replicaCount: 1
