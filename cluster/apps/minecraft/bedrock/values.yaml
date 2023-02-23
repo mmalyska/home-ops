@@ -17,7 +17,7 @@ minecraft-bedrock:
     gameMode: survival
     levelName: jaskinia
     serverName: "Jaskinia"
-    cheats: true
+    cheats: false
     serviceType: LoadBalancer
     loadBalancerIP: 192.168.48.23
     ops: <secret:ops>
