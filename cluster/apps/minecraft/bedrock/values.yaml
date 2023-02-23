@@ -15,7 +15,7 @@ minecraft-bedrock:
     version: "LATEST"
     difficulty: normal
     gameMode: survival
-    levelName: jaskinia
+    levelName: world
     serverName: "Jaskinia"
     cheats: false
     serviceType: LoadBalancer
