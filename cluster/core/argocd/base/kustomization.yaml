@@ -11,7 +11,7 @@ resources:
   - resources/cert.yaml
   - resources/ingress.yaml
   - resources/ingress-internal.yaml
-  - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.6.2
+  - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.6.3
   - resources/app-of-apps.yaml
   - resources/repository.yaml
   - resources/sops-replacer-plugin.yaml
