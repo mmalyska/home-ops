@@ -63,7 +63,7 @@ gitea:
             key: password
 postgres:
   name: giteadb
-  instances: 1
+  instances: 2
   storage:
     size: 5Gi
   bootstrap:

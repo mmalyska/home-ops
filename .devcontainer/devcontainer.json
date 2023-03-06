@@ -3,12 +3,8 @@
 {
     "name": "Ubuntu",
     "build": {
-        "dockerfile": "Dockerfile",
-        // Update 'VARIANT' to pick an Ubuntu version: jammy / ubuntu-22.04, focal / ubuntu-20.04, bionic /ubuntu-18.04
-        // Use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon.
-        "args": { "VARIANT": "ubuntu-22.04" }
+        "dockerfile": "Dockerfile"
     },
-    "runArgs": ["--userns=keep-id"],
     "remoteEnv": {
         "SYNC_LOCALHOST_CONFIGS": "true"
     },
@@ -17,9 +13,6 @@
         "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind",
         "source=${localEnv:USERPROFILE}/.ssh,target=/usr/local/share/ssh-localhost,type=bind"
     ],
-
-    // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    // "forwardPorts": [],
 
     //Install task and required dependencies via homebrew. Install precommit tasks.
     "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
@@ -32,7 +25,6 @@
     // Run after start of container
     "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",
 
-    // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "vscode",
     "containerUser": "vscode",
     "features": {
@@ -52,7 +44,6 @@
                 "signageos.signageos-vscode-sops",
                 "usernamehw.errorlens",
                 "fcrespo82.markdown-table-formatter",
-                "redhat.ansible"
             ]
     }
 }
