@@ -92,6 +92,10 @@ apps:
         kind: CephCluster
         jsonPointers:
           - /spec/monitoring/createPrometheusRules
+      - group: ceph.rook.io
+        kind: CephObjectStore
+        jsonPointers:
+          - /spec/healthCheck
   - name: rook-ceph-operator
     namespace: rook-ceph
     path: rook-ceph/rook-ceph-operator
