@@ -11,7 +11,7 @@ rook-ceph-cluster:
     createPrometheusRules: true
     rulesNamespaceOverride: monitoring
   toolbox:
-    enabled: false
+    enabled: true
     resources:
       limits:
         cpu: "500m"
