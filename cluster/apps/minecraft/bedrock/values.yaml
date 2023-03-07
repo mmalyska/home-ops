@@ -7,10 +7,9 @@ persistance:
       storage: 10Gi
 minecraft-bedrock:
   persistence:
-    storageClass: ceph-block
     dataDir:
       enabled: true
-      # existingClaim: minecraft-bedrock-datadir
+      existingClaim: minecraft-bedrock-datadir
       Size: 10Gi
   resources:
     requests:
