@@ -73,7 +73,7 @@ spec:
                 - mountPath: "/out"
                   name: nginx-content
                 - mountPath: "/world"
-                  name: minecraft-bedrock-minecraft-bedrock-datadir
+                  name: world
                   subPath: /worlds/jaskinia
           restartPolicy: OnFailure
           volumes:
