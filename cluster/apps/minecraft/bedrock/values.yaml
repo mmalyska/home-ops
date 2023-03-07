@@ -23,3 +23,21 @@ minecraft-bedrock:
     ops: <secret:ops>
     defaultPermission: visitor
     whitelistUsers: <secret:whitelistUsers>
+map:
+  enabled: true
+  image: nginx:1.14.2
+  ingress:
+    host: mc-bedrock.<secret:private-domain>
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: mc-bedrock.<secret:private-domain>
+      kubernetes.io/ingress.class: traefik
+    labels: {}
+  persistence:
+    accessMode: ReadWriteMany
+    size: 1Gi
+    storageClass: ceph-block
+  generator:
+    schedule: "0 0 * * *"
+    image: ghcr.io/mmalyska/bedrock-viz:rolling@sha256:fa706232f1bafa4bce0784512568258ab32675a5f4ef66fe89a41667ba47c54a
