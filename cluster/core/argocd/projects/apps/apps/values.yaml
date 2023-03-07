@@ -58,6 +58,8 @@ apps:
   - name: minecraft-bedrock
     namespace: minecraft
     path: minecraft/bedrock
+    syncPolicy: false
+    selfHeal: false
     plugin:
       name: replacer-helm
       env:
