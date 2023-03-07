@@ -1,0 +1,146 @@
+{{- if .Values.map.enabled }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  {{- if .Values.map.ingress.name }}
+  name: {{ printf "%s-%s-cert" (include "minecraft.bedrock.map.fullname" $) .Values.map.ingress.name }}
+  {{- else }}
+  name: {{ template "minecraft.bedrock.map.fullname" $ }}-cert
+  {{- end }}
+spec:
+  {{- if .Values.map.ingress.name }}
+  secretName: {{ printf "%s-%s-cert" (include "minecraft.bedrock.map.fullname" $) .Values.map.ingress.name }}
+  {{- else }}
+  secretName: {{ template "minecraft.bedrock.map.fullname" $ }}-cert
+  {{- end }}
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: {{ .Values.map.ingress.host | quote }}
+  dnsNames:
+    - {{ .Values.map.ingress.host | quote }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  {{- if .Values.map.ingress.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.map.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  name: {{ template "minecraft.bedrock.map.fullname" . }}
+  labels:
+    {{- include "minecraft.bedrock.labels" (dict "context" . "component" "map" "name" "map") | nindent 4 }}
+    {{- if .Values.map.ingress.labels }}
+      {{- toYaml .Values.map.ingress.labels | nindent 4 }}
+    {{- end }}
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.map.ingress.host }}
+      secretName: {{ template "minecraft.bedrock.map.fullname" . }}-cert
+  rules:
+    - host: {{ .Values.map.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "minecraft.bedrock.map.fullname" . }}
+                port:
+                  name: http
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ template "minecraft.bedrock.map.fullname" . }}-generator
+spec:
+  schedule: {{ .Values.map.generator.schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: generator
+              image: {{ .Values.map.generator.image }}
+              imagePullPolicy: IfNotPresent
+              volumeMounts:
+                - mountPath: "/out"
+                  name: nginx-content
+          restartPolicy: OnFailure
+          volumes:
+            - name: nginx-content
+              persistentVolumeClaim:
+                claimName: {{ template "minecraft.bedrock.map.fullname" . }}-persistence
+  concurrencyPolicy: Forbid
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ template "minecraft.bedrock.map.fullname" . }}-persistence
+  labels: {{- include "minecraft.bedrock.labels" (dict "context" . "component" "map" "name" "map") | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.map.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.map.persistence.size | quote }}
+{{- if .Values.map.persistence.storageClass }}
+{{- if (eq "-" .Values.map.persistence.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.map.persistence.storageClass }}"
+{{- end }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "minecraft.bedrock.map.fullname" . }}
+  labels: {{- include "minecraft.bedrock.labels" (dict "context" . "component" "map" "name" "map") | nindent 4 }}
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      {{- include "minecraft.bedrock.selectorLabels" (dict "context" . "name" "map") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "minecraft.bedrock.labels" (dict "context" . "component" "map" "name" "map") | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ include "minecraft.bedrock.map.fullname" . }}
+          image: {{ .Values.map.image }}
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - mountPath: "/usr/share/nginx/html"
+              name: nginx-content
+      volumes:
+        - name: nginx-content
+          persistentVolumeClaim:
+            claimName: {{ template "minecraft.bedrock.map.fullname" . }}-persistence
+            readOnly: true
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ include "minecraft.bedrock.map.fullname" . }}
+  labels: {{- include "minecraft.bedrock.labels" (dict "context" . "component" "map" "name" "map") | nindent 4 }}
+  annotations:
+    metallb.universe.tf/allow-shared-ip: {{ include "minecraft.bedrock.fullname" . }}
+spec:
+  selector:
+    {{- include "minecraft.bedrock.selectorLabels" (dict "context" . "name" "map") | nindent 4 }}
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+    protocol: TCP
+  type: ClusterIP
+{{- end }}
