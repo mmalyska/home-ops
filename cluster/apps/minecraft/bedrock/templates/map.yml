@@ -82,7 +82,7 @@ spec:
                 claimName: {{ template "minecraft.bedrock.map.fullname" . }}-persistence
             - name: world
               persistentVolumeClaim:
-                claimName: minecraft-bedrock-minecraft-bedrock-datadir
+                claimName: minecraft-bedrock-datadir
   concurrencyPolicy: Forbid
 ---
 kind: PersistentVolumeClaim

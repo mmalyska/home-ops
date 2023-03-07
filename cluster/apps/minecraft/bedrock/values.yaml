@@ -10,6 +10,7 @@ minecraft-bedrock:
     storageClass: ceph-block
     dataDir:
       enabled: true
+      # existingClaim: minecraft-bedrock-datadir
       Size: 10Gi
   resources:
     requests:
