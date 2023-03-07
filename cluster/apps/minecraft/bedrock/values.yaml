@@ -1,3 +1,10 @@
+persistance:
+  storageClassName: ceph-filesystem
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
 minecraft-bedrock:
   persistence:
     storageClass: ceph-block

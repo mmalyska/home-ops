@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "minecraft.bedrock.fullname" . }}-config
+  labels:
+    {{- include "minecraft.bedrock.labels" (dict "context" . "component" "server" "name" "server") | nindent 4 }}
+spec:
+  {{- toYaml .Values.persistance | nindent 2 }}
