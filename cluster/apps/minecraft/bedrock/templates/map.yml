@@ -72,11 +72,18 @@ spec:
               volumeMounts:
                 - mountPath: "/out"
                   name: nginx-content
+                - mountPath: "/world"
+                  name: minecraft-bedrock-minecraft-bedrock-datadir
+                  subPath: /worlds/jaskinia
           restartPolicy: OnFailure
           volumes:
             - name: nginx-content
               persistentVolumeClaim:
                 claimName: {{ template "minecraft.bedrock.map.fullname" . }}-persistence
+            - name: world
+              persistentVolumeClaim:
+                claimName: minecraft-bedrock-minecraft-bedrock-datadir
+              readOnly: true
   concurrencyPolicy: Forbid
 ---
 kind: PersistentVolumeClaim
