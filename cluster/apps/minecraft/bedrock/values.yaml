@@ -37,7 +37,7 @@ map:
   persistence:
     accessMode: ReadWriteMany
     size: 1Gi
-    storageClass: ceph-block
+    storageClass: ceph-filesystem
   generator:
     schedule: "0 0 * * *"
     image: ghcr.io/mmalyska/bedrock-viz:rolling@sha256:fa706232f1bafa4bce0784512568258ab32675a5f4ef66fe89a41667ba47c54a

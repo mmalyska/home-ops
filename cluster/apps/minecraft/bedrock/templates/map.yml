@@ -104,7 +104,6 @@ metadata:
   name: {{ include "minecraft.bedrock.map.fullname" . }}
   labels: {{- include "minecraft.bedrock.labels" (dict "context" . "component" "map" "name" "map") | nindent 4 }}
 spec:
-  replicas: 3
   selector:
     matchLabels:
       {{- include "minecraft.bedrock.selectorLabels" (dict "context" . "name" "map") | nindent 6 }}
