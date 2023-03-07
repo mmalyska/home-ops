@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
-    "name": "Ubuntu",
+    "name": "home-ops",
     "build": {
         "dockerfile": "Dockerfile"
     },
@@ -9,9 +9,9 @@
         "SYNC_LOCALHOST_CONFIGS": "true"
     },
     "mounts": [
-        "source=${localEnv:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind",
-        "source=${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind",
-        "source=${localEnv:USERPROFILE}/.ssh,target=/usr/local/share/ssh-localhost,type=bind"
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind",
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind",
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/usr/local/share/ssh-localhost,type=bind"
     ],
 
     //Install task and required dependencies via homebrew. Install precommit tasks.
@@ -25,12 +25,12 @@
     // Run after start of container
     "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",
 
-    "remoteUser": "vscode",
-    "containerUser": "vscode",
+    "remoteUser": "codespace",
+    "containerUser": "codespace",
     "features": {
-        "ghcr.io/devcontainers/features/go:1": "latest"
-    },
-    "customizations": {
+        "ghcr.io/devcontainers/features/go:1": {}
+    }
+    ,"customizations": {
         "vscode": {
             // Set *default* container specific settings.json values on container create.
             "settings": {},
@@ -43,8 +43,8 @@
                 "redhat.ansible",
                 "signageos.signageos-vscode-sops",
                 "usernamehw.errorlens",
-                "fcrespo82.markdown-table-formatter",
+                "fcrespo82.markdown-table-formatter"
             ]
+        }
     }
-}
 }
