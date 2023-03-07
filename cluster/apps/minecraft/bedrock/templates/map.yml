@@ -126,11 +126,16 @@ spec:
           volumeMounts:
             - mountPath: "/usr/share/nginx/html"
               name: nginx-content
+            - mountPath: "/data"
+              name: world
       volumes:
         - name: nginx-content
           persistentVolumeClaim:
             claimName: {{ template "minecraft.bedrock.map.fullname" . }}-persistence
             readOnly: true
+        - name: world
+          persistentVolumeClaim:
+            claimName: minecraft-bedrock-datadir
 ---
 kind: Service
 apiVersion: v1

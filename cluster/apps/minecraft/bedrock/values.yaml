@@ -9,7 +9,7 @@ minecraft-bedrock:
   persistence:
     dataDir:
       enabled: true
-      existingClaim: minecraft-bedrock-datadir
+      #existingClaim: minecraft-bedrock-datadir
       Size: 10Gi
   resources:
     requests:
