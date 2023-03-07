@@ -83,7 +83,7 @@ spec:
             - name: world
               persistentVolumeClaim:
                 claimName: minecraft-bedrock-datadir
-              readOnly: true
+                readOnly: true
   concurrencyPolicy: Forbid
 ---
 kind: PersistentVolumeClaim
