@@ -9,7 +9,7 @@ repos:
           - .github/linters/.yamllint.yaml
         id: yamllint
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.18
+    rev: v0.1.19
     hooks:
       - id: helmlint
   - repo: https://github.com/pre-commit/pre-commit-hooks
