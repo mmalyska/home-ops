@@ -38,7 +38,7 @@ data:
           command:
             - sh
             - "-c"
-            - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'Chart.yaml' && find . -name 'values.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
+            - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'Chart.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
       init:
         command:
           - bash
