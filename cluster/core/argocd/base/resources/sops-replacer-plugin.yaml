@@ -12,12 +12,6 @@ data:
     spec:
       version: v1.0
       allowConcurrency: true
-      discover:
-        find:
-          command:
-            - sh
-            - "-c"
-            - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'kustomization.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
       generate:
         command:
           - bash
@@ -33,12 +27,6 @@ data:
     spec:
       version: v1.0
       allowConcurrency: true
-      discover:
-        find:
-          command:
-            - sh
-            - "-c"
-            - "[[ ! -z $ARGOCD_ENV_SOPS_SECRET_FILE ]] && find . -name 'Chart.yaml' && find . -name 'values.yaml' && find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'"
       init:
         command:
           - bash

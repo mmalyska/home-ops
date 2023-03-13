@@ -74,7 +74,7 @@ spec:
               value: /custom-tools/sops
         - name: sops-replacer-plugin-kustomize
           command: [/var/run/argocd/argocd-cmp-server]
-          image: alpine/k8s:1.25.5
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:79a4d2f34dcdd318d5a25ef92f91f09fb3018b1782c748f9b4f2622e73aa0561
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -88,8 +88,6 @@ spec:
           env:
             - name: SOPS_AGE_KEY_FILE
               value: /sops-age/key
-            - name: ARGOCD_ENV_SOPS_EXE
-              value: /custom-tools/sops
           volumeMounts:
             - mountPath: /var/run/argocd
               name: var-files
@@ -100,18 +98,12 @@ spec:
             - mountPath: /home/argocd/cmp-server/config/plugin.yaml
               name: sops-replacer-plugin
               subPath: sops-replacer-plugin-kustomize.yaml
-            - mountPath: /custom-tools/sops
-              name: custom-tools
-              subPath: sops
             - mountPath: /sops-age/key
               name: sops-age
               subPath: age.agekey
-            - mountPath: /usr/local/bin/argocd-secret-replacer
-              name: custom-tools
-              subPath: musl/argocd-secret-replacer
         - name: sops-replacer-plugin-helm
           command: [/var/run/argocd/argocd-cmp-server]
-          image: alpine/k8s:1.25.5
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:79a4d2f34dcdd318d5a25ef92f91f09fb3018b1782c748f9b4f2622e73aa0561
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -125,8 +117,6 @@ spec:
           env:
             - name: SOPS_AGE_KEY_FILE
               value: /sops-age/key
-            - name: ARGOCD_ENV_SOPS_EXE
-              value: /custom-tools/sops
             - name: HELM_CACHE_HOME
               value: /helm-working-dir
             - name: HELM_CONFIG_HOME
@@ -143,14 +133,8 @@ spec:
             - mountPath: /home/argocd/cmp-server/config/plugin.yaml
               name: sops-replacer-plugin
               subPath: sops-replacer-plugin-helm.yaml
-            - mountPath: /custom-tools/sops
-              name: custom-tools
-              subPath: sops
             - mountPath: /sops-age/key
               name: sops-age
               subPath: age.agekey
-            - mountPath: /usr/local/bin/argocd-secret-replacer
-              name: custom-tools
-              subPath: musl/argocd-secret-replacer
             - name: helm-working-dir
               mountPath: /helm-working-dir
