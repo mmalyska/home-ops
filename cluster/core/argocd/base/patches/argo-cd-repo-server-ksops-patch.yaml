@@ -80,8 +80,8 @@ spec:
             runAsUser: 999
           resources:
             limits:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 100m
+              memory: 512Mi
             requests:
               cpu: 10m
               memory: 16Mi
@@ -109,8 +109,8 @@ spec:
             runAsUser: 999
           resources:
             limits:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 100m
+              memory: 512Mi
             requests:
               cpu: 10m
               memory: 16Mi
