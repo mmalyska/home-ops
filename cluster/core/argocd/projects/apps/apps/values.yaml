@@ -19,57 +19,50 @@ apps:
     namespace: calibre
     path: calibre
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: firefly
     namespace: firefly
     path: firefly
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: gitea
     namespace: gitea
     path: gitea
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: grocy
     namespace: grocy
     path: grocy
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: hass-proxy
     namespace: hass-proxy
     path: hass
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: minecraft-bedrock
     namespace: minecraft
     path: minecraft/bedrock
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: monica
     namespace: monica
     path: monica
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: nfs-mounts
     namespace: nfs-mounts
@@ -77,29 +70,26 @@ apps:
     plugin:
       name: replacer-kustomize
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: qnap-proxy
     namespace: qnap-proxy
     path: qnap-proxy
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: jellyfin
     namespace: jellyfin
     path: jellyfin
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: factorio
     namespace: factorio
     path: factorio
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
