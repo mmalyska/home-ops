@@ -57,18 +57,10 @@ apps:
       env:
         - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
-  - name: monica
-    namespace: monica
-    path: monica
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
   - name: nfs-mounts
     namespace: nfs-mounts
     path: nfs-mounts
     plugin:
-      name: replacer-kustomize
       env:
         - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
