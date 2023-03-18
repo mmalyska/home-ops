@@ -1,0 +1,29 @@
+{{- if .Values.server.storage.config.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "valheim.fullname" . }}-world-data
+spec:
+  {{- if .Values.server.storage.config.storageClassName }}
+  storageClassName: {{ .Values.server.storage.config.storageClassName }}
+  {{ end -}}
+  accessModes: {{ toYaml .Values.server.storage.config.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.server.storage.config.size }}
+{{- end }}
+---
+{{- if .Values.server.storage.gamefiles.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "valheim.fullname" . }}-server-base-data
+spec:
+  {{- if .Values.server.storage.gamefiles.storageClassName }}
+  storageClassName: {{ .Values.server.storage.gamefiles.storageClassName }}
+  {{ end -}}
+  accessModes: {{ toYaml .Values.server.storage.gamefiles.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.server.storage.gamefiles.size }}
+{{- end -}}

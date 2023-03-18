@@ -1,0 +1,47 @@
+global:
+  podAnnotations: {}
+  podLabels: {}
+  image:
+    repository:
+    tag:
+    imagePullPolicy: IfNotPresent
+
+server:
+  enabled: true
+  name: server
+  replicas: 1
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: {}
+  resources: {}
+  image:
+    repository: lloesche/valheim-server
+    tag: latest@sha256:61c35feee7040e130ff8c4e9d6863efe66d751e3fc51e3a74ee1802ae135de53
+    imagePullPolicy: IfNotPresent
+  browserName: Jaskinia
+  worldName: Privoland
+  passwordSecret:
+  password: <secret:world-password>
+  extraEnvironmentVars:
+    BACKUPS: true
+    SERVER_PUBLIC: false
+    UPDATE_CRON: "0 6 * * *"
+  networking:
+    gamePort: 2456
+    serviceType:
+    loadBalancerIP:
+  storage:
+    config:
+      enabled: true
+      storageClassName: ceph-block
+      size: 1Gi
+      accessModes:
+        - ReadWriteOnce
+    gamefiles:
+      enabled: true
+      storageClassName: ceph-block
+      size: 5Gi
+      accessModes:
+        - ReadWriteOnce
+    extraVolumes: {}
