@@ -66,8 +66,10 @@ spec:
           ports:
             - containerPort: {{ .Values.server.networking.gamePort | int }}
               name: gameport
+              protocol: UDP
             - containerPort: {{ .Values.server.networking.gamePort | int | add 1 }}
               name: queryport
+              protocol: UDP
           volumeMounts:
             {{- if .Values.server.storage.config.enabled }}
             - mountPath: /config
