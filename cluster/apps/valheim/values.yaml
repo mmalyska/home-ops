@@ -29,8 +29,8 @@ server:
     UPDATE_CRON: "0 6 * * *"
   networking:
     gamePort: 2456
-    serviceType:
-    loadBalancerIP:
+    serviceType: LoadBalancer
+    loadBalancerIP: 192.168.48.24
   storage:
     config:
       enabled: true
