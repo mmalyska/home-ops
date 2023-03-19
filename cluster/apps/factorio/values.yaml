@@ -9,7 +9,8 @@ factorio-server-charts:
   # making sure the game doesnt auto update on redeploy
   # https://hub.docker.com/r/factoriotools/factorio/
   image:
-    tag: 1.1.74
+    repository: "factoriotools/factorio"
+    tag: 1.1.76
     pullPolicy: IfNotPresent
 
   persistence:
