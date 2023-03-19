@@ -19,6 +19,13 @@ spec:
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
       nodePort: {{ default "" (.Values.server.networking.queryNodePort | int ) }}
       {{- end }}
+    - name: queryport2
+      port: {{ .Values.server.networking.queryport2 | int }}
+      targetPort: {{ .Values.server.networking.queryport2 | int }}
+      protocol: UDP
+      {{- if eq .Values.server.networking.serviceType "NodePort" }}
+      nodePort: {{ default "" (.Values.server.networking.queryNodePort2 | int ) }}
+      {{- end }}
     - name: statusport
       port: 80
       targetport: 80
