@@ -7,14 +7,14 @@ spec:
   ports:
     - name: gameport
       port: {{ .Values.server.networking.gamePort | int }}
-      targetPort: gameport
+      targetPort: {{ .Values.server.networking.gamePort | int }}
       protocol: UDP
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
       nodePort: {{ default "" .Values.server.networking.nodePort }}
       {{- end }}
     - name: queryport
       port: {{ .Values.server.networking.gamePort | int | add 1 }}
-      targetPort: queryport
+      targetPort: {{ .Values.server.networking.gamePort | int | add 1 }}
       protocol: UDP
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
       nodePort: {{ default "" (.Values.server.networking.nodePort | int | add 1) }}
