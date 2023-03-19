@@ -19,6 +19,12 @@ spec:
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
       nodePort: {{ default "" (.Values.server.networking.nodePort | int | add 1) }}
       {{- end }}
+    - name: statusport
+      port: 80
+      targetport: statusport
+      {{- if eq .Values.server.networking.serviceType "NodePort" }}
+      nodePort: 80
+      {{- end }}
   type: {{ .Values.server.networking.serviceType }}
   {{- if eq .Values.server.networking.serviceType "LoadBalancer" }}
   loadBalancerIP: {{ default "" .Values.server.networking.loadBalancerIP }}

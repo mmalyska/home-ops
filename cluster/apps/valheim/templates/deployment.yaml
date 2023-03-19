@@ -70,6 +70,8 @@ spec:
             - containerPort: {{ .Values.server.networking.gamePort | int | add 1 }}
               name: queryport
               protocol: UDP
+            - containerPort: 80
+              name: statusport
           volumeMounts:
             {{- if .Values.server.storage.config.enabled }}
             - mountPath: /config

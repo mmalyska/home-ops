@@ -25,8 +25,9 @@ server:
   password: <secret:world-password>
   extraEnvironmentVars:
     BACKUPS: true
-    SERVER_PUBLIC: false
+    SERVER_PUBLIC: true
     UPDATE_CRON: "0 6 * * *"
+    STATUS_HTTP: true
   networking:
     gamePort: 2456
     serviceType: LoadBalancer
