@@ -3,6 +3,10 @@ kind: Service
 metadata:
   name: {{ template "valheim.fullname" . }}
   labels: {{- include "valheim.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+  annotations:
+  {{- if eq .Values.server.networking.serviceType "LoadBalancer" }}
+    metallb.universe.tf/loadBalancerIPs: {{ default "" .Values.server.networking.loadBalancerIP }}
+  {{- end }}
 spec:
   ports:
     - name: gameport
@@ -33,8 +37,5 @@ spec:
       nodePort: {{ default "" (.Values.server.networking.statusNodePort | int ) }}
       {{- end }}
   type: {{ .Values.server.networking.serviceType }}
-  {{- if eq .Values.server.networking.serviceType "LoadBalancer" }}
-  loadBalancerIP: {{ default "" .Values.server.networking.loadBalancerIP }}
-  {{- end }}
   selector:
     {{- include "valheim.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 6 }}
