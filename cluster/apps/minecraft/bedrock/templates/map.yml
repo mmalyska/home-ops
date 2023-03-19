@@ -75,6 +75,7 @@ spec:
                 - mountPath: "/world"
                   name: world
                   subPath: worlds/jaskinia
+                  readOnly: true
           restartPolicy: OnFailure
           volumes:
             - name: nginx-content
@@ -83,7 +84,6 @@ spec:
             - name: world
               persistentVolumeClaim:
                 claimName: minecraft-bedrock-datadir
-                readOnly: true
   concurrencyPolicy: Forbid
 ---
 kind: PersistentVolumeClaim
