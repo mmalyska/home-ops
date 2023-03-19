@@ -37,6 +37,10 @@ factorio-server-charts:
       public: false
     require_user_verification: true
     autosave_only_on_server: true
+  service:
+    type: LoadBalancer
+    annotations:
+      - metallb.universe.tf/loadBalancerIPs: 192.168.48.25
 
   map_settings:
     pollution:
