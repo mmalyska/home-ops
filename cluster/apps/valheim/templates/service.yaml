@@ -7,23 +7,23 @@ spec:
   ports:
     - name: gameport
       port: {{ .Values.server.networking.gamePort | int }}
-      targetPort: {{ .Values.server.networking.gamePort | int }}
+      targetPort: gameport
       protocol: UDP
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
-      nodePort: {{ default "" .Values.server.networking.nodePort }}
+      nodePort: {{ default "" .Values.server.networking.gameNodePort }}
       {{- end }}
     - name: queryport
-      port: {{ .Values.server.networking.gamePort | int | add 1 }}
-      targetPort: {{ .Values.server.networking.gamePort | int | add 1 }}
+      port: {{ .Values.server.networking.queryport | int }}
+      targetPort: queryport
       protocol: UDP
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
-      nodePort: {{ default "" (.Values.server.networking.nodePort | int | add 1) }}
+      nodePort: {{ default "" (.Values.server.networking.queryNodePort | int ) }}
       {{- end }}
     - name: statusport
       port: 80
       targetport: statusport
       {{- if eq .Values.server.networking.serviceType "NodePort" }}
-      nodePort: 80
+      nodePort: {{ default "" (.Values.server.networking.statusNodePort | int ) }}
       {{- end }}
   type: {{ .Values.server.networking.serviceType }}
   {{- if eq .Values.server.networking.serviceType "LoadBalancer" }}

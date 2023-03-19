@@ -21,7 +21,6 @@ server:
     imagePullPolicy: IfNotPresent
   browserName: Jaskinia
   worldName: Privoland
-  passwordSecret:
   password: <secret:world-password>
   extraEnvironmentVars:
     BACKUPS: true
@@ -31,6 +30,7 @@ server:
     SERVER_ARGS: "-crossplay"
   networking:
     gamePort: 2456
+    queryport: 2457
     serviceType: LoadBalancer
     loadBalancerIP: 192.168.48.24
   storage:
