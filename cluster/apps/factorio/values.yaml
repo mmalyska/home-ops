@@ -40,7 +40,7 @@ factorio-server-charts:
   service:
     type: LoadBalancer
     annotations:
-      - metallb.universe.tf/loadBalancerIPs: 192.168.48.25
+      metallb.universe.tf/loadBalancerIPs: 192.168.48.25
 
   map_settings:
     pollution:
