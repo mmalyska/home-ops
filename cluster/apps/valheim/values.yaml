@@ -29,8 +29,8 @@ server:
     STATUS_HTTP: true
     SERVER_ARGS: "-crossplay"
   networking:
-    gamePort: 2456
-    queryport: 2457
+    gamePort: 32456
+    queryport: 32457
     serviceType: LoadBalancer
     loadBalancerIP: 192.168.48.26
   storage:
