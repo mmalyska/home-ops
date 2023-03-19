@@ -31,7 +31,6 @@ server:
   networking:
     gamePort: 2456
     queryport: 2457
-    queryport2: 2458
     serviceType: LoadBalancer
     loadBalancerIP: 192.168.48.24
   storage:

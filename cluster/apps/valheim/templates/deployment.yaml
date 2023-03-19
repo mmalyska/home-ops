@@ -66,10 +66,10 @@ spec:
           ports:
             - containerPort: {{ .Values.server.networking.gamePort | int }}
               name: gameport
+              protocol: UDP
             - containerPort: {{ .Values.server.networking.queryport | int }}
               name: queryport
-            - containerPort: {{ .Values.server.networking.queryport2 | int }}
-              name: queryport2
+              protocol: UDP
             - containerPort: 80
               name: statusport
           volumeMounts:
