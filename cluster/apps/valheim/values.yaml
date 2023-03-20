@@ -27,7 +27,7 @@ server:
     SERVER_PUBLIC: true
     UPDATE_CRON: "0 6 * * *"
     STATUS_HTTP: true
-    # SERVER_ARGS: "-crossplay"
+    SERVER_ARGS: "-crossplay"
   networking:
     gamePort: 2456
     queryport: 2457
