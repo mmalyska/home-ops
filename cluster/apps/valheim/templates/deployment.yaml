@@ -64,14 +64,14 @@ spec:
               {{- end -}}
             {{ end }}
           ports:
-            - containerPort: {{ .Values.server.networking.gamePort | int }}
-              name: gameport
+            - name: valheim
+              containerPort: {{ .Values.server.networking.gamePort }}
               protocol: UDP
-            - containerPort: {{ .Values.server.networking.queryport | int }}
-              name: queryport
+            - name: msqp
+              containerPort: {{ .Values.server.networking.queryport }}
               protocol: UDP
-            - containerPort: 80
-              name: statusport
+            - name: status
+              containerPort: 80
           volumeMounts:
             {{- if .Values.server.storage.config.enabled }}
             - mountPath: /config

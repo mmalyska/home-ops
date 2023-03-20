@@ -1,34 +1,57 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ template "valheim.fullname" . }}
-  labels: {{- include "valheim.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
-  annotations:
-  {{- if eq .Values.server.networking.serviceType "LoadBalancer" }}
-    metallb.universe.tf/loadBalancerIPs: {{ default "" .Values.server.networking.loadBalancerIP }}
-  {{- end }}
+  labels:
+    {{- include "valheim.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
 spec:
+  type: ClusterIP
+  selector:
+    {{- include "valheim.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 4 }}
   ports:
-    - name: gameport
-      port: {{ .Values.server.networking.gamePort | int }}
-      targetPort: {{ .Values.server.networking.gamePort | int }}
+    - name: valheim
+      port: {{ .Values.server.networking.gamePort }}
+      targetPort: {{ .Values.server.networking.gamePort }}
       protocol: UDP
-      {{- if eq .Values.server.networking.serviceType "NodePort" }}
-      nodePort: {{ default "" .Values.server.networking.gameNodePort }}
-      {{- end }}
-    - name: queryport
-      port: {{ .Values.server.networking.queryport | int }}
-      targetPort: {{ .Values.server.networking.queryport | int }}
+    - name: msqp
+      port: {{ .Values.server.networking.queryport }}
+      targetPort: {{ .Values.server.networking.queryport }}
       protocol: UDP
-      {{- if eq .Values.server.networking.serviceType "NodePort" }}
-      nodePort: {{ default "" (.Values.server.networking.queryNodePort | int ) }}
-      {{- end }}
-    - name: statusport
+    - name: msqp-default
+      port: 27015
+      targetPort: {{ .Values.server.networking.queryport }}
+      protocol: UDP
+    - name: status
       port: 80
       targetport: 80
-      {{- if eq .Values.server.networking.serviceType "NodePort" }}
-      nodePort: {{ default "" (.Values.server.networking.statusNodePort | int ) }}
-      {{- end }}
-  type: {{ .Values.server.networking.serviceType }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "valheim.fullname" . }}-ingress
+  labels:
+    {{- include "valheim.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: {{ default "" .Values.server.networking.loadBalancerIP }}
+spec:
+  {{- $type := default "LoadBalancer" .Values.server.networking.serviceType }}
+  type: {{ $type }}
   selector:
-    {{- include "valheim.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 6 }}
+    {{- include "valheim.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 4 }}
+  ports:
+    - name: valheim
+      port: {{ .Values.server.networking.gamePort }}
+      targetPort: {{ .Values.server.networking.gamePort }}
+      protocol: UDP
+    - name: msqp
+      port: {{ .Values.server.networking.queryport }}
+      targetPort: {{ .Values.server.networking.queryport }}
+      protocol: UDP
+    - name: msqp-default
+      port: 27015
+      targetPort: {{ .Values.server.networking.queryport }}
+      protocol: UDP
+    - name: status
+      port: 80
+      targetport: 80
