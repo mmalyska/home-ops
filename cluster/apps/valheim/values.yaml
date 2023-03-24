@@ -37,7 +37,7 @@ server:
     config:
       enabled: true
       storageClassName: ceph-block
-      size: 1Gi
+      size: 10Gi
       accessModes:
         - ReadWriteOnce
     gamefiles:
