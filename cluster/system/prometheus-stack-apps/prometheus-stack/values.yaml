@@ -68,3 +68,8 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 50Gi
+      additionalScrapeConfigs:
+        - job_name: 'asusrouter'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['router.asus.com:9101']
