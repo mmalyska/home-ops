@@ -36,10 +36,20 @@ kube-prometheus-stack:
             orgId: 1
             folder: ''
             type: file
-            disableDeletion: false
+            disableDeletion: true
             editable: true
             options:
               path: /var/lib/grafana/dashboards/default
+          - name: device
+            orgId: 1
+            folder: "Devices Metrics"
+            type: file
+            disableDeletion: true
+            editable: false
+            options:
+              path: /var/lib/grafana/dashboards/device
+    dashboardsConfigMaps:
+      device: "device-dashboards"
     dashboards:
       default:
         cncf:
