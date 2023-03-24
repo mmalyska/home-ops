@@ -49,5 +49,5 @@ data:
           - bash
           - "-c"
           - |-
-            helm template --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . | argocd-secret-replacer sops -f "$ARGOCD_ENV_SOPS_SECRET_FILE"
+            helm template --include-crds --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . | argocd-secret-replacer sops -f "$ARGOCD_ENV_SOPS_SECRET_FILE"
       lockRepo: false
