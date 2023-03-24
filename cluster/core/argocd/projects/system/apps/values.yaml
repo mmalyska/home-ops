@@ -70,11 +70,6 @@ apps:
       env:
         - name: SOPS_FILE
           value: secret.sec.yaml
-  - name: prometheus-stack-apps
-    namespace: monitoring
-    path: prometheus-stack-apps
-    syncPolicy: false
-    selfHeal: false
   - name: prometheus-stack
     namespace: monitoring
     path: prometheus-stack
