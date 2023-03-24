@@ -73,6 +73,8 @@ apps:
   - name: prometheus-stack-apps
     namespace: monitoring
     path: prometheus-stack-apps
+    syncPolicy: false
+    selfHeal: false
   - name: prometheus-stack-test
     namespace: monitoring
     path: prometheus-stack
