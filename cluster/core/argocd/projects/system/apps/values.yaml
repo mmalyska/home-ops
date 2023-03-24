@@ -73,6 +73,17 @@ apps:
   - name: prometheus-stack-apps
     namespace: monitoring
     path: prometheus-stack-apps
+  - name: prometheus-stack-test
+    namespace: monitoring
+    path: prometheus-stack
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+    syncPolicy: false
+    selfHeal: false
+    extraSyncOptions:
+      - ServerSideApply=true
   - name: rook-ceph-cluster
     namespace: rook-ceph
     path: rook-ceph/rook-ceph-cluster
@@ -83,6 +94,7 @@ apps:
           value: secret.sec.yaml
     extraSyncOptions:
       - RespectIgnoreDifferences=true
+      - ServerSideApply=true
     ignoreDifferences:
       - group: ceph.rook.io
         kind: CephCluster
@@ -99,6 +111,8 @@ apps:
   - name: rook-ceph-operator
     namespace: rook-ceph
     path: rook-ceph/rook-ceph-operator
+    extraSyncOptions:
+      - ServerSideApply=true
   - name: traefik-internal
     namespace: traefik-internal
     path: traefik-internal

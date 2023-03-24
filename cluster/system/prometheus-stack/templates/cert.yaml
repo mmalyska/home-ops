@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-internal-domain
+spec:
+  secretName: grafana-internal-domain
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: 'grafana.internal.<secret:private-domain>'
+  dnsNames:
+  - 'grafana.internal.<secret:private-domain>'
