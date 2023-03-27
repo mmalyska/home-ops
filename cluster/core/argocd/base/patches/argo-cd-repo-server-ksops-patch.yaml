@@ -21,7 +21,7 @@ spec:
       # 2. Use an init container to download/copy custom binaries into the emptyDir
       initContainers:
         - name: download-tools
-          image: alpine:latest
+          image: alpine:latest@sha256:ff6bdca1701f3a8a67e328815ff2346b0e4067d32ec36b7992c1fdc001dc8517
           command: [sh, -ec]
           env:
             - name: SOPS_VERSION
