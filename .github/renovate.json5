@@ -15,7 +15,7 @@
   "platform": "github",
   "username": "bendo-bot[bot]",
   "gitAuthor": "bendo-bot <298713+bendo-bot[bot]@users.noreply.github.com>",
-  "repositories": ["mmalyska/containers"],
+  "repositories": ["mmalyska/home-ops"],
   "ignorePaths": ["archive/**"],
   "reviewers": [
     "mmalyska"
