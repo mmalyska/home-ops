@@ -5,6 +5,5 @@ namespace: metallb-system
 
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
-  # renovate: datasource=github-releases depName=metallb/metallb
-  - https://github.com/metallb/metallb/config/native?ref=v0.13.9
+  - github.com/metallb/metallb/config/native?ref=v0.13.9
   - resources/config.yaml

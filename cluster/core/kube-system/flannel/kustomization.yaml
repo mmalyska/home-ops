@@ -4,5 +4,5 @@ kind: Kustomization
 
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
-  # renovate: datasource=github-releases depName=flannel-io/flannel
+  # renovate-raw: datasource=github-releases depName=flannel-io/flannel
   - https://raw.githubusercontent.com/flannel-io/flannel/v0.21.4/Documentation/kube-flannel.yml

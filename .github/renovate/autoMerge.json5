@@ -1,13 +1,12 @@
 {
   "packageRules": [
     {
-      "description": "Auto merge GitHub Actions and pre-commits",
+      "description": "Auto merge pre-commits",
       "matchDatasources": ["github-releases", "github-tags"],
       "automerge": true,
       "automergeType": "branch",
       "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
-        "yokawasa/action-setup-kube-tools",
         "sirosen/texthooks",
         "gruntwork-io/pre-commit",
         "zricethezav/gitleaks",
@@ -15,20 +14,6 @@
         "adrienverge/yamllint",
         "pre-commit/pre-commit-hooks"
       ]
-    },
-    {
-      "description": "Auto merge terraform providers",
-      "matchDatasources": ["terraform-provider"],
-      "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["minor", "patch"]
-    },
-    {
-      "description": "Auto merge ansible galaxy",
-      "matchDatasources": ["galaxy", "galaxy-collection"],
-      "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["minor", "patch"]
     }
   ]
 }
