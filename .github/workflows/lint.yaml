@@ -31,6 +31,7 @@ jobs:
       - name: MegaLinter
         uses: oxsecurity/megalinter@v6.21.0
         env:
+          ADDITIONAL_EXCLUDED_DIRECTORIES: '[ "archive" ]'
           GITHUB_TOKEN: "${{ steps.generate-token.outputs.token }}"
           PRINT_ALPACA: false
           VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'workflow_dispatch' }}
