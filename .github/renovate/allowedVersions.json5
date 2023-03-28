@@ -17,6 +17,12 @@
       "matchDatasources": ["docker", "github-releases"],
       "allowedVersions": "=1.25.5",
       "matchPackageNames": ["alpine/k8s", "kubernetes/kubernetes"]
+    },
+    {
+      "description": "Lock version for containerd",
+      "matchDatasources": ["github-releases"],
+      "allowedVersions": "=1.6.10",
+      "matchPackageNames": ["containerd/containerd"]
     }
   ]
 }

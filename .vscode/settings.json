@@ -11,6 +11,7 @@
     "prettier.ignorePath": ".github/linters/.prettierignore",
     "yaml.schemas": {
         "Kubernetes": "cluster/*.yaml",
+        "ansible": "provision/ansible/*.yml"
     },
     "editor.bracketPairColorization.enabled": true,
     "editor.guides.bracketPairs":"active",
