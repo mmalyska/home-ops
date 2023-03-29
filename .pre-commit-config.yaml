@@ -42,3 +42,8 @@ repos:
     rev: v8.16.1
     hooks:
       - id: gitleaks
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v6.14.3
+    hooks:
+      - id: ansible-lint
+        args: [--project-dir=provision/ansible, -c=.github/linters/.ansible-lint, --exclude=*.sops.*]

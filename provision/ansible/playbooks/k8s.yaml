@@ -1,5 +1,6 @@
 ---
-- hosts:
+- name: Containerd
+  hosts:
     - control_plane
     - node
   become: true
@@ -10,7 +11,8 @@
   tags:
     - containerd
 
-- hosts:
+- name: Kubernetes
+  hosts:
     - control_plane
     - node
   become: true

@@ -4,6 +4,6 @@ metadata:
   name: oidc-role
   namespace: your-namespace
 rules:
-- apiGroups: [""]
-  resources: ["*"]
-  verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["*"]
+    verbs: ["*"]

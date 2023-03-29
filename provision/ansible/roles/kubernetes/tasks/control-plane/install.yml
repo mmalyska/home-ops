@@ -2,13 +2,13 @@
   ansible.builtin.file:
     path: "{{ kubernetes_config_dir }}"
     state: directory
-    mode: 0644
+    mode: "0644"
 
 - name: Deploy the config-file for kubeadm and kubelet
   ansible.builtin.template:
     src: "kubeadm-kubelet-config.j2"
     dest: "{{ kubernetes_config_dir }}/kubeadm-kubelet-config.yaml"
-    mode: 0644
+    mode: "0644"
 
 - name: Initialize Kubernetes control plane with kubeadm init
   ansible.builtin.command: >
@@ -16,6 +16,7 @@
     --config {{ kubernetes_config_dir }}/kubeadm-kubelet-config.yaml
     {{ kubernetes_kubeadm_init_extra_opts }}
   register: kubeadmin_init
+  changed_when: kubeadmin_init.rc != 0
   until: kubeadmin_init is succeeded or "field is immutable" in kubeadmin_init.stderr
   failed_when: kubeadmin_init.rc != 0 and "field is immutable" not in kubeadmin_init.stderr
   when: inventory_hostname == first_control_plane and not kubeadm_already_run.stat.exists
@@ -42,14 +43,14 @@
   ansible.builtin.file:
     path: ~/.kube
     state: directory
-    mode: 0755
+    mode: "0755"
 
 - name: Symlink the kubectl admin.conf to ~/.kube/conf.
   ansible.builtin.file:
     src: /etc/kubernetes/admin.conf
     dest: ~/.kube/config
     state: link
-    mode: 0644
+    mode: "0644"
 
 - name: Configure Flannel networking.
   ansible.builtin.command: "kubectl apply -f {{ kubernetes_flannel_manifest_file }}"
@@ -60,4 +61,6 @@
 - name: Allow pods on control plane (if configured).
   ansible.builtin.command: "kubectl taint nodes --all node-role.kubernetes.io/control-plane-"
   when: kubernetes_allow_pods_on_control_plane | bool and not kubeadm_already_run.stat.exists and inventory_hostname == first_control_plane
+  register: kubectl_taint_remove
   failed_when: false
+  changed_when: kubectl_taint_remove.rc != 0

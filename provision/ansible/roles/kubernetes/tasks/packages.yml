@@ -13,7 +13,7 @@
   ansible.builtin.template:
     src: apt-preferences-kubernetes.j2
     dest: /etc/apt/preferences.d/kubernetes
-    mode: 0644
+    mode: "0644"
 
 - name: Add kubernetes apt repository
   block:

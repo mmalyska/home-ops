@@ -15,6 +15,7 @@
     upgrade plan {{ kubernetes_version }}
     --allow-experimental-upgrades
   register: kubeadm_plan
+  changed_when: kubeadm_plan.rc != 0
   until: kubeadm_plan.rc == 0
   when: inventory_hostname == first_control_plane
   failed_when: kubeadm_plan.rc != 0 and "field is immutable" not in kubeadm_plan.stderr
@@ -33,6 +34,7 @@
     kubeadm
     upgrade diff {{ kubernetes_version }}
   register: kubeadm_diff
+  changed_when: kubeadm_diff.rc != 0
   until: kubeadm_diff.rc == 0
   when: inventory_hostname == first_control_plane
   failed_when: kubeadm_diff.rc != 0 and "field is immutable" not in kubeadm_diff.stderr
@@ -51,8 +53,9 @@
   block:
     - name: Drain first master
       ansible.builtin.command: >-
-        kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
+        kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force
       register: kubectl_drain
+      changed_when: kubectl_drain.rc != 0
       retries: 3
       until: kubectl_drain.rc == 0
       failed_when: kubectl_drain.rc != 0 and "field is immutable" not in kubectl_drain.stderr
@@ -65,6 +68,7 @@
         --allow-experimental-upgrades
         --etcd-upgrade=true
       register: kubeadm_upgrade
+      changed_when: kubeadm_upgrade.rc != 0
       # Retry is because upload config sometimes fails
       retries: 3
       until: kubeadm_upgrade.rc == 0
@@ -75,6 +79,7 @@
       ansible.builtin.command: >-
         kubectl uncordon {{ inventory_hostname }}
       register: kubectl_uncordon
+      changed_when: kubectl_uncordon.rc != 0
       retries: 3
       until: kubectl_uncordon.rc == 0
       failed_when: kubectl_uncordon.rc != 0 and "field is immutable" not in kubectl_uncordon.stderr
@@ -84,8 +89,9 @@
   block:
     - name: Drain other masters
       ansible.builtin.command: >-
-        kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data
+        kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force
       register: kubectl_drain
+      changed_when: kubectl_drain.rc != 0
       retries: 3
       until: kubectl_drain.rc == 0
       failed_when: kubectl_drain.rc != 0 and "field is immutable" not in kubectl_drain.stderr
@@ -98,6 +104,7 @@
         --allow-experimental-upgrades
         --etcd-upgrade=true
       register: kubeadm_upgrade
+      changed_when: kubeadm_upgrade.rc != 0
       retries: 3
       until: kubeadm_upgrade.rc == 0
       failed_when: kubeadm_upgrade.rc != 0 and "field is immutable" not in kubeadm_upgrade.stderr
@@ -107,6 +114,7 @@
       ansible.builtin.command: >-
         kubectl uncordon {{ inventory_hostname }}
       register: kubectl_uncordon
+      changed_when: kubectl_uncordon.rc != 0
       retries: 3
       until: kubectl_uncordon.rc == 0
       failed_when: kubectl_uncordon.rc != 0 and "field is immutable" not in kubectl_uncordon.stderr

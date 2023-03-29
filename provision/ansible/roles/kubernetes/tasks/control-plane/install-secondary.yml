@@ -5,6 +5,7 @@
     upload-certs
     --upload-certs
   register: kubeadm_upload_cert
+  changed_when: kubeadm_upload_cert.rc != 0
   when:
     - inventory_hostname == first_control_plane
 
@@ -43,6 +44,7 @@
 
 - name: Create certificate public hash
   ansible.builtin.shell: >-
+    set -o pipefail
     openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt |
     openssl rsa -pubin -outform der 2>/dev/null |
     openssl dgst -sha256 -hex |
@@ -61,7 +63,7 @@
   ansible.builtin.template:
     src: "kubeadm-controlplane.j2"
     dest: "{{ kubernetes_config_dir }}/kubeadm-controlplane.yaml"
-    mode: 0644
+    mode: "0644"
   when:
     - inventory_hostname != first_control_plane
     - not kubeadm_already_run.stat.exists
@@ -76,6 +78,7 @@
     --config {{ kubernetes_config_dir }}/kubeadm-controlplane.yaml
     --ignore-preflight-errors=all
   register: kubeadm_join_control_plane
+  changed_when: kubeadm_join_control_plane.rc != 0
   retries: 3
   throttle: 1
   until: kubeadm_join_control_plane is succeeded

@@ -28,7 +28,7 @@
   ansible.builtin.template:
     src: apt-preferences-containerd.j2
     dest: /etc/apt/preferences.d/containerd
-    mode: 0644
+    mode: "0644"
 
 - name: Install containerd package
   ansible.builtin.apt:

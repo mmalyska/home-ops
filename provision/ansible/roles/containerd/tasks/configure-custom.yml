@@ -2,5 +2,5 @@
   ansible.builtin.copy:
     src: "etc/containerd/config.toml"
     dest: "/etc/containerd/config.toml"
-    mode: 0644
+    mode: "0644"
   notify: Restart containerd

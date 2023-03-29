@@ -3,9 +3,9 @@ kind: ClusterRoleBinding
 metadata:
   name: oidc-admin-role
 subjects:
-- kind: Group
-  name: "oidc:k8s-admin"
-  apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "oidc:k8s-admin"
+    apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
   name: cluster-admin

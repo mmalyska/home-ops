@@ -4,9 +4,9 @@ metadata:
   name: oidc-rb
   namespace: your-namespace
 subjects:
-- kind: Group
-  name: oidc:<YOUR_KEYCLOAK_GROUP>
-  apiGroup: ""
+  - kind: Group
+    name: oidc:<YOUR_KEYCLOAK_GROUP>
+    apiGroup: ""
 roleRef:
   kind: Role
   name: oidc-role

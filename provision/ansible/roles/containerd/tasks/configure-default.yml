@@ -2,7 +2,7 @@
   ansible.builtin.file:
     path: /etc/containerd
     state: directory
-    mode: 0755
+    mode: "0755"
   register: containerd_dir
 
 - name: Get defaults from containerd.
@@ -15,7 +15,7 @@
   ansible.builtin.copy:
     dest: /tmp/containerd_config.toml
     content: "{{ containerd_config_default.stdout }}"
-    mode: 0644
+    mode: "0644"
   when: containerd_config_default_write
   changed_when: false
 
@@ -42,7 +42,7 @@
     remote_src: true
     src: /tmp/containerd_config.toml
     dest: /etc/containerd/config.toml
-    mode: 0644
+    mode: "0644"
   notify: Restart containerd
   when: containerd_config_default_write
 

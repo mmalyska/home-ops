@@ -24,7 +24,7 @@
     dest: "/etc/netplan/90-user-configuration.yaml"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: netplan apply config
   tags:
     - user
