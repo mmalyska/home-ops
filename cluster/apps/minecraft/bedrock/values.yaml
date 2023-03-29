@@ -47,4 +47,4 @@ map:
     storageClass: ceph-filesystem
   generator:
     schedule: "0 0 * * *"
-    image: ghcr.io/mmalyska/bedrock-viz:rolling@sha256:fa706232f1bafa4bce0784512568258ab32675a5f4ef66fe89a41667ba47c54a
+    image: ghcr.io/mmalyska/bedrock-viz:rolling@sha256:83fc607ce864b336b54b2785c767354dcc166ad97b5e7d3ff4e80e90e5e30afe
