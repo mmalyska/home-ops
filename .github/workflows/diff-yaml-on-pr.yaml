@@ -172,7 +172,7 @@ jobs:
       - uses: yokawasa/action-setup-kube-tools@v0.9.3
         with:
           # renovate: datasource=github-releases depName=kubernetes/kubernetes
-          kubectl: "1.24.0"
+          kubectl: "v1.25.5"
           setup-tools: |
             kubectl
             yq
