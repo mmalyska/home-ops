@@ -4,4 +4,4 @@ kubernetes_version: "1.25.5"
 # renovate: datasource=github-releases depName=containerd/containerd
 containerd_package_version: "1.6.10"
 # renovate-raw: datasource=github-releases depName=flannel-io/flannel
-kubernetes_flannel_manifest_file: https://raw.githubusercontent.com/flannel-io/flannel/v0.20.1/Documentation/kube-flannel.yml
+kubernetes_flannel_manifest_file: https://raw.githubusercontent.com/flannel-io/flannel/v0.21.4/Documentation/kube-flannel.yml
