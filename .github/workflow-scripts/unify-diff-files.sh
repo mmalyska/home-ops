@@ -30,4 +30,4 @@ do
 done
 sorted_unique_ids=($(echo "${deploymentFiles[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 json_stringified=$(jq -n -c '$ARGS.positional' --args "${sorted_unique_ids[@]}")
-echo "::set-output name=$output::$json_stringified"
+echo "$output=$json_stringified" >> "$GITHUB_OUTPUT"
