@@ -4,8 +4,7 @@
 FROM mcr.microsoft.com/devcontainers/universal:2@sha256:22e48fc67ffa8f01df84bc196bfe7f40bde812228acedc5444ed94f5888f8131
 USER codespace
 
-ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # [Optional] Uncomment this section to install additional OS packages.
 RUN sudo apt-get update && export DEBIAN_FRONTEND=noninteractive \
