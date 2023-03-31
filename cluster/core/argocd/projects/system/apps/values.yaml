@@ -10,9 +10,8 @@ apps:
     namespace: cert-manager
     path: cert-manager
     plugin:
-      name: replacer-kustomize
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: cloudnative-pg
     namespace: cnpg
@@ -21,17 +20,15 @@ apps:
     namespace: kubernetes-dashboard
     path: dashboard
     plugin:
-      name: replacer-kustomize
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: dyndns
     namespace: dyndns
     path: dyndns
     plugin:
-      name: replacer-kustomize
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: keycloak
     namespace: identity
@@ -39,17 +36,15 @@ apps:
     syncPolicy: true
     selfHeal: true
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: kured
     namespace: kured
     path: kured
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: metrics-server
     namespace: metrics-server
@@ -58,17 +53,15 @@ apps:
     namespace: nfs-subdir-provisioner
     path: nfs-subdir-external-provisioner
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: oauth2-proxy
     namespace: oauth2-proxy
     path: oauth2-proxy
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: prometheus-stack
     namespace: monitoring
@@ -83,9 +76,8 @@ apps:
     namespace: rook-ceph
     path: rook-ceph/rook-ceph-cluster
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
     extraSyncOptions:
       - RespectIgnoreDifferences=true
@@ -112,17 +104,15 @@ apps:
     namespace: traefik-internal
     path: traefik-internal
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: traefik
     namespace: traefik
     path: traefik
     plugin:
-      name: replacer-helm
       env:
-        - name: SOPS_FILE
+        - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: node-feature-discovery
     namespace: node-feature-discovery
