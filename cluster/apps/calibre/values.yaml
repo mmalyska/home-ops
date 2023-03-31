@@ -32,7 +32,7 @@ persistence:
         secretName: gmail-secret
     subPath:
       - path: gmail
-        mountPath: /config/gmail.json
+        mountPath: /config2/gmail.json
 ingress:
   main:
     enabled: true
