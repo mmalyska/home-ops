@@ -3,7 +3,7 @@ global:
   imageRegistry: ""
 image:
   pullPolicy: IfNotPresent
-  repository: linuxserver/jellyfin
+  repository: ghcr.io/linuxserver/jellyfin
   tag: 10.8.9-1-ls199
 jellyfin:
   annotations: {}
