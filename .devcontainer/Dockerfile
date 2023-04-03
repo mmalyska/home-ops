@@ -41,3 +41,6 @@ RUN brew install \
     int128/kubelogin/kubelogin \
     ansible-lint \
     k9s
+
+RUN echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc \
+    && echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
