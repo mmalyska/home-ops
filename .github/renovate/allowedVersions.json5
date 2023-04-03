@@ -3,7 +3,7 @@
     {
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
-      "allowedVersions": "/^[0-9]{1,3}\\.[0-9]+\\.[0-9]+.*$/",
+      "allowedVersions": "<1",
       "matchPackageNames": ["ghcr.io/linuxserver/calibre-web"]
     },
     {
