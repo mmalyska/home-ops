@@ -4,7 +4,7 @@
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
       "allowedVersions": "<1",
-      "matchPackageNames": ["calibre-web"]
+      "matchPackageNames": ["ghcr.io/linuxserver/calibre-web"]
     },
     {
       "description": "Lock version because they changed versioning",
