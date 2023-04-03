@@ -4,7 +4,7 @@
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
       "allowedVersions": "<1",
-      "matchPackageNames": ["linuxserver/calibre-web"]
+      "matchPackageNames": ["calibre-web"]
     },
     {
       "description": "Lock version because they changed versioning",
