@@ -3,14 +3,14 @@
     {
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
-      "allowedVersions": "<1",
+      "allowedVersions": "/^[0-9]{1,3}\\.[0-9]+\\.[0-9]+.*$/",
       "matchPackageNames": ["ghcr.io/linuxserver/calibre-web"]
     },
     {
       "description": "Lock version because they changed versioning",
       "matchDatasources": ["docker"],
       "allowedVersions": "/^[0-9]{1,3}\\.[0-9]+\\.[0-9]+.*$/",
-      "matchPackageNames": ["jellyfin"]
+      "matchPackageNames": ["ghcr.io/linuxserver/jellyfin"]
     },
     {
       "description": "Lock version to cluster version",
