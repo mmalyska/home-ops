@@ -11,67 +11,13 @@ spec:
         - configMap:
             name: sops-replacer-plugin
           name: sops-replacer-plugin
-        - name: custom-tools
-          emptyDir: {}
         - name: tmp-sops-replacer-plugin
           emptyDir: {}
         - name: sops-age
           secret:
             secretName: sops-age
-      # 2. Use an init container to download/copy custom binaries into the emptyDir
-      initContainers:
-        - name: download-tools
-          image: alpine:latest@sha256:124c7d2707904eea7431fffe91522a01e5a861a624ee31d03372cc1d138a3126
-          command: [sh, -ec]
-          env:
-            - name: SOPS_VERSION
-              # renovate: datasource=github-releases depName=mozilla/sops
-              value: "v3.7.3"
-            - name: REPLACER_VERSION
-              # renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
-              value: "v0.2.1"
-          args:
-            - |
-              echo "Initializing custom tools...";
-
-              echo "Downloading sops...";
-              wget -qO /custom-tools/sops https://github.com/mozilla/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux
-
-              echo "Downloading secret replacer...";
-              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-x64.tar.gz | tar -C /custom-tools -xzf-;
-
-              echo "Downloading secret replacer musl...";
-              mkdir /custom-tools/musl
-              wget -qO- https://github.com/mmalyska/argocd-secret-replacer/releases/download/${REPLACER_VERSION}/secret-replacer-${REPLACER_VERSION}-linux-musl-x64.tar.gz | tar -C /custom-tools/musl -xzf-;
-
-              echo "Setting executable mode...";
-              chmod +x /custom-tools/*
-              chmod +x /custom-tools/musl/*
-
-              echo "Listing downloaded tools";
-              ls -la /custom-tools
-              echo "Done.";
-          volumeMounts:
-            - mountPath: /custom-tools
-              name: custom-tools
       # 3. Volume mount the custom binary to the bin directory (overriding the existing version)
       containers:
-        - name: argocd-repo-server
-          volumeMounts:
-            - mountPath: /custom-tools/sops
-              name: custom-tools
-              subPath: sops
-            - mountPath: /sops-age/key
-              name: sops-age
-              subPath: age.agekey
-            - mountPath: /usr/local/bin/argocd-secret-replacer
-              name: custom-tools
-              subPath: argocd-secret-replacer
-          env:
-            - name: SOPS_AGE_KEY_FILE
-              value: /sops-age/key
-            - name: ARGOCD_ENV_SOPS_EXE
-              value: /custom-tools/sops
         - name: sops-replacer-plugin-kustomize
           command: [/var/run/argocd/argocd-cmp-server]
           image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:b61c297c318e84f8d642c9174f09f0ae59d13748dec886e3912c39057765cdb7

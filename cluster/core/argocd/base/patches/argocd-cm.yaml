@@ -17,15 +17,3 @@ data:
     clientSecret: $oidc.keycloak.clientSecret
     requestedScopes: ["openid", "profile", "email", "groups"]
     cliClientID: argocd-cli
-  configManagementPlugins: |
-    - name: replacer-helm
-      init:
-        command: ["/bin/sh", "-c"]
-        args: ["helm dependency build"]
-      generate:
-        command: [sh, -c]
-        args: ["helm template --release-name $ARGOCD_APP_NAME --namespace $ARGOCD_APP_NAMESPACE --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . | argocd-secret-replacer sops -f $ARGOCD_ENV_SOPS_FILE"]
-    - name: replacer-kustomize
-      generate:
-        command: ["sh", "-c"]
-        args: ["kustomize build --enable-alpha-plugins . | argocd-secret-replacer sops -f $ARGOCD_ENV_SOPS_FILE"]
