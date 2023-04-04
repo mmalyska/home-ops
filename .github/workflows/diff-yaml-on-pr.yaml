@@ -90,7 +90,7 @@ jobs:
           setup-tools: |
             helm
             yq
-          helm: '3.10.3'
+          helm: "3.10.3"
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.conf_live_branch }}
@@ -149,7 +149,7 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
+          comment-author: "github-actions[bot]"
           body-includes: "${{ matrix.file }}"
       - uses: peter-evans/create-or-update-comment@v2
         with:
@@ -230,7 +230,7 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
+          comment-author: "github-actions[bot]"
           body-includes: "${{ matrix.file }}"
       - uses: peter-evans/create-or-update-comment@v2
         with:

@@ -5,4 +5,5 @@ docs/
 .terraform/
 .vscode/
 **/*.sops.*
+**/*.sec.*
 gotk-components.yaml

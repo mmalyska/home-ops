@@ -43,40 +43,40 @@ For fast setup I use devcontainer to have same environment across different devi
 
 1. Install the **most recent versions** of the following command-line tools on your workstation, if you are using [Homebrew](https://brew.sh/) on macOS or Linux skip to steps 3 and 4.
 
-    - Required:
-    [age](https://github.com/FiloSottile/age),
-    [ansible](https://www.ansible.com),
-    [go-task](https://github.com/go-task/task),
-    [ipcalc](http://jodies.de/ipcalc),
-    [jq](https://stedolan.github.io/jq/),
-    [kubectl](https://kubernetes.io/docs/tasks/tools/),
-    [pre-commit](https://github.com/pre-commit/pre-commit),
-    [sops](https://github.com/mozilla/sops),
-    [terraform](https://www.terraform.io),
-    [yq](https://github.com/mikefarah/yq),
-    [argocd CLI](https://github.com/argoproj/argo-cd)
+   - Required:
+     [age](https://github.com/FiloSottile/age),
+     [ansible](https://www.ansible.com),
+     [go-task](https://github.com/go-task/task),
+     [ipcalc](http://jodies.de/ipcalc),
+     [jq](https://stedolan.github.io/jq/),
+     [kubectl](https://kubernetes.io/docs/tasks/tools/),
+     [pre-commit](https://github.com/pre-commit/pre-commit),
+     [sops](https://github.com/mozilla/sops),
+     [terraform](https://www.terraform.io),
+     [yq](https://github.com/mikefarah/yq),
+     [argocd CLI](https://github.com/argoproj/argo-cd)
 
-    - Recommended:
-    [direnv](https://github.com/direnv/direnv),
-    [helm](https://helm.sh/),
-    [kustomize](https://github.com/kubernetes-sigs/kustomize),
-    [prettier](https://github.com/prettier/prettier),
-    [stern](https://github.com/stern/stern),
-    [yamllint](https://github.com/adrienverge/yamllint)
+   - Recommended:
+     [direnv](https://github.com/direnv/direnv),
+     [helm](https://helm.sh/),
+     [kustomize](https://github.com/kubernetes-sigs/kustomize),
+     [prettier](https://github.com/prettier/prettier),
+     [stern](https://github.com/stern/stern),
+     [yamllint](https://github.com/adrienverge/yamllint)
 
 2. This guide heavily relies on [go-task](https://github.com/go-task/task) as a framework for setting things up. It is advised to learn and understand the commands it is running under the hood.
 
 3. Install [go-task](https://github.com/go-task/task) via Brew
 
-    ```sh
-    brew install go-task/tap/go-task
-    ```
+   ```sh
+   brew install go-task/tap/go-task
+   ```
 
 4. Install workstation dependencies via Brew
 
-    ```sh
-    task init
-    ```
+   ```sh
+   task init
+   ```
 
 ### ⚠️ pre-commit
 
@@ -85,15 +85,15 @@ It is advisable to install [pre-commit](https://pre-commit.com/) and the pre-com
 
 1. Enable Pre-Commit
 
-    ```sh
-    task precommit:init
-    ```
+   ```sh
+   task precommit:init
+   ```
 
 2. Update Pre-Commit, though it will occasionally make mistakes, so verify its results.
 
-    ```sh
-    task precommit:update
-    ```
+   ```sh
+   task precommit:update
+   ```
 
 ## 📂 Repository structure
 
@@ -178,49 +178,49 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
 
 1. Verify ArgoCD can be installed
 
-    ```sh
-    argocd version
-    # argocd: v2.3.1
-    # ...
-    ```
+   ```sh
+   argocd version
+   # argocd: v2.3.1
+   # ...
+   ```
 
 2. Pre-create the `argocd` namespace
 
-    ```sh
-    kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-    ```
+   ```sh
+   kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+   ```
 
 3. Add the Age key in-order for ArgoCD to decrypt SOPS secrets
 
-    ```sh
-    cat $SOPS_AGE_KEY_FILE |
-        kubectl -n argocd create secret generic sops-age \
-        --from-file=age.agekey=/dev/stdin
-    ```
+   ```sh
+   cat $SOPS_AGE_KEY_FILE |
+       kubectl -n argocd create secret generic sops-age \
+       --from-file=age.agekey=/dev/stdin
+   ```
 
 4. **Verify** all files ending with `*.sops.yaml` or `*.sec.yaml` are **encrypted** with SOPS
 
 5. Push you changes to git
 
-    ```sh
-    git add -A
-    git commit -m "encrypting secrets"
-    git push
-    ```
+   ```sh
+   git add -A
+   git commit -m "encrypting secrets"
+   git push
+   ```
 
 6. Install Argo CD
 
-    ```sh
-    kubectl apply -k ./cluster/core/argocd/base
-    ```
+   ```sh
+   kubectl apply -k ./cluster/core/argocd/base
+   ```
 
 7. Verify Argo CD components are running in the cluster
 
-    ```sh
-    kubectl get pods -n argocd
-    ```
+   ```sh
+   kubectl get pods -n argocd
+   ```
 
-    If all goes well and you have port forwarded `80` and `443` in your router to the `METALLB_TRAEFIK_ADDR` IP, in a few moments head over to your browser and you _should_ be able to access `https://hajimari.CLOUDFLARE_DOMAIN`
+   If all goes well and you have port forwarded `80` and `443` in your router to the `METALLB_TRAEFIK_ADDR` IP, in a few moments head over to your browser and you _should_ be able to access `https://hajimari.CLOUDFLARE_DOMAIN`
 
 🎉 **Congratulations** you have a Kubernetes cluster managed by Argo CD, your Git repository is driving the state of your cluster.
 

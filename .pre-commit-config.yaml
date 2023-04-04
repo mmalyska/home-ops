@@ -46,4 +46,9 @@ repos:
     rev: v6.14.4
     hooks:
       - id: ansible-lint
-        args: [--project-dir=provision/ansible, -c=.github/linters/.ansible-lint, --exclude=*.sops.*]
+        args:
+          [
+            --project-dir=provision/ansible,
+            -c=.github/linters/.ansible-lint,
+            --exclude=*.sops.*,
+          ]
