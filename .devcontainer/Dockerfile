@@ -1,7 +1,7 @@
 # See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu/.devcontainer/base.Dockerfile
 
 # [Choice] Ubuntu version (use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon): ubuntu-22.04, ubuntu-20.04, ubuntu-18.04
-FROM mcr.microsoft.com/devcontainers/universal:2@sha256:78f1db9709d43ff5a6d6e2a8db4a7094e8420c871b24fae955b7b40686513bcd
+FROM mcr.microsoft.com/devcontainers/base:ubuntu@sha256:2cdcf40fbc6cfe2c6aaed39797fe2ac487041f4d4ecbab6dfdefa038dbe3adef
 USER codespace
 
 ENV LC_ALL=en_US.UTF-8
@@ -14,7 +14,7 @@ RUN sudo apt-get update && export DEBIAN_FRONTEND=noninteractive \
 
 # Pre install brew packages
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" \
-    && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> /home/codespace/.profile \
+    && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> /home/vscode/.profile \
     && brew analytics off
 ENV PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
 RUN brew install go-task/tap/go-task
@@ -42,5 +42,5 @@ RUN brew install \
     ansible-lint \
     k9s
 
-RUN echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc \
-    && echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+RUN echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc \
+    && echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc
