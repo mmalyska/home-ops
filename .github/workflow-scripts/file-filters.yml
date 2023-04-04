@@ -1,9 +1,9 @@
 helm:
-  - added|modified: 'cluster/**/Chart.yaml'
-  - added|modified: 'cluster/**/values.yaml'
-  - added|modified: 'cluster/**/templates/*.yaml'
+  - added|modified: "cluster/**/Chart.yaml"
+  - added|modified: "cluster/**/values.yaml"
+  - added|modified: "cluster/**/templates/*.yaml"
 kustomize:
-  - added|modified: 'cluster/**/kustomization.yaml'
-  - added|modified: 'cluster/**/generators/*.yaml'
-  - added|modified: 'cluster/**/patches/*.yaml'
-  - added|modified: 'cluster/**/resources/*.yaml'
+  - added|modified: "cluster/**/kustomization.yaml"
+  - added|modified: "cluster/**/generators/*.yaml"
+  - added|modified: "cluster/**/patches/*.yaml"
+  - added|modified: "cluster/**/resources/*.yaml"

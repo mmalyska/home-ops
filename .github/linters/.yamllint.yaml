@@ -6,10 +6,10 @@ ignore: |
   .private/
   .terraform/
   .vscode/
-  *.sops.*
+  **/*.sec.*
+  **/*.sops.*
   gotk-components.yaml
-  **/templates/*.yaml
-  **/templates/*.yml
+  **/templates/*.y*ml
   cluster/system/postgres-operator/
 extends: default
 rules:

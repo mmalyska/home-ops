@@ -2,7 +2,6 @@
 version: "3"
 
 tasks:
-
   init:cloudflare:
     desc: Initialize terraform
     dir: provision/terraform/cloudflare

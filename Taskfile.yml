@@ -17,9 +17,10 @@ includes:
   precommit: .taskfiles/pre-commit.yml
   terraform: .taskfiles/terraform.yml
   cluster: .taskfiles/cluster.yml
+  format: .taskfiles/format.yml
+  lint: .taskfiles/lint.yml
 
 tasks:
-
   init:
     desc: Initialize workstation dependencies with Brew
     cmds:
