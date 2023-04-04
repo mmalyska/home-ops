@@ -10,10 +10,11 @@
     "prettier.configPath": ".github/linters/.prettierrc.yaml",
     "prettier.ignorePath": ".github/linters/.prettierignore",
     "yaml.schemas": {
-        "Kubernetes": "cluster/*.yaml",
+        "Kubernetes": "cluster/*.y*ml",
         "ansible": [
-            "provision/ansible/*.yml"
-        ]
+            "provision/ansible/*.y*ml"
+        ],
+        "https://taskfile.dev/schema.json": ".taskfiles/*.y*ml"
     },
     "editor.bracketPairColorization.enabled": true,
     "editor.guides.bracketPairs":"active",
