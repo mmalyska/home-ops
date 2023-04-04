@@ -10,8 +10,8 @@ tasks:
     cmds:
       - >-
         prettier
-        --ignore-path '.gitea/linters/.prettierignore'
-        --config '.gitea/linters/.prettierrc.yaml'
+        --ignore-path '.github/linters/.prettierignore'
+        --config '.github/linters/.prettierrc.yaml'
         --list-different
         --ignore-unknown
         --parser=markdown
@@ -22,9 +22,9 @@ tasks:
     cmds:
       - >-
         prettier
-        --ignore-path '.gitea/linters/.prettierignore'
+        --ignore-path '.github/linters/.prettierignore'
         --config
-        '.gitea/linters/.prettierrc.yaml'
+        '.github/linters/.prettierrc.yaml'
         --list-different
         --ignore-unknown
         --parser=yaml

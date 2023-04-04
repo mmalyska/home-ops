@@ -1,7 +1,8 @@
+**/.git
 charts/
 docs/
 .private/
 .terraform/
 .vscode/
-*.sops.*
+**/*.sops.*
 gotk-components.yaml
