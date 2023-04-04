@@ -8,7 +8,7 @@ source:
 apps:
   - name: argocd
     namespace: argocd
-    path: argocd/base
+    path: argocd
     plugin:
       env:
         - name: SOPS_SECRET_FILE
