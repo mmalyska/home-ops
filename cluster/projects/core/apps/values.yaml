@@ -1,0 +1,21 @@
+---
+project: core
+destination:
+  server: https://kubernetes.default.svc
+source:
+  repoURL: https://github.com/mmalyska/home-ops
+  path: cluster/core
+apps:
+  - name: argocd
+    namespace: argocd
+    path: argocd/base
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: flannel
+    namespace: kube-system
+    path: kube-system/flannel
+  - name: metallb
+    namespace: metallb-system
+    path: metallb-system/metallb

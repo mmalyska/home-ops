@@ -1,0 +1,45 @@
+---
+{{ range $k, $v := $.Values.apps }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $v.name }}
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ $.Values.project }}
+  source:
+    repoURL: {{ $.Values.source.repoURL }}
+    targetRevision: main
+    path: {{ print $.Values.source.path "/" $v.path }}
+    {{- with $v.helm }}
+    helm:
+      {{- with .valueFiles }}
+      valueFiles:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- with $v.plugin }}
+    plugin:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  destination:
+    server: {{ $.Values.destination.server }}
+    namespace: {{ $v.namespace }}
+  syncPolicy:
+    {{ if hasKey $v "syncPolicy" | ternary $v.syncPolicy true }}
+    automated:
+      selfHeal: {{ hasKey $v "selfHeal" | ternary $v.selfHeal true }}
+    {{ end }}
+    syncOptions:
+      - CreateNamespace=true
+    {{- with $v.extraSyncOptions }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- with $v.ignoreDifferences }}
+  ignoreDifferences:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+{{ end }}

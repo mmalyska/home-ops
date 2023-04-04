@@ -1,0 +1,139 @@
+---
+project: system
+destination:
+  server: https://kubernetes.default.svc
+source:
+  repoURL: https://github.com/mmalyska/home-ops
+  path: cluster/system
+apps:
+  - name: cert-manager
+    namespace: cert-manager
+    path: cert-manager
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: cloudnative-pg
+    namespace: cnpg
+    path: cloudnative-pg
+  - name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+    path: dashboard
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: dyndns
+    namespace: dyndns
+    path: dyndns
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: keycloak
+    namespace: identity
+    path: identity/keycloak
+    syncPolicy: true
+    selfHeal: true
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: kured
+    namespace: kured
+    path: kured
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: metrics-server
+    namespace: metrics-server
+    path: metrics-server
+  - name: nfs-subdir-external-provisioner
+    namespace: nfs-subdir-provisioner
+    path: nfs-subdir-external-provisioner
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    path: oauth2-proxy
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: prometheus-stack
+    namespace: monitoring
+    path: prometheus-stack
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+    extraSyncOptions:
+      - ServerSideApply=true
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+    path: rook-ceph/rook-ceph-cluster
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+    extraSyncOptions:
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true
+    ignoreDifferences:
+      - group: ceph.rook.io
+        kind: CephCluster
+        jsonPointers:
+          - /spec/monitoring/rulesNamespaceOverride
+      - group: ceph.rook.io
+        kind: CephCluster
+        jsonPointers:
+          - /spec/monitoring/createPrometheusRules
+      - group: ceph.rook.io
+        kind: CephObjectStore
+        jsonPointers:
+          - /spec/healthCheck
+  - name: rook-ceph-operator
+    namespace: rook-ceph
+    path: rook-ceph/rook-ceph-operator
+    extraSyncOptions:
+      - ServerSideApply=true
+  - name: traefik-internal
+    namespace: traefik-internal
+    path: traefik-internal
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: traefik
+    namespace: traefik
+    path: traefik
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: node-feature-discovery
+    namespace: node-feature-discovery
+    path: node-feature-discovery
+    extraSyncOptions:
+      - RespectIgnoreDifferences=true
+    ignoreDifferences:
+      - group: apps
+        kind: DaemonSet
+        jsonPointers:
+          - /spec/template/metadata/annotations
+  - name: intel-device-plugins-operator
+    namespace: intel-device-plugins-operator
+    path: intel-device-plugins-operator
+  - name: intel-gpu-plugin
+    namespace: intel-gpu-plugin
+    path: intel-gpu-plugin
+    extraSyncOptions:
+      - RespectIgnoreDifferences=true
+    ignoreDifferences:
+      - group: deviceplugin.intel.com
+        kind: GpuDevicePlugin
+        jsonPointers:
+          - /spec/resourceManager

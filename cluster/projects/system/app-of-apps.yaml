@@ -2,23 +2,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: projects
+  name: system
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
     server: https://kubernetes.default.svc
-  project: default
+  project: system
   source:
-    path: cluster/projects
+    path: cluster/projects/system/apps
     repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:
     automated:
-      prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - PrunePropagationPolicy=foreground
-      - PruneLast=true
