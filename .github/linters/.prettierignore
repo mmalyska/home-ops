@@ -7,3 +7,4 @@ docs/
 **/*.sops.*
 **/*.sec.*
 gotk-components.yaml
+**/templates/*.y*ml

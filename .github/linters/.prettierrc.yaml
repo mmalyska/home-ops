@@ -5,3 +5,4 @@ semi: false
 singleQuote: false
 bracketSpacing: false
 useTabs: false
+bracketSameLine: true
