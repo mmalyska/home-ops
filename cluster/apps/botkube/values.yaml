@@ -12,6 +12,8 @@ botkube:
     'show-logs-on-error':
       enabled: true
   executors:
-    'kubectl-read-only':
-      kubectl:
+    k8s-default-tools:
+      botkube/kubectl:
         enabled: true
+  serviceMonitor:
+    enabled: true
