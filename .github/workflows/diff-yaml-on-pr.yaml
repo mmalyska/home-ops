@@ -155,7 +155,7 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body-file: ${{ runner.temp }}/diff_items/message.txt
+          body-path: ${{ runner.temp }}/diff_items/message.txt
           edit-mode: replace
 
   kustomize-release-diff:
@@ -236,5 +236,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body-file: ${{ runner.temp }}/diff_items/message.txt
+          body-path: ${{ runner.temp }}/diff_items/message.txt
           edit-mode: replace
