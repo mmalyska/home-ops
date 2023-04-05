@@ -1,6 +1,6 @@
 {
     "recommendations": [
-        "HashiCorp.terraform",
+        "hashicorp.terraform",
         "britesnow.vscode-toggle-quotes",
         "mitchdenny.ecdc",
         "ms-kubernetes-tools.vscode-kubernetes-tools",
@@ -9,6 +9,6 @@
         "signageos.signageos-vscode-sops",
         "usernamehw.errorlens",
         "fcrespo82.markdown-table-formatter",
-        "redhat.ansible"
+        "ms-azuretools.vscode-docker"
     ]
 }
