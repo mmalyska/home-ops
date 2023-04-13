@@ -8,7 +8,7 @@ name: gitea
 gitea:
   image:
     repository: gitea/gitea
-    tag: 1.19.0
+    tag: 1.19.1
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
   gitea:
