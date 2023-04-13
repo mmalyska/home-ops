@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: snapshot-validation-webhook-subchart
+type: application
+version: 1.0.0
+appVersion: "1.7.1"
+dependencies:
+  - name: snapshot-validation-webhook
+    version: 1.7.1
+    repository: https://piraeus.io/helm-charts

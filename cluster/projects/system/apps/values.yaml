@@ -137,3 +137,9 @@ apps:
         kind: GpuDevicePlugin
         jsonPointers:
           - /spec/resourceManager
+  - name: snapshot-controller
+    namespace: snapshot-controller
+    path: snapshot-controller
+  - name: snapshot-validation-webhook
+    namespace: snapshot-validation-webhook
+    path: snapshot-validation-webhook
