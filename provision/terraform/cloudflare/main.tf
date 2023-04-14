@@ -145,3 +145,11 @@ resource "cloudflare_record" "oauth" {
   type    = "CNAME"
   ttl     = 1
 }
+
+resource "cloudflare_record" "doppler" {
+  name    = "${data.sops_file.cloudflare_secrets.data["doppler_domain"]}"
+  zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
+  value   = "${data.sops_file.cloudflare_secrets.data["doppler_value"]}"
+  type    = "TXT"
+  ttl     = 1
+}

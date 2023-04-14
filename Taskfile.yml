@@ -42,7 +42,6 @@ tasks:
         jq
         kubernetes-cli
         kustomize
-        pre-commit
         prettier
         sops
         stern
@@ -53,3 +52,4 @@ tasks:
         int128/kubelogin/kubelogin
         ansible-lint
         k9s
+        pre-commit
