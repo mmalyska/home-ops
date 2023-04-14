@@ -143,3 +143,6 @@ apps:
   - name: snapshot-validation-webhook
     namespace: snapshot-validation-webhook
     path: snapshot-validation-webhook
+  - name: external-secrets
+    namespace: external-secrets
+    path: external-secrets
