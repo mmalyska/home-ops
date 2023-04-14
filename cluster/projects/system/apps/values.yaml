@@ -146,3 +146,7 @@ apps:
   - name: external-secrets
     namespace: external-secrets
     path: external-secrets
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
