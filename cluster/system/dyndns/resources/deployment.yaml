@@ -18,7 +18,7 @@ spec:
       containers:
         - name: dyndns-updater
           imagePullPolicy: IfNotPresent
-          image: ghcr.io/joshuaavalon/cloudflare-ddns:2.9.3@sha256:33942fdb59bfef28de5a8f7d2b395254d037fbfe844ff30d1a00f20611929492
+          image: ghcr.io/joshuaavalon/cloudflare-ddns:3.0.0@sha256:6dddbb9a258647a342cc494973b3cbccc69f3b98f6ba0ed658312d85371b4f21
           volumeMounts:
             - name: dyndns-updater
               mountPath: /app/config.yaml
