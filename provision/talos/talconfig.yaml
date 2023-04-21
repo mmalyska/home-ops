@@ -1,0 +1,95 @@
+clusterName: kubernetes
+talosVersion: v1.4.0
+kubernetesVersion: v1.25.5
+endpoint: https://${clusterDomain}:6443
+domain: cluster.local
+allowSchedulingOnMasters: true
+additionalMachineCertSans:
+  - ${clusterEndpointIP}
+  - ${clusterDomain}
+additionalApiServerCertSans:
+  - ${clusterEndpointIP}
+clusterPodNets:
+  - 10.244.0.0/16
+clusterSvcNets:
+  - 10.96.0.0/12
+cniConfig:
+  name: flannel
+nodes:
+  - hostname: mc1
+    ipAddress: 192.168.48.2
+    installDisk: /dev/nvme0n1
+    controlPlane: true
+    disableSearchDomain: true
+    nameservers:
+      - 192.168.50.9
+    networkInterfaces:
+      - interface: eno1
+        addresses:
+          - 192.168.48.2/22
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.50.1
+  - hostname: mc2
+    ipAddress: 192.168.48.3
+    installDisk: /dev/nvme0n1
+    controlPlane: true
+    disableSearchDomain: true
+    nameservers:
+      - 192.168.50.9
+    networkInterfaces:
+      - interface: eno1
+        addresses:
+          - 192.168.48.3/22
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.50.1
+  - hostname: mc3
+    ipAddress: 192.168.48.4
+    installDisk: /dev/nvme0n1
+    controlPlane: true
+    disableSearchDomain: true
+    nameservers:
+      - 192.168.50.9
+    networkInterfaces:
+      - interface: eno1
+        addresses:
+          - 192.168.48.4/22
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.50.1
+controlPlane:
+  patches:
+    - |-
+      cluster:
+        allowSchedulingOnMasters: true
+    - |-
+      machine:
+        files:
+          - op: create
+            path: /etc/cri/conf.d/20-customization.part
+            content: |
+              [metrics]
+                address = "0.0.0.0:11234"
+              [plugins]
+                [plugins."io.containerd.grpc.v1.cri"]
+                  enable_unprivileged_ports = true
+                  enable_unprivileged_icmp = true
+        kubelet:
+          extraArgs:
+            rotate-certificates: "true"
+            rotate-server-certificates: "true"
+            oidc-client-id: ${oidcClientId}
+            oidc-groups-claim: groups
+            oidc-groups-prefix: 'oidc:'
+            oidc-issuer-url: ${oidcIssuerURL}
+            oidc-username-claim: email
+            oidc-username-prefix: 'oidc:'
+        network:
+          extraHostEntries:
+            - ip: ${qnapIp}
+              aliases:
+                - ${qnapName}
