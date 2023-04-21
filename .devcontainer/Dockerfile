@@ -44,3 +44,9 @@ RUN brew install \
 
 RUN echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc \
     && echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc
+
+# install Talos
+RUN curl -sL https://talos.dev/install | sh
+
+# install talhelper https://github.com/budimanjojo/talhelper
+RUN curl https://i.jpillora.com/budimanjojo/talhelper\! | sudo bash
