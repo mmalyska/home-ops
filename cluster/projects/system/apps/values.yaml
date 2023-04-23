@@ -150,3 +150,6 @@ apps:
       env:
         - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
+  - name: kubelet-csr-approver
+    namespace: kubelet-csr-approver
+    path: kubelet-csr-approver
