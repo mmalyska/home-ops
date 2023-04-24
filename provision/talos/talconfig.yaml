@@ -2,19 +2,15 @@ clusterName: kubernetes
 talosVersion: v1.4.0
 kubernetesVersion: v1.25.5
 endpoint: https://${clusterDomain}:6443
-domain: cluster.local
+cniConfig:
+  name: none
 allowSchedulingOnMasters: true
 additionalMachineCertSans:
   - ${clusterEndpointIP}
   - ${clusterDomain}
 additionalApiServerCertSans:
   - ${clusterEndpointIP}
-clusterPodNets:
-  - 10.244.0.0/16
-clusterSvcNets:
-  - 10.96.0.0/12
-cniConfig:
-  name: flannel
+  - ${clusterDomain}
 nodes:
   - hostname: mc1
     ipAddress: 192.168.48.2
@@ -86,6 +82,7 @@ controlPlane:
             feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
             rotate-certificates: "true"
             rotate-server-certificates: "true"
+            anonymous-auth: "true"
           extraConfig:
             serverTLSBootstrap: true
         network:
@@ -96,9 +93,25 @@ controlPlane:
       cluster:
         apiServer:
           extraArgs:
+            anonymous-auth: "true"
             oidc-client-id: ${oidcClientId}
             oidc-groups-claim: groups
             oidc-groups-prefix: 'oidc:'
             oidc-issuer-url: ${oidcIssuerURL}
             oidc-username-claim: email
             oidc-username-prefix: 'oidc:'
+            service-account-issuer: "https://kubernetes.default.svc.cluster.local"
+            api-audiences: https://kubernetes.default.svc.cluster.local
+    - |-
+      - op: add
+        path: /cluster/controllerManager/extraArgs
+        value:
+          bind-address: 0.0.0.0
+      - op: add
+        path: /cluster/scheduler/extraArgs
+        value:
+          bind-address: 0.0.0.0
+      - op: add
+        path: /cluster/proxy/extraArgs
+        value:
+          bind-address: 0.0.0.0
