@@ -20,53 +20,50 @@ nodes:
     ipAddress: 192.168.48.2
     installDisk: /dev/nvme0n1
     controlPlane: true
-    disableSearchDomain: true
     nameservers:
       - 192.168.50.9
     networkInterfaces:
-      - interface: eno1
+      - interface: eth0
         addresses:
           - 192.168.48.2/22
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
-        vip:
-          ip: 192.168.48.1
+        # vip:
+        #   ip: 192.168.48.1
   - hostname: mc2
     ipAddress: 192.168.48.3
     installDisk: /dev/nvme0n1
     controlPlane: true
-    disableSearchDomain: true
     nameservers:
       - 192.168.50.9
     networkInterfaces:
-      - interface: eno1
+      - interface: eth0
         addresses:
           - 192.168.48.3/22
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
-        vip:
-          ip: 192.168.48.1
+        # vip:
+        #   ip: 192.168.48.1
   - hostname: mc3
     ipAddress: 192.168.48.4
     installDisk: /dev/nvme0n1
     controlPlane: true
-    disableSearchDomain: true
     nameservers:
       - 192.168.50.9
     networkInterfaces:
-      - interface: eno1
+      - interface: eth0
         addresses:
           - 192.168.48.4/22
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
-        vip:
-          ip: 192.168.48.1
+        # vip:
+        #   ip: 192.168.48.1
 controlPlane:
   patches:
     - |-
@@ -89,14 +86,19 @@ controlPlane:
             feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
             rotate-certificates: "true"
             rotate-server-certificates: "true"
+          extraConfig:
+            serverTLSBootstrap: true
+        network:
+          extraHostEntries:
+            - ip: ${qnapIp}
+              aliases:
+                - ${qnapName}
+      cluster:
+        apiServer:
+          extraArgs:
             oidc-client-id: ${oidcClientId}
             oidc-groups-claim: groups
             oidc-groups-prefix: 'oidc:'
             oidc-issuer-url: ${oidcIssuerURL}
             oidc-username-claim: email
             oidc-username-prefix: 'oidc:'
-        network:
-          extraHostEntries:
-            - ip: ${qnapIp}
-              aliases:
-                - ${qnapName}
