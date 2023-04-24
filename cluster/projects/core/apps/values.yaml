@@ -14,7 +14,7 @@ apps:
         - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: flannel
-    namespace: kube-flannel
+    namespace: kube-system
     path: kube-system/flannel
   - name: metallb
     namespace: metallb-system
