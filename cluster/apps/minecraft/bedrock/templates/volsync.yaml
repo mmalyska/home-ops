@@ -34,8 +34,7 @@ spec:
   trigger:
     schedule: "0 */12 * * *"
   restic:
-    copyMethod: Clone
-    volumeSnapshotClassName: csi-cephfsplugin-snapclass
+    copyMethod: Direct
     pruneIntervalDays: 14
     retain:
       daily: 6
