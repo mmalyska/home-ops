@@ -10,7 +10,6 @@ additionalMachineCertSans:
   - ${clusterDomain}
 additionalApiServerCertSans:
   - ${clusterEndpointIP}
-  - ${clusterDomain}
 nodes:
   - hostname: mc1
     ipAddress: 192.168.48.2
