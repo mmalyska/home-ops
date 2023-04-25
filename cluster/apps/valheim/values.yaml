@@ -24,6 +24,7 @@ server:
   password: <secret:world-password>
   extraEnvironmentVars:
     BACKUPS: true
+    BACKUPS_MAX_COUNT: 3
     SERVER_PUBLIC: true
     UPDATE_CRON: "0 6 * * *"
     STATUS_HTTP: true
