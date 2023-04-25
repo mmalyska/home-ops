@@ -41,3 +41,5 @@ spec:
       daily: 6
       weekly: 4
       monthly: 2
+    moverSecurityContext:
+      fsGroup: 1000
