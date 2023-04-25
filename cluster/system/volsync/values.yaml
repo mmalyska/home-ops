@@ -1,0 +1,4 @@
+volsync:
+  manageCRDs: true
+  metrics:
+    disableAuth: true

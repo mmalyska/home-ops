@@ -146,3 +146,6 @@ apps:
   - name: kubelet-csr-approver
     namespace: kubelet-csr-approver
     path: kubelet-csr-approver
+  - name: volsync
+    namespace: volsync
+    path: volsync
