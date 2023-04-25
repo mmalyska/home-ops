@@ -37,6 +37,7 @@ spec:
     copyMethod: Snapshot
     pruneIntervalDays: 14
     repository: minecraft-bedrock-restic-secret
+    storageClassName: ceph-block
     retain:
       daily: 6
       weekly: 4

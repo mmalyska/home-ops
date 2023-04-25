@@ -11,8 +11,6 @@ snapshot-controller:
       deletionPolicy: Delete
     - name: csi-cephfsplugin-snapclass
       driver: rook-ceph.cephfs.csi.ceph.com
-      annotations:
-        snapshot.storage.kubernetes.io/is-default-class: "true"
       parameters:
         clusterID: rook-ceph
         csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner
