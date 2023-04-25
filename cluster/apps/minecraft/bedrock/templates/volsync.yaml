@@ -34,10 +34,8 @@ spec:
   trigger:
     schedule: "0 */12 * * *"
   restic:
-    copyMethod: Snapshot
+    copyMethod: Clone
     pruneIntervalDays: 14
-    repository: minecraft-bedrock-restic-secret
-    storageClassName: ceph-block
     retain:
       daily: 6
       weekly: 4
