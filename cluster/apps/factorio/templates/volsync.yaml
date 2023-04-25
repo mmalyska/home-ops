@@ -28,7 +28,7 @@ kind: ReplicationSource
 metadata:
   name: factorio
 spec:
-  sourcePVC: {{ template "factorio-server-charts.fullname" . }}-datadir
+  sourcePVC: factorio-factorio-server-charts-datadir
   trigger:
     schedule: "0 */12 * * *"
   restic:
