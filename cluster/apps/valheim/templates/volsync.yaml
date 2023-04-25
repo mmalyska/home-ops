@@ -21,3 +21,24 @@ spec:
   dataFrom:
     - extract:
         key: VOLSYNC_RESTIC_JSON
+{{- if .Values.server.storage.config.enabled }}
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/volsync.backube/replicationsource_v1alpha1.json
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: valheim
+  labels: {{- include "valheim.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
+spec:
+  sourcePVC: {{ template "valheim.fullname" . }}-world-data
+  trigger:
+    schedule: "0 */12 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: valheim-restic-secret
+    retain:
+      daily: 6
+      weekly: 4
+      monthly: 2
+{{- end }}
