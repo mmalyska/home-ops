@@ -1,0 +1,49 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/external-secrets.io/externalsecret_v1beta1.json
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: jellyfin-restic
+  labels: {{- include "jellyfin.labels" . | nindent 4 }}
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: doppler
+  target:
+    name: jellyfin-restic-secret
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        RESTIC_REPOSITORY: '{{`{{ .REPOSITORY_TEMPLATE }}`}}/jellyfin'
+        RESTIC_PASSWORD: '{{`{{ .RESTIC_PASSWORD }}`}}'
+        AWS_ACCESS_KEY_ID: '{{`{{ .AWS_ACCESS_KEY_ID }}`}}'
+        AWS_SECRET_ACCESS_KEY: '{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}'
+  dataFrom:
+    - extract:
+        key: VOLSYNC_RESTIC_JSON
+{{- if and .Values.persistence.config.enabled }}
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/volsync.backube/replicationsource_v1alpha1.json
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: jellyfin
+  labels: {{- include "jellyfin.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.persistence.config.existingClaim }}
+  sourcePVC: .Values.persistence.config.existingClaim
+  {{- else }}
+  sourcePVC: {{ template "jellyfin.fullname" . }}-config
+  {{- end }}
+  trigger:
+    schedule: "0 */12 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: jellyfin-restic-secret
+    retain:
+      daily: 6
+      weekly: 4
+      monthly: 2
+{{- end }}
