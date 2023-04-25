@@ -4,6 +4,7 @@ apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: valheim-restic
+  labels: {{- include "valheim.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
 spec:
   secretStoreRef:
     kind: ClusterSecretStore
