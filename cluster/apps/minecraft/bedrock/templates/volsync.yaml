@@ -1,0 +1,43 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/external-secrets.io/externalsecret_v1beta1.json
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: minecraft-bedrock-restic
+  labels: {{- include "minecraft.bedrock.labels" (dict "context" . "component" "server" "name" "server") | nindent 4 }}
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: doppler
+  target:
+    name: minecraft-bedrock-restic-secret
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        RESTIC_REPOSITORY: '{{`{{ .REPOSITORY_TEMPLATE }}`}}/minecraft-bedrock'
+        RESTIC_PASSWORD: '{{`{{ .RESTIC_PASSWORD }}`}}'
+        AWS_ACCESS_KEY_ID: '{{`{{ .AWS_ACCESS_KEY_ID }}`}}'
+        AWS_SECRET_ACCESS_KEY: '{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}'
+  dataFrom:
+    - extract:
+        key: VOLSYNC_RESTIC_JSON
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/volsync.backube/replicationsource_v1alpha1.json
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: minecraft-bedrock
+  labels: {{- include "minecraft.bedrock.labels" (dict "context" . "component" "server" "name" "server") | nindent 4 }}
+spec:
+  sourcePVC: {{ template "minecraft.bedrock.fullname" . }}-datadir
+  trigger:
+    schedule: "0 */12 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: minecraft-bedrock-restic-secret
+    retain:
+      daily: 6
+      weekly: 4
+      monthly: 2
