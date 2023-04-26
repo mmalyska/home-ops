@@ -1,10 +1,10 @@
-clusterName: kubernetes
+clusterName: home
 talosVersion: v1.4.0
-kubernetesVersion: v1.25.5
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+kubernetesVersion: v1.27.1
 endpoint: https://${clusterDomain}:6443
 cniConfig:
-  name: none
-allowSchedulingOnMasters: true
+  name: flannel
 additionalMachineCertSans:
   - ${clusterEndpointIP}
   - ${clusterDomain}
@@ -25,8 +25,8 @@ nodes:
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
-        # vip:
-        #   ip: 192.168.48.1
+        vip:
+          ip: 192.168.48.1
   - hostname: mc2
     ipAddress: 192.168.48.3
     installDisk: /dev/nvme0n1
@@ -41,8 +41,8 @@ nodes:
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
-        # vip:
-        #   ip: 192.168.48.1
+        vip:
+          ip: 192.168.48.1
   - hostname: mc3
     ipAddress: 192.168.48.4
     installDisk: /dev/nvme0n1
@@ -57,8 +57,8 @@ nodes:
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
-        # vip:
-        #   ip: 192.168.48.1
+        vip:
+          ip: 192.168.48.1
 controlPlane:
   patches:
     - |-
@@ -66,41 +66,19 @@ controlPlane:
         allowSchedulingOnMasters: true
     - |-
       machine:
-        files:
-          - op: create
-            path: /etc/cri/conf.d/20-customization.part
-            content: |
-              [metrics]
-                address = "0.0.0.0:11234"
-              [plugins]
-                [plugins."io.containerd.grpc.v1.cri"]
-                  enable_unprivileged_ports = true
-                  enable_unprivileged_icmp = true
         kubelet:
           extraArgs:
             feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
-            rotate-certificates: "true"
             rotate-server-certificates: "true"
-            anonymous-auth: "true"
-          extraConfig:
-            serverTLSBootstrap: true
-        network:
-          extraHostEntries:
-            - ip: ${qnapIp}
-              aliases:
-                - ${qnapName}
       cluster:
         apiServer:
           extraArgs:
-            anonymous-auth: "true"
             oidc-client-id: ${oidcClientId}
             oidc-groups-claim: groups
             oidc-groups-prefix: 'oidc:'
             oidc-issuer-url: ${oidcIssuerURL}
             oidc-username-claim: email
             oidc-username-prefix: 'oidc:'
-            service-account-issuer: "https://kubernetes.default.svc.cluster.local"
-            api-audiences: https://kubernetes.default.svc.cluster.local
     - |-
       - op: add
         path: /cluster/controllerManager/extraArgs
