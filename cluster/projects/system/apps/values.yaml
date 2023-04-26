@@ -144,7 +144,7 @@ apps:
         - name: SOPS_SECRET_FILE
           value: secret.sec.yaml
   - name: kubelet-csr-approver
-    namespace: kubelet-csr-approver
+    namespace: kube-system
     path: kubelet-csr-approver
   - name: volsync
     namespace: volsync
