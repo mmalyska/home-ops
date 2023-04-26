@@ -28,10 +28,14 @@ spec:
     server: {{ $.Values.destination.server }}
     namespace: {{ $v.namespace }}
   syncPolicy:
-    {{ if hasKey $v "syncPolicy" | ternary $v.syncPolicy true }}
+    {{- if hasKey $v "syncPolicy" | ternary $v.syncPolicy true }}
     automated:
       selfHeal: {{ hasKey $v "selfHeal" | ternary $v.selfHeal true }}
-    {{ end }}
+    {{- end }}
+    {{- with $v.managedNamespaceMetadata }}
+    managedNamespaceMetadata:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     syncOptions:
       - CreateNamespace=true
     {{- with $v.extraSyncOptions }}
