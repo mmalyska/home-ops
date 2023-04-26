@@ -63,6 +63,9 @@ controlPlane:
   patches:
     - |-
       cluster:
+        extraManifests:
+          # Install the kubelet cert-approver manifests
+          - https://raw.githubusercontent.com/mmalyska/home-ops/main/provision/talos/manifests/kubelet-csr-approver/kubelet-csr-approver.yaml
         allowSchedulingOnMasters: true
         apiServer:
           extraArgs:
