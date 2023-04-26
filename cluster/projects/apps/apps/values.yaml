@@ -6,89 +6,89 @@ source:
   repoURL: https://github.com/mmalyska/home-ops
   path: cluster/apps
 apps:
-  - name: botkube
-    namespace: botkube
-    path: botkube
-    syncPolicy: true
-    selfHeal: true
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: calibre
-    namespace: calibre
-    path: calibre
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: firefly
-    namespace: firefly
-    path: firefly
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: gitea
-    namespace: gitea
-    path: gitea
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: grocy
-    namespace: grocy
-    path: grocy
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: hass-proxy
-    namespace: hass-proxy
-    path: hass
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: minecraft-bedrock
-    namespace: minecraft
-    path: minecraft/bedrock
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: nfs-mounts
-    namespace: nfs-mounts
-    path: nfs-mounts
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: qnap-proxy
-    namespace: qnap-proxy
-    path: qnap-proxy
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: jellyfin
-    namespace: jellyfin
-    path: jellyfin
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: factorio
-    namespace: factorio
-    path: factorio
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
-  - name: valheim
-    namespace: valheim
-    path: valheim
-    plugin:
-      env:
-        - name: SOPS_SECRET_FILE
-          value: secret.sec.yaml
+  # - name: botkube
+  #   namespace: botkube
+  #   path: botkube
+  #   syncPolicy: true
+  #   selfHeal: true
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: calibre
+  #   namespace: calibre
+  #   path: calibre
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: firefly
+  #   namespace: firefly
+  #   path: firefly
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: gitea
+  #   namespace: gitea
+  #   path: gitea
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: grocy
+  #   namespace: grocy
+  #   path: grocy
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: hass-proxy
+  #   namespace: hass-proxy
+  #   path: hass
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: minecraft-bedrock
+  #   namespace: minecraft
+  #   path: minecraft/bedrock
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: nfs-mounts
+  #   namespace: nfs-mounts
+  #   path: nfs-mounts
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: qnap-proxy
+  #   namespace: qnap-proxy
+  #   path: qnap-proxy
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: jellyfin
+  #   namespace: jellyfin
+  #   path: jellyfin
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: factorio
+  #   namespace: factorio
+  #   path: factorio
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
+  # - name: valheim
+  #   namespace: valheim
+  #   path: valheim
+  #   plugin:
+  #     env:
+  #       - name: SOPS_SECRET_FILE
+  #         value: secret.sec.yaml
