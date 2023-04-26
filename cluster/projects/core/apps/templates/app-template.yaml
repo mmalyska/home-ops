@@ -28,9 +28,9 @@ spec:
     server: {{ $.Values.destination.server }}
     namespace: {{ $v.namespace }}
   syncPolicy:
-    {{- if hasKey $v "syncPolicy" | ternary $v.syncPolicy true }}
+    {{- if hasKey $v "selfHeal" | ternary $v.syncPolicy false }}
     automated:
-      selfHeal: {{ hasKey $v "selfHeal" | ternary $v.selfHeal true }}
+      selfHeal: {{ hasKey $v "selfHeal" | ternary $v.selfHeal false }}
     {{- end }}
     {{- with $v.managedNamespaceMetadata }}
     managedNamespaceMetadata:
