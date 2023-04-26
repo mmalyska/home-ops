@@ -6,13 +6,13 @@ source:
   repoURL: https://github.com/mmalyska/home-ops
   path: cluster/system
 apps:
-  # - name: cert-manager
-  #   namespace: cert-manager
-  #   path: cert-manager
-  #   plugin:
-  #     env:
-  #       - name: SOPS_SECRET_FILE
-  #         value: secret.sec.yaml
+  - name: cert-manager
+    namespace: cert-manager
+    path: cert-manager
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
   # - name: cloudnative-pg
   #   namespace: cnpg
   #   path: cloudnative-pg
@@ -93,20 +93,20 @@ apps:
   #   path: rook-ceph/rook-ceph-operator
   #   extraSyncOptions:
   #     - ServerSideApply=true
-  # - name: traefik-internal
-  #   namespace: traefik-internal
-  #   path: traefik-internal
-  #   plugin:
-  #     env:
-  #       - name: SOPS_SECRET_FILE
-  #         value: secret.sec.yaml
-  # - name: traefik
-  #   namespace: traefik
-  #   path: traefik
-  #   plugin:
-  #     env:
-  #       - name: SOPS_SECRET_FILE
-  #         value: secret.sec.yaml
+  - name: traefik-internal
+    namespace: traefik-internal
+    path: traefik-internal
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+  - name: traefik
+    namespace: traefik
+    path: traefik
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
   # - name: node-feature-discovery
   #   namespace: node-feature-discovery
   #   path: node-feature-discovery
