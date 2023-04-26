@@ -64,13 +64,6 @@ controlPlane:
     - |-
       cluster:
         allowSchedulingOnMasters: true
-    - |-
-      machine:
-        kubelet:
-          extraArgs:
-            feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
-            rotate-server-certificates: "true"
-      cluster:
         apiServer:
           extraArgs:
             oidc-client-id: ${oidcClientId}
@@ -79,6 +72,12 @@ controlPlane:
             oidc-issuer-url: ${oidcIssuerURL}
             oidc-username-claim: email
             oidc-username-prefix: 'oidc:'
+    - |-
+      machine:
+        kubelet:
+          extraArgs:
+            feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
+            rotate-server-certificates: "true"
     - |-
       - op: add
         path: /cluster/controllerManager/extraArgs
