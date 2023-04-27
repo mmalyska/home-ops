@@ -34,6 +34,7 @@ apps:
           - /spec/conversion/webhook/clientConfig/caBundle
   - name: rook-ceph-cluster
     namespace: rook-ceph
+    createNamespace: false
     path: rook-ceph/rook-ceph-cluster
     plugin:
       env:
@@ -60,3 +61,6 @@ apps:
     path: rook-ceph/rook-ceph-operator
     extraSyncOptions:
       - ServerSideApply=true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: privileged

@@ -37,7 +37,7 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
     syncOptions:
-      - CreateNamespace=true
+      - CreateNamespace={{ hasKey $v "createNamespace" | ternary $v.createNamespace true }}
     {{- with $v.extraSyncOptions }}
       {{- toYaml . | nindent 6 }}
     {{- end }}
