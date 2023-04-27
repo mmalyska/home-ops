@@ -1,0 +1,110 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: disk-wipe-mc1
+spec:
+  restartPolicy: Never
+  nodeName: mc1
+  containers:
+    - name: disk-wipe
+      image: ghcr.io/onedr0p/alpine:rolling@sha256:999384960b6114496a5e4036e945141c205d064ce23b87326bd3f8d878c5a9d4
+      securityContext:
+        privileged: true
+      resources: {}
+      env:
+        - name: CEPH_DISK
+          value: /dev/sda
+      command:
+        [
+          "/bin/sh",
+          "-c"
+        ]
+      args:
+        - apk add --no-cache sgdisk util-linux parted;
+          sgdisk --zap-all $CEPH_DISK;
+          blkdiscard $CEPH_DISK;
+          dd if=/dev/zero bs=1M count=10000 oflag=direct of=$CEPH_DISK;
+          partprobe $CEPH_DISK;
+          rm -rf /mnt/host_var/lib/rook
+      volumeMounts:
+        - mountPath: /mnt/host_var
+          name: host-var
+  volumes:
+    - name: host-var
+      hostPath:
+        path: /var
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: disk-wipe-mc2
+spec:
+  restartPolicy: Never
+  nodeName: mc2
+  containers:
+    - name: disk-wipe
+      image: ghcr.io/onedr0p/alpine:rolling@sha256:999384960b6114496a5e4036e945141c205d064ce23b87326bd3f8d878c5a9d4
+      securityContext:
+        privileged: true
+      resources: {}
+      env:
+        - name: CEPH_DISK
+          value: /dev/sda
+      command:
+        [
+          "/bin/sh",
+          "-c"
+        ]
+      args:
+        - apk add --no-cache sgdisk util-linux parted;
+          sgdisk --zap-all $CEPH_DISK;
+          blkdiscard $CEPH_DISK;
+          dd if=/dev/zero bs=1M count=10000 oflag=direct of=$CEPH_DISK;
+          partprobe $CEPH_DISK;
+          rm -rf /mnt/host_var/lib/rook
+      volumeMounts:
+        - mountPath: /mnt/host_var
+          name: host-var
+  volumes:
+    - name: host-var
+      hostPath:
+        path: /var
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: disk-wipe-mc3
+spec:
+  restartPolicy: Never
+  nodeName: mc3
+  containers:
+    - name: disk-wipe
+      image: ghcr.io/onedr0p/alpine:rolling@sha256:999384960b6114496a5e4036e945141c205d064ce23b87326bd3f8d878c5a9d4
+      securityContext:
+        privileged: true
+      resources: {}
+      env:
+        - name: CEPH_DISK
+          value: /dev/sda
+      command:
+        [
+          "/bin/sh",
+          "-c"
+        ]
+      args:
+        - apk add --no-cache sgdisk util-linux parted;
+          sgdisk --zap-all $CEPH_DISK;
+          blkdiscard $CEPH_DISK;
+          dd if=/dev/zero bs=1M count=10000 oflag=direct of=$CEPH_DISK;
+          partprobe $CEPH_DISK;
+          rm -rf /mnt/host_var/lib/rook
+      volumeMounts:
+        - mountPath: /mnt/host_var
+          name: host-var
+  volumes:
+    - name: host-var
+      hostPath:
+        path: /var
