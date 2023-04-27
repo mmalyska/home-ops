@@ -32,3 +32,31 @@ apps:
         name: addresspools.metallb.io
         jsonPointers:
           - /spec/conversion/webhook/clientConfig/caBundle
+  - name: rook-ceph-cluster
+    namespace: rook-ceph
+    path: rook-ceph/rook-ceph-cluster
+    plugin:
+      env:
+        - name: SOPS_SECRET_FILE
+          value: secret.sec.yaml
+    extraSyncOptions:
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true
+    ignoreDifferences:
+      - group: ceph.rook.io
+        kind: CephCluster
+        jsonPointers:
+          - /spec/monitoring/rulesNamespaceOverride
+      - group: ceph.rook.io
+        kind: CephCluster
+        jsonPointers:
+          - /spec/monitoring/createPrometheusRules
+      - group: ceph.rook.io
+        kind: CephObjectStore
+        jsonPointers:
+          - /spec/healthCheck
+  - name: rook-ceph-operator
+    namespace: rook-ceph
+    path: rook-ceph/rook-ceph-operator
+    extraSyncOptions:
+      - ServerSideApply=true
