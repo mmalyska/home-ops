@@ -73,6 +73,7 @@ rook-ceph-cluster:
             - name: "/dev/disk/by-id/ata-CT500MX500SSD1_2147E5E7B557"
     dashboard:
       enabled: true
+      ssl: false
   cephBlockPools:
     - name: ceph-blockpool
       spec:
