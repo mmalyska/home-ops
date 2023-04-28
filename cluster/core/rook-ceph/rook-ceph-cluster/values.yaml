@@ -11,7 +11,7 @@ rook-ceph-cluster:
     createPrometheusRules: false
     rulesNamespaceOverride: monitoring
   toolbox:
-    enabled: false
+    enabled: true
   cephClusterSpec:
     resources:
       mgr:
@@ -73,8 +73,6 @@ rook-ceph-cluster:
             - name: "/dev/disk/by-id/ata-CT500MX500SSD1_2147E5E7B557"
     dashboard:
       enabled: true
-      urlPrefix: /
-      ssl: false
   cephBlockPools:
     - name: ceph-blockpool
       spec:
