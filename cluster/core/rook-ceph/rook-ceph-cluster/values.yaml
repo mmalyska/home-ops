@@ -106,6 +106,7 @@ rook-ceph-cluster:
           - failureDomain: host
             replicated:
               size: 3
+            name: data0
         metadataServer:
           activeCount: 1
           activeStandby: true
@@ -114,12 +115,13 @@ rook-ceph-cluster:
               cpu: "35m"
               memory: "64M"
             limits:
-              memory: "144M"
+              memory: "1G"
           priorityClassName: system-cluster-critical
       storageClass:
         enabled: true
         isDefault: false
         name: ceph-filesystem
+        pool: data0
         reclaimPolicy: Delete
         allowVolumeExpansion: true
         mountOptions: []
