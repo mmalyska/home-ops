@@ -6,3 +6,5 @@ namespace: argocd
 
 resources:
   - apps
+  - core
+  - system

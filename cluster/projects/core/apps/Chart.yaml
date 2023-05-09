@@ -1,6 +1,0 @@
----
-apiVersion: v2
-name: core-apps
-type: application
-version: 1.0.0
-appVersion: "1.0.0"

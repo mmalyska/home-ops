@@ -2,16 +2,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: core
+  name: system
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
     server: https://kubernetes.default.svc
-  project: core
+  project: system
   source:
-    path: cluster/projects/core/apps
+    path: cluster/projects/system
     repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:

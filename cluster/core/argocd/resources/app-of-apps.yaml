@@ -11,7 +11,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: cluster/projects
+    path: cluster/core/argocd/projects
     repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:
