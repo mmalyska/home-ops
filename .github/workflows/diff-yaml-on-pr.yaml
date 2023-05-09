@@ -150,7 +150,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "${{ matrix.file }}"
+          body-includes: "Path: `${{ matrix.file }}`"
       - uses: peter-evans/create-or-update-comment@v3
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
@@ -231,7 +231,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "${{ matrix.file }}"
+          body-includes: "Path: `${{ matrix.file }}`"
       - uses: peter-evans/create-or-update-comment@v3
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}

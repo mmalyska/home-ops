@@ -1,28 +1,12 @@
 kube-prometheus-stack:
   kubeControllerManager:
-    service:
-      port: 10252
-      targetPort: 10252
-    serviceMonitor:
-      https: false
+    enabled: true
   kubeEtcd:
-    service:
-      port: 2381
-      targetPort: 2381
-    serviceMonitor:
-      https: false
+    enabled: true
   kubeProxy:
-    service:
-      port: 10249
-      targetPort: 10249
-    serviceMonitor:
-      https: false
+    enabled: true
   kubeScheduler:
-    service:
-      port: 10251
-      targetPort: 10251
-    serviceMonitor:
-      https: false
+    enabled: true
   grafana:
     persistence:
       enabled: true
@@ -55,29 +39,15 @@ kube-prometheus-stack:
         cncf:
           url: https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/docs/src/samples/monitoring/grafana-dashboard.json
   alertmanager:
-    alertmanagerSpec:
-      storage:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: ceph-block
-            accessModes: ["ReadWriteOnce"]
-            resources:
-              requests:
-                storage: 50Gi
+    config:
+      global:
+        resolve_timeout: 5m
   prometheus:
     prometheusSpec:
       ruleSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       serviceMonitorSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: ceph-block
-            accessModes: ["ReadWriteOnce"]
-            resources:
-              requests:
-                storage: 50Gi
       additionalScrapeConfigs:
         - job_name: 'asusrouter'
           scrape_interval: 5s

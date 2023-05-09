@@ -44,7 +44,8 @@
                 "signageos.signageos-vscode-sops",
                 "usernamehw.errorlens",
                 "fcrespo82.markdown-table-formatter",
-                "ms-azuretools.vscode-docker"
+                "ms-azuretools.vscode-docker",
+                "github.vscode-pull-request-github"
             ]
         }
     }
