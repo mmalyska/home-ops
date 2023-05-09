@@ -81,6 +81,10 @@ controlPlane:
           extraArgs:
             feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
             rotate-server-certificates: "true"
+        time:
+          disabled: false
+          servers:
+            - 192.168.50.1
     - |-
       - op: add
         path: /cluster/controllerManager/extraArgs
