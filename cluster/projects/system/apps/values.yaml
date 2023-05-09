@@ -65,6 +65,9 @@ apps:
           value: secret.sec.yaml
     extraSyncOptions:
       - ServerSideApply=true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: privileged
   - name: traefik-internal
     namespace: traefik-internal
     path: traefik-internal
