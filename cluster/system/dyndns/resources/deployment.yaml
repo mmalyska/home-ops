@@ -29,8 +29,8 @@ spec:
               memory: 50Mi
               cpu: 10m
             limits:
-              memory: 128Mi
-              cpu: 100m
+              memory: 256Mi
+              cpu: 200m
       volumes:
         - name: dyndns-updater
           secret:
