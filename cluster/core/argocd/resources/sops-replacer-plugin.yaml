@@ -12,6 +12,11 @@ data:
     spec:
       version: v1.0
       allowConcurrency: true
+      init:
+        command:
+        - sh
+        - "-c"
+        - 'echo "env: $ARGOCD_ENV_SOPS_SECRET_FILE, file: $(find . -name kustomization.yaml), secret_file: $(find . -name $ARGOCD_ENV_SOPS_SECRET_FILE)"'
       discover:
         find:
           command:
@@ -33,6 +38,11 @@ data:
     spec:
       version: v1.0
       allowConcurrency: true
+      init:
+        command:
+        - sh
+        - "-c"
+        - 'echo "env: $ARGOCD_ENV_SOPS_SECRET_FILE, file: $(find . -name Chart.yaml), secret_file: $(find . -name $ARGOCD_ENV_SOPS_SECRET_FILE)"'
       discover:
         find:
           command:
