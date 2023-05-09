@@ -14,23 +14,23 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    # - name: cloudnative-pg
-    #   namespace: cnpg
-    #   path: cloudnative-pg
-    # - name: kubernetes-dashboard
-    #   namespace: kubernetes-dashboard
-    #   path: dashboard
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
-    # - name: dyndns
-    #   namespace: dyndns
-    #   path: dyndns
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
+    - name: cloudnative-pg
+      namespace: cnpg
+      path: cloudnative-pg
+    - name: kubernetes-dashboard
+      namespace: kubernetes-dashboard
+      path: dashboard
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
+    - name: dyndns
+      namespace: dyndns
+      path: dyndns
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
     # - name: keycloak
     #   namespace: identity
     #   path: identity/keycloak
@@ -40,16 +40,16 @@ app-of-apps:
     #     env:
     #       - name: SOPS_SECRET_FILE
     #         value: secret.sec.yaml
-    # - name: metrics-server
-    #   namespace: metrics-server
-    #   path: metrics-server
-    # - name: nfs-subdir-external-provisioner
-    #   namespace: nfs-subdir-provisioner
-    #   path: nfs-subdir-external-provisioner
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
+    - name: metrics-server
+      namespace: metrics-server
+      path: metrics-server
+    - name: nfs-subdir-external-provisioner
+      namespace: nfs-subdir-provisioner
+      path: nfs-subdir-external-provisioner
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
     # - name: oauth2-proxy
     #   namespace: oauth2-proxy
     #   path: oauth2-proxy
@@ -106,22 +106,22 @@ app-of-apps:
     #       kind: GpuDevicePlugin
     #       jsonPointers:
     #         - /spec/resourceManager
-    # - name: snapshot-controller
-    #   namespace: snapshot-controller
-    #   path: snapshot-controller
-    # - name: snapshot-validation-webhook
-    #   namespace: snapshot-validation-webhook
-    #   path: snapshot-validation-webhook
-    # - name: external-secrets
-    #   namespace: external-secrets
-    #   path: external-secrets
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
-    # - name: kubelet-csr-approver
-    #   namespace: kube-system
-    #   path: kubelet-csr-approver
-    # - name: volsync
-    #   namespace: volsync
-    #   path: volsync
+    - name: snapshot-controller
+      namespace: snapshot-controller
+      path: snapshot-controller
+    - name: snapshot-validation-webhook
+      namespace: snapshot-validation-webhook
+      path: snapshot-validation-webhook
+    - name: external-secrets
+      namespace: external-secrets
+      path: external-secrets
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
+    - name: kubelet-csr-approver
+      namespace: kube-system
+      path: kubelet-csr-approver
+    - name: volsync
+      namespace: volsync
+      path: volsync
