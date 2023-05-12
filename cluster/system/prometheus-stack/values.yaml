@@ -8,10 +8,12 @@ kube-prometheus-stack:
   kubeScheduler:
     enabled: true
   grafana:
+    deploymentStrategy:
+      type: Recreate
     persistence:
       enabled: true
       size: 10Gi
-      accessModes: ["ReadWriteMany"]
+      accessModes: ["ReadWriteOnce"]
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
@@ -68,8 +70,23 @@ kube-prometheus-stack:
     config:
       global:
         resolve_timeout: 5m
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 25Gi
   prometheus:
     prometheusSpec:
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 25Gi
       ruleSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       serviceMonitorSelectorNilUsesHelmValues: false
