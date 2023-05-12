@@ -11,7 +11,7 @@ kube-prometheus-stack:
     persistence:
       enabled: true
       size: 10Gi
-      accessModes: ["ReadWriteOnce"]
+      accessModes: ["ReadWriteMany"]
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
@@ -21,7 +21,7 @@ kube-prometheus-stack:
             folder: ''
             type: file
             disableDeletion: true
-            editable: true
+            editable: false
             options:
               path: /var/lib/grafana/dashboards/default
           - name: device
@@ -37,7 +37,7 @@ kube-prometheus-stack:
             folder: 'Kubernetes'
             type: file
             disableDeletion: true
-            editable: true
+            editable: false
             options:
               path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
     dashboardsConfigMaps:
