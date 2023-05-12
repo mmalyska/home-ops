@@ -26,9 +26,9 @@ kube-prometheus-stack:
             editable: false
             options:
               path: /var/lib/grafana/dashboards/default
-          - name: device
+          - name: 'device'
             orgId: 1
-            folder: "Devices Metrics"
+            folder: 'Devices Metrics'
             type: file
             disableDeletion: true
             editable: false
