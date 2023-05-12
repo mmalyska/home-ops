@@ -1,5 +1,5 @@
 clusterName: home
-talosVersion: v1.4.2
+talosVersion: v1.4.3
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
 kubernetesVersion: v1.27.1
 endpoint: https://${clusterDomain}:6443
