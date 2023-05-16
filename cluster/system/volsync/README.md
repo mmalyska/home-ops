@@ -28,4 +28,9 @@
       # Use an existing PVC, don't provision a new one
       destinationPVC: datavol
       copyMethod: Direct
+      # if other user is used for files
+      moverSecurityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
   ```
