@@ -60,6 +60,12 @@ nodes:
         vip:
           ip: 192.168.48.1
 controlPlane:
+  inlinePatch:
+    machine:
+      install:
+        extensions:
+          - image: ghcr.io/siderolabs/i915-ucode:20230310
+          - image: ghcr.io/siderolabs/intel-ucode:20230214
   patches:
     - |-
       cluster:
