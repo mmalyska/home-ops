@@ -10,8 +10,8 @@ app-of-apps:
     - name: botkube
       namespace: botkube
       path: botkube
-      syncPolicy: true
-      selfHeal: true
+      # syncPolicy: true
+      # selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
