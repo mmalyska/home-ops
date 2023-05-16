@@ -3,4 +3,4 @@ intel-device-plugins-gpu:
   sharedDevNum: 4
   enableMonitoring: true
   resourceManager: false
-  nodeFeatureRule: true
+  nodeFeatureRule: false
