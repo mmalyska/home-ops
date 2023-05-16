@@ -15,3 +15,15 @@ node-feature-discovery:
         memory: 40M
       limits:
         memory: 40M
+    config:
+      core:
+        labelSources:
+          - custom
+          - pci
+      sources:
+        custom:
+          - name: intel-gpu
+            matchOn:
+              - pciId:
+                  class: ["0300"]
+                  vendor: ["8086"]
