@@ -50,13 +50,13 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    # - name: oauth2-proxy
-    #   namespace: oauth2-proxy
-    #   path: oauth2-proxy
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
+    - name: oauth2-proxy
+      namespace: oauth2-proxy
+      path: oauth2-proxy
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
     - name: prometheus-stack
       namespace: monitoring
       path: prometheus-stack
