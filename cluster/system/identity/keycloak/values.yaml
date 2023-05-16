@@ -106,9 +106,9 @@ postgres:
         secretAccessKey:
           name: keycloakdb-secrets
           key: S3_ACCESS_SECRET_KEY
-  scheduledBackups:
-    - name: keycloakdb-cnpg-backup
-      spec:
-        immediate: true
-        schedule: "0 0 0 * * *"
-        backupOwnerReference: self
+  # scheduledBackups:
+  #   - name: keycloakdb-cnpg-backup
+  #     spec:
+  #       immediate: true
+  #       schedule: "0 0 0 * * *"
+  #       backupOwnerReference: self
