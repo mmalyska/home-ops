@@ -96,17 +96,17 @@ postgres:
   monitoring:
     enablePodMonitor: true
   backup:
-    retentionPolicy: "10d"
-    barmanObjectStore:
-      destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
-      endpointURL: <secret:s3_endpoint>
-      s3Credentials:
-        accessKeyId:
-          name: keycloakdb-secrets
-          key: S3_ACCESS_KEY_ID
-        secretAccessKey:
-          name: keycloakdb-secrets
-          key: S3_ACCESS_SECRET_KEY
+    # retentionPolicy: "10d"
+    # barmanObjectStore:
+    #   destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
+    #   endpointURL: <secret:s3_endpoint>
+    #   s3Credentials:
+    #     accessKeyId:
+    #       name: keycloakdb-secrets
+    #       key: S3_ACCESS_KEY_ID
+    #     secretAccessKey:
+    #       name: keycloakdb-secrets
+    #       key: S3_ACCESS_SECRET_KEY
   # scheduledBackups:
   #   - name: keycloakdb-cnpg-backup
   #     spec:
