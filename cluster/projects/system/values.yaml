@@ -93,19 +93,19 @@ app-of-apps:
     #       kind: DaemonSet
     #       jsonPointers:
     #         - /spec/template/metadata/annotations
-    # - name: intel-device-plugins-operator
-    #   namespace: intel-device-plugins-operator
-    #   path: intel-device-plugins-operator
-    # - name: intel-gpu-plugin
-    #   namespace: intel-gpu-plugin
-    #   path: intel-gpu-plugin
-    #   extraSyncOptions:
-    #     - RespectIgnoreDifferences=true
-    #   ignoreDifferences:
-    #     - group: deviceplugin.intel.com
-    #       kind: GpuDevicePlugin
-    #       jsonPointers:
-    #         - /spec/resourceManager
+    - name: intel-device-plugins-operator
+      namespace: intel-device-plugins-operator
+      path: intel-device-plugins-operator
+    - name: intel-gpu-plugin
+      namespace: intel-gpu-plugin
+      path: intel-gpu-plugin
+      extraSyncOptions:
+        - RespectIgnoreDifferences=true
+      ignoreDifferences:
+        - group: deviceplugin.intel.com
+          kind: GpuDevicePlugin
+          jsonPointers:
+            - /spec/resourceManager
     - name: snapshot-controller
       namespace: snapshot-controller
       path: snapshot-controller
