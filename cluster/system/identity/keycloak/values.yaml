@@ -78,13 +78,8 @@ postgres:
   storage:
     size: 2Gi
   bootstrap:
-    initdb:
-      import:
-        type: microservice
-        databases:
-          - keycloakdb
-        source:
-          externalCluster: crunchy-cluster
+    recovery:
+      source: crunchy-cluster
   externalClusters:
     - name: crunchy-cluster
       connectionParameters:
@@ -94,6 +89,16 @@ postgres:
       password:
         name: keycloakdb-pguser-keycloakdb
         key: password
+      barmanObjectStore:
+        destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
+        endpointURL: <secret:s3_endpoint>
+        s3Credentials:
+          accessKeyId:
+            name: keycloakdb-secrets
+            key: S3_ACCESS_KEY_ID
+          secretAccessKey:
+            name: keycloakdb-secrets
+            key: S3_ACCESS_SECRET_KEY
   monitoring:
     enablePodMonitor: true
   backup:
