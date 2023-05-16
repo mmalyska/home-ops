@@ -1,16 +1,17 @@
 node-feature-discovery:
   nodeFeatureRule:
     createCRD: true
+  master:
+    resources:
+      requests:
+        cpu: 52m
+        memory: 33M
+      limits:
+        memory: 33M
   worker:
-    config:
-      core:
-        labelSources:
-          - custom
-          - pci
-      sources:
-        custom:
-          - name: intel-gpu
-            matchOn:
-              - pciId:
-                  class: ["0300"]
-                  vendor: ["8086"]
+    resources:
+      requests:
+        cpu: 5m
+        memory: 40M
+      limits:
+        memory: 40M
