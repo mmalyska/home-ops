@@ -99,6 +99,9 @@ app-of-apps:
     - name: intel-device-plugins-operator
       namespace: intel-device-plugins-operator
       path: intel-device-plugins-operator
+      managedNamespaceMetadata:
+        labels:
+          pod-security.kubernetes.io/enforce: privileged
     - name: intel-gpu-plugin
       namespace: intel-gpu-plugin
       path: intel-gpu-plugin
@@ -109,6 +112,9 @@ app-of-apps:
           kind: GpuDevicePlugin
           jsonPointers:
             - /spec/resourceManager
+      managedNamespaceMetadata:
+        labels:
+          pod-security.kubernetes.io/enforce: privileged
     - name: snapshot-controller
       namespace: snapshot-controller
       path: snapshot-controller
