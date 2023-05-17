@@ -12,7 +12,7 @@ gitea:
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
   podSecurityContext:
-    fsGroup: 1001
+    fsGroup: 1000
   gitea:
     config:
       APP_NAME: "Gitea: Git with a cup of tea"
