@@ -85,17 +85,17 @@ postgres:
   monitoring:
     enablePodMonitor: true
   backup:
-    retentionPolicy: "10d"
-    barmanObjectStore:
-      destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
-      endpointURL: <secret:s3_endpoint>
-      s3Credentials:
-        accessKeyId:
-          name: gitea-secrets
-          key: S3_ACCESS_KEY_ID
-        secretAccessKey:
-          name: gitea-secrets
-          key: S3_ACCESS_SECRET_KEY
+    # retentionPolicy: "10d"
+    # barmanObjectStore:
+    #   destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
+    #   endpointURL: <secret:s3_endpoint>
+    #   s3Credentials:
+    #     accessKeyId:
+    #       name: gitea-secrets
+    #       key: S3_ACCESS_KEY_ID
+    #     secretAccessKey:
+    #       name: gitea-secrets
+    #       key: S3_ACCESS_SECRET_KEY
   scheduledBackups:
     - name: giteadb-cnpg-backup
       spec:
