@@ -42,9 +42,9 @@ spec:
       weekly: 4
       monthly: 2
     moverSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
 ---
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
@@ -58,6 +58,6 @@ spec:
     destinationPVC: data-{{ .Values.name }}-0
     copyMethod: Direct
     moverSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
