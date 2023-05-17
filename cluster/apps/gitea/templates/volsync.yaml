@@ -43,19 +43,3 @@ spec:
       monthly: 2
     moverSecurityContext:
       fsGroup: 1000
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: datavol-dest
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: gitea-restic-secret
-    destinationPVC: data-{{ .Values.name }}-0
-    copyMethod: Direct
-    moverSecurityContext:
-      runAsUser: 1001
-      runAsGroup: 1001
-      fsGroup: 1001
