@@ -10,13 +10,9 @@ gitea:
     repository: gitea/gitea
     tag: 1.19.3
     pullPolicy: IfNotPresent
-    rootless: false # only possible when running 1.14 or later
+    rootless: true # only possible when running 1.14 or later
   podSecurityContext:
     fsGroup: 1001
-  containerSecurityContext:
-    runAsNonRoot: true
-    runAsGroup: 1001
-    runAsUser: 1001
   gitea:
     config:
       APP_NAME: "Gitea: Git with a cup of tea"
