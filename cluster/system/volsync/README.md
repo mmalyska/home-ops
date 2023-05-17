@@ -5,7 +5,8 @@
   kind: PersistentVolumeClaim
   apiVersion: v1
   metadata:
-  name: datavol
+    name: jellyfin-config
+    namespace: jellyfin
   spec:
   accessModes:
       - ReadWriteOnce
@@ -16,19 +17,19 @@
 
 2. Enable restore
   ```yml
+  ---
   apiVersion: volsync.backube/v1alpha1
   kind: ReplicationDestination
   metadata:
-    name: datavol-dest
+    name: jellyfin-dest
+    namespace: jellyfin
   spec:
     trigger:
       manual: restore-once
     restic:
-      repository: restic-repo
-      # Use an existing PVC, don't provision a new one
-      destinationPVC: datavol
+      repository: jellyfin-restic-secret
+      destinationPVC: jellyfin-config
       copyMethod: Direct
-      # if other user is used for files
       moverSecurityContext:
         runAsUser: 1001
         runAsGroup: 1001

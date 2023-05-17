@@ -51,20 +51,3 @@ spec:
       runAsGroup: 1001
       fsGroup: 1001
 {{- end }}
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: datavol-dest
-  namespace: jellyfin
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: jellyfin-restic-secret
-    destinationPVC: jellyfin-config
-    copyMethod: Direct
-    moverSecurityContext:
-      runAsUser: 1001
-      runAsGroup: 1001
-      fsGroup: 1001
