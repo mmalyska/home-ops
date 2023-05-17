@@ -43,3 +43,20 @@ spec:
       runAsUser: 1001
       runAsGroup: 1001
       fsGroup: 1001
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: datavol-dest
+  namespace: calibre
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: calibre-restic-secret
+    destinationPVC: calibre-calibre-subchart-config
+    copyMethod: Direct
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
