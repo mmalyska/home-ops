@@ -9,7 +9,7 @@ spec:
         claimName: data-gitea-0
   containers:
     - name: test-pv-container
-      image: nginx
+      image: nginx@sha256:480868e8c8c797794257e2abd88d0f9a8809b2fe956cbfbc05dcc0bca1f7cd43
       ports:
         - containerPort: 80
           name: "http-server"
