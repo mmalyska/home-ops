@@ -23,7 +23,7 @@ app-of-apps:
             value: secret.sec.yaml
     # - name: firefly
     #   namespace: firefly
-    #   path: firefly
+    #   path: firefly``
     #   plugin:
     #     env:
     #       - name: SOPS_SECRET_FILE
@@ -35,13 +35,13 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    # - name: grocy
-    #   namespace: grocy
-    #   path: grocy
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
+    - name: grocy
+      namespace: grocy
+      path: grocy
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
     - name: hass-proxy
       namespace: hass-proxy
       path: hass
