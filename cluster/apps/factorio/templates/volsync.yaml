@@ -41,3 +41,16 @@ spec:
       monthly: 2
     moverSecurityContext:
       fsGroup: 0
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: factorio-dest
+  namespace: factorio
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: factorio-restic-secret
+    destinationPVC: factorio-factorio-server-charts-datadir
+    copyMethod: Direct
