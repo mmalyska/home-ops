@@ -54,3 +54,5 @@ spec:
     repository: factorio-restic-secret
     destinationPVC: factorio-factorio-server-charts-datadir
     copyMethod: Direct
+    moverSecurityContext:
+      runAsUser: 0
