@@ -1,7 +1,7 @@
 persistance:
-  storageClassName: ceph-filesystem
+  storageClassName: ceph-block
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
@@ -31,7 +31,7 @@ minecraft-bedrock:
     defaultPermission: visitor
     whitelistUsers: <secret:whitelistUsers>
 map:
-  enabled: true
+  enabled: false
   image: nginx:1.24.0
   ingress:
     host: mc-bedrock.<secret:private-domain>
@@ -42,9 +42,9 @@ map:
       kubernetes.io/ingress.class: traefik
     labels: {}
   persistence:
-    accessMode: ReadWriteMany
+    accessMode: ReadWriteOnce
     size: 1Gi
-    storageClass: ceph-filesystem
+    storageClass: ceph-block
   generator:
     schedule: "0 0 * * *"
     image: ghcr.io/mmalyska/bedrock-viz:rolling@sha256:458014de8788858988ecf82e2834ea2f8c6622fe0f3d0e069e5fc989427f8486

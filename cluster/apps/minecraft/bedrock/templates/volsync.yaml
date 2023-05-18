@@ -34,10 +34,29 @@ spec:
   trigger:
     schedule: "0 */12 * * *"
   restic:
-    copyMethod: Direct
-    cacheStorageClassName: ceph-filesystem
+    copyMethod: Snapshot
+    repository: minecraft-bedrock-restic-secret
     pruneIntervalDays: 14
     retain:
       daily: 6
       weekly: 4
       monthly: 2
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pv-pod
+spec:
+  volumes:
+    - name: test-pv-storage
+      persistentVolumeClaim:
+        claimName: {{ template "minecraft.bedrock.fullname" . }}-datadir
+  containers:
+    - name: test-pv-container
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: "http-server"
+      volumeMounts:
+        - mountPath: /data
+          name: test-pv-storage
