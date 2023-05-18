@@ -43,3 +43,16 @@ spec:
       weekly: 4
       monthly: 2
 {{- end }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: valheim-dest
+  namespace: valheim
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: valheim-restic-secret
+    destinationPVC: {{ template "valheim.fullname" . }}-world-data
+    copyMethod: Direct

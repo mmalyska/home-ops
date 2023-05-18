@@ -45,20 +45,3 @@ spec:
       runAsUser: 1000
       runAsGroup: 1000
       fsGroup: 1000
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: grocy-dest
-  namespace: grocy
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: grocy-restic-secret
-    destinationPVC: {{ template "grocy.server.fullname" . }}-config
-    copyMethod: Direct
-    moverSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
