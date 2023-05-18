@@ -41,39 +41,5 @@ spec:
       monthly: 2
     moverSecurityContext:
       runAsUser: 0
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: factorio-dest
-  namespace: factorio
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: factorio-restic-secret
-    destinationPVC: factorio-factorio-server-charts-datadir
-    copyMethod: Direct
-    moverSecurityContext:
-      runAsUser: 0
       runAsGroup: 0
       fsGroup: 0
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pv-pod
-spec:
-  volumes:
-    - name: test-pv-storage
-      persistentVolumeClaim:
-        claimName: factorio-factorio-server-charts-datadir
-  containers:
-    - name: test-pv-container
-      image: nginx
-      ports:
-        - containerPort: 80
-          name: "http-server"
-      volumeMounts:
-        - mountPath: /data
-          name: test-pv-storage
