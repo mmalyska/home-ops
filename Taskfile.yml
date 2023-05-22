@@ -19,6 +19,7 @@ includes:
   cluster: .taskfiles/cluster.yml
   format: .taskfiles/format.yml
   lint: .taskfiles/lint.yml
+  talos: .taskfiles/talos.yml
 
 tasks:
   init:

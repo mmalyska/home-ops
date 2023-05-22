@@ -18,5 +18,6 @@
     },
     "editor.bracketPairColorization.enabled": true,
     "editor.guides.bracketPairs":"active",
-    "editor.hover.delay": 1500
+    "editor.hover.delay": 1500,
+    "ansible.python.interpreterPath": "/home/linuxbrew/.linuxbrew/bin/python3"
 }

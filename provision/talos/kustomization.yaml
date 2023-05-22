@@ -3,4 +3,4 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../cluster/kubelet-csr-approver
+  - manifests/kubelet-csr-approver/kubelet-csr-approver.yaml
