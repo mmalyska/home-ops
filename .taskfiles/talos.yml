@@ -73,7 +73,7 @@ tasks:
       - talosctl apply-config --nodes {{ .NODE }} --file clusterconfig/home-mc{{ .N }}.yaml {{ .CLI_ARGS }}
 
   upgrade:
-    internal: True
+    internal: false
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=0)
     dir: provision/talos
     status:
