@@ -47,6 +47,8 @@ tasks:
         vars: {NODE: 192.168.48.3, N: 2}
       - task: upgrade
         vars: {NODE: 192.168.48.4, N: 3}
+      - task: wait_for_health
+        vars: {TIMEOUT: 10m}
 
   generate:
     internal: True
