@@ -4,8 +4,7 @@ version: "3"
 vars:
   N: '{{ .N | default "1" }}'
   NODE:
-    sh: 'echo ${NODE:-192.168.48.{{ .N + 1 }}}'
-  FIRST_NODE: "192.168.48.2"
+    sh: 'echo ${NODE:-192.168.48.{{ add .N 1 }}}'
   # renovate: datasource=github-releases depName=siderolabs/talos
   TALOS_VERSION: "v1.4.4"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
@@ -19,7 +18,7 @@ tasks:
     desc: Init talosctl and grab kubeconfig (task talos:init)
     cmds:
       - task: generate
-      - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig kubeconfig --nodes {{ .FIRST_NODE }} $KUBECONFIG
+      - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig kubeconfig --nodes {{ .NODE }} $KUBECONFIG
 
   install:cni:
     desc: Install CNI and cert approver helm releases (task talos:cni)
@@ -27,14 +26,20 @@ tasks:
       - kubectl kustomize provision/talos --enable-helm | kubectl apply -f -
 
   upgrade:k8s:
-    dir: talos
+    dir: provision/talos
     desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s)
     cmds:
-      - talosctl --nodes {{ .FIRST_NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
+      - talosctl --nodes {{ .NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
+
+  upgrade:test:
+    dir: provision/talos
+    desc: test
+    cmds:
+      - echo 'node:{{ .NODE }} n:{{ .N }}'
 
   upgrade:all:
     desc: Upgrade all nodes to Talos version {{ .TALOS_VERSION }} (task talos:upgrade:all)
-    dir: talos
+    dir: provision/talos
     cmds:
       - task: generate
       # control-plane
@@ -62,7 +67,7 @@ tasks:
 
   apply:
     desc: Apply Talos config to a specific node (task talos:apply N=0)
-    dir: talos
+    dir: provision/talos
     cmds:
       - task: generate
       - talosctl apply-config --nodes {{ .NODE }} --file clusterconfig/home-mc{{ .N }}.yaml {{ .CLI_ARGS }}
@@ -70,7 +75,7 @@ tasks:
   upgrade:
     internal: True
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=0)
-    dir: talos
+    dir: provision/talos
     status:
       - talosctl version --nodes {{ .NODE }} --short | grep 'Tag.*{{ .TALOS_VERSION }}'
     cmds:

@@ -22,3 +22,5 @@ Chart.lock
 *.tgz
 # Vagrant
 .vagrant
+# Tasks
+.task
