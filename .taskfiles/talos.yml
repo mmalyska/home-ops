@@ -20,6 +20,10 @@ tasks:
       - task: generate
       - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig kubeconfig --nodes {{ .NODE }} $KUBECONFIG
 
+  dashboard:
+    cmds:
+      - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig --nodes {{ .NODE }} dashboard
+
   install:cni:
     desc: Install CNI and cert approver helm releases (task talos:cni)
     cmds:
@@ -30,12 +34,6 @@ tasks:
     desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s)
     cmds:
       - talosctl --nodes {{ .NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
-
-  upgrade:test:
-    dir: provision/talos
-    desc: test
-    cmds:
-      - echo 'node:{{ .NODE }} n:{{ .N }}'
 
   upgrade:all:
     desc: Upgrade all nodes to Talos version {{ .TALOS_VERSION }} (task talos:upgrade:all)
