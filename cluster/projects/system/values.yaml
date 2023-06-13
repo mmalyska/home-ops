@@ -24,6 +24,13 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
+      extraSyncOptions:
+        - RespectIgnoreDifferences=true
+      ignoreDifferences:
+        - name: kubernetes-dashboard-csrf
+          kind: Secret
+          jsonPointers:
+            - /data/csrf
     - name: dyndns
       namespace: dyndns
       path: dyndns
@@ -34,8 +41,6 @@ app-of-apps:
     - name: keycloak
       namespace: identity
       path: identity/keycloak
-      # syncPolicy: true
-      # selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
