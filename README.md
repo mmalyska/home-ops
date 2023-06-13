@@ -1,6 +1,6 @@
 # Home k8s infrastructure
 
-Deploying a cluster with [Ansible](https://www.ansible.com) and [Terraform](https://www.terraform.io) backed by [ArgoCD](https://argo-cd.readthedocs.io/) and [SOPS](https://github.com/mozilla/sops).
+Deploying a cluster with [Talos](https://www.talos.dev) and [Terraform](https://www.terraform.io) backed by [ArgoCD](https://argo-cd.readthedocs.io/) and [SOPS](https://github.com/mozilla/sops).
 
 ## Overview
 
@@ -24,7 +24,7 @@ Deploying a cluster with [Ansible](https://www.ansible.com) and [Terraform](http
 For provisioning the following tools are used:
 
 - [Ubuntu](https://ubuntu.com/download/server) - this is a pretty universal operating system that supports running all kinds of home related workloads in Kubernetes
-- [Ansible](https://www.ansible.com) - this is used to provision the Ubuntu operating system to be ready for Kubernetes and also to install k8s
+- [Talos](https://www.talos.dev) - this is used to provision all nodes within cluster with uniform system and configuration as gitops
 - [Terraform](https://www.terraform.io) - in order to help with the DNS settings this is used to provision an already existing Cloudflare domain and DNS settings
 
 ## 📝 Setup
