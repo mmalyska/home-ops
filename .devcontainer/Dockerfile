@@ -47,12 +47,6 @@ RUN echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc \
 
 # install Talos
 RUN curl -sL https://talos.dev/install | bash
-RUN talosctl completion bash > ~/.talos/completion.bash.inc \
-    &&  printf " \
-        # talosctl shell completion
-        source '$HOME/.talos/completion.bash.inc' \
-        " >> $HOME/.bash_profile \
-    && source $HOME/.bash_profile
 
 # install talhelper https://github.com/budimanjojo/talhelper
 RUN curl https://i.jpillora.com/budimanjojo/talhelper\! | sudo bash
