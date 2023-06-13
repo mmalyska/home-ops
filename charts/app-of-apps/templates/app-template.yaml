@@ -28,7 +28,7 @@ spec:
     server: {{ $.Values.destination.server }}
     namespace: {{ $v.namespace }}
   syncPolicy:
-    {{- if hasKey $v "selfHeal" | ternary $v.syncPolicy true }}
+    {{- if hasKey $v "selfHeal" | ternary $v.selfHeal true }}
     automated:
       selfHeal: {{ hasKey $v "selfHeal" | ternary $v.selfHeal true }}
     {{- end }}
