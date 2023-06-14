@@ -1,0 +1,61 @@
+homepage:
+  config:
+    bookmarks:
+      - Developer:
+          - Github:
+              - abbr: GH
+                href: https://github.com/
+    widgets:
+      - resources:
+        # change backend to 'kubernetes' to use Kubernetes integration. Requires RBAC.
+        backend: kubernetes
+        expanded: true
+        cpu: true
+        memory: true
+      # show the kubernetes widget, with the cluster summary and individual nodes
+      - kubernetes:
+          cluster:
+            show: true
+            cpu: true
+            memory: true
+            showLabel: true
+            label: "cluster"
+          nodes:
+            show: true
+            cpu: true
+            memory: true
+            showLabel: true
+      - search:
+          provider: duckduckgo
+          target: _blank
+    kubernetes:
+      mode: cluster
+    settings:
+
+  # The service account is necessary to allow discovery of other services
+  serviceAccount:
+    create: true
+    name: homepage
+
+  # This enables the service account to access the necessary resources
+  enableRbac: true
+
+  ingress:
+    main:
+      enabled: true
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "<secret:private-domain>"
+        kubernetes.io/ingress.class: traefik-internal
+        # Example annotations to add Homepage to your Homepage!
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: "Homepage"
+        gethomepage.dev/description: "Dynamically Detected Homepage"
+        gethomepage.dev/group: "Dynamic"
+        gethomepage.dev/icon: "homepage.png"
+      hosts:
+        - host: <secret:private-domain>
+          paths:
+            - path: /
+              pathType: Prefix
