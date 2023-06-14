@@ -6,12 +6,6 @@ homepage:
               - abbr: GH
                 href: https://github.com/
     widgets:
-      - resources:
-        # change backend to 'kubernetes' to use Kubernetes integration. Requires RBAC.
-        backend: kubernetes
-        expanded: true
-        cpu: true
-        memory: true
       # show the kubernetes widget, with the cluster summary and individual nodes
       - kubernetes:
           cluster:
