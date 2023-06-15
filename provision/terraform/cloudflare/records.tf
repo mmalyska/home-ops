@@ -1,7 +1,6 @@
 resource "cloudflare_record" "dynhost" {
   name    = "dynhost"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = chomp(data.http.ipv4.response_body) # will by updated dynamically by dyndns
   proxied = true
   type    = "A"
   ttl     = 1
