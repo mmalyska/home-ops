@@ -15,6 +15,7 @@ terraform {
     http = {
       source  = "hashicorp/http"
       version = "3.3.0"
+    }
     doppler = {
       source = "DopplerHQ/doppler"
     }
