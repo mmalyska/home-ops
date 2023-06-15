@@ -56,14 +56,14 @@ resource "cloudflare_ruleset" "uptimerobot" {
   description = "Firewall rule to allow UptimeRobot IP addresses"
   kind        = "zone"
   phase       = "http_request_firewall_custom"
+  depends_on  = [
+      cloudflare_list.uptimerobot,
+    ]
 
   rules {
     action      = "allow"
     expression  = "(ip.src in $uptimerobot)"
     description = "Expression to allow UptimeRobot IP addresses"
-    depends_on  = [
-      cloudflare_list.uptimerobot,
-    ]
     enabled     = true
   }
 }
