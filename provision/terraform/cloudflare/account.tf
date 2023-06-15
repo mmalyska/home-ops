@@ -1,5 +1,5 @@
 resource "cloudflare_account" "main" {
-  name              = "My main Cloudflare Account"
+  name              = "main"
   type              = "standard"
-  enforce_twofactor = false
+  enforce_twofactor = true
 }
