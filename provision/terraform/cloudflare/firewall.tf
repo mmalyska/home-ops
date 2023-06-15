@@ -31,6 +31,9 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
   # Accept UptimeRobot Addresses
   rules {
     action      = "skip"
+    action_parameters {
+      ruleset = "current"
+    }
     expression  = "(ip.src in $uptimerobot)"
     description = "Expression to allow UptimeRobot IP addresses"
     enabled     = true
