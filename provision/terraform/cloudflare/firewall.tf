@@ -37,6 +37,9 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
     expression  = "(ip.src in $uptimerobot)"
     description = "Expression to allow UptimeRobot IP addresses"
     enabled     = true
+    logging {
+      enabled   = false
+    }
   }
 
   # Block Countries
