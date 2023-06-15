@@ -1,39 +1,7 @@
-# Block Countries
-resource "cloudflare_ruleset" "block_countries" {
-  zone_id     = data.cloudflare_zone.domain.id
-  name        = "Firewall rule to block countries"
-  description = "Firewall rule to block countries"
-  kind        = "zone"
-  phase       = "http_request_firewall_custom"
-
-  rules {
-    action      = "block"
-    expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
-    description = "Expression to block countries"
-    enabled     = true
-  }
-}
-
-# Block Bots
-resource "cloudflare_ruleset" "block_bots" {
-  zone_id     = data.cloudflare_zone.domain.id
-  name        = "Firewall rule to block bots determined by CF"
-  description = "Firewall rule to block bots determined by CF"
-  kind        = "zone"
-  phase       = "http_request_firewall_custom"
-
-  rules {
-    action      = "block"
-    expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
-    description = "Expression to block bots determined by CF"
-    enabled     = true
-  }
-}
-
-# Accept UptimeRobot Addresses
 data "http" "uptimerobot_ips" {
   url = "https://uptimerobot.com/inc/files/ips/IPv4.txt"
 }
+
 resource "cloudflare_list" "uptimerobot" {
   account_id  = cloudflare_account.main.id
   name        = "uptimerobot"
@@ -50,16 +18,33 @@ resource "cloudflare_list" "uptimerobot" {
   }
 }
 
-resource "cloudflare_ruleset" "uptimerobot" {
+resource "cloudflare_ruleset" "zone_level_custom_waf" {
   zone_id     = data.cloudflare_zone.domain.id
-  name        = "Firewall rule to allow UptimeRobot IP addresses"
-  description = "Firewall rule to allow UptimeRobot IP addresses"
+  name        = "Custom WAF ruleset"
+  description = "Zone-level WAF Custom Rules config"
   kind        = "zone"
   phase       = "http_request_firewall_custom"
   depends_on  = [
-      cloudflare_list.uptimerobot,
+    cloudflare_list.uptimerobot,
   ]
 
+  # Block Countries
+  rules {
+    action      = "block"
+    expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
+    description = "Expression to block countries"
+    enabled     = true
+  }
+
+  # Block Bots
+  rules {
+    action      = "block"
+    expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
+    description = "Expression to block bots determined by CF"
+    enabled     = true
+  }
+
+  # Accept UptimeRobot Addresses
   rules {
     action      = "allow"
     expression  = "(ip.src in $uptimerobot)"
