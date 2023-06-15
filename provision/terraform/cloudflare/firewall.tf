@@ -28,6 +28,14 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
     cloudflare_list.uptimerobot,
   ]
 
+  # Accept UptimeRobot Addresses
+  rules {
+    action      = "skip"
+    expression  = "(ip.src in $uptimerobot)"
+    description = "Expression to allow UptimeRobot IP addresses"
+    enabled     = true
+  }
+
   # Block Countries
   rules {
     action      = "block"
@@ -41,14 +49,6 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
     action      = "block"
     expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
     description = "Expression to block bots determined by CF"
-    enabled     = true
-  }
-
-  # Accept UptimeRobot Addresses
-  rules {
-    action      = "allow"
-    expression  = "(ip.src in $uptimerobot)"
-    description = "Expression to allow UptimeRobot IP addresses"
     enabled     = true
   }
 }
