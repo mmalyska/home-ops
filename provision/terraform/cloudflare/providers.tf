@@ -1,4 +1,8 @@
 provider "cloudflare" {
-  email   = data.sops_file.cloudflare_secrets.data["cloudflare_email"]
-  api_key = data.sops_file.cloudflare_secrets.data["cloudflare_apikey"]
+  email   = local.cloudflare_email
+  api_key = local.cloudflare_apikey
+}
+
+provider "doppler" {
+  doppler_token = var.doppler_terraform_key
 }

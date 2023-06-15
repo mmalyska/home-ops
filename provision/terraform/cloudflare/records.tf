@@ -8,9 +8,9 @@ resource "cloudflare_record" "dynhost" {
 }
 
 resource "cloudflare_record" "root" {
-  name    = data.sops_file.cloudflare_secrets.data["cloudflare_domain"]
+  name    = local.cloudflare_domain
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "dynhost.${data.sops_file.cloudflare_secrets.data["cloudflare_domain"]}"
+  value   = "dynhost.${local.cloudflare_domain}"
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -19,7 +19,7 @@ resource "cloudflare_record" "root" {
 resource "cloudflare_record" "grocy" {
   name    = "grocy"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "dynhost.${data.sops_file.cloudflare_secrets.data["cloudflare_domain"]}"
+  value   = "dynhost.${local.cloudflare_domain}"
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -28,7 +28,7 @@ resource "cloudflare_record" "grocy" {
 resource "cloudflare_record" "hass" {
   name    = "hass"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "dynhost.${data.sops_file.cloudflare_secrets.data["cloudflare_domain"]}"
+  value   = "dynhost.${local.cloudflare_domain}"
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -37,7 +37,7 @@ resource "cloudflare_record" "hass" {
 resource "cloudflare_record" "l" {
   name    = "l"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "dynhost.${data.sops_file.cloudflare_secrets.data["cloudflare_domain"]}"
+  value   = "dynhost.${local.cloudflare_domain}"
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -46,16 +46,16 @@ resource "cloudflare_record" "l" {
 resource "cloudflare_record" "oauth" {
   name    = "oauth"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "dynhost.${data.sops_file.cloudflare_secrets.data["cloudflare_domain"]}"
+  value   = "dynhost.${local.cloudflare_domain}"
   proxied = true
   type    = "CNAME"
   ttl     = 1
 }
 
 resource "cloudflare_record" "doppler" {
-  name    = "${data.sops_file.cloudflare_secrets.data["doppler_domain"]}"
+  name    = "${local.doppler_domain}"
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "${data.sops_file.cloudflare_secrets.data["doppler_value"]}"
+  value   = "${local.doppler_value}"
   type    = "TXT"
   ttl     = 1
 }
