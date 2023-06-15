@@ -52,9 +52,9 @@ resource "cloudflare_record" "oauth" {
 }
 
 resource "cloudflare_record" "doppler" {
-  name    = "${local.doppler_domain}"
+  name    = local.doppler_domain
   zone_id = lookup(data.cloudflare_zones.domain.zones[0], "id")
-  value   = "${local.doppler_value}"
+  value   = local.doppler_value
   type    = "TXT"
   ttl     = 1
 }
