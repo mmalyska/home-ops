@@ -58,7 +58,7 @@ resource "cloudflare_ruleset" "uptimerobot" {
   phase       = "http_request_firewall_custom"
   depends_on  = [
       cloudflare_list.uptimerobot,
-    ]
+  ]
 
   rules {
     action      = "allow"
