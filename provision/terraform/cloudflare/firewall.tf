@@ -1,27 +1,33 @@
 # Block Countries
-resource "cloudflare_filter" "block_countries" {
+resource "cloudflare_ruleset" "block_countries" {
   zone_id     = data.cloudflare_zone.domain.id
-  description = "Expression to block countries"
-  expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
-}
-resource "cloudflare_firewall_rule" "block_countries" {
-  zone_id     = data.cloudflare_zone.domain.id
+  name        = "Firewall rule to block countries"
   description = "Firewall rule to block countries"
-  filter_id   = cloudflare_filter.block_countries.id
-  action      = "block"
+  kind        = "zone"
+  phase       = "http_request_firewall_custom"
+
+  rules {
+    action      = "block"
+    expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
+    description = "Expression to block countries"
+    enabled     = true
+  }
 }
 
 # Block Bots
-resource "cloudflare_filter" "bots" {
+resource "cloudflare_ruleset" "block_bots" {
   zone_id     = data.cloudflare_zone.domain.id
-  description = "Expression to block bots determined by CF"
-  expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
-}
-resource "cloudflare_firewall_rule" "bots" {
-  zone_id     = data.cloudflare_zone.domain.id
+  name        = "Firewall rule to block bots determined by CF"
   description = "Firewall rule to block bots determined by CF"
-  filter_id   = cloudflare_filter.bots.id
-  action      = "block"
+  kind        = "zone"
+  phase       = "http_request_firewall_custom"
+
+  rules {
+    action      = "block"
+    expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
+    description = "Expression to block bots determined by CF"
+    enabled     = true
+  }
 }
 
 # Accept UptimeRobot Addresses
@@ -43,17 +49,21 @@ resource "cloudflare_list" "uptimerobot" {
     }
   }
 }
-resource "cloudflare_filter" "uptimerobot" {
+
+resource "cloudflare_ruleset" "uptimerobot" {
   zone_id     = data.cloudflare_zone.domain.id
-  description = "Expression to allow UptimeRobot IP addresses"
-  expression  = "(ip.src in $uptimerobot)"
-  depends_on = [
-    cloudflare_list.uptimerobot,
-  ]
-}
-resource "cloudflare_firewall_rule" "uptimerobot" {
-  zone_id     = data.cloudflare_zone.domain.id
+  name        = "Firewall rule to allow UptimeRobot IP addresses"
   description = "Firewall rule to allow UptimeRobot IP addresses"
-  filter_id   = cloudflare_filter.uptimerobot.id
-  action      = "allow"
+  kind        = "zone"
+  phase       = "http_request_firewall_custom"
+
+  rules {
+    action      = "allow"
+    expression  = "(ip.src in $uptimerobot)"
+    description = "Expression to allow UptimeRobot IP addresses"
+    depends_on  = [
+      cloudflare_list.uptimerobot,
+    ]
+    enabled     = true
+  }
 }
