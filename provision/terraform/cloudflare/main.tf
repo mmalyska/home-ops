@@ -22,8 +22,6 @@ terraform {
   }
 }
 
-data "cloudflare_zones" "domain" {
-  filter {
-    name = local.cloudflare_domain
-  }
+data "cloudflare_zone" "domain" {
+  name = local.cloudflare_domain
 }
