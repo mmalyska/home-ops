@@ -61,12 +61,6 @@ nodes:
         vip:
           ip: 192.168.48.1
 controlPlane:
-  inlinePatch:
-    machine:
-      install:
-        extensions:
-          - image: ghcr.io/siderolabs/i915-ucode:20230515
-          - image: ghcr.io/siderolabs/intel-ucode:20230512
   patches:
     - |-
       cluster:
@@ -84,6 +78,14 @@ controlPlane:
             oidc-username-prefix: 'oidc:'
     - |-
       machine:
+        files:
+          - op: create
+            path: /etc/cri/conf.d/20-customization.part
+            content: |
+              [plugins]
+                [plugins."io.containerd.grpc.v1.cri"]
+                  enable_unprivileged_ports = true
+                  enable_unprivileged_icmp = true
         kubelet:
           extraArgs:
             feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
@@ -92,6 +94,13 @@ controlPlane:
           disabled: false
           servers:
             - 192.168.50.1
+        sysctls:
+          fs.inotify.max_user_watches: "1048576"
+          fs.inotify.max_user_instances: "8192"
+        install:
+          extensions:
+            - image: ghcr.io/siderolabs/i915-ucode:20230515
+            - image: ghcr.io/siderolabs/intel-ucode:20230512
     - |-
       - op: add
         path: /cluster/controllerManager/extraArgs

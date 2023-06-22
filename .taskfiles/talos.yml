@@ -21,7 +21,9 @@ tasks:
       - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig kubeconfig --nodes {{ .NODE }} $KUBECONFIG
 
   dashboard:
+    desc: Show talos dashboard fot N node (task talos:dashboard)
     cmds:
+      - task: generate
       - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig --nodes {{ .NODE }} dashboard
 
   install:cni:
@@ -33,6 +35,7 @@ tasks:
     dir: provision/talos
     desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s)
     cmds:
+      - task: generate
       - talosctl --nodes {{ .NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
 
   upgrade:all:
@@ -50,8 +53,19 @@ tasks:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
 
+  apply:restart:
+    desc: Apply Talos config to a specific node with reboot (task talos:apply N=1)
+    dir: provision/talos
+    cmds:
+      - task: generate
+      - task: wait_for_health
+        vars: {TIMEOUT: 10m}
+      - task: apply-config
+        vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
+      - talosctl reboot --nodes {{ .NODE }} --wait
+
   generate:
-    internal: True
+    internal: true
     desc: Generate Talos machine configurations (task talos:generate)
     dir: provision/talos
     cmds:
@@ -65,15 +79,15 @@ tasks:
       - clusterconfig/*.yaml
       - clusterconfig/talosconfig
 
-  apply:
+  apply-config:
+    internal: true
     desc: Apply Talos config to a specific node (task talos:apply N=0)
     dir: provision/talos
     cmds:
-      - task: generate
       - talosctl apply-config --nodes {{ .NODE }} --file clusterconfig/home-mc{{ .N }}.yaml {{ .CLI_ARGS }}
 
   upgrade:
-    internal: false
+    internal: true
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=0)
     dir: provision/talos
     status:
@@ -81,12 +95,12 @@ tasks:
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
-      - task: apply
+      - task: apply-config
         vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
       - talosctl upgrade --nodes {{ .NODE }} --image ghcr.io/siderolabs/installer:{{ .TALOS_VERSION }}
 
   wait_for_health:
-    internal: True
+    internal: true
     desc: Wait for services in cluster to be healthy
     cmds:
       # Ensure CephCluster is healthy
