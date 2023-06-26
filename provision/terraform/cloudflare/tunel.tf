@@ -29,7 +29,10 @@ resource "cloudflare_tunnel_config" "jaskinia_config" {
   config {
     ingress_rule {
       hostname = "hass.${local.cloudflare_domain}"
-      service  = "hello_world"
+      service  = "http://web-service.httpbin.svc.cluster.local:80"
+      origin_request {
+        origin_server_name = cloudflare_record.ingress.hostname
+      }
     }
     ingress_rule {
       hostname = "*.${local.cloudflare_domain}"
