@@ -31,14 +31,14 @@ resource "cloudflare_tunnel_config" "jaskinia_config" {
       hostname = "${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
       origin_request {
-        origin_server_name = cloudflare_record.ingress.hostname
+        origin_server_name = ""
       }
     }
     ingress_rule {
       hostname = "*.${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
       origin_request {
-        origin_server_name = cloudflare_record.ingress.hostname
+        origin_server_name = ""
       }
     }
     ingress_rule {
