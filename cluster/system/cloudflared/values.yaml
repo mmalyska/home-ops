@@ -6,6 +6,7 @@ app-template:
     repository: docker.io/cloudflare/cloudflared
     tag: 2023.6.1
   env:
+    TUNNEL_LOGLEVEL: debug
     NO_AUTOUPDATE: "true"
     TUNNEL_METRICS: 0.0.0.0:8080
     TUNNEL_TRANSPORT_PROTOCOL: auto
@@ -16,7 +17,6 @@ app-template:
           key: token
   args:
     - tunnel
-    - "--loglevel debug"
     - run
   service:
     main:
