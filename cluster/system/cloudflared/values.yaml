@@ -16,6 +16,7 @@ app-template:
           key: token
   args:
     - tunnel
+    - --loglevel debug
     - run
   service:
     main:
