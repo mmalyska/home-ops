@@ -9,10 +9,6 @@ metadata:
     kubernetes.io/ingress.class: traefik
   name: hass-proxy
 spec:
-  tls:
-    - hosts:
-      - {{ .Values.ingress.host }}
-      secretName: hass-domain
   rules:
   - host: {{ .Values.ingress.host }}
     http:
