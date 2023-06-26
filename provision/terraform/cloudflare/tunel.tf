@@ -32,6 +32,7 @@ resource "cloudflare_tunnel_config" "jaskinia_config" {
       service  = "https://traefik.traefik.svc.cluster.local:443"
       origin_request {
         origin_server_name = cloudflare_record.ingress.hostname
+        no_tls_verify = true
       }
     }
     ingress_rule {
