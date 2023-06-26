@@ -98,3 +98,6 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
+    - name: httpbin
+      namespace: httpbin
+      path: httpbin
