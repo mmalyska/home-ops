@@ -12,10 +12,10 @@ traefik:
     }
     single: false
 
-  tlsStore:
-    default:
-      defaultCertificate:
-        secretName: tls-cert
+  # tlsStore:
+  #   default:
+  #     defaultCertificate:
+  #       secretName: tls-cert
 
   ingressClass:
     enabled: true
