@@ -41,7 +41,7 @@ homepage:
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "<secret:private-domain>"
-        kubernetes.io/ingress.class: traefik-internal
+        kubernetes.io/ingress.class: traefik
         # Example annotations to add Homepage to your Homepage!
         gethomepage.dev/enabled: "true"
         gethomepage.dev/name: "Homepage"

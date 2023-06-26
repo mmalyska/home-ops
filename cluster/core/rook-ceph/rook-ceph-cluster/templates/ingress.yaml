@@ -6,7 +6,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/ingressEndpoint.hostname: {{ .Values.dashboard.host | quote }}
-    kubernetes.io/ingress.class: traefik-internal
+    kubernetes.io/ingress.class: traefik
 spec:
   tls:
   - hosts:

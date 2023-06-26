@@ -77,13 +77,6 @@ app-of-apps:
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
-    - name: traefik-internal
-      namespace: traefik-internal
-      path: traefik-internal
-      plugin:
-        env:
-          - name: SOPS_SECRET_FILE
-            value: secret.sec.yaml
     - name: traefik
       namespace: traefik
       path: traefik

@@ -54,9 +54,6 @@ server:
     external:
       annotations:
         kubernetes.io/ingress.class: traefik
-    internal:
-      annotations:
-        kubernetes.io/ingress.class: traefik-internal
   readinessProbe:
     enabled: true
     failureThreshold: 5
