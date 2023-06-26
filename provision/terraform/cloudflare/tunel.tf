@@ -27,9 +27,6 @@ resource "cloudflare_tunnel_config" "jaskinia_config" {
   tunnel_id  = cloudflare_tunnel.jaskinia.id
 
   config {
-    origin_request {
-      no_tls_verify = true
-    }
     ingress_rule {
       hostname = "*.${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"

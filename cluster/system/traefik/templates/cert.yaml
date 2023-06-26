@@ -1,13 +1,14 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: traefik-domain
+  name: tls-cert
   namespace: traefik
 spec:
-  secretName: traefik-domain
+  secretName: tls-cert
   issuerRef:
     name: lets-encrypt-dns01-production-cf
     kind: ClusterIssuer
-  commonName: 'traefik.<secret:private-domain>'
+  commonName: '<secret:private-domain>'
   dnsNames:
-  - 'traefik.<secret:private-domain>'
+    - '<secret:private-domain>'
+    - '*.<secret:private-domain>'
