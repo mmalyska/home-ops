@@ -6,5 +6,5 @@ version: 1.0.0
 appVersion: "0.12.4"
 dependencies:
   - name: botkube
-    version: v1.1.0
+    version: v1.1.1
     repository: https://charts.botkube.io
