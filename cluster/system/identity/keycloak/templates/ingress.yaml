@@ -1,11 +1,10 @@
 {{- $serviceName := include "keycloak.server.fullname" . -}}
 {{- $servicePort := .Values.server.service.servicePortHttp -}}
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   annotations:
-    traefik.ingress.kubernetes.io/router.priority: "2"
   {{- range $key, $value := .Values.server.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
@@ -16,56 +15,18 @@ metadata:
       {{- toYaml .Values.server.ingress.labels | nindent 4 }}
     {{- end }}
 spec:
-  rules:
-    - host: {{ .Values.server.ingress.host }}
-      http:
-        paths:
-          - path: /realms
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ $serviceName }}
-                port:
-                  number: {{ $servicePort }}
-          - path: /resources
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ $serviceName }}
-                port:
-                  number: {{ $servicePort }}
-          - path: /robots.txt
-            pathType: Exact
-            backend:
-              service:
-                name: {{ $serviceName }}
-                port:
-                  number: {{ $servicePort }}
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-ipwhitelist@kubernetescrd" .Release.Namespace }}
-    traefik.ingress.kubernetes.io/router.priority: "1"
-  {{- range $key, $value := .Values.server.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  name: {{ printf "%s-internal" (include "keycloak.server.fullname" .) }}
-  labels:
-    {{- include "keycloak.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
-    {{- if .Values.server.ingress.labels }}
-      {{- toYaml .Values.server.ingress.labels | nindent 4 }}
-    {{- end }}
-spec:
-  rules:
-    - host: {{ .Values.server.ingress.host }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ $serviceName }}
-                port:
-                  number: {{ $servicePort }}
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && HeadersRegexp(`Cf-Warp-Tag-Id`, `.*`)
+      kind: Rule
+      priority: 2
+      services:
+        - name: {{ $serviceName }}
+          port: {{ $servicePort }}
+    - match: Host(`{{ .Values.server.ingress.host }}`) && (PathPrefix(`/realms`) || PathPrefix(`/resources`) || Path(`/robots.txt`))
+      kind: Rule
+      priority: 1
+      services:
+        - name: {{ $serviceName }}
+          port: {{ $servicePort }}
