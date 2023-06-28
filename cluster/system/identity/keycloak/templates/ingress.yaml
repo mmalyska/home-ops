@@ -18,7 +18,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && HeadersRegexp(`Cf-Warp-Tag-Id`, `.*`)
+    - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && HeadersRegexp(`Cf-Warp-Tag-Id`, `^$`)
       kind: Rule
       priority: 2
       services:
