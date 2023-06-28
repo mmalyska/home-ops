@@ -5,9 +5,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   annotations:
-  {{- range $key, $value := .Values.server.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-  {{- end }}
+    kubernetes.io/ingress.class: traefik
   name: {{ template "keycloak.server.fullname" . }}
   labels:
     {{- include "keycloak.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }}
