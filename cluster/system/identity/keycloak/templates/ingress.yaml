@@ -17,6 +17,9 @@ metadata:
 spec:
   entryPoints:
     - websecure
+  tls:
+    domains:
+      - main: {{ .Values.server.ingress.host }}
   routes:
     - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && HeadersRegexp(`Cf-Warp-Tag-Id`, `^$`)
       kind: Rule
