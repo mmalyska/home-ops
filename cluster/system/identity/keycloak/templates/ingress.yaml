@@ -21,13 +21,13 @@ spec:
   routes:
     - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && HeadersRegexp(`Cf-Warp-Tag-Id`, `^$`)
       kind: Rule
-      priority: 2
+      priority: 1
       services:
         - name: {{ $serviceName }}
           port: {{ $servicePort }}
     - match: Host(`{{ .Values.server.ingress.host }}`) && (PathPrefix(`/realms`) || PathPrefix(`/resources`) || Path(`/robots.txt`))
       kind: Rule
-      priority: 1
+      priority: 2
       services:
         - name: {{ $serviceName }}
           port: {{ $servicePort }}
