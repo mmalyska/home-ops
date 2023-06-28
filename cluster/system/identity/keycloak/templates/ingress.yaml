@@ -19,7 +19,7 @@ spec:
     domains:
       - main: {{ .Values.server.ingress.host }}
   routes:
-    - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && HeadersRegexp(`Cf-Warp-Tag-Id`, `^$`)
+    - match: Host(`{{ .Values.server.ingress.host }}`) && PathPrefix(`/`) && !HeadersRegexp(`Cf-Warp-Tag-Id`, `.*`)
       kind: Rule
       priority: 1
       services:
