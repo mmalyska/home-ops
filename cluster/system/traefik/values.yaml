@@ -11,6 +11,8 @@ traefik:
       metallb.universe.tf/loadBalancerIPs: "192.168.48.21"
     }
     single: false
+    spec:
+      externalTrafficPolicy: Local
 
   tlsStore:
     default:
