@@ -51,9 +51,7 @@ server:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
       traefik.ingress.kubernetes.io/router.tls: "true"
       traefik.ingress.kubernetes.io/ingressEndpoint.hostname: l.<secret:private-domain>
-    external:
-      annotations:
-        kubernetes.io/ingress.class: traefik
+      kubernetes.io/ingress.class: traefik
   readinessProbe:
     enabled: true
     failureThreshold: 5
