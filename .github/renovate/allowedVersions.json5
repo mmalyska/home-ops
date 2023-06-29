@@ -15,14 +15,8 @@
     {
       "description": "Lock version to cluster version",
       "matchDatasources": ["docker", "github-releases"],
-      "allowedVersions": "=1.27.2",
+      "allowedVersions": "=1.27.3",
       "matchPackageNames": ["alpine/k8s", "kubernetes/kubernetes", "siderolabs/kubelet"]
-    },
-    {
-      "description": "Lock version for containerd",
-      "matchDatasources": ["github-releases"],
-      "allowedVersions": "=1.6.10",
-      "matchPackageNames": ["containerd/containerd"]
     }
   ]
 }
