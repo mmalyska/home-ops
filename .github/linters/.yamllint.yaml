@@ -11,6 +11,7 @@ ignore: |
   gotk-components.yaml
   **/templates/*.y*ml
   cluster/system/postgres-operator/
+  provision/talos/manifests/kubelet-csr-approver/kubelet-csr-approver.yaml
 extends: default
 rules:
   truthy:
