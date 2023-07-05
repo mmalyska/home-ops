@@ -52,7 +52,7 @@ firefly-iii:
   image:
     repository: "fireflyiii/core"
     pullPolicy: IfNotPresent
-    tag: version-5.6.14
+    tag: version-5.6.14@sha256:2f4283bd0cf7bbfeac5a3f230f878cf8c16472f1219687535f1b64b3a276d267
   persistence:
     enabled: true
     class: ceph-block

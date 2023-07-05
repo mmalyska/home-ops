@@ -4,7 +4,7 @@ app-template:
     strategy: RollingUpdate
   image:
     repository: docker.io/cloudflare/cloudflared
-    tag: 2023.6.1
+    tag: 2023.6.1@sha256:dbf9e9f7caeffb6ba0f59627e1c6c92a07542912050d91317b33bd9085a0737f
   env:
     TUNNEL_LOGLEVEL: debug
     NO_AUTOUPDATE: "true"
