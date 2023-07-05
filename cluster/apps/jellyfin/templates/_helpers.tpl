@@ -55,19 +55,15 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Return the default grocy app version
-*/}}
-{{- define "jellyfin.defaultTag" -}}
-  {{- default .Chart.AppVersion .Values.global.image.tag }}
-{{- end -}}
-
-{{/*
 Create image name and tag used by the deployment.
 */}}
 {{- define "jellyfin.image" -}}
 {{- $registry := .Values.global.imageRegistry | default .Values.image.registry -}}
 {{- $name := .Values.image.repository -}}
 {{- $tag := .Values.image.tag | default .Chart.AppVersion -}}
+{{- if .Values.image.digest -}}
+    {{- $tag = printf "%s@%s" $tag (.Values.image.digest | toString) -}}
+{{- end -}}
 {{- if $registry -}}
   {{- printf "%s/%s:%s" $registry $name $tag -}}
 {{- else -}}
