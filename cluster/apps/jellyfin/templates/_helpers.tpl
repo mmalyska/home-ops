@@ -44,10 +44,8 @@ Common labels
 */}}
 {{- define "jellyfin.labels" -}}
 helm.sh/chart: {{ include "jellyfin.chart" . }}
-app: {{ include "jellyfin.name" . }}
 {{ include "jellyfin.selectorLabels" . }}
-app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
-version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+app.kubernetes.io/version: {{ include "jellyfin.version" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- with .Values.global.additionalLabels }}
 {{ toYaml . }}
@@ -60,13 +58,18 @@ Create image name and tag used by the deployment.
 {{- define "jellyfin.image" -}}
 {{- $registry := .Values.global.imageRegistry | default .Values.image.registry -}}
 {{- $name := .Values.image.repository -}}
-{{- $tag := .Values.image.tag | default .Chart.AppVersion -}}
-{{- if .Values.image.digest -}}
-    {{- $tag = printf "%s@%s" $tag (.Values.image.digest | toString) -}}
-{{- end -}}
+{{- $tag := .Values.image.tag -}}
 {{- if $registry -}}
   {{- printf "%s/%s:%s" $registry $name $tag -}}
 {{- else -}}
   {{- printf "%s:%s" $name $tag -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+App version
+*/}}
+{{- define "jellyfin.version" -}}
+{{- $parts := split "@" .Values.image.tag -}}
+{{- printf "%s" $parts._0 -}}
 {{- end -}}
