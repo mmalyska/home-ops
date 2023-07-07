@@ -1,7 +1,18 @@
 ---
 version: "3"
 
+env:
+  TF_TOKEN_app_terraform_io:
+    sh: if [ "$CODESPACES" = "true" ]; then echo "$TERRAFORM_TOKEN"; else echo "$LOCAL_TERRAFORM_TOKEN"; fi
 tasks:
+  test:
+    cmd: "echo $TF_TOKEN_app_terraform_io"
+
+  login:
+    desc: Login into Terraform cloud
+    cmds:
+      - "terraform login"
+
   init:cloudflare:
     desc: Initialize terraform
     dir: provision/terraform/cloudflare

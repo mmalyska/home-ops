@@ -5,32 +5,25 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "remoteEnv": {
-        "SYNC_LOCALHOST_CONFIGS": "true"
+    "containerEnv": {
+        "LOCAL_TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}"
     },
-    "mounts": [
-        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.kube,target=/usr/local/share/kube-localhost,type=bind",
-        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/sops,target=/usr/local/share/sops-localhost,type=bind",
-        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/usr/local/share/ssh-localhost,type=bind"
-    ],
-
-    //Install task and required dependencies via homebrew. Install precommit tasks.
+    "secrets": {
+        "SOPS_AGE_KEY": {
+            "description": "SOPS AGE key for decrypting secrets."
+        },
+        "TERRAFORM_TOKEN":{
+            "description": "Token to access terraform cloud."
+        }
+    },
     "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
-
     "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
-
-    // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "bash .devcontainer/scripts/postCreateCommand.sh",
-
-    // Run after start of container
-    "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",
-
     "remoteUser": "vscode",
     "containerUser": "vscode",
     "features": {
         "ghcr.io/devcontainers/features/go:1": {}
-    }
-    ,"customizations": {
+    },
+    "customizations": {
         "vscode": {
             // Set *default* container specific settings.json values on container create.
             "settings": {},
