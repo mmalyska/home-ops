@@ -10,7 +10,7 @@ namespace: argocd
 resources:
   - resources/cert.yaml
   - resources/ingress.yaml
-  - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.7.6
+  - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.7.7
   - resources/app-of-apps.yaml
   - resources/repository.yaml
   - resources/sops-replacer-plugin.yaml
