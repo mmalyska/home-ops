@@ -3,7 +3,7 @@
 site_name: K8S Home cluster
 site_description: >-
   Those are docs for my homelab cluster.
-site_author: Michał MAłyska
+site_author: Michał Małyska
 site_url: https://mmalyska.github.io/home-ops
 
 # https://squidfunk.github.io/mkdocs-material/setup/adding-a-git-repository/#repository-name
@@ -26,17 +26,19 @@ theme:
   language: en
 
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: blue
       accent: indigo
       toggle:
-        icon: material/toggle-switch-off-outline
+        icon: material/brightness-7
         name: Switch to light mode
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       primary: blue
       accent: indigo
       toggle:
-        icon: material/toggle-switch
+        icon: material/brightness-4
         name: Switch to dark mode
 
   icon:
@@ -78,7 +80,7 @@ extra:
 copyright: Copyright &copy; 2023 Michał Małyska
 
 extra_css:
-  - _static/custom.css
+  - stylesheets/custom.css
 
 plugins:
   # https://squidfunk.github.io/mkdocs-material/setup/setting-up-site-search/#built-in-search
@@ -87,6 +89,7 @@ plugins:
   - git-revision-date-localized
   - autolinks
   - diagrams
+  - drawio_file
 
 # https://squidfunk.github.io/mkdocs-material/setup/setting-up-site-analytics/#google-analytics
 # google_analytics:
@@ -131,7 +134,7 @@ nav:
   - 'Introduction': index.md
   - 'General':
       - 'Hardware': index.md
-      - 'Network': index.md
+      - 'Network': general/network.md
   - 'Home Ops':
       - 'Kubernetes':
           - 'ArgoCd': index.md

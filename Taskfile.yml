@@ -20,6 +20,7 @@ includes:
   format: .taskfiles/format.yml
   lint: .taskfiles/lint.yml
   talos: .taskfiles/talos.yml
+  mkdocs: .taskfiles/mkdocs.yml
 
 tasks:
   init:
@@ -54,3 +55,4 @@ tasks:
         ansible-lint
         k9s
         pre-commit
+        mkdocs

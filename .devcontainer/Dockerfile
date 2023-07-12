@@ -40,7 +40,8 @@ RUN brew install \
     argocd \
     int128/kubelogin/kubelogin \
     ansible-lint \
-    k9s
+    k9s \
+    mkdocs
 
 RUN echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc \
     && echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc

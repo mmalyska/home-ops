@@ -1,0 +1,20 @@
+---
+version: "3"
+
+tasks:
+  build:
+    desc: Build mkdocs
+    cmds:
+      - task: prerequesites
+      - mkdocs build --config-file .github/mkdocs/mkdocs.yml --site-dir ./../../site
+
+  serve:
+    desc: Build mkdocs
+    cmds:
+      - task: prerequesites
+      - mkdocs serve --config-file .github/mkdocs/mkdocs.yml
+
+  prerequesites:
+    internal: true
+    cmds:
+      - python3 -m pip install -r .github/mkdocs/requirements.txt
