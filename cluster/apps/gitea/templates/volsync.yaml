@@ -42,6 +42,6 @@ spec:
       weekly: 4
       monthly: 2
     moverSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      fsGroup: 1000
+      runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
+      runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
+      fsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
