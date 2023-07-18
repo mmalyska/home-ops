@@ -8,7 +8,6 @@ spec:
     - ReadWriteMany
   volumeMode: Filesystem
   storageClassName: ceph-filesystem
-  volumeName: ""
   resources:
     requests:
       storage: 10Gi
