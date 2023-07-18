@@ -48,13 +48,17 @@ gitea:
     enabled: false
   redis-cluster:
     enabled: true
+    cluster:
+      nodes: 3
   postgresql-ha:
     enabled: false
   persistence:
     enabled: true
+    mount: true
     storageClass: ceph-block
+    claimName: data-gitea-0
   replicaCount: 1
-  statefulset:
+  deployment:
     env:
       - name: ENV_TO_INI__database__DB_TYPE
         value: postgres

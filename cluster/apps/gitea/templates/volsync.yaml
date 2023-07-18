@@ -30,7 +30,7 @@ metadata:
   name: gitea
   labels: {{- include "gitea-subchart.labels" (dict "context" . "component" .Values.name "name" .Values.name) | nindent 4 }}
 spec:
-  sourcePVC: data-{{ .Values.name }}-0
+  sourcePVC: {{ .Values.gitea.persistence.claimName }}
   trigger:
     schedule: "0 */12 * * *"
   restic:
@@ -41,6 +41,22 @@ spec:
       daily: 6
       weekly: 4
       monthly: 2
+    moverSecurityContext:
+      runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
+      runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
+      fsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: gitea-dest
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: gitea-restic-secret
+    destinationPVC: gitea-data
+    copyMethod: Direct
     moverSecurityContext:
       runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
       runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
