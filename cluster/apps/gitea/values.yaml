@@ -60,14 +60,14 @@ gitea:
   replicaCount: 1
   deployment:
     env:
-      - name: ENV_TO_INI__database__DB_TYPE
+      - name: GITEA__database__DB_TYPE
         value: postgres
-      - name: ENV_TO_INI__database__USER
+      - name: GITEA__database__USER
         valueFrom:
           secretKeyRef:
             name: giteadb-cnpg-app
             key: username
-      - name: ENV_TO_INI__database__PASSWD
+      - name: GITEA__database__PASSWD
         valueFrom:
           secretKeyRef:
             name: giteadb-cnpg-app
