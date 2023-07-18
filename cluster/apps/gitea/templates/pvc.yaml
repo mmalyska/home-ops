@@ -2,11 +2,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: gitea-data
-  namespace: kube-system
 spec:
   accessModes:
     - ReadWriteMany
-  volumeMode: Filesystem
   storageClassName: ceph-filesystem
   resources:
     requests:
