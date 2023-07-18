@@ -47,8 +47,6 @@ gitea:
     enabled: false
   redis-cluster:
     enabled: true
-    cluster:
-      nodes: 3
   postgresql-ha:
     enabled: false
   persistence:
