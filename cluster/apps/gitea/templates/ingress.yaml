@@ -15,6 +15,3 @@ spec:
       priority: 10
       services:
         - name: gitea-http
-          port: 3000
-  tls:
-    secretName: git-domain

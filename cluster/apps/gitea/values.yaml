@@ -12,6 +12,8 @@ gitea:
     digest: sha256:bca3994c102089aeb8d6bacd30d2b4f7056853fe9fb8d709bc81a103079b4f60
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
+  podSecurityContext:
+    fsGroup: 1000
   gitea:
     config:
       APP_NAME: "Gitea: Git with a cup of tea"
@@ -44,20 +46,28 @@ gitea:
         ALLOW_CREDENTIALS: false
   postgresql:
     enabled: false
+  redis-cluster:
+    enabled: true
+    cluster:
+      nodes: 3
+  postgresql-ha:
+    enabled: false
   persistence:
     enabled: true
+    mount: true
     storageClass: ceph-block
+    claimName: data-gitea-0
   replicaCount: 1
-  statefulset:
+  deployment:
     env:
-      - name: ENV_TO_INI__database__DB_TYPE
+      - name: GITEA__database__DB_TYPE
         value: postgres
-      - name: ENV_TO_INI__database__USER
+      - name: GITEA__database__USER
         valueFrom:
           secretKeyRef:
             name: giteadb-cnpg-app
             key: username
-      - name: ENV_TO_INI__database__PASSWD
+      - name: GITEA__database__PASSWD
         valueFrom:
           secretKeyRef:
             name: giteadb-cnpg-app
