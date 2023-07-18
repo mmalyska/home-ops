@@ -45,22 +45,3 @@ spec:
       runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
       runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
       fsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: gitea-dest
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: gitea-restic-secret
-    destinationPVC: gitea-data
-    copyMethod: Direct
-    accessModes:
-      - ReadWriteMany
-    storageClassName: ceph-filesystem
-    moverSecurityContext:
-      runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
-      runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
-      fsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}

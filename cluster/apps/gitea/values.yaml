@@ -53,9 +53,7 @@ gitea:
     enabled: false
   persistence:
     enabled: true
-    mount: true
-    storageClass: ceph-block
-    claimName: data-gitea-0
+    claimName: gitea-data
   replicaCount: 1
   deployment:
     env:
