@@ -35,6 +35,7 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
+      selfHeal: false
     - name: grocy
       namespace: grocy
       path: grocy
