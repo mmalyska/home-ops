@@ -57,7 +57,8 @@ spec:
     repository: gitea-restic-secret
     destinationPVC: gitea-data
     copyMethod: Direct
-    accessModes: ReadWriteMany
+    accessModes:
+      - ReadWriteMany
     storageClassName: ceph-filesystem
     moverSecurityContext:
       runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
