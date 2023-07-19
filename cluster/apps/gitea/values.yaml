@@ -43,6 +43,16 @@ gitea:
         METHODS: "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS"
         MAX_AGE: 10m
         ALLOW_CREDENTIALS: false
+      session:
+        PROVIDER: redis-cluster
+        PROVIDER_CONFIG: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+      cache:
+        ENABLED: true
+        ADAPTER: redis-cluster
+        HOST: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+      queue:
+        TYPE: redis
+        CONN_STR: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
   postgresql:
     enabled: false
   redis-cluster:
