@@ -35,6 +35,7 @@ spec:
     schedule: "0 */12 * * *"
   restic:
     copyMethod: Snapshot
+    volumeSnapshotClassName: csi-cephfsplugin-snapclass
     pruneIntervalDays: 14
     repository: gitea-restic-secret
     retain:
