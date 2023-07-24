@@ -29,6 +29,7 @@ RUN brew install \
     ipcalc \
     jq \
     kubernetes-cli \
+    kubectl \
     kustomize \
     pre-commit \
     prettier \
