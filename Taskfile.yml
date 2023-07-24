@@ -42,6 +42,7 @@ tasks:
         helm
         ipcalc
         jq
+        kubectl
         kubernetes-cli
         kustomize
         prettier

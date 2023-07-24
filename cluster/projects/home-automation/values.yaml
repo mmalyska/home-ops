@@ -1,0 +1,16 @@
+---
+app-of-apps:
+  project: home-automation
+  destination:
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://github.com/mmalyska/home-ops
+    path: cluster/home-automation
+  apps:
+    - name: mosquitto
+      namespace: ha-mosquitto
+      path: mosquitto
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
