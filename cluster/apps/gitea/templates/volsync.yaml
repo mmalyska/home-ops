@@ -36,6 +36,7 @@ spec:
   restic:
     copyMethod: Snapshot
     volumeSnapshotClassName: csi-cephfsplugin-snapclass
+    cacheStorageClassName: {{ .Values.gitea.persistence.storageClass }}
     pruneIntervalDays: 14
     repository: gitea-restic-secret
     retain:
