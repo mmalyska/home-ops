@@ -32,7 +32,7 @@ metadata:
 spec:
   sourcePVC: {{ template "minecraft.bedrock.fullname" . }}-datadir
   trigger:
-    schedule: "0 */12 * * *"
+    schedule: "45 */12 * * *"
   restic:
     copyMethod: Snapshot
     repository: minecraft-bedrock-restic-secret

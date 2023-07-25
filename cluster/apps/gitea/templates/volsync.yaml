@@ -32,7 +32,7 @@ metadata:
 spec:
   sourcePVC: {{ .Values.gitea.persistence.claimName }}
   trigger:
-    schedule: "0 */12 * * *"
+    schedule: "25 */12 * * *"
   restic:
     copyMethod: Snapshot
     volumeSnapshotClassName: csi-cephfsplugin-snapclass

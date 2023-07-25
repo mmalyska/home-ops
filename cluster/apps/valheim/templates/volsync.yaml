@@ -33,7 +33,7 @@ metadata:
 spec:
   sourcePVC: {{ template "valheim.fullname" . }}-world-data
   trigger:
-    schedule: "0 */12 * * *"
+    schedule: "50 */12 * * *"
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 14

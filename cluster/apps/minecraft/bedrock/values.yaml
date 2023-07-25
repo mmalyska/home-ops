@@ -46,5 +46,5 @@ map:
     size: 1Gi
     storageClass: ceph-block
   generator:
-    schedule: "0 0 * * *"
+    schedule: "40 0 * * *"
     image: ghcr.io/mmalyska/bedrock-viz:rolling@sha256:458014de8788858988ecf82e2834ea2f8c6622fe0f3d0e069e5fc989427f8486

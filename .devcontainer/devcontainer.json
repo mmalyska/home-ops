@@ -6,7 +6,8 @@
         "dockerfile": "Dockerfile"
     },
     "containerEnv": {
-        "LOCAL_TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}"
+        "LOCAL_TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}",
+        "LOCAL_SOPS_AGE_KEY": "${localEnv:SOPS_AGE_KEY}"
     },
     "secrets": {
         "SOPS_AGE_KEY": {

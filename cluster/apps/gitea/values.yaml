@@ -127,5 +127,5 @@ postgres:
     - name: giteadb-cnpg-backup
       spec:
         immediate: true
-        schedule: "0 0 0 * * *"
+        schedule: "5 0 0 * * *"
         backupOwnerReference: self

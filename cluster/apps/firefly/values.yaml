@@ -44,7 +44,7 @@ postgres:
     - name: fireflydb-cnpg-backup
       spec:
         immediate: true
-        schedule: "0 0 0 * * *"
+        schedule: "20 0 0 * * *"
         backupOwnerReference: self
 firefly-iii:
   # -- Set to false to not deploy Firefly III

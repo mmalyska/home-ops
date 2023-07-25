@@ -32,7 +32,7 @@ metadata:
 spec:
   sourcePVC: {{ template "grocy.server.fullname" . }}-config
   trigger:
-    schedule: "0 */12 * * *"
+    schedule: "30 */12 * * *"
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 14

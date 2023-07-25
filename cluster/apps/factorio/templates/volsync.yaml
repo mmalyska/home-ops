@@ -30,7 +30,7 @@ metadata:
 spec:
   sourcePVC: factorio-factorio-server-charts-datadir
   trigger:
-    schedule: "0 */12 * * *"
+    schedule: "15 */12 * * *"
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 14

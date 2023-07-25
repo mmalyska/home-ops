@@ -37,7 +37,7 @@ spec:
   sourcePVC: {{ template "jellyfin.fullname" . }}-config
   {{- end }}
   trigger:
-    schedule: "0 */12 * * *"
+    schedule: "35 */12 * * *"
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 14
