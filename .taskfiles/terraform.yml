@@ -3,7 +3,7 @@ version: "3"
 
 env:
   TF_TOKEN_app_terraform_io:
-    sh: if [ "$CODESPACES" = "true" ]; then echo "$TERRAFORM_TOKEN"; else echo "$LOCAL_TERRAFORM_TOKEN"; fi
+    sh: echo "$TERRAFORM_TOKEN"
 tasks:
   test:
     cmd: "echo $TF_TOKEN_app_terraform_io"

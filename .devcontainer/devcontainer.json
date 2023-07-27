@@ -5,10 +5,6 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "containerEnv": {
-        "LOCAL_TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}",
-        "LOCAL_SOPS_AGE_KEY": "${localEnv:SOPS_AGE_KEY}"
-    },
     "secrets": {
         "SOPS_AGE_KEY": {
             "description": "SOPS AGE key for decrypting secrets."
@@ -21,6 +17,7 @@
     "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
     "remoteUser": "vscode",
     "containerUser": "vscode",
+    "runArgs": ["--env-file",".devcontainer/devcontainer.env"],
     "features": {
         "ghcr.io/devcontainers/features/go:1": {}
     },

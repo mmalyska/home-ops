@@ -24,3 +24,5 @@ Chart.lock
 .vagrant
 # Tasks
 .task
+# env variables
+.devcontainer/devcontainer.env
