@@ -19,6 +19,9 @@ vernemq:
       - ReadWriteMany
     size: 5Gi
     storageClass: ceph-filesystem
+  additionalEnv:
+    - name: DOCKER_VERNEMQ_ACCEPT_EULA
+      value: "yes"
   envFrom:
     - secretRef:
         name: vernemq-users
