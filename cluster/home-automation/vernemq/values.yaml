@@ -1,0 +1,24 @@
+vernemq:
+  replicaCount: 2
+  service:
+    mqtt:
+      enabled: true
+      port: 1883
+  serviceMonitor:
+    create: true
+  pdb:
+    enabled: true
+    minAvailable: 1
+  rbac:
+    create: true
+    serviceAccount:
+      create: true
+  persistentVolume:
+    enabled: true
+    accessModes:
+      - ReadWriteMany
+    size: 5Gi
+    storageClass: ceph-filesystem
+  envFrom:
+    - secretRef:
+        name: vernemq-users

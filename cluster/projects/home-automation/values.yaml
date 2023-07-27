@@ -10,3 +10,6 @@ app-of-apps:
     - name: mosquitto
       namespace: ha-mosquitto
       path: mosquitto
+    - name: vernemq
+      namespace: ha-vernemq
+      path: vernemq
