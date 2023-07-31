@@ -30,6 +30,14 @@
       "groupName": "metallb",
       "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "separateMinorPatch": true
+    },
+    {
+      "description": "Kubernetes stack",
+      "matchDatasources": ["docker", "github-releases"],
+      "matchPackageNames": ["alpine/k8s", "kubernetes/kubernetes", "siderolabs/kubelet"],
+      "groupName": "kubernetes",
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
     }
   ]
 }
