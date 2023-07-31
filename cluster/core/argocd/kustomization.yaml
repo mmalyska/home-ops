@@ -8,7 +8,6 @@ namespace: argocd
 
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
-  - resources/cert.yaml
   - resources/ingress.yaml
   - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v2.7.9
   - resources/app-of-apps.yaml
