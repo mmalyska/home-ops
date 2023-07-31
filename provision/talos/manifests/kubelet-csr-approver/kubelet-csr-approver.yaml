@@ -7,10 +7,10 @@ metadata:
   name: kubelet-csr-approver
   namespace: kube-system
   labels:
-    helm.sh/chart: kubelet-csr-approver-1.0.1
+    helm.sh/chart: kubelet-csr-approver-1.0.4
     app.kubernetes.io/name: kubelet-csr-approver
     app.kubernetes.io/instance: kubelet-csr-approver
-    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/version: "v1.0.4"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: kubelet-csr-approver-subchart/charts/kubelet-csr-approver/templates/clusterrole.yaml
@@ -27,6 +27,12 @@ rules:
   - create
   - get
   - update
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
 - apiGroups:
   - certificates.k8s.io
   resources:
@@ -72,10 +78,10 @@ metadata:
   name: kubelet-csr-approver
   namespace: kube-system
   labels:
-    helm.sh/chart: kubelet-csr-approver-1.0.1
+    helm.sh/chart: kubelet-csr-approver-1.0.4
     app.kubernetes.io/name: kubelet-csr-approver
     app.kubernetes.io/instance: kubelet-csr-approver
-    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/version: "v1.0.4"
     app.kubernetes.io/managed-by: Helm
   annotations:
     prometheus.io/port: '8080'
@@ -98,10 +104,10 @@ metadata:
   name: kubelet-csr-approver
   namespace: kube-system
   labels:
-    helm.sh/chart: kubelet-csr-approver-1.0.1
+    helm.sh/chart: kubelet-csr-approver-1.0.4
     app.kubernetes.io/name: kubelet-csr-approver
     app.kubernetes.io/instance: kubelet-csr-approver
-    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/version: "v1.0.4"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 2
@@ -127,9 +133,12 @@ spec:
               - all
             privileged: false
             readOnlyRootFilesystem: true
+            runAsGroup: 65532
             runAsNonRoot: true
             runAsUser: 65532
-          image: "ghcr.io/postfinance/kubelet-csr-approver:v1.0.1"
+            seccompProfile:
+              type: RuntimeDefault
+          image: "ghcr.io/postfinance/kubelet-csr-approver:v1.0.4"
           imagePullPolicy: IfNotPresent
           args:
             - -metrics-bind-address
@@ -162,9 +171,6 @@ spec:
               memory: 64Mi
       tolerations:
         - effect: NoSchedule
-          key: node-role.kubernetes.io/master
-          operator: Equal
-        - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
           operator: Equal
 ---
@@ -173,12 +179,11 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: "kubelet-csr-approver-test-connection"
-  namespace: kube-system
   labels:
-    helm.sh/chart: kubelet-csr-approver-1.0.1
+    helm.sh/chart: kubelet-csr-approver-1.0.4
     app.kubernetes.io/name: kubelet-csr-approver
     app.kubernetes.io/instance: kubelet-csr-approver
-    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/version: "v1.0.4"
     app.kubernetes.io/managed-by: Helm
   annotations:
     "helm.sh/hook": test
