@@ -1,0 +1,25 @@
+postgres:
+  name: home-assistant
+  instances: 2
+  storage:
+    size: 5Gi
+  monitoring:
+    enablePodMonitor: true
+  backup:
+    retentionPolicy: "10d"
+    barmanObjectStore:
+      destinationPath: "s3://k8s-at-home-backup/cnpg/home-assistant"
+      endpointURL: <secret:s3_endpoint>
+      s3Credentials:
+        accessKeyId:
+          name: home-assistant-secrets
+          key: S3_ACCESS_KEY_ID
+        secretAccessKey:
+          name: home-assistant-secrets
+          key: S3_ACCESS_SECRET_KEY
+  scheduledBackups:
+    - name: home-assistant-cnpg-backup
+      spec:
+        immediate: true
+        schedule: "52 0 0 * * *"
+        backupOwnerReference: self
