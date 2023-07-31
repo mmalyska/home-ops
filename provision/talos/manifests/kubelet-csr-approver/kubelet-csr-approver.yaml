@@ -173,6 +173,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: "kubelet-csr-approver-test-connection"
+  namespace: kube-system
   labels:
     helm.sh/chart: kubelet-csr-approver-1.0.1
     app.kubernetes.io/name: kubelet-csr-approver
