@@ -1,4 +1,4 @@
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: forward-auth
@@ -11,7 +11,7 @@ spec:
 #    - name: forward-auth-error
 #    - name: forward-auth-auth
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: forward-auth-auth
@@ -22,7 +22,7 @@ spec:
     address: https://oauth.<secret:private-domain>/oauth2/auth
     trustForwardHeader: true
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: forward-auth-error
@@ -37,7 +37,7 @@ spec:
       name: oauth2-proxy
       port: http
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: forward-auth-redirect
@@ -54,7 +54,7 @@ spec:
       - X-Auth-Request-Preferred-Username
       - Authorization
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: forward-auth-strip-headers
