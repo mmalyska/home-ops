@@ -23,3 +23,53 @@ postgres:
         immediate: true
         schedule: "52 0 0 * * *"
         backupOwnerReference: self
+app-template:
+  controller:
+    type: statefulset
+  image:
+    repository: ghcr.io/home-assistant/home-assistant
+    tag: 2023.7.3@sha256:17667d8849f01fb8a34f2eecff79beb50be0394928c8c4b64853648472ebee38
+  env:
+    SECRET_RECORDER_DB_URL:
+      valueFrom:
+        secretKeyRef:
+          name: database-home-assistant-user
+          key: POSTGRES_URL
+  envFrom:
+    - secretRef:
+        name: home-assistant-secret
+  service:
+    main:
+      ports:
+        http:
+          port: 8123
+  probes:
+    liveness:
+      enabled: true
+    readiness:
+      enabled: true
+    startup:
+      enabled: true
+  ingress:
+    main:
+      enabled: true
+      ingressClassName: "traefik"
+      hosts:
+        - host: &host "dom.<secret:private-domain>"
+          paths:
+            - path: /
+      tls:
+        - hosts:
+            - *host
+  volumeClaimTemplates:
+    - name: config
+      mountPath: /config
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      storageClass: ceph-block
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100Mi
+    limits:
+      memory: 750Mi
