@@ -16,3 +16,4 @@ app-of-apps:
     - name: home-assistant
       namespace: ha-home-assistant
       path: home-assistant
+      selfHeal: false
