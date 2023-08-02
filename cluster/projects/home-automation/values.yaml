@@ -13,3 +13,7 @@ app-of-apps:
     - name: vernemq
       namespace: ha-vernemq
       path: vernemq
+    - name: home-assistant
+      namespace: ha-home-assistant
+      path: home-assistant
+      selfHeal: false

@@ -1,0 +1,103 @@
+postgres:
+  name: home-assistant
+  instances: 2
+  storage:
+    size: 5Gi
+  monitoring:
+    enablePodMonitor: true
+  backup:
+    retentionPolicy: "10d"
+    barmanObjectStore:
+      destinationPath: "s3://k8s-at-home-backup/cnpg/home-assistant"
+      endpointURL: <secret:s3_endpoint>
+      s3Credentials:
+        accessKeyId:
+          name: home-assistant-secrets
+          key: S3_ACCESS_KEY_ID
+        secretAccessKey:
+          name: home-assistant-secrets
+          key: S3_ACCESS_SECRET_KEY
+  scheduledBackups:
+    - name: home-assistant-cnpg-backup
+      spec:
+        immediate: true
+        schedule: "52 0 0 * * *"
+        backupOwnerReference: self
+app-template:
+  controller:
+    type: statefulset
+  image:
+    repository: ghcr.io/home-assistant/home-assistant
+    tag: 2023.7.3@sha256:17667d8849f01fb8a34f2eecff79beb50be0394928c8c4b64853648472ebee38
+  env:
+    SECRET_RECORDER_DB_URL:
+      valueFrom:
+        secretKeyRef:
+          name: database-home-assistant-user
+          key: POSTGRES_URL
+  envFrom:
+    - secretRef:
+        name: home-assistant-secret
+  service:
+    main:
+      ports:
+        http:
+          port: 8123
+  probes:
+    liveness:
+      enabled: true
+    readiness:
+      enabled: true
+    startup:
+      enabled: true
+  ingress:
+    main:
+      enabled: true
+      ingressClassName: "traefik"
+      hosts:
+        - host: &host "dom.<secret:private-domain>"
+          paths:
+            - path: /
+      tls:
+        - hosts:
+            - *host
+  persistence:
+    config:
+      enabled: true
+      existingClaim: home-assistant-config
+  podSecurityContext:
+    runAsUser: 568
+    runAsGroup: 568
+    fsGroup: 568
+    fsGroupChangePolicy: "OnRootMismatch"
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100Mi
+    limits:
+      memory: 750Mi
+  addons:
+    codeserver:
+      enabled: true
+      image:
+        repository: ghcr.io/coder/code-server
+        tag: 4.16.1@sha256:5e3cedfc6e029035b0c74364d9bfb89faa896379f284a648c296b7a2425fa015
+      workingDir: "/config"
+      args:
+        - --auth
+        - "none"
+        - --user-data-dir
+        - "/config/.vscode"
+        - --extensions-dir
+        - "/config/.vscode"
+      ingress:
+        enabled: true
+        ingressClassName: "traefik"
+        hosts:
+          - host: "dom-code.<secret:private-domain>"
+            paths:
+              - path: /
+                pathType: Prefix
+      volumeMounts:
+        - name: config
+          mountPath: /config
