@@ -61,15 +61,43 @@ app-template:
       tls:
         - hosts:
             - *host
-  volumeClaimTemplates:
-    - name: config
-      mountPath: /config
-      accessMode: ReadWriteOnce
-      size: 5Gi
-      storageClass: ceph-block
+  persistence:
+    config:
+      enabled: true
+      existingClaim: home-assistant-config
+  podSecurityContext:
+    runAsUser: 568
+    runAsGroup: 568
+    fsGroup: 568
+    fsGroupChangePolicy: "OnRootMismatch"
   resources:
     requests:
       cpu: 10m
       memory: 100Mi
     limits:
       memory: 750Mi
+  addons:
+    codeserver:
+      enabled: true
+      image:
+        repository: ghcr.io/coder/code-server
+        tag: 4.16.1@sha256:5e3cedfc6e029035b0c74364d9bfb89faa896379f284a648c296b7a2425fa015
+      workingDir: "/config"
+      args:
+        - --auth
+        - "none"
+        - --user-data-dir
+        - "/config/.vscode"
+        - --extensions-dir
+        - "/config/.vscode"
+      ingress:
+        enabled: true
+        ingressClassName: "traefik"
+        hosts:
+          - host: "dom-code.<secret:private-domain>"
+            paths:
+              - path: /
+                pathType: Prefix
+      volumeMounts:
+        - name: config
+          mountPath: /config
