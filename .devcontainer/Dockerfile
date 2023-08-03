@@ -1,7 +1,7 @@
 # See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu/.devcontainer/base.Dockerfile
 
 # [Choice] Ubuntu version (use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon): ubuntu-22.04, ubuntu-20.04, ubuntu-18.04
-FROM mcr.microsoft.com/devcontainers/base:ubuntu@sha256:58455121a1914fc23fa3440ef505e63776b889b667245c00de3ab3176be07ab7
+FROM mcr.microsoft.com/devcontainers/base:ubuntu@sha256:fdb79b61fb4e955b4042ddb25bbae616316984bcd46c193196c6e1664a5d367f
 USER vscode
 
 ENV LC_ALL=en_US.UTF-8
