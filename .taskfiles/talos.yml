@@ -61,7 +61,7 @@ tasks:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
       - task: apply-config
-        vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
+        vars: {CLI_ARGS: "-m staged"}
       - talosctl reboot --nodes {{ .NODE }} --wait
 
   generate:
