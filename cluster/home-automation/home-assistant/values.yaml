@@ -28,7 +28,7 @@ app-template:
     type: statefulset
   image:
     repository: ghcr.io/home-assistant/home-assistant
-    tag: 2023.8.1@sha256:5802094954ff92730dfefa2f321dcc910debe290c9f8660b039d5a5883cede8a
+    tag: 2023.8.3@sha256:aa6ed476b0da1dd38be99c59d8566fc9937d9bc0f1e416b3cdcb011749f667e0
   envFrom:
     - secretRef:
         name: home-assistant-secret
