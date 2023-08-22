@@ -24,7 +24,12 @@
     "customizations": {
         "vscode": {
             // Set *default* container specific settings.json values on container create.
-            "settings": {},
+            "settings": {
+                "vs-kubernetes": {
+                    "vscode-kubernetes.kubectl-path": "/home/linuxbrew/.linuxbrew/bin/kubectl",
+                    "vscode-kubernetes.helm-path": "/home/linuxbrew/.linuxbrew/bin/helm"
+                }
+            },
             "extensions": [
                 "HashiCorp.terraform",
                 "britesnow.vscode-toggle-quotes",
