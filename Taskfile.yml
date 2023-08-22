@@ -57,3 +57,10 @@ tasks:
         k9s
         pre-commit
         mkdocs
+  init-subtasks:
+    desc: Initialize subtasks
+    cmds:
+      - task: precommit:init
+      - task: ansible:init
+      - task: terraform:init:cloudflare
+      - task: talos:init

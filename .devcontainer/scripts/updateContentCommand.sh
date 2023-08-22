@@ -2,7 +2,8 @@
 git gc --prune=now
 brew update
 brew upgrade
-task ansible:init
-task terraform:upgrade:cloudflare
+
+task init
+task init-subtasks
 
 echo "Done!"

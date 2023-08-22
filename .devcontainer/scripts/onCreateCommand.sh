@@ -8,8 +8,6 @@ sudo git config --global pull.rebase true
 direnv allow
 
 task init
-task precommit:init
-task ansible:init
-task terraform:init:cloudflare
+task init-subtasks
 
 echo "Done!"

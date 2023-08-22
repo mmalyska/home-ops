@@ -18,7 +18,7 @@ tasks:
     desc: Init talosctl and grab kubeconfig (task talos:init)
     cmds:
       - task: generate
-      - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig kubeconfig --nodes {{ .NODE }} $KUBECONFIG
+      - task: generate-kubeconfig
 
   dashboard:
     desc: Show talos dashboard fot N node (task talos:dashboard)
@@ -63,6 +63,16 @@ tasks:
       - task: apply-config
         vars: {CLI_ARGS: "-m staged"}
       - talosctl reboot --nodes {{ .NODE }} --wait
+
+  generate-kubeconfig:
+    internal: true
+    desc: Generate Talos kubeconfig (task talos:generate-kubeconfig)
+    dir: provision/talos
+    cmds:
+      - cmd: talosctl --talosconfig=clusterconfig/talosconfig kubeconfig -f --nodes {{ .NODE }} $KUBECONFIG
+        ignore_error: true
+    status:
+      - test -f $KUBECONFIG
 
   generate:
     internal: true
