@@ -12,7 +12,8 @@
         "zricethezav/gitleaks",
         "Lucas-C/pre-commit-hooks",
         "adrienverge/yamllint",
-        "pre-commit/pre-commit-hooks"
+        "pre-commit/pre-commit-hooks",
+        "ansible/ansible-lint"
       ]
     }
   ]
