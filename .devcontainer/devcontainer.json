@@ -13,11 +13,14 @@
             "description": "Token to access terraform cloud."
         }
     },
+    "containerEnv": {
+        "SOPS_AGE_KEY": "${localEnv:SOPS_AGE_KEY}",
+        "TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}"
+    },
     "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
     "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
     "remoteUser": "vscode",
     "containerUser": "vscode",
-    "runArgs": ["--env-file","$(if \"$CODESPACES\" = \"true\"; then echo '.devcontainer/devcontainer.env.example'; else echo '.devcontainer/devcontainer.env'; fi;)"],
     "features": {
         "ghcr.io/devcontainers/features/go:1": {}
     },
