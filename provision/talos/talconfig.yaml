@@ -1,7 +1,7 @@
 clusterName: home
 # renovate: datasource=github-releases depName=siderolabs/talos
 talosVersion: v1.4.7
-# renovate: datasource=github-releases depName=kubernetes/kubernetes
+# renovate: datasource=github-releases depName=siderolabs/kubelet
 kubernetesVersion: v1.27.4
 endpoint: https://${clusterDomain}:6443
 cniConfig:
@@ -99,9 +99,9 @@ controlPlane:
           fs.inotify.max_user_instances: "8192"
         install:
           extensions:
-# renovate: datasource=docker
+            # renovate: datasource=docker
             - image: ghcr.io/siderolabs/i915-ucode:20230515
-# renovate: datasource=docker
+            # renovate: datasource=docker
             - image: ghcr.io/siderolabs/intel-ucode:20230512
     - |-
       - op: add
