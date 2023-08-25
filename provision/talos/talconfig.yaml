@@ -99,9 +99,9 @@ controlPlane:
           fs.inotify.max_user_instances: "8192"
         install:
           extensions:
-            # renovate: datasource=docker depName=ghcr.io/siderolabs/i915-ucode
+            # renovate-docker: datasource=docker versioning=docker depName=siderolabs/i915-ucode registryUrl=https://ghcr.io
             - image: ghcr.io/siderolabs/i915-ucode:20230515
-            # renovate: datasource=docker depName=ghcr.io/siderolabs/intel-ucode
+            # renovate-docker: datasource=docker versioning=docker depName=siderolabs/intel-ucode registryUrl=https://ghcr.io
             - image: ghcr.io/siderolabs/intel-ucode:20230512
     - |-
       - op: add
