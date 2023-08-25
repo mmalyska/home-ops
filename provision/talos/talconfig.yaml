@@ -102,7 +102,7 @@ controlPlane:
             # renovate-docker
             - image: ghcr.io/siderolabs/i915-ucode:20230515
             # renovate-docker
-            - image: ghcr.io/siderolabs/intel-ucode:20230512
+            - image: ghcr.io/siderolabs/intel-ucode:20230808
     - |-
       - op: add
         path: /cluster/controllerManager/extraArgs
