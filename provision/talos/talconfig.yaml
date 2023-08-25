@@ -100,7 +100,7 @@ controlPlane:
         install:
           extensions:
             # renovate-docker
-            - image: ghcr.io/siderolabs/i915-ucode:20230515
+            - image: ghcr.io/siderolabs/i915-ucode:20230804
             # renovate-docker
             - image: ghcr.io/siderolabs/intel-ucode:20230512
     - |-
