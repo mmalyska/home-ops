@@ -7,8 +7,6 @@ vars:
     sh: 'echo ${NODE:-192.168.48.{{ add .N 1 }}}'
   # renovate: datasource=github-releases depName=siderolabs/talos
   TALOS_VERSION: "v1.4.7"
-  # renovate: datasource=github-releases depName=budimanjojo/talhelper
-  TALHELPER_VERSION: "v1.9.3"
   # renovate: datasource=github-releases depName=siderolabs/kubelet
   KUBERNETES_VERSION: "v1.27.5"
 

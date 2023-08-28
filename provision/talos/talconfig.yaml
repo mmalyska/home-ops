@@ -98,6 +98,8 @@ controlPlane:
           fs.inotify.max_user_watches: "1048576"
           fs.inotify.max_user_instances: "8192"
         install:
+          extraKernelArgs:
+            - net.ifnames=0
           extensions:
             # renovate-docker
             - image: ghcr.io/siderolabs/i915-ucode:20230804
