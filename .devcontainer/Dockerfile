@@ -54,7 +54,7 @@ RUN echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc \
     && echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc
 
 # install Talos
-RUN curl -sL https://talos.dev/install | sed 's+/latest/+/${TALOS_CLI}/+g' | bash
+RUN curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/${TALOS_CLI}+g" | bash
 
 # install talhelper https://github.com/budimanjojo/talhelper
 RUN curl https://i.jpillora.com/budimanjojo/talhelper@${TALHELPER}\! | sudo bash
