@@ -63,7 +63,7 @@ jobs:
       helm_files: ${{ steps.unified.outputs.helm_files }}
       kustomize_files: ${{ steps.unified.outputs.kustomize_files }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -91,11 +91,11 @@ jobs:
             helm
             yq
           helm: "3.10.3"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
         with:
           path: pr
       - id: diff
@@ -176,11 +176,11 @@ jobs:
           setup-tools: |
             kubectl
             yq
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
         with:
           path: pr
       - id: diff
