@@ -9,7 +9,7 @@ global:
 server:
   enabled: true
   name: server
-  replicas: 1
+  replicas: 0
   podAnnotations: {}
   podLabels: {}
   nodeSelector: {}
