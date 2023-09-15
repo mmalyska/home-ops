@@ -105,7 +105,7 @@ tasks:
         vars: {TIMEOUT: 10m}
       - task: apply-config
         vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
-      - talosctl upgrade --nodes {{ .NODE }} --image ghcr.io/siderolabs/installer:{{ .TALOS_VERSION }}
+      - talosctl upgrade --nodes {{ .NODE }} --image ghcr.io/mmalyska/talos-installer:{{ .TALOS_VERSION }}
 
   wait_for_health:
     internal: true
