@@ -33,14 +33,14 @@ tasks:
     dir: provision/talos
     desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s)
     cmds:
-      - task: generate
+      - task: init
       - talosctl --nodes {{ .NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
 
   upgrade:all:
     desc: Upgrade all nodes to Talos version {{ .TALOS_VERSION }} (task talos:upgrade:all)
     dir: provision/talos
     cmds:
-      - task: generate
+      - task: init
       # control-plane
       - task: upgrade
         vars: {NODE: 192.168.48.2, N: 1}
