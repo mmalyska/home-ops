@@ -8,6 +8,5 @@ sudo git config --global pull.rebase true
 direnv allow
 
 task init
-task init-subtasks
 
 echo "Done!"
