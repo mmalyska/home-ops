@@ -5,7 +5,7 @@ vars:
   N: '{{ .N | default "1" }}'
   NODE:
     sh: 'echo ${NODE:-192.168.48.{{ add .N 1 }}}'
-  # renovate: datasource=github-releases depName=siderolabs/talos
+  # renovate: datasource=github-releases depName=mmalyska/talos-images
   TALOS_VERSION: "v1.4.7"
   # renovate: datasource=github-releases depName=siderolabs/kubelet
   KUBERNETES_VERSION: "v1.27.5"
