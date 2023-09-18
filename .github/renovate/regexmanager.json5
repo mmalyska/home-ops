@@ -3,7 +3,7 @@
     "regexManagers": [
         {
           "description": "Do a explicit gitea digest field match",
-          "fileMatch": ["cluster/apps/gitea/values.yaml"],
+          "fileMatch": ["cluster/apps/gitea/values\\.yaml"],
           "matchStrings": ["repository: gitea\\/gitea\\n.*?: (?<currentValue>[^@].*?)\\n.*?: (?<currentDigest>[a-f0-9]+)"],
           "depNameTemplate": "gitea/gitea",
           "datasourceTemplate": "docker"
