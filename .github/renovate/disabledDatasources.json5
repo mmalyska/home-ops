@@ -1,9 +1,16 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "packageRules": [
     {
       "description": "Disable kubernetes-api",
       "matchManagers": ["kubernetes"],
       "matchDatasources": ["kubernetes-api"],
+      "enabled": false
+    },
+    {
+      "description": "Disable gitea default manager",
+      "matchManagers": ["helm-values"],
+      "matchDepNames": ["gitea/gitea"],
       "enabled": false
     }
   ]
