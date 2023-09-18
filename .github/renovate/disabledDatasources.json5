@@ -10,7 +10,7 @@
     {
       "description": "Disable gitea default manager",
       "matchManagers": ["helm-values"],
-      "matchDepNames": ["gitea/gitea"],
+      "matchPackageNames": ["gitea/gitea"],
       "enabled": false
     }
   ]
