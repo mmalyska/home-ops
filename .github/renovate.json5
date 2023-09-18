@@ -10,7 +10,8 @@
     "local>mmalyska/home-ops//.github/renovate/autoMerge.json5",
     "local>mmalyska/home-ops//.github/renovate/disabledDatasources.json5",
     "local>mmalyska/home-ops//.github/renovate/groups.json5",
-    "local>mmalyska/home-ops//.github/renovate/managers.json5"
+    "local>mmalyska/home-ops//.github/renovate/managers.json5",
+    "local>mmalyska/home-ops//.github/renovate/regexmanager.json5"
   ],
   "platform": "github",
   "username": "bendo-bot[bot]",
