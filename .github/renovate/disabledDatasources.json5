@@ -6,11 +6,6 @@
       "matchManagers": ["kubernetes"],
       "matchDatasources": ["kubernetes-api"],
       "enabled": false
-    },
-    {
-      "description": "Disable gitea default manager",
-      "matchManagers": ["helm-values"],
-      "enabled": false
     }
   ]
 }
