@@ -41,6 +41,7 @@
     },
     {
       "description": "Talos stack",
+      "matchDatasources": ["docker", "github-releases"],
       "matchPackageNames": ["budimanjojo/talhelper", "ghcr.io/mmalyska/talos-installer", "mmalyska/talos-images"],
       "groupName": "talos",
       "group": { "commitMessageTopic": "{{{groupName}}} group" },
