@@ -10,7 +10,7 @@ factorio-server-charts:
   # https://hub.docker.com/r/factoriotools/factorio/
   image:
     repository: "factoriotools/factorio"
-    tag: 1.1.91@sha256:abd83c3b0fe9c2b5ee419c6c8af12088783d0bedf8216c5698b68dc99499c3c1
+    tag: 1.1.92@sha256:f0b41fe0ce4e51da79b2978d67dab7ba396bdcea5d9f2e8e85d017f1539c129c
     pullPolicy: IfNotPresent
 
   persistence:
