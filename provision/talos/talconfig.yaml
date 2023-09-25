@@ -1,6 +1,6 @@
 clusterName: home
 # renovate: datasource=github-releases depName=mmalyska/talos-images
-talosVersion: v1.5.2
+talosVersion: v1.5.3
 # renovate: datasource=github-releases depName=siderolabs/kubelet
 kubernetesVersion: v1.28.2
 endpoint: https://${clusterDomain}:6443
