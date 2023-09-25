@@ -1,7 +1,8 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "regexManagers": [
+    "customManagers": [
         {
+          "customType": "regex",
           "description": "Do a explicit gitea digest field match",
           "fileMatch": ["cluster/apps/gitea/values\\.yaml"],
           "matchStrings": ["(?<depName>gitea\\/gitea)\\n.*?tag: (?<currentValue>[^@].*?)\\n.*?digest: (?<currentDigest>sha256:[a-f0-9]+)"],
