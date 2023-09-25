@@ -38,6 +38,13 @@
       "groupName": "kubernetes",
       "group": { "commitMessageTopic": "{{{groupName}}} group" },
       "separateMinorPatch": true
+    },
+    {
+      "description": "Talos stack",
+      "matchPackageNames": ["budimanjojo/talhelper", "ghcr.io/mmalyska/talos-installer", "mmalyska/talos-images"],
+      "groupName": "talos",
+      "group": { "commitMessageTopic": "{{{groupName}}} group" },
+      "separateMinorPatch": true
     }
   ]
 }
