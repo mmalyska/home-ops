@@ -99,7 +99,7 @@ controlPlane:
           fs.inotify.max_user_instances: "8192"
         install:
           # renovate-docker
-          image: ghcr.io/mmalyska/talos-installer:v1.5.2
+          image: ghcr.io/mmalyska/talos-installer:v1.5.3
           extraKernelArgs:
             - net.ifnames=0
     - |-
