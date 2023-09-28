@@ -52,7 +52,7 @@ tasks:
         vars: {TIMEOUT: 10m}
 
   apply:restart:
-    desc: Apply Talos config to a specific node with reboot (task talos:apply N=1)
+    desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=1)
     dir: provision/talos
     cmds:
       - task: generate
@@ -61,6 +61,16 @@ tasks:
       - task: apply-config
         vars: {CLI_ARGS: "-m staged"}
       - talosctl reboot --nodes {{ .NODE }} --wait
+
+  apply:
+    desc: Apply Talos config to a specific node without reboot (task talos:apply N=1)
+    dir: provision/talos
+    cmds:
+      - task: generate
+      - task: wait_for_health
+        vars: {TIMEOUT: 10m}
+      - task: apply-config
+        vars: {CLI_ARGS: "-m auto"}
 
   generate-kubeconfig:
     internal: true
