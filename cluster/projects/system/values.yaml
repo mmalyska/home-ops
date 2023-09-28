@@ -145,3 +145,6 @@ app-of-apps:
     - name: volsync
       namespace: volsync
       path: volsync
+    - name: talos-backup
+      namespace: talos-backup
+      path: talos-backup
