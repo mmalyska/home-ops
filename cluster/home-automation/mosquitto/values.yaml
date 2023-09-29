@@ -1,10 +1,10 @@
 app-template:
   image:
     repository: public.ecr.aws/docker/library/eclipse-mosquitto
-    tag: 2.0.18@sha256:efc4b03371b6d67cc6f38515085ab02c64208413c3f1526839139b7b6f31334c
+    tag: 2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
   initContainers:
     copy-config:
-      image: public.ecr.aws/docker/library/eclipse-mosquitto:2.0.18@sha256:efc4b03371b6d67cc6f38515085ab02c64208413c3f1526839139b7b6f31334c
+      image: public.ecr.aws/docker/library/eclipse-mosquitto:2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
       command:
         - "/bin/sh"
         - -c
