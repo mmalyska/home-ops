@@ -8,6 +8,12 @@ app-template:
             repository: public.ecr.aws/docker/library/eclipse-mosquitto
             tag: 2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
             pullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 5m
+              memory: 10M
+            limits:
+              memory: 10M
       initContainers:
         copy-config:
           image:
@@ -58,9 +64,3 @@ app-template:
             - path: /mosquitto/external_config
           copy-config:
             - path: /data/external_config
-  resources:
-    requests:
-      cpu: 5m
-      memory: 10M
-    limits:
-      memory: 10M
