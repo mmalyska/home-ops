@@ -48,7 +48,7 @@ app-template:
       advancedMounts:
         main:
           copy-config:
-            - path: "-"
+            - path: /data/mosquitto_secret
     external-config:
       enabled: true
       type: emptyDir
@@ -57,7 +57,7 @@ app-template:
           main:
             - path: /mosquitto/external_config
           copy-config:
-            - path: /mosquitto/external_config
+            - path: /data/external_config
   resources:
     requests:
       cpu: 5m
