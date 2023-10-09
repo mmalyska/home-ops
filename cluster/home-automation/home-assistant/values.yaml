@@ -33,7 +33,7 @@ app-template:
   controllers:
     main:
       type: statefulset
-      strategy: Recreate
+      strategy: RollingUpdate
       containers:
         main:
           image:
