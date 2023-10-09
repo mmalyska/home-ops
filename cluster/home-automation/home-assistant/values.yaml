@@ -25,7 +25,7 @@ postgres:
         backupOwnerReference: self
 app-template:
   defaultPodOptions:
-    podSecurityContext:
+    securityContext:
       runAsUser: 568
       runAsGroup: 568
       fsGroup: 568
@@ -55,6 +55,20 @@ app-template:
               memory: 100Mi
             limits:
               memory: 750Mi
+    addons:
+      containers:
+        codeserver:
+          image:
+            repository: ghcr.io/coder/code-server
+            tag: 4.17.0@sha256:91e69df0c11fd91f8e37c8f875630b19e212e9b49f1ffa195d3faccccfd1bc79
+          workingDir: "/config"
+          args:
+            - --auth
+            - "none"
+            - --user-data-dir
+            - "/config/.vscode"
+            - --extensions-dir
+            - "/config/.vscode"
   service:
     main:
       ports:
@@ -73,31 +87,17 @@ app-template:
       tls:
         - hosts:
             - *host
+    addons:
+      enabled: true
+      ingressClassName: "traefik"
+      hosts:
+        - host: "dom-code.<secret:private-domain>"
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                name: codeserver
+                port: http
   persistence:
     config:
       existingClaim: home-assistant-config
-  addons:
-    codeserver:
-      enabled: true
-      image:
-        repository: ghcr.io/coder/code-server
-        tag: 4.17.0@sha256:91e69df0c11fd91f8e37c8f875630b19e212e9b49f1ffa195d3faccccfd1bc79
-      workingDir: "/config"
-      args:
-        - --auth
-        - "none"
-        - --user-data-dir
-        - "/config/.vscode"
-        - --extensions-dir
-        - "/config/.vscode"
-      ingress:
-        enabled: true
-        ingressClassName: "traefik"
-        hosts:
-          - host: "dom-code.<secret:private-domain>"
-            paths:
-              - path: /
-                pathType: Prefix
-      volumeMounts:
-        - name: config
-          mountPath: /config
