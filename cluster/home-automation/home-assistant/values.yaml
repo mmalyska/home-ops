@@ -24,52 +24,57 @@ postgres:
         schedule: "52 0 0 * * *"
         backupOwnerReference: self
 app-template:
-  controller:
-    type: statefulset
-  image:
-    repository: ghcr.io/home-assistant/home-assistant
-    tag: 2023.9.3@sha256:067490d7b65cfa8b9e494a9447b0e5a7876be83ead7ec01738681c55d66e7cfe
-  envFrom:
-    - secretRef:
-        name: home-assistant-secret
+  defaultPodOptions:
+    podSecurityContext:
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
+      fsGroupChangePolicy: "OnRootMismatch"
+  controllers:
+    main:
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: ghcr.io/home-assistant/home-assistant
+            tag: 2023.9.3@sha256:067490d7b65cfa8b9e494a9447b0e5a7876be83ead7ec01738681c55d66e7cfe
+          envFrom:
+            - secretRef:
+                name: home-assistant-secret
+          probes:
+            liveness:
+              enabled: true
+            readiness:
+              enabled: true
+            startup:
+              enabled: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 100Mi
+            limits:
+              memory: 750Mi
   service:
     main:
       ports:
         http:
           port: 8123
-  probes:
-    liveness:
-      enabled: true
-    readiness:
-      enabled: true
-    startup:
-      enabled: true
   ingress:
     main:
-      enabled: true
-      ingressClassName: "traefik"
+      className: "traefik"
       hosts:
         - host: &host "dom.<secret:private-domain>"
           paths:
             - path: /
+              service:
+                name: main
+                port: http
       tls:
         - hosts:
             - *host
   persistence:
     config:
-      enabled: true
       existingClaim: home-assistant-config
-  podSecurityContext:
-    runAsUser: 568
-    runAsGroup: 568
-    fsGroup: 568
-    fsGroupChangePolicy: "OnRootMismatch"
-  resources:
-    requests:
-      cpu: 10m
-      memory: 100Mi
-    limits:
-      memory: 750Mi
   addons:
     codeserver:
       enabled: true
