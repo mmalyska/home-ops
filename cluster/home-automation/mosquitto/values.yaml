@@ -19,11 +19,6 @@ app-template:
             - -c
           args:
             - cp /data/mosquitto_secret/* /data/external_config/ && mosquitto_passwd -U /data/external_config/mosquitto_pwd
-          volumeMounts:
-            - name: mosquitto-secret
-              mountPath: /data/mosquitto_secret
-            - name: external-config
-              mountPath: /data/external_config
   service:
     main:
       type: LoadBalancer
