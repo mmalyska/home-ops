@@ -32,6 +32,7 @@ app-template:
       fsGroupChangePolicy: "OnRootMismatch"
   controllers:
     main:
+      type: statefulset
       strategy: Recreate
       containers:
         main:
