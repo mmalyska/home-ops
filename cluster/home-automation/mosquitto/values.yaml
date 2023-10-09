@@ -64,7 +64,3 @@ app-template:
       memory: 10M
     limits:
       memory: 10M
-  volumeClaimTemplates:
-    - name: data
-      mountPath: /data
-      size: 512Mi
