@@ -74,8 +74,14 @@ app-template:
       ports:
         http:
           port: 8123
+    codeserver:
+      controller: addons
+      ports:
+        http:
+          port: 12321
   ingress:
     main:
+      enabled: true
       className: "traefik"
       hosts:
         - host: &host "dom.<secret:private-domain>"
@@ -89,7 +95,7 @@ app-template:
             - *host
     addons:
       enabled: true
-      ingressClassName: "traefik"
+      className: "traefik"
       hosts:
         - host: "dom-code.<secret:private-domain>"
           paths:
