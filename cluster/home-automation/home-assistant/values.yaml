@@ -106,4 +106,5 @@ app-template:
                 port: http
   persistence:
     config:
+      enabled: true
       existingClaim: home-assistant-config
