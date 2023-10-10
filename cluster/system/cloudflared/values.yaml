@@ -76,7 +76,7 @@ app-template:
     main:
       enabled: true
       endpoints:
-        - port: 8080
+        - port: http
           scheme: http
           path: /metrics
           interval: 1m
