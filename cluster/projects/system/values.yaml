@@ -17,7 +17,6 @@ app-of-apps:
     - name: cloudflared
       namespace: cloudflared
       path: cloudflared
-      selfHeal: false
     - name: cloudnative-pg
       namespace: cnpg
       path: cloudnative-pg
