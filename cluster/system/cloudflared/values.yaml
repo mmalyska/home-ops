@@ -1,23 +1,72 @@
 app-template:
-  controller:
-    replicas: 2
-    strategy: RollingUpdate
-  image:
-    repository: docker.io/cloudflare/cloudflared
-    tag: 2023.8.2@sha256:93561dfa0032006354be56476f09e3d8743d53d202368672c2847c1631f7be50
-  env:
-    TUNNEL_LOGLEVEL: debug
-    NO_AUTOUPDATE: "true"
-    TUNNEL_METRICS: 0.0.0.0:8080
-    TUNNEL_TRANSPORT_PROTOCOL: auto
-    TUNNEL_TOKEN:
-      valueFrom:
-        secretKeyRef:
-          name: cloudflared-secret
-          key: token
-  args:
-    - tunnel
-    - run
+  defaultPodOptions:
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: cloudflared
+  controllers:
+    main:
+      replicas: 2
+      strategy: RollingUpdate
+      containers:
+        main:
+          image:
+            repository: docker.io/cloudflare/cloudflared
+            tag: 2023.8.2@sha256:93561dfa0032006354be56476f09e3d8743d53d202368672c2847c1631f7be50
+          env:
+            TUNNEL_LOGLEVEL: debug
+            NO_AUTOUPDATE: "true"
+            TUNNEL_METRICS: 0.0.0.0:8080
+            TUNNEL_TRANSPORT_PROTOCOL: auto
+            TUNNEL_TOKEN:
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-secret
+                  key: token
+          args:
+            - tunnel
+            - run
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ready
+                  port: http
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                timeoutSeconds: 1
+                failureThreshold: 3
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ready
+                  port: http
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                timeoutSeconds: 1
+                failureThreshold: 3
+            startup:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ready
+                  port: http
+                failureThreshold: 30
+                periodSeconds: 10
+          resources:
+            requests:
+              cpu: 6m
+              memory: 105Mi
+            limits:
+              memory: 105Mi
   service:
     main:
       ports:
@@ -32,48 +81,3 @@ app-template:
           path: /metrics
           interval: 1m
           scrapeTimeout: 30s
-  probes:
-    liveness:
-      enabled: true
-      custom: true
-      spec:
-        httpGet:
-          path: /ready
-          port: http
-        initialDelaySeconds: 0
-        periodSeconds: 10
-        timeoutSeconds: 1
-        failureThreshold: 3
-    readiness:
-      enabled: true
-      custom: true
-      spec:
-        httpGet:
-          path: /ready
-          port: http
-        initialDelaySeconds: 0
-        periodSeconds: 10
-        timeoutSeconds: 1
-        failureThreshold: 3
-    startup:
-      enabled: true
-      custom: true
-      spec:
-        httpGet:
-          path: /ready
-          port: http
-        failureThreshold: 30
-        periodSeconds: 10
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: DoNotSchedule
-      labelSelector:
-        matchLabels:
-          app.kubernetes.io/name: cloudflared
-  resources:
-    requests:
-      cpu: 6m
-      memory: 105Mi
-    limits:
-      memory: 105Mi

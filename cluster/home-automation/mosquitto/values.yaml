@@ -1,20 +1,30 @@
 app-template:
-  image:
-    repository: public.ecr.aws/docker/library/eclipse-mosquitto
-    tag: 2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
-  initContainers:
-    copy-config:
-      image: public.ecr.aws/docker/library/eclipse-mosquitto:2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
-      command:
-        - "/bin/sh"
-        - -c
-      args:
-        - cp /data/mosquitto_secret/* /data/external_config/ && mosquitto_passwd -U /data/external_config/mosquitto_pwd
-      volumeMounts:
-        - name: mosquitto-secret
-          mountPath: /data/mosquitto_secret
-        - name: external-config
-          mountPath: /data/external_config
+  controllers:
+    main:
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: public.ecr.aws/docker/library/eclipse-mosquitto
+            tag: 2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
+            pullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 5m
+              memory: 10M
+            limits:
+              memory: 10M
+      initContainers:
+        copy-config:
+          image:
+            repository: public.ecr.aws/docker/library/eclipse-mosquitto
+            tag: 2.0.18@sha256:ddf2025790f12e23cf8750c1d2188a9511641d7676e7c70350e105c79fe1bef7
+            pullPolicy: IfNotPresent
+          command:
+            - "/bin/sh"
+            - -c
+          args:
+            - cp /data/mosquitto_secret/* /data/external_config/ && mosquitto_passwd -U /data/external_config/mosquitto_pwd
   service:
     main:
       type: LoadBalancer
@@ -32,24 +42,25 @@ app-template:
       enabled: true
       type: configMap
       name: mosquitto-configmap
-      mountPath: /mosquitto/config/mosquitto.conf
-      subPath: mosquitto.conf
+      advancedMounts:
+        main:
+          main:
+            - path: /mosquitto/config/mosquitto.conf
+              subPath: mosquitto.conf
     mosquitto-secret:
       enabled: true
       type: secret
       name: mosquitto-secret
-      mountPath: "-"
+      advancedMounts:
+        main:
+          copy-config:
+            - path: /data/mosquitto_secret
     external-config:
       enabled: true
       type: emptyDir
-      mountPath: /mosquitto/external_config
-  resources:
-    requests:
-      cpu: 5m
-      memory: 10M
-    limits:
-      memory: 10M
-  volumeClaimTemplates:
-    - name: data
-      mountPath: /data
-      size: 512Mi
+      advancedMounts:
+        main:
+          main:
+            - path: /mosquitto/external_config
+          copy-config:
+            - path: /data/external_config
