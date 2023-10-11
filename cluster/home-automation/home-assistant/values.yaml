@@ -78,7 +78,7 @@ app-template:
       controller: addons
       ports:
         http:
-          port: 12321
+          port: 8080
   ingress:
     main:
       enabled: true
