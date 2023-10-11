@@ -62,5 +62,5 @@ tasks:
     cmds:
       - task: precommit:init
       - task: ansible:init
-      - task: terraform:init:cloudflare
+      - task: terraform:upgrade:cloudflare
       - task: talos:init
