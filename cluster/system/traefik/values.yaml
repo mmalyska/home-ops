@@ -2,7 +2,8 @@
 traefik:
   ports:
     web:
-      redirectTo: websecure
+      redirectTo:
+        port: websecure
 
   # Options for the main traefik service, where the entrypoints traffic comes
   # from.
