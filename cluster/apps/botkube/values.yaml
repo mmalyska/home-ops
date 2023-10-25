@@ -1,5 +1,19 @@
 botkube:
-  existingCommunicationsSecretName: botkube-secret
+  communications:
+    'default-group':
+      discord:
+        enabled: true
+        botID: <secret:discord_botid>
+        token: <secret:discord_token>
+        channels:
+          'default':
+            id: <secret:discord_channel>
+            bindings:
+              executors:
+                - k8s-default-tools
+              sources:
+                - k8s-err-events
+                - k8s-recommendation-events
   settings:
     clusterName: k8s-at-home
   analytics:
