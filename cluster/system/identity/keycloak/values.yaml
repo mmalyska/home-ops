@@ -39,7 +39,7 @@ server:
   image:
     imagePullPolicy: IfNotPresent
     repository: quay.io/keycloak/keycloak
-    tag: "22.0.4@sha256:20c2bd474f20a3f89b7c652b9c4e5a54701301beddcee7deb00ec88d73cbbab5"
+    tag: "22.0.5@sha256:bfa8852e52c279f0857fe8da239c0ad6bbd2cc07793a28a6770f7e24c1e25444"
   service:
     type: ClusterIP
     servicePortHttpName: http
