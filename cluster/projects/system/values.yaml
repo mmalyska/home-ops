@@ -119,6 +119,16 @@ app-of-apps:
     - name: snapshot-controller
       namespace: snapshot-controller
       path: snapshot-controller
+      ignoreDifferences:
+        - group: "admissionregistration.k8s.io"
+          kind: ValidatingWebhookConfiguration
+          name: snapshot-validation-webhook
+          jsonPointers:
+            - /webhooks/0/clientConfig/caBundle
+        - kind: Secret
+          name: snapshot-validation-webhook-tls
+          jsonPointers:
+            - /data
     # - name: snapshot-validation-webhook
     #   namespace: snapshot-validation-webhook
     #   path: snapshot-validation-webhook
