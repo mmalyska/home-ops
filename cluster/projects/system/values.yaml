@@ -123,8 +123,8 @@ app-of-apps:
         - group: "admissionregistration.k8s.io"
           kind: ValidatingWebhookConfiguration
           name: snapshot-validation-webhook
-          jsonPointers:
-            - /webhooks/0/clientConfig/caBundle
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle
         - kind: Secret
           name: snapshot-validation-webhook-tls
           jsonPointers:
