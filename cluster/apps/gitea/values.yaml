@@ -26,6 +26,9 @@ gitea:
         HTTP_PORT: 3000
         ROOT_URL: https://git.<secret:private-domain>/
         LFS_START_SERVER: true
+        SSH_PORT: 22
+        SSH_LISTEN_PORT: 8254
+        START_SSH_SERVER: false
       database:
         DB_TYPE: postgres
         HOST: giteadb-cnpg-rw
