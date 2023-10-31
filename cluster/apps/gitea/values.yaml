@@ -13,6 +13,8 @@ gitea:
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
   podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
     fsGroup: 1000
   gitea:
     config:
