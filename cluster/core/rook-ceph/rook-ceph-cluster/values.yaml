@@ -12,6 +12,16 @@ rook-ceph-cluster:
     rulesNamespaceOverride: monitoring
   toolbox:
     enabled: true
+  ingress:
+    ingressClassName: "internal-nginx"
+    dashboard:
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/ingressEndpoint.hostname: &host rook.<secret:private-domain>
+      host:
+        name: *host
+        path: "/"
   cephClusterSpec:
     resources:
       mgr:
@@ -74,6 +84,7 @@ rook-ceph-cluster:
     dashboard:
       enabled: true
       ssl: false
+      urlPrefix: /
   cephBlockPools:
     - name: ceph-blockpool
       spec:
