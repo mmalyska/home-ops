@@ -9,7 +9,7 @@ vars:
   TERRAFORM_DIR: "{{.PROJECT_DIR}}/provision/terraform"
 
 env:
-  KUBECONFIG: "$HOME/.kube/config"
+  KUBECONFIG: "/home/vscode/.kube/config"
 
 includes:
   ansible: .taskfiles/ansible.yml
