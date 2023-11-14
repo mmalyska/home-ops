@@ -21,7 +21,7 @@ oauth2-proxy:
       set_authorization_header = true
   metrics:
     enabled: true
-    servicemonitor:
+    serviceMonitor:
       enabled: true
       namespace: monitoring
   ingress:
