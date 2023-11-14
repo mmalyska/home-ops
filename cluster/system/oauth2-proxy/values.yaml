@@ -20,7 +20,8 @@ oauth2-proxy:
       skip_provider_button = true
       set_authorization_header = true
   metrics:
-    servicemonitor:
+    enabled: true
+    serviceMonitor:
       enabled: true
       namespace: monitoring
   ingress:
