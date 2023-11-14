@@ -51,5 +51,6 @@ repos:
             --project-dir=./provision/ansible,
             -c=./.github/linters/.ansible-lint,
             --exclude=*.sops.*,
+            --exclude=./.github,
             ./provision/ansible
           ]
