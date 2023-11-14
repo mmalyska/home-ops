@@ -53,10 +53,10 @@ jobs:
                 ','
               )
             }}
-          ANSIBLE_DIRECTORY: provision/ansible
+          ANSIBLE_DIRECTORY: ./provision/ansible
           ANSIBLE_ANSIBLE_LINT_CONFIG_FILE: .github/linters/.ansible-lint
           ANSIBLE_ANSIBLE_LINT_PRE_COMMANDS: '[{"command":"ansible-galaxy collection install -r provision/ansible/requirements.yml --collections-path ~/.ansible/collections --force","continue_if_failed":false,"cwd":"workspace"}]'
-          ANSIBLE_ANSIBLE_LINT_ARGUMENTS: --project-dir provision/ansible --exclude=*.sops.* --exclude=.github
+          ANSIBLE_ANSIBLE_LINT_ARGUMENTS: --project-dir=./provision/ansible --exclude=*.sops.*
           KUBERNETES_DIRECTORY: cluster
           KUBERNETES_KUBEVAL_ARGUMENTS: --ignore-missing-schemas
           KUBERNETES_KUBEVAL_FILTER_REGEX_INCLUDE: "(kubernetes)"
