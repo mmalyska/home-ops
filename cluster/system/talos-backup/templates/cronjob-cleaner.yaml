@@ -34,15 +34,5 @@ spec:
                   value: "k8s-etcd"
                 - name: S3_PREFIX
                   value: "talos"
-              securityContext:
-                runAsUser: 1000
-                runAsGroup: 1000
-                allowPrivilegeEscalation: false
-                runAsNonRoot: true
-                capabilities:
-                  drop:
-                    - ALL
-                seccompProfile:
-                  type: RuntimeDefault
           restartPolicy: OnFailure
 ---
