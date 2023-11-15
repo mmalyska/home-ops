@@ -34,5 +34,7 @@ spec:
                   value: "k8s-etcd"
                 - name: S3_PREFIX
                   value: "talos"
+                - name: OLDER_THAN
+                  value: "7 days ago"
           restartPolicy: OnFailure
 ---
