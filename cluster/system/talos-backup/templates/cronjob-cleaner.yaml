@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: talos-backup-cleaner
+spec:
+  schedule: "0 12 * * sun"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: talos-backup-cleaner
+              image: ghcr.io/mmalyska/s3-bucket-cleaner:2.13.35
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: talos-backup-doppler
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: talos-backup-doppler
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: AWS_REGION
+                  value: us-west-2
+                - name: AWS_ENDPOINT_URL_S3
+                  valueFrom:
+                    secretKeyRef:
+                      name: talos-backup-doppler
+                      key: CUSTOM_S3_ENDPOINT
+                - name: BUCKET
+                  value: "k8s-etcd"
+                - name: S3_PREFIX
+                  value: "talos"
+          restartPolicy: OnFailure
+---
