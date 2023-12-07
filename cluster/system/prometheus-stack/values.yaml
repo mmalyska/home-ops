@@ -66,6 +66,10 @@ kube-prometheus-stack:
           token: ''
         cncf:
           url: https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/docs/src/samples/monitoring/grafana-dashboard.json
+          token: ''
+        argocd:
+          url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
+          token: ''
   alertmanager:
     config:
       global:
