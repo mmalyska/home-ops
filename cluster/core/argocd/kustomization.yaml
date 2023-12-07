@@ -13,6 +13,7 @@ resources:
   - resources/app-of-apps.yaml
   - resources/repository.yaml
   - resources/sops-replacer-plugin.yaml
+  - resources/metrics.yaml
 
 # changes to config maps
 patchesStrategicMerge:
