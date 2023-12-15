@@ -6,6 +6,6 @@ metadata:
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
   # renovate-raw: datasource=github-releases depName=cert-manager/cert-manager
-  - https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+  - https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
   - resources/secret.yaml
   - resources/lets-encrypt-dns01-cf.yaml
