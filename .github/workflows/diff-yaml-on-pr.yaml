@@ -138,7 +138,7 @@ jobs:
             echo "$message" > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
         with:
           name: helm_diff_files
@@ -219,7 +219,7 @@ jobs:
             echo "$message" > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
         with:
           name: kustomize_diff_files
