@@ -10,6 +10,7 @@ app-of-apps:
     - name: botkube
       namespace: botkube
       path: botkube
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -17,6 +18,7 @@ app-of-apps:
     - name: calibre
       namespace: calibre
       path: calibre
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -31,14 +33,15 @@ app-of-apps:
     - name: gitea
       namespace: gitea
       path: gitea
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-      # selfHeal: false
     - name: grocy
       namespace: grocy
       path: grocy
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -46,6 +49,7 @@ app-of-apps:
     - name: hass-proxy
       namespace: hass-proxy
       path: hass
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -53,6 +57,7 @@ app-of-apps:
     - name: minecraft-bedrock
       namespace: minecraft
       path: minecraft/bedrock
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -60,6 +65,7 @@ app-of-apps:
     - name: nfs-mounts
       namespace: nfs-mounts
       path: nfs-mounts
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -67,6 +73,7 @@ app-of-apps:
     - name: qnap-proxy
       namespace: qnap-proxy
       path: qnap-proxy
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -74,6 +81,7 @@ app-of-apps:
     - name: jellyfin
       namespace: jellyfin
       path: jellyfin
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -81,6 +89,7 @@ app-of-apps:
     - name: factorio
       namespace: factorio
       path: factorio
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -88,6 +97,7 @@ app-of-apps:
     - name: valheim
       namespace: valheim
       path: valheim
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -95,6 +105,7 @@ app-of-apps:
     - name: homepage
       namespace: homepage
       path: gethomepage
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -102,3 +113,4 @@ app-of-apps:
     - name: httpbin
       namespace: httpbin
       path: httpbin
+      selfHeal: true

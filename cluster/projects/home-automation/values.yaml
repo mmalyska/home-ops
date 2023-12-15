@@ -10,12 +10,15 @@ app-of-apps:
     - name: mosquitto
       namespace: ha-mosquitto
       path: mosquitto
+      selfHeal: true
     - name: vernemq
       namespace: ha-vernemq
       path: vernemq
+      selfHeal: true
     - name: home-assistant
       namespace: ha-home-assistant
       path: home-assistant
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE

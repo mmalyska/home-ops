@@ -10,6 +10,7 @@ app-of-apps:
     - name: cert-manager
       namespace: cert-manager
       path: cert-manager
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -17,12 +18,15 @@ app-of-apps:
     - name: cloudflared
       namespace: cloudflared
       path: cloudflared
+      selfHeal: true
     - name: cloudnative-pg
       namespace: cnpg
       path: cloudnative-pg
+      selfHeal: true
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
       path: dashboard
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -37,6 +41,7 @@ app-of-apps:
     - name: dyndns
       namespace: dyndns
       path: dyndns
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -44,6 +49,7 @@ app-of-apps:
     - name: keycloak
       namespace: identity
       path: identity/keycloak
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -54,6 +60,7 @@ app-of-apps:
     - name: nfs-subdir-external-provisioner
       namespace: nfs-subdir-provisioner
       path: nfs-subdir-external-provisioner
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -61,6 +68,7 @@ app-of-apps:
     - name: oauth2-proxy
       namespace: oauth2-proxy
       path: oauth2-proxy
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -68,6 +76,7 @@ app-of-apps:
     - name: prometheus-stack
       namespace: monitoring
       path: prometheus-stack
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -80,6 +89,7 @@ app-of-apps:
     - name: traefik
       namespace: traefik
       path: traefik
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -87,6 +97,7 @@ app-of-apps:
     - name: node-feature-discovery
       namespace: node-feature-discovery
       path: node-feature-discovery
+      selfHeal: true
       extraSyncOptions:
         - RespectIgnoreDifferences=true
       ignoreDifferences:
@@ -100,12 +111,14 @@ app-of-apps:
     - name: intel-device-plugins-operator
       namespace: intel-device-plugins-operator
       path: intel-device-plugins-operator
+      selfHeal: true
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
     - name: intel-gpu-plugin
       namespace: intel-gpu-plugin
       path: intel-gpu-plugin
+      selfHeal: true
       extraSyncOptions:
         - RespectIgnoreDifferences=true
       ignoreDifferences:
@@ -119,6 +132,7 @@ app-of-apps:
     - name: snapshot-controller
       namespace: snapshot-controller
       path: snapshot-controller
+      selfHeal: true
       ignoreDifferences:
         - group: "admissionregistration.k8s.io"
           kind: ValidatingWebhookConfiguration
@@ -132,6 +146,7 @@ app-of-apps:
     - name: external-secrets
       namespace: external-secrets
       path: external-secrets
+      selfHeal: true
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -139,9 +154,12 @@ app-of-apps:
     - name: kubelet-csr-approver
       namespace: kube-system
       path: kubelet-csr-approver
+      selfHeal: true
     - name: volsync
       namespace: volsync
       path: volsync
+      selfHeal: true
     - name: talos-backup
       namespace: talos-backup
       path: talos-backup
+      selfHeal: true
