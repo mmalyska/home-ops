@@ -61,7 +61,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: metrics-proxy
-        image: haproxy:2.9-alpine@sha256:6e9e836c69942c6f4e20ee4b9e1ca504286dbd3dd15f5426cd9c8b6bcf8a2af1
+        image: haproxy:2.9-alpine@sha256:9f45869acfc299b100aa6a3bc17d8b71c5e705d96500a17bedcc68c73b3fff7d
         resources:
           limits:
             memory: 200Mi
