@@ -48,7 +48,7 @@ jobs:
       - name: Build site (_site directory name is used for Jekyll compatiblity)
         run: mkdocs build --config-file .github/mkdocs/mkdocs.yml --site-dir ./../../site
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./site
 
