@@ -10,7 +10,7 @@ spec:
         spec:
           containers:
             - name: talos-backup-cleaner
-              image: ghcr.io/mmalyska/s3-bucket-cleaner:2.15.3@sha256:8af61697d57221ed334205f78166ec4a93adf78a7e0ce23476f7099647dde16d
+              image: ghcr.io/mmalyska/s3-bucket-cleaner:2.15.6@sha256:71194c92c2addd7087e5b2b38f5d9f101a808e4fcbce55c869c8d57dd01881de
               imagePullPolicy: IfNotPresent
               env:
                 - name: AWS_ACCESS_KEY_ID
