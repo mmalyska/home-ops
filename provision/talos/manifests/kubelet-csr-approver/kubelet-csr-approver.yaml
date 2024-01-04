@@ -173,27 +173,3 @@ spec:
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
           operator: Equal
----
-# Source: kubelet-csr-approver-subchart/charts/kubelet-csr-approver/templates/tests/test-connection.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: "kubelet-csr-approver-test-connection"
-  labels:
-    helm.sh/chart: kubelet-csr-approver-1.0.4
-    app.kubernetes.io/name: kubelet-csr-approver
-    app.kubernetes.io/instance: kubelet-csr-approver
-    app.kubernetes.io/version: "v1.0.4"
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    "helm.sh/hook": test
-spec:
-  containers:
-    - name: wget
-      image: busybox
-      command:
-        - /bin/sh
-        - -c
-        - |
-          sleep 10 ; wget -O- -S kubelet-csr-approver:8080/metrics
-  restartPolicy: Never
