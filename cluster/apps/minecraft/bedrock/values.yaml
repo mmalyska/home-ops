@@ -32,7 +32,7 @@ minecraft-bedrock:
     whitelistUsers: <secret:whitelistUsers>
 map:
   enabled: false
-  image: nginx:1.25.3@sha256:ae32a851aff27484a6b5fd3ed91b96e8ff37d17de473ca535af962bf2c2f3aec
+  image: nginx:1.25.3@sha256:0840ed62883c6beab5a730b19ab086f7c1a153d5c6e7c5382b8413d837a0ee4d
   ingress:
     host: mc-bedrock.<secret:private-domain>
     annotations:
