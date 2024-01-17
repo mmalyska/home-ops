@@ -8,8 +8,8 @@ name: gitea
 gitea:
   image:
     repository: gitea/gitea
-    tag: 1.21.3
-    digest: sha256:a5bb316b224a9887756f5762488a6efe4065cf9cdbdf2c6d059f6cb1b6a0ce8a
+    tag: 1.21.4
+    digest: sha256:63220de04217fdda2b2025b9b5000dec5995c77a32cbde0fe4962d6f2bad921a
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
   podSecurityContext:
