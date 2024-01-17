@@ -2,7 +2,7 @@ o: o
 plex:
   image:
     repository: plexinc/pms-docker
-    tag: 1.25.6.5577-c8bd13540
+    tag: 1.25.6.5577-c8bd13540@sha256:0dfeef69da390c0b2b548a326939e6f716479c9f86d6623612793b170dbf5066
     pullPolicy: IfNotPresent
   env:
     TZ: CET

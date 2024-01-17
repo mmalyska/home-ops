@@ -21,7 +21,7 @@ server:
   image:
     imagePullPolicy: IfNotPresent
     repository: thomseddon/traefik-forward-auth
-    tag: "2.2.0"
+    tag: "2.2.0@sha256:e875194d67e21c077f3de0b9d315bb3023a226f2cac81ddd9d02a4250ed89b4b"
   service:
     type: ClusterIP
     servicePortHttpName: http
