@@ -17,7 +17,7 @@ server:
   resources: {}
   image:
     repository: lloesche/valheim-server
-    tag: latest@sha256:4e89eba8d2135ab5924ea65f551a06966a7cf34ea90e2e7434ecad6c0a21e2c0
+    tag: latest@sha256:22f312971c0f51244d5ed93d09604ad43422ec36ebb29b2c270c546b20c5189b
     imagePullPolicy: IfNotPresent
   browserName: Jaskinia
   worldName: Privoland
