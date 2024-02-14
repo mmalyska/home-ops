@@ -4,36 +4,38 @@ Deploying a cluster with [Talos](https://www.talos.dev) and [Terraform](https://
 
 ## Overview
 
-- [Components](https://github.com/mmalyska/home-ops#-components)
+- [Core components](https://github.com/mmalyska/home-ops#-components)
 - [Setup](https://github.com/mmalyska/home-ops#-setup)
 - [Repository structure](https://github.com/mmalyska/home-ops#-repository-structure)
 - [Deployment](https://github.com/mmalyska/home-ops#-deployment)
 - [Post installation](https://github.com/mmalyska/home-ops#-post-installation)
 
-## 🧱 Components
+## 🧱 Core components
+
+
+### 🚚 Provisioning
+For provisioning the following tools are used:
+
+- [Talos](https://www.talos.dev) - this is used to provision all nodes within cluster with uniform system and configuration as gitops
+- [Terraform](https://www.terraform.io) - in order to help with the DNS settings this is used to provision an already existing Cloudflare domain and DNS settings
+
+### 📦 Kubernetes
 
 - [cert-manager](https://cert-manager.io/) - SSL certificates - with Cloudflare DNS challenge
 - [flannel](https://github.com/flannel-io/flannel) - CNI (container network interface)
 - [ArgoCD](https://argo-cd.readthedocs.io/) - GitOps tool for deploying manifests from the `cluster` directory
-- [hajimari](https://github.com/toboshii/hajimari) - start page with ingress discovery
-- [rook.io](https://rook.io/) - ceph storage class for k8s
+- [rook.io](https://rook.io/) - ceph storage for k8s
 - [nfs](https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/) - used for cold storage on QNAP
 - [metallb](https://metallb.universe.tf/) - bare metal load balancer
 - [traefik](https://traefik.io) - ingress controller
-
-For provisioning the following tools are used:
-
-- [Ubuntu](https://ubuntu.com/download/server) - this is a pretty universal operating system that supports running all kinds of home related workloads in Kubernetes
-- [Talos](https://www.talos.dev) - this is used to provision all nodes within cluster with uniform system and configuration as gitops
-- [Terraform](https://www.terraform.io) - in order to help with the DNS settings this is used to provision an already existing Cloudflare domain and DNS settings
 
 ## 📝 Setup
 
 ### 💻 Systems
 
-- Nodes running [Ubuntu Server 20.04](https://ubuntu.com/download/server). These nodes are bare metals.
+- Nodes running [Talos](https://www.talos.dev). These nodes are bare metals.
 - A [Cloudflare](https://www.cloudflare.com/) account with a domain, this will be managed by Terraform.
-- QNAP used as NFS, S3 and Backup storage.
+- QNAP used as NFS and S3 storage.
 
 ### 🧠 Devcontainer
 
@@ -54,7 +56,8 @@ For fast setup I use devcontainer to have same environment across different devi
      [sops](https://github.com/mozilla/sops),
      [terraform](https://www.terraform.io),
      [yq](https://github.com/mikefarah/yq),
-     [argocd CLI](https://github.com/argoproj/argo-cd)
+     [argocd CLI](https://github.com/argoproj/argo-cd),
+     [mkdocs](https://www.mkdocs.org/)
 
    - Recommended:
      [direnv](https://github.com/direnv/direnv),
@@ -62,7 +65,12 @@ For fast setup I use devcontainer to have same environment across different devi
      [kustomize](https://github.com/kubernetes-sigs/kustomize),
      [prettier](https://github.com/prettier/prettier),
      [stern](https://github.com/stern/stern),
-     [yamllint](https://github.com/adrienverge/yamllint)
+     [yamllint](https://github.com/adrienverge/yamllint),
+     [gitleaks](https://github.com/gitleaks/gitleaks),
+     [argocd](https://argoproj.github.io/cd/),
+     [kubelogin](https://github.com/int128/kubelogin),
+     [ansible-lint](https://ansible.readthedocs.io/projects/lint/),
+     [k9s](https://k9scli.io/)
 
 2. This guide heavily relies on [go-task](https://github.com/go-task/task) as a framework for setting things up. It is advised to learn and understand the commands it is running under the hood.
 
@@ -99,21 +107,14 @@ It is advisable to install [pre-commit](https://pre-commit.com/) and the pre-com
 
 The Git repository contains the following directories under `cluster` and are ordered below by how Argo CD will apply them.
 
-- **core** main folder for argocd deployment and cluster management. In **projects** folder there are all deployed applications definitions used by Argo CD
-- **apps** directory (depends on **core**) is where your common applications (grouped by namespace) could be placed
-- **system** place for system applications like ingress or oauth/identity etc.
-
 ```text
 📁 cluster
-├──📁 apps
-│   ├──📁 default
-│   ├──📁 networking
-│   └──📁 system-upgrade
-├──📁 core
+├──📁 projects - main folder for ArgoCD to sync deployed apps
+├──📁 apps - folder for apps manifests
+├──📁 core - folder for a core apps of cluster
 │   └──📁 argocd
-│       ├──📁 base
-│       └──📁 projects
-└──📁 system
+│       └──📁 projects - folder containing manifests to initialize app-of-apps for ArgoCD
+└──📁 system - app counted as extensions of cluster (certs, ingress, gpu, etc.)
 ```
 
 ## 🚀 Deployment
@@ -138,25 +139,15 @@ In order to use Terraform and `cert-manager` with the Cloudflare DNS challenge y
 
 3. Use the API Token in **provision/terraform/cloudflare** and **cluster/system/cert-manager**.
 
-### ⚡ Preparing Ubuntu with Ansible
+### ⚡ Preparing Talos nodes
 
-📍 Nodes are not security hardened by default, you can do this with [dev-sec/ansible-collection-hardening](https://github.com/dev-sec/ansible-collection-hardening) or something similar.
+1. Get a ISO image of the installer from latest release https://github.com/mmalyska/talos-images/releases
 
-1. Ensure you are able to SSH into you nodes from your workstation with using your private ssh key. This is how Ansible is able to connect to your remote nodes.
+2. Configure nodes inside `provision/talos/talconfig.yaml`
 
-2. Install the deps by running `task ansible:deps`
+3. Run `task talos:init` to generate talos configs for each node
 
-3. Verify Ansible can view your config by running `task ansible:list`
-
-4. Verify Ansible can ping your nodes by running `task ansible:adhoc:ping`
-
-5. Finally, run the Ubuntu Prepare playbook by running `task ansible:playbook:ubuntu-prepare`
-
-6. If everything goes as planned you should see Ansible running the Ubuntu Prepare Playbook against your nodes.
-
-### ⛵ Installing k8s with Ansible
-
-This section is under works and it's still not possible to prepare k8s using ansible.
+4. Follow guide on https://www.talos.dev/v1.6/introduction/getting-started/ for details on Talos installation
 
 ### ☁️ Configuring Cloudflare DNS with Terraform
 
@@ -180,7 +171,7 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
 
    ```sh
    argocd version
-   # argocd: v2.3.1
+   # argocd: vX.X.X
    # ...
    ```
 
@@ -228,4 +219,4 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
 
 ### 👉 Cluster maintenance
 
-This section will be about upgrading k8s and onther components on your cluster using Ansible.
+This section will be about upgrading k8s and onther components on your cluster using Talos.

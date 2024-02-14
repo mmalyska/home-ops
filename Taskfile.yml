@@ -43,7 +43,6 @@ tasks:
         ipcalc
         jq
         kubectl
-        kubernetes-cli
         kustomize
         prettier
         sops
