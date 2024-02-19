@@ -38,7 +38,7 @@ app-template:
         main:
           image:
             repository: ghcr.io/home-assistant/home-assistant
-            tag: 2024.2.0@sha256:2b55f63c70a556f8645c5ba240f5546ed85f151dd50b10f9ea9f2fb76cbdbf05
+            tag: 2024.2.2@sha256:05b068ca39334a7e86500416839f11a541f0fa16f8722133f5dc123971da996e
           envFrom:
             - secretRef:
                 name: home-assistant-secret
