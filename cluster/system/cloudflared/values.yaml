@@ -8,11 +8,11 @@ app-template:
           matchLabels:
             app.kubernetes.io/name: cloudflared
   controllers:
-    main:
+    cloudflared:
       replicas: 2
       strategy: RollingUpdate
       containers:
-        main:
+        app:
           image:
             repository: docker.io/cloudflare/cloudflared
             tag: 2024.2.1@sha256:60e94a8669dccbe461b6913ce33ab759104334220b49042ec03cfca62a2f01e7
@@ -68,12 +68,13 @@ app-template:
             limits:
               memory: 105Mi
   service:
-    main:
+    app:
+      controller: cloudflared
       ports:
         http:
           port: 8080
   serviceMonitor:
-    main:
+    app:
       enabled: true
       endpoints:
         - port: http
