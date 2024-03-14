@@ -32,10 +32,37 @@ app-template:
           probes:
             liveness:
               enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ready
+                  port: 8080
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                timeoutSeconds: 1
+                failureThreshold: 3
             readiness:
               enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ready
+                  port: 8080
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                timeoutSeconds: 1
+                failureThreshold: 3
             startup:
               enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /ready
+                  port: 8080
+                initialDelaySeconds: 0
+                failureThreshold: 30
+                periodSeconds: 10
+                timeoutSeconds: 1
           resources:
             requests:
               cpu: 6m
