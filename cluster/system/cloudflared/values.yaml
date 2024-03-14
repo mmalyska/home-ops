@@ -12,7 +12,7 @@ app-template:
       replicas: 2
       strategy: RollingUpdate
       containers:
-        app:
+        main:
           image:
             repository: docker.io/cloudflare/cloudflared
             tag: 2024.2.1@sha256:60e94a8669dccbe461b6913ce33ab759104334220b49042ec03cfca62a2f01e7
@@ -68,14 +68,15 @@ app-template:
             limits:
               memory: 105Mi
   service:
-    app:
+    main:
       controller: cloudflared
       ports:
         http:
           port: 8080
   serviceMonitor:
-    app:
+    main:
       enabled: true
+      serviceName: '{{ include "bjw-s.common.lib.chart.names.fullname" $ }}'
       endpoints:
         - port: http
           scheme: http
