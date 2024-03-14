@@ -16,29 +16,11 @@ app-template:
               memory: 10M
           probes:
             liveness:
-              spec:
-                failureThreshold: 3
-                initialDelaySeconds: 0
-                periodSeconds: 10
-                tcpSocket:
-                  port: 1883
-                timeoutSeconds: 1
+              enabled: true
             readiness:
-              spec:
-                failureThreshold: 3
-                initialDelaySeconds: 0
-                periodSeconds: 10
-                tcpSocket:
-                  port: 1883
-                timeoutSeconds: 1
+              enabled: true
             startup:
-              spec:
-                failureThreshold: 30
-                initialDelaySeconds: 0
-                periodSeconds: 5
-                tcpSocket:
-                  port: 1883
-                timeoutSeconds: 1
+              enabled: true
       initContainers:
         copy-config:
           image:

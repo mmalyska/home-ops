@@ -31,32 +31,11 @@ app-template:
             - run
           probes:
             liveness:
-              spec:
-                httpGet:
-                  path: /ready
-                  port: 8080
-                initialDelaySeconds: 0
-                periodSeconds: 10
-                timeoutSeconds: 1
-                failureThreshold: 3
+              enabled: true
             readiness:
-              spec:
-                httpGet:
-                  path: /ready
-                  port: 8080
-                initialDelaySeconds: 0
-                periodSeconds: 10
-                timeoutSeconds: 1
-                failureThreshold: 3
+              enabled: true
             startup:
-              spec:
-                httpGet:
-                  path: /ready
-                  port: 8080
-                initialDelaySeconds: 0
-                failureThreshold: 30
-                periodSeconds: 10
-                timeoutSeconds: 1
+              enabled: true
           resources:
             requests:
               cpu: 6m
@@ -71,6 +50,7 @@ app-template:
           port: 8080
   serviceMonitor:
     main:
+      enabled: true
       serviceName: '{{ include "bjw-s.common.lib.chart.names.fullname" $ }}'
       endpoints:
         - port: http
