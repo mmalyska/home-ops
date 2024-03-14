@@ -42,13 +42,6 @@ app-template:
           envFrom:
             - secretRef:
                 name: home-assistant-secret
-          probes:
-            liveness:
-              enabled: true
-            readiness:
-              enabled: true
-            startup:
-              enabled: true
           resources:
             requests:
               cpu: 10m
