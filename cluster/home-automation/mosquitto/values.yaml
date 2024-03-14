@@ -27,13 +27,12 @@ app-template:
             - cp /data/mosquitto_secret/* /data/external_config/ && mosquitto_passwd -U /data/external_config/mosquitto_pwd
   service:
     main:
+      controller: main
       type: LoadBalancer
       annotations:
         metallb.universe.tf/loadBalancerIPs: "192.168.48.26"
       externalTrafficPolicy: Cluster
       ports:
-        http:
-          enabled: false
         mqtt:
           enabled: true
           port: 1883
