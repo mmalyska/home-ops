@@ -8,7 +8,7 @@ app-template:
             repository: rhasspy/wyoming-whisper
             tag: 2.1.0@sha256:ceaa162ec05e53b8fa883182cdbceb72e6a1422740ec35be038c9faa278323b3
             pullPolicy: IfNotPresent
-          command:
+          args:
             - --language pl
             - --model tiny-int8
           env:
