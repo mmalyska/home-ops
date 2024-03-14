@@ -1,0 +1,9 @@
+---
+apiVersion: v2
+name: piper-subchart
+type: application
+version: 1.0.0
+dependencies:
+  - name: app-template
+    version: 3.0.1
+    repository: https://bjw-s.github.io/helm-charts
