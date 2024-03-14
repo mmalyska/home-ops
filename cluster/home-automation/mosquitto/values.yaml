@@ -14,6 +14,31 @@ app-template:
               memory: 10M
             limits:
               memory: 10M
+          probes:
+            liveness:
+              spec:
+                failureThreshold: 3
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                tcpSocket:
+                  port: 1883
+                timeoutSeconds: 1
+            readiness:
+              spec:
+                failureThreshold: 3
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                tcpSocket:
+                  port: 1883
+                timeoutSeconds: 1
+            startup:
+              spec:
+                failureThreshold: 30
+                initialDelaySeconds: 0
+                periodSeconds: 5
+                tcpSocket:
+                  port: 1883
+                timeoutSeconds: 1
       initContainers:
         copy-config:
           image:
@@ -34,11 +59,9 @@ app-template:
       externalTrafficPolicy: Cluster
       ports:
         mqtt:
-          enabled: true
           port: 1883
   persistence:
     mosquitto-config:
-      enabled: true
       type: configMap
       name: mosquitto-configmap
       advancedMounts:
@@ -47,7 +70,6 @@ app-template:
             - path: /mosquitto/config/mosquitto.conf
               subPath: mosquitto.conf
     mosquitto-secret:
-      enabled: true
       type: secret
       name: mosquitto-secret
       advancedMounts:
@@ -55,7 +77,6 @@ app-template:
           copy-config:
             - path: /data/mosquitto_secret
     external-config:
-      enabled: true
       type: emptyDir
       advancedMounts:
         main:

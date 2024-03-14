@@ -71,6 +71,7 @@ app-template:
             - "/config/.vscode"
   service:
     main:
+      controller: main
       ports:
         http:
           port: 8123
@@ -81,20 +82,18 @@ app-template:
           port: 8080
   ingress:
     main:
-      enabled: true
       className: "traefik"
       hosts:
         - host: &host "dom.<secret:private-domain>"
           paths:
             - path: /
               service:
-                name: main
+                identifier: main
                 port: http
       tls:
         - hosts:
             - *host
     addons:
-      enabled: true
       className: "traefik"
       hosts:
         - host: "dom-code.<secret:private-domain>"
@@ -102,9 +101,8 @@ app-template:
             - path: /
               pathType: Prefix
               service:
-                name: codeserver
+                identifier: codeserver
                 port: http
   persistence:
     config:
-      enabled: true
       existingClaim: home-assistant-config
