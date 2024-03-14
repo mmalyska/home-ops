@@ -14,6 +14,13 @@ app-template:
               memory: 10M
             limits:
               memory: 10M
+          probes:
+            liveness:
+              enabled: true
+            readiness:
+              enabled: true
+            startup:
+              enabled: true
       initContainers:
         copy-config:
           image:
@@ -27,19 +34,16 @@ app-template:
             - cp /data/mosquitto_secret/* /data/external_config/ && mosquitto_passwd -U /data/external_config/mosquitto_pwd
   service:
     main:
+      controller: main
       type: LoadBalancer
       annotations:
         metallb.universe.tf/loadBalancerIPs: "192.168.48.26"
       externalTrafficPolicy: Cluster
       ports:
-        http:
-          enabled: false
         mqtt:
-          enabled: true
           port: 1883
   persistence:
     mosquitto-config:
-      enabled: true
       type: configMap
       name: mosquitto-configmap
       advancedMounts:
@@ -48,7 +52,6 @@ app-template:
             - path: /mosquitto/config/mosquitto.conf
               subPath: mosquitto.conf
     mosquitto-secret:
-      enabled: true
       type: secret
       name: mosquitto-secret
       advancedMounts:
@@ -56,7 +59,6 @@ app-template:
           copy-config:
             - path: /data/mosquitto_secret
     external-config:
-      enabled: true
       type: emptyDir
       advancedMounts:
         main:

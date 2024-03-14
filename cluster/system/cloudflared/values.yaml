@@ -59,8 +59,10 @@ app-template:
                 httpGet:
                   path: /ready
                   port: 8080
+                initialDelaySeconds: 0
                 failureThreshold: 30
                 periodSeconds: 10
+                timeoutSeconds: 1
           resources:
             requests:
               cpu: 6m
@@ -69,12 +71,14 @@ app-template:
               memory: 105Mi
   service:
     main:
+      controller: main
       ports:
         http:
           port: 8080
   serviceMonitor:
     main:
       enabled: true
+      serviceName: '{{ include "bjw-s.common.lib.chart.names.fullname" $ }}'
       endpoints:
         - port: http
           scheme: http
