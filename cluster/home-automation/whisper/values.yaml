@@ -1,0 +1,42 @@
+app-template:
+  controllers:
+    whisper:
+      strategy: Recreate
+      containers:
+        pl:
+          image:
+            repository: rhasspy/wyoming-whisper
+            tag: 2.1.0@sha256:ceaa162ec05e53b8fa883182cdbceb72e6a1422740ec35be038c9faa278323b3
+            pullPolicy: IfNotPresent
+          args:
+            - --language pl
+            - --model tiny-int8
+          env:
+            HF_HUB_CACHE: "/model-cache"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              cpu: 1200m
+              memory: 2Gi
+          probes:
+            liveness:
+              enabled: true
+            readiness:
+              enabled: true
+            startup:
+              enabled: true
+  service:
+    whisper:
+      controller: pl
+      ports:
+        tcp:
+          port: 10300
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 10Gi
+    model-cache:
+      type: emptyDir
