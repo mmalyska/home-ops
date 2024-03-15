@@ -28,6 +28,10 @@ app-template:
               enabled: true
   service:
     piper:
+      annotations:
+        metallb.universe.tf/allow-shared-ip: "voice-pipeline"
+      type: LoadBalancer
+      loadBalancerIP: 192.168.48.27
       controller: pl
       ports:
         tcp:
