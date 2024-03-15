@@ -13,7 +13,6 @@ app-template:
             - pl
             - --model
             - tiny-int8
-            - --debug
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
@@ -31,12 +30,12 @@ app-template:
             startup:
               enabled: true
   service:
-    whisper:
+    pl:
       annotations:
         metallb.universe.tf/allow-shared-ip: "voice-pipeline"
       type: LoadBalancer
       loadBalancerIP: 192.168.48.27
-      controller: pl
+      controller: whisper
       ports:
         tcp:
           port: 10300

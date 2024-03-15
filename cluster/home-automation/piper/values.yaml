@@ -12,7 +12,6 @@ app-template:
             - --voice
             - pl_PL-darkman-medium
             - --update-voices
-            - --debug
           resources:
             requests:
               cpu: 100m
@@ -28,12 +27,12 @@ app-template:
             startup:
               enabled: true
   service:
-    piper:
+    pl:
       annotations:
         metallb.universe.tf/allow-shared-ip: "voice-pipeline"
       type: LoadBalancer
       loadBalancerIP: 192.168.48.27
-      controller: pl
+      controller: piper
       ports:
         tcp:
           port: 10200
