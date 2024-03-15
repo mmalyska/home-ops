@@ -27,8 +27,11 @@ app-of-apps:
       namespace: ha-piper
       path: piper
       selfHeal: true
-
     - name: whisper
       namespace: ha-whisper
       path: whisper
+      selfHeal: true
+    - name: openwakeword
+      namespace: ha-openwakeword
+      path: openwakeword
       selfHeal: true

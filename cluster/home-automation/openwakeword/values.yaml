@@ -1,0 +1,50 @@
+app-template:
+  controllers:
+    openwakeword:
+      strategy: Recreate
+      containers:
+        maniek:
+          image:
+            repository: rhasspy/wyoming-openwakeword
+            tag: 1.10.0@sha256:951b823c38403a9f10445a370d3dace3da4c38f64c6579dfbc5af0c10098f1b8
+            pullPolicy: IfNotPresent
+          args:
+            - --custom-model-dir
+            - /custom
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          probes:
+            liveness:
+              enabled: true
+            readiness:
+              enabled: true
+            startup:
+              enabled: true
+      initContainers:
+        load-model:
+          image:
+            repository: public.ecr.aws/docker/library/alpine
+            tag: latest@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b
+            pullPolicy: IfNotPresent
+          command:
+            - "/bin/sh"
+            - -c
+          args:
+            - mkdir /custom
+            - cd /custom
+            - curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hej_maniek.tflite
+  service:
+    maniek:
+      annotations:
+        metallb.universe.tf/allow-shared-ip: "voice-pipeline"
+      type: LoadBalancer
+      loadBalancerIP: 192.168.48.27
+      controller: openwakeword
+      ports:
+        tcp:
+          port: 10400
