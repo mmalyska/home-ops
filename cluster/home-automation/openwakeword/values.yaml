@@ -35,8 +35,7 @@ app-template:
             - "/bin/sh"
             - -c
           args:
-            - cd /custom
-            - curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hej_maniek.tflite
+            - cd /custom && curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hej_maniek.tflite
   service:
     maniek:
       annotations:
