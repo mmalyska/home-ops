@@ -13,6 +13,7 @@ app-template:
             - pl
             - --model
             - tiny-int8
+            - --debug
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:

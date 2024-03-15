@@ -12,6 +12,7 @@ app-template:
             - --voice
             - pl_PL-darkman-medium
             - --update-voices
+            - --debug
           resources:
             requests:
               cpu: 100m
