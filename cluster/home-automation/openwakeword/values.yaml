@@ -35,7 +35,8 @@ app-template:
             - "/bin/sh"
             - -c
           args:
-            - mkdir /custom && cd /custom && curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hej_maniek.tflite
+            - cd /custom
+            - curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hej_maniek.tflite
   service:
     maniek:
       annotations:
@@ -46,3 +47,6 @@ app-template:
       ports:
         tcp:
           port: 10400
+  persistence:
+    custom:
+      type: emptyDir
