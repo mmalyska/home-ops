@@ -6,7 +6,7 @@ app-template:
         main:
           image:
             repository: public.ecr.aws/docker/library/eclipse-mosquitto
-            tag: 2.0.18@sha256:b2ad81cbe9ebbdb91aee9b4e670c58a8d7e00cee316562e88d1827e1b3de2a7d
+            tag: 2.0.18@sha256:cb3afd02611b0c58b328196ab00de0158322b4c1e014841fb182d2a0ea3a79b9
             pullPolicy: IfNotPresent
           resources:
             requests:
@@ -25,7 +25,7 @@ app-template:
         copy-config:
           image:
             repository: public.ecr.aws/docker/library/eclipse-mosquitto
-            tag: 2.0.18@sha256:b2ad81cbe9ebbdb91aee9b4e670c58a8d7e00cee316562e88d1827e1b3de2a7d
+            tag: 2.0.18@sha256:cb3afd02611b0c58b328196ab00de0158322b4c1e014841fb182d2a0ea3a79b9
             pullPolicy: IfNotPresent
           command:
             - "/bin/sh"
