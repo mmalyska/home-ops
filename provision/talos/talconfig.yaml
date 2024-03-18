@@ -2,7 +2,7 @@ clusterName: home
 # renovate: datasource=github-releases depName=mmalyska/talos-images
 talosVersion: v1.6.4
 # renovate: datasource=github-releases depName=siderolabs/kubelet
-kubernetesVersion: v1.28.6
+kubernetesVersion: v1.28.8
 endpoint: https://${clusterDomain}:6443
 cniConfig:
   name: flannel
