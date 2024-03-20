@@ -23,13 +23,6 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    # - name: firefly
-    #   namespace: firefly
-    #   path: firefly``
-    #   plugin:
-    #     env:
-    #       - name: SOPS_SECRET_FILE
-    #         value: secret.sec.yaml
     - name: gitea
       namespace: gitea
       path: gitea
@@ -49,14 +42,6 @@ app-of-apps:
     - name: hass-proxy
       namespace: hass-proxy
       path: hass
-      selfHeal: true
-      plugin:
-        env:
-          - name: SOPS_SECRET_FILE
-            value: secret.sec.yaml
-    - name: minecraft-bedrock
-      namespace: minecraft
-      path: minecraft/bedrock
       selfHeal: true
       plugin:
         env:
@@ -86,22 +71,6 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    - name: factorio
-      namespace: factorio
-      path: factorio
-      selfHeal: true
-      plugin:
-        env:
-          - name: SOPS_SECRET_FILE
-            value: secret.sec.yaml
-    - name: valheim
-      namespace: valheim
-      path: valheim
-      selfHeal: true
-      plugin:
-        env:
-          - name: SOPS_SECRET_FILE
-            value: secret.sec.yaml
     - name: homepage
       namespace: homepage
       path: gethomepage
@@ -110,7 +79,3 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    - name: httpbin
-      namespace: httpbin
-      path: httpbin
-      selfHeal: true

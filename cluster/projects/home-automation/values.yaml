@@ -7,10 +7,6 @@ app-of-apps:
     repoURL: https://github.com/mmalyska/home-ops
     path: cluster/home-automation
   apps:
-    - name: mosquitto
-      namespace: ha-mosquitto
-      path: mosquitto
-      selfHeal: true
     - name: vernemq
       namespace: ha-vernemq
       path: vernemq
