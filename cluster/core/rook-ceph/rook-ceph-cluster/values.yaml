@@ -85,6 +85,7 @@ rook-ceph-cluster:
       enabled: true
       ssl: false
       urlPrefix: /
+      prometheusEndpoint: http://prometheus-stack-kube-prom-prometheus.monitoring:9090
   cephBlockPools:
     - name: ceph-blockpool
       spec:
