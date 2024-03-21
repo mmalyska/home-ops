@@ -88,7 +88,7 @@ controlPlane:
                   enable_unprivileged_icmp = true
         kubelet:
           extraArgs:
-            feature-gates: CronJobTimeZone=true,GracefulNodeShutdown=true
+            feature-gates: GracefulNodeShutdown=true
             rotate-server-certificates: "true"
         time:
           disabled: false
