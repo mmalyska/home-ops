@@ -12,9 +12,13 @@ on:
     paths: 
       - '.devcontainer/Dockerfile'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: home-ops-devcontainer
+  IMAGE_NAME: mmalyska/home-ops-devcontainer
 
 
 jobs:
