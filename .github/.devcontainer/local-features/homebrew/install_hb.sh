@@ -1,8 +1,10 @@
 #!/bin/bash -i
 
-apt-get update && export DEBIAN_FRONTEND=noninteractive \
-&& apt-get -y install build-essential procps curl file git --no-install-recommends \
-&& apt-get clean -y && rm -rf /var/lib/apt/lists/*
+apt-get update
+export DEBIAN_FRONTEND=noninteractive
+apt-get -y install build-essential procps curl file git --no-install-recommends
+apt-get clean -y
+rm -rf /var/lib/apt/lists/*
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
