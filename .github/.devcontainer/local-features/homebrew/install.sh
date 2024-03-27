@@ -6,9 +6,9 @@ apt-get -y install build-essential procps curl file git --no-install-recommends
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 
-su "$_REMOTE_USER" <<EOF
-  set -exm
-  echo "${SHELL}"
+su - "$_REMOTE_USER" <<EOF
+  set -ex
+  cd pwm
   ./install_hb.sh
 EOF
 
