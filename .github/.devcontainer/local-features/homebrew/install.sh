@@ -1,10 +1,7 @@
 #!/bin/bash -i
 
-pwd
-
-su - "$_REMOTE_USER"  <<EOF
+su "$_REMOTE_USER" <<EOF
   set -ex
-  pwd
   ./install_hb.sh
 EOF
 
