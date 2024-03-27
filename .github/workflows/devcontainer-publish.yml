@@ -8,12 +8,12 @@ on:
         default: 'no'
   pull_request:
     paths:
-      - '.docker/.devcontainer/**'
+      - '.github/.devcontainer/**'
   push:
     branches:
       - 'main'
     paths:
-      - '.docker/.devcontainer/**'
+      - '.github/.devcontainer/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
