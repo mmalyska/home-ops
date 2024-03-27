@@ -16,4 +16,8 @@ case "${SHELL}" in
     echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${ENV:-"${HOME}/.profile"}"
     ;;
 esac
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+su - "$_REMOTE_USER" <<EOF
+        set -e
+    brew config
+EOF

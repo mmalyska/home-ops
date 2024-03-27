@@ -8,7 +8,7 @@ apt-get update && export DEBIAN_FRONTEND=noninteractive \
 
 case "${SHELL}" in
   */bash*)
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${HOME}/.bashrc"
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${HOME}/.bashrc
     ;;
   */zsh*)
     echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${ZDOTDIR:-"${HOME}"}/.zshrc"
