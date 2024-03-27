@@ -5,7 +5,7 @@
     "description": "Installs Homebrew",
     "options": {},
     "containerEnv": {
-      "INTERACTIVE": "1",
+      "NONINTERACTIVE": "1",
       "PATH": "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}",
       "MANPATH": "/home/linuxbrew/.linuxbrew/share/man:${MANPATH}",
       "INFOPATH": "/home/linuxbrew/.linuxbrew/share/info:${INFOPATH}"
