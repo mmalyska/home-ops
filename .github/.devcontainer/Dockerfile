@@ -8,8 +8,6 @@ ARG TALHELPER=v2.3.9
 # renovate: datasource=github-releases depName=mmalyska/talos-images
 ARG TALOS_CLI=v1.6.7
 
-USER vscode
-
 ENV LC_ALL=en_US.UTF-8
 
 # [Optional] Uncomment this section to install additional OS packages.
