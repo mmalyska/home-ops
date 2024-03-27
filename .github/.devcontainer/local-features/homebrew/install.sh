@@ -4,20 +4,17 @@ sudo -u $_REMOTE_USER ./install_hb.sh
 
 case "${SHELL}" in
   */bash*)
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.bashrc"
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${HOME}/.bashrc"
     ;;
   */zsh*)
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${ZDOTDIR:-"${HOME}"}/.zshrc"
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${ZDOTDIR:-"${HOME}"}/.zshrc"
     ;;
   */fish*)
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.config/fish/config.fish"
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${HOME}/.config/fish/config.fish"
+    ;;
+  *)
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${ENV:-"${HOME}/.profile"}"
     ;;
 esac
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${ENV:-"${HOME}/.profile"}"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
-su - "$_REMOTE_USER" <<EOF
-  set -e
-  echo $0
-  brew config
-EOF
+brew analytics off
