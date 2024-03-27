@@ -4,32 +4,21 @@ apt-get update && export DEBIAN_FRONTEND=noninteractive \
 && apt-get -y install build-essential procps curl file git --no-install-recommends \
 && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
 case "${SHELL}" in
   */bash*)
-    if [[ -n "${HOMEBREW_ON_LINUX-}" ]]
-    then
-      shell_rcfile="${HOME}/.bashrc"
-    else
-      shell_rcfile="${HOME}/.bash_profile"
-    fi
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.bashrc"
     ;;
   */zsh*)
-    if [[ -n "${HOMEBREW_ON_LINUX-}" ]]
-    then
-      shell_rcfile="${ZDOTDIR:-"${HOME}"}/.zshrc"
-    else
-      shell_rcfile="${ZDOTDIR:-"${HOME}"}/.zprofile"
-    fi
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${ZDOTDIR:-"${HOME}"}/.zshrc"
     ;;
   */fish*)
-    shell_rcfile="${HOME}/.config/fish/config.fish"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.config/fish/config.fish"
     ;;
   *)
-    shell_rcfile="${ENV:-"${HOME}/.profile"}"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${ENV:-"${HOME}/.profile"}"
     ;;
 esac
-
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
-&& eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ${shell_rcfile} \
-&& eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
-&& brew analytics off
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+brew analytics off
