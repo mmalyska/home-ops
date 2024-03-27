@@ -2,6 +2,7 @@
 
 sudo -u $_REMOTE_USER ./install_hb.sh
 
+PATH=/home/linuxbrew/.linuxbrew/bin:${PATH}
 case "${SHELL}" in
   */bash*)
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.bashrc"
