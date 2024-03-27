@@ -1,6 +1,8 @@
 #!/bin/bash -i
 
-sudo -u $_REMOTE_USER ./install_hb.sh
+su - "$_REMOTE_USER"  <<EOF
+  ./install_hb.sh
+EOF
 
 case "${SHELL}" in
   */bash*)
@@ -18,6 +20,6 @@ case "${SHELL}" in
 esac
 
 su - "$_REMOTE_USER" <<EOF
-        set -e
-    brew config
+  set -e
+  brew config
 EOF
