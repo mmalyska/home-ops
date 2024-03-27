@@ -8,7 +8,6 @@
     "containerUser": "vscode",
     "features": {
         "ghcr.io/devcontainers/features/go": {},
-        "ghcr.io/meaningful-ooo/devcontainer-features/homebrew": {},
         "ghcr.io/devcontainers-contrib/features/homebrew-package": {
             "package": "go-task"
         }
