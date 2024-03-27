@@ -1,0 +1,13 @@
+{
+    "name": "Homebrew",
+    "id": "homebrew",
+    "version": "1.0.0",
+    "description": "Installs Homebrew",
+    "options": {},
+    "containerEnv": {
+        "INTERACTIVE": "1"
+    },
+    "installsAfter": [
+      "ghcr.io/devcontainers/features/common-utils"
+    ]
+  }

@@ -6,10 +6,11 @@
         "dockerfile": "./Dockerfile",
         "context": "."
     },
+    "remoteUser": "vscode",
     "onCreateCommand": ".github/.devcontainer/setup.sh",
     "features": {
         "ghcr.io/devcontainers/features/go": {},
-        "ghcr.io/meaningful-ooo/devcontainer-features/homebrew": {},
+        "./local-features/homebrew": {},
         "ghcr.io/devcontainers-contrib/features/homebrew-package": {
             "package": "go-task"
         }
