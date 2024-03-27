@@ -23,4 +23,4 @@ case "${SHELL}" in
     ;;
 esac
 
-su ${_REMOTE_USER} -c "echo ${SHELL} && echo ${HOME} && brew config"
+su ${_REMOTE_USER} -c "cat ${HOME}/.bashrc && brew config"
