@@ -17,9 +17,7 @@ case "${SHELL}" in
   */fish*)
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.config/fish/config.fish"
     ;;
-  *)
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${ENV:-"${HOME}/.profile"}"
-    ;;
 esac
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${ENV:-"${HOME}/.profile"}"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew analytics off
