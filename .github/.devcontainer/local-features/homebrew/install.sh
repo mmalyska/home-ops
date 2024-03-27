@@ -1,7 +1,7 @@
 #!/bin/bash -i
 
 su "$_REMOTE_USER" <<EOF
-  set -ex
+  set -exm
   ./install_hb.sh
 EOF
 
