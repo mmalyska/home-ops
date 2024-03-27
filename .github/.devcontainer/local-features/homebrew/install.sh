@@ -17,4 +17,3 @@ case "${SHELL}" in
     ;;
 esac
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-brew analytics off
