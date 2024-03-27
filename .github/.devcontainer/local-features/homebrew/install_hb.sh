@@ -6,7 +6,6 @@ apt-get update && export DEBIAN_FRONTEND=noninteractive \
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-PATH=/home/linuxbrew/.linuxbrew/bin:${PATH}
 case "${SHELL}" in
   */bash*)
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.bashrc"

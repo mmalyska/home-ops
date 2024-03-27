@@ -2,7 +2,6 @@
 
 sudo -u $_REMOTE_USER ./install_hb.sh
 
-PATH=/home/linuxbrew/.linuxbrew/bin:${PATH}
 case "${SHELL}" in
   */bash*)
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> "${HOME}/.bashrc"
@@ -19,5 +18,6 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 su - "$_REMOTE_USER" <<EOF
   set -e
-  brew commands
+  echo $0
+  brew config
 EOF
