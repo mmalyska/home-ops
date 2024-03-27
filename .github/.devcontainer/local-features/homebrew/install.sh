@@ -6,7 +6,7 @@ apt-get -y install build-essential procps curl file git --no-install-recommends
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 
-su ${_REMOTE_USER} -c "./install_hb.sh"
+su - ${_REMOTE_USER} -c "./install_hb.sh"
 
 case "${SHELL}" in
   */bash*)
@@ -23,4 +23,4 @@ case "${SHELL}" in
     ;;
 esac
 
-su ${_REMOTE_USER} -c "cat ${HOME}/.bashrc && brew config"
+su - ${_REMOTE_USER} -c "cat ${HOME}/.bashrc && brew config"
