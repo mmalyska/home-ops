@@ -31,4 +31,5 @@ esac
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
 && eval "$(${HOMEBREW_PREFIX}/bin/brew shellenv)" >> ${shell_rcfile} \
+&& eval "$(${HOMEBREW_PREFIX}/bin/brew shellenv)"
 && brew analytics off
