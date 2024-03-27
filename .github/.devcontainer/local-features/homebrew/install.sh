@@ -8,7 +8,7 @@ rm -rf /var/lib/apt/lists/*
 
 su - "$_REMOTE_USER" <<EOF
   set -ex
-  cd pwd
+  echo ${HOME}/.bashrc
   ./install_hb.sh
 EOF
 
