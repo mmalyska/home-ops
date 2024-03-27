@@ -30,6 +30,6 @@ case "${SHELL}" in
 esac
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
-&& eval "$(${HOMEBREW_PREFIX}/bin/brew shellenv)" >> ${shell_rcfile} \
-&& eval "$(${HOMEBREW_PREFIX}/bin/brew shellenv)"
+&& eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >> ${shell_rcfile} \
+&& eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 && brew analytics off
