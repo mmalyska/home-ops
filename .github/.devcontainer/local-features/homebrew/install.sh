@@ -8,6 +8,7 @@ rm -rf /var/lib/apt/lists/*
 
 su "$_REMOTE_USER" <<EOF
   set -exm
+  echo "${SHELL}"
   ./install_hb.sh
 EOF
 
