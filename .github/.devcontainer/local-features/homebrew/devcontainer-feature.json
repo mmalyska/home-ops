@@ -5,7 +5,8 @@
     "description": "Installs Homebrew",
     "options": {},
     "containerEnv": {
-        "INTERACTIVE": "1"
+        "INTERACTIVE": "1",
+        "PATH": "/home/linuxbrew/.linuxbrew/bin:${PATH}"
     },
     "installsAfter": [
       "ghcr.io/devcontainers/features/common-utils"
