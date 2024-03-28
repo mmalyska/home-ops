@@ -7,7 +7,7 @@
         "context": "."
     },
     "remoteUser": "vscode",
-    "onCreateCommand": ".github/.devcontainer/setup.sh",
+    "onCreateCommand": "bash .github/.devcontainer/setup.sh",
     "features": {
         "ghcr.io/devcontainers/features/go": {},
         "./local-features/homebrew": {},
