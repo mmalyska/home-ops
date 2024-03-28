@@ -7,7 +7,7 @@
     "containerEnv": {
       "NONINTERACTIVE": "1"
     },
-    "dependsOn": [
-      "../local-features/homebrew"
+    "installsAfter": [
+      "./local-features/homebrew"
     ]
   }
