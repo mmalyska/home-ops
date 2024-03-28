@@ -4,7 +4,9 @@
     "version": "1.0.0",
     "description": "Installs common resources",
     "options": {},
-    "containerEnv": {},
+    "containerEnv": {
+      "NONINTERACTIVE": "1"
+    },
     "installsAfter": [
       "./local-features/homebrew"
     ]
