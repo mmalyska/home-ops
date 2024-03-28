@@ -8,6 +8,6 @@
       "NONINTERACTIVE": "1"
     },
     "dependsOn": [
-      "./local-features/homebrew"
+      "../local-features/homebrew"
     ]
   }
