@@ -7,5 +7,3 @@ apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 
 sudo -Hun ${_REMOTE_USER} ./install_hb.sh
-
-sudo -Hun ${_REMOTE_USER} brew doctor
