@@ -6,6 +6,6 @@
     "options": {},
     "containerEnv": {},
     "installsAfter": [
-      "homwbrew"
+      "./local-features/homebrew"
     ]
   }
