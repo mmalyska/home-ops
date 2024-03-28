@@ -112,4 +112,4 @@ jobs:
   renovate:
     name: Renovate
     needs: build
-    uses: mmalyska/github-workflows/.github/workflows/scheduled-renovate.yaml@main
+    uses: mmalyska/home-ops/.github/workflows/scheduled-renovate.yaml@main
