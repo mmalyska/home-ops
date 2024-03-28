@@ -113,3 +113,4 @@ jobs:
     name: Renovate
     needs: build
     uses: mmalyska/home-ops/.github/workflows/scheduled-renovate.yaml@main
+    secrets: inherit
