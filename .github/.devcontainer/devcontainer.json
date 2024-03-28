@@ -13,6 +13,7 @@
         "./local-features/homebrew": {},
         "ghcr.io/devcontainers-contrib/features/homebrew-package": {
             "package": "go-task"
-        }
+        },
+        "./local-features/common": {}
     }
 }

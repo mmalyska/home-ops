@@ -1,0 +1,11 @@
+{
+    "name": "Common",
+    "id": "common",
+    "version": "1.0.0",
+    "description": "Installs common resources",
+    "options": {},
+    "containerEnv": {},
+    "installsAfter": [
+      "homwbrew"
+    ]
+  }
