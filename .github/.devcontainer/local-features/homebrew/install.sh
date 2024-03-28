@@ -8,4 +8,4 @@ rm -rf /var/lib/apt/lists/*
 
 sudo -u ${_REMOTE_USER} ./install_hb.sh
 
-sudo -u ${_REMOTE_USER} brew config
+sudo -u ${_REMOTE_USER} echo $PATH
