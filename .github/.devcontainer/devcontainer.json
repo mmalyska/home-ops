@@ -7,7 +7,7 @@
         "context": "."
     },
     "remoteUser": "vscode",
-    "onCreateCommand": "bash ls -la /",
+    "onCreateCommand": "bash -c 'ls -la /'",
     "features": {
         "ghcr.io/devcontainers/features/go": {},
         "./local-features/homebrew": {},
