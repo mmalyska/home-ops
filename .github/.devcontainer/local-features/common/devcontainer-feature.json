@@ -5,8 +5,7 @@
     "description": "Installs common resources",
     "options": {},
     "containerEnv": {
-      "NONINTERACTIVE": "1",
-      "PATH": "${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin"
+      "NONINTERACTIVE": "1"
     },
     "installsAfter": [
       "./local-features/homebrew"
