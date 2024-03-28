@@ -6,7 +6,7 @@
     "options": {},
     "containerEnv": {
       "NONINTERACTIVE": "1",
-      "PATH": "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}",
+      "PATH": "${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin",
       "MANPATH": "/home/linuxbrew/.linuxbrew/share/man:${MANPATH}",
       "INFOPATH": "/home/linuxbrew/.linuxbrew/share/info:${INFOPATH}"
     },
