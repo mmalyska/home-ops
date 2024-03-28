@@ -7,7 +7,7 @@
         "context": "."
     },
     "remoteUser": "vscode",
-    "onCreateCommand": "bash -c 'echo ${containerWorkspaceFolder}'",
+    "onCreateCommand": "bash ./setup.sh",
     "features": {
         "ghcr.io/devcontainers/features/go": {},
         "./local-features/homebrew": {},
