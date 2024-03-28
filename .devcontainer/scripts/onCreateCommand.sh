@@ -7,6 +7,4 @@ sudo git config --global pull.rebase true
 
 direnv allow
 
-task init
-
 echo "Done!"

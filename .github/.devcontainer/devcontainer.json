@@ -2,14 +2,14 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
     "name": "home-ops",
-    "image": "ghcr.io/mmalyska/home-ops-devcontainer:main",
-    "onCreateCommand": ".github/.devcontainer/setup.sh",
+    "build": {
+        "dockerfile": "./Dockerfile",
+        "context": "."
+    },
     "remoteUser": "vscode",
-    "containerUser": "vscode",
     "features": {
         "ghcr.io/devcontainers/features/go": {},
-        "ghcr.io/devcontainers-contrib/features/homebrew-package": {
-            "package": "go-task"
-        }
+        "./local-features/homebrew": {},
+        "./local-features/common": {}
     }
 }

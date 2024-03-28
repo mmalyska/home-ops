@@ -2,7 +2,7 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
     "name": "home-ops",
-    "image": "ghcr.io/mmalyska/home-ops-devcontainer:main",
+    "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:d11e4f34b79368c121909bbce03ec56df42f75aab572d9c0e494bbde3d9da963",
     "secrets": {
         "SOPS_AGE_KEY": {
             "description": "SOPS AGE key for decrypting secrets."
@@ -19,9 +19,6 @@
     "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
     "remoteUser": "vscode",
     "containerUser": "vscode",
-    "features": {
-        "ghcr.io/devcontainers/features/go:1": {}
-    },
     "customizations": {
         "vscode": {
             // Set *default* container specific settings.json values on container create.
