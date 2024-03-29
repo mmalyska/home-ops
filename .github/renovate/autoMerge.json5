@@ -15,6 +15,14 @@
         "pre-commit/pre-commit-hooks",
         "ansible/ansible-lint"
       ]
+    },
+    {
+      "description": "Auto merge devcontainer",
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["digest"],
+      "matchFileNames": [".devcontainer/devcontainer.json"]
     }
   ]
 }
