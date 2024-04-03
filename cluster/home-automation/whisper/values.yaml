@@ -12,7 +12,7 @@ app-template:
             - --language
             - pl
             - --model
-            - base-int8
+            - Aspik101/distil-whisper-large-v3-pl
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
