@@ -30,10 +30,10 @@ app-template:
             startup:
               enabled: true
               spec:
-                initialDelaySeconds: 60
-                periodSeconds: 60
+                initialDelaySeconds: 0
+                periodSeconds: 10
                 timeoutSeconds: 1
-                failureThreshold: 3
+                failureThreshold: 30
 
   service:
     pl:
