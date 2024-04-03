@@ -29,6 +29,12 @@ app-template:
               enabled: true
             startup:
               enabled: true
+              spec:
+                initialDelaySeconds: 60
+                periodSeconds: 60
+                timeoutSeconds: 1
+                failureThreshold: 3
+
   service:
     pl:
       annotations:
