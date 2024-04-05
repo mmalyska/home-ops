@@ -14,7 +14,8 @@
         "adrienverge/yamllint",
         "pre-commit/pre-commit-hooks",
         "ansible/ansible-lint"
-      ]
+      ],
+      "ignoreTests": true
     },
     {
       "description": "Auto merge devcontainer",
@@ -22,7 +23,8 @@
       "automerge": true,
       "automergeType": "branch",
       "matchUpdateTypes": ["digest"],
-      "matchFileNames": [".devcontainer/devcontainer.json"]
+      "matchFileNames": [".devcontainer/devcontainer.json"],
+      "ignoreTests": true
     }
   ]
 }
