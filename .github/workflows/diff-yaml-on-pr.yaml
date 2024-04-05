@@ -85,7 +85,7 @@ jobs:
         file: ${{ fromJson(needs.changes.outputs.helm_files) }}
       fail-fast: false
     steps:
-      - uses: yokawasa/action-setup-kube-tools@v0.11.0
+      - uses: yokawasa/action-setup-kube-tools@v0.11.1
         with:
           setup-tools: |
             helm
@@ -169,7 +169,7 @@ jobs:
         file: ${{ fromJson(needs.changes.outputs.kustomize_files) }}
       fail-fast: false
     steps:
-      - uses: yokawasa/action-setup-kube-tools@v0.11.0
+      - uses: yokawasa/action-setup-kube-tools@v0.11.1
         with:
           # renovate: datasource=github-releases depName=siderolabs/kubelet
           kubectl: "v1.29.3"
