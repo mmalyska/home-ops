@@ -28,5 +28,5 @@ tasks:
   prettier:fix:
     desc: Lint general formatting (task lint:prettier:fix)
     cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' .
+      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --write .
     ignore_error: true
