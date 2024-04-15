@@ -5,47 +5,55 @@
       "matchDatasources": ["helm", "docker"],
       "matchPackagePatterns": ["^rook.ceph"],
       "groupName": "rook-ceph-suite",
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "separateMinorPatch": true
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
     },
     {
       "matchDatasources": ["github-tags", "docker"],
       "matchPackagePatterns": ["rancher/system-upgrade-controller"],
       "groupName": "system-upgrade-controller-suite",
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "separateMinorPatch": true
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
     },
     {
       "description": "Prometheus stack",
       "matchDatasources": ["github-tags", "helm"],
       "matchPackagePatterns": [".*kube-prometheus-stack.*"],
       "groupName": "kube-prometheus-stack",
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "separateMinorPatch": true
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
     },
     {
       "description": "Metallb image and chart",
       "matchDatasources": ["github-tags", "helm"],
       "matchPackagePatterns": [".*metallb.*"],
       "groupName": "metallb",
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "separateMinorPatch": true
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
     },
     {
       "description": "Kubernetes stack",
       "matchDatasources": ["docker", "github-releases"],
-      "matchPackageNames": ["alpine/k8s", "kubernetes/kubernetes", "siderolabs/kubelet"],
+      "matchPackageNames": [
+        "alpine/k8s",
+        "kubernetes/kubernetes",
+        "siderolabs/kubelet",
+      ],
       "groupName": "kubernetes",
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "separateMinorPatch": true
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
     },
     {
       "description": "Talos stack",
       "matchDatasources": ["docker", "github-releases"],
-      "matchPackageNames": ["budimanjojo/talhelper", "ghcr.io/mmalyska/talos-installer", "mmalyska/talos-images"],
+      "matchPackageNames": [
+        "budimanjojo/talhelper",
+        "ghcr.io/mmalyska/talos-installer",
+        "mmalyska/talos-images",
+      ],
       "groupName": "talos",
-      "group": { "commitMessageTopic": "{{{groupName}}} group" },
-      "separateMinorPatch": true
-    }
-  ]
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
+    },
+  ],
 }

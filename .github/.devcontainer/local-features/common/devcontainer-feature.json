@@ -1,13 +1,11 @@
 {
-    "name": "Common",
-    "id": "common",
-    "version": "1.0.0",
-    "description": "Installs common resources",
-    "options": {},
-    "containerEnv": {
-      "NONINTERACTIVE": "1"
-    },
-    "installsAfter": [
-      "./local-features/homebrew"
-    ]
-  }
+  "name": "Common",
+  "id": "common",
+  "version": "1.0.0",
+  "description": "Installs common resources",
+  "options": {},
+  "containerEnv": {
+    "NONINTERACTIVE": "1"
+  },
+  "installsAfter": ["./local-features/homebrew"]
+}

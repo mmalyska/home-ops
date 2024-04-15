@@ -10,6 +10,6 @@ spec:
   issuerRef:
     name: lets-encrypt-dns01-production-cf
     kind: ClusterIssuer
-  commonName: 'dashboard.internal.<secret:private-domain>'
+  commonName: "dashboard.internal.<secret:private-domain>"
   dnsNames:
-    - 'dashboard.internal.<secret:private-domain>'
+    - "dashboard.internal.<secret:private-domain>"

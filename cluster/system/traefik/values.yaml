@@ -8,9 +8,7 @@ traefik:
   # Options for the main traefik service, where the entrypoints traffic comes
   # from.
   service:
-    annotations: {
-      metallb.universe.tf/loadBalancerIPs: "192.168.48.21"
-    }
+    annotations: {metallb.universe.tf/loadBalancerIPs: "192.168.48.21"}
     single: false
 
   tlsStore:

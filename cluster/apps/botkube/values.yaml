@@ -1,12 +1,12 @@
 botkube:
   communications:
-    'default-group':
+    "default-group":
       discord:
         enabled: true
         botID: <secret:discord_botid>
         token: <secret:discord_token>
         channels:
-          'default':
+          "default":
             id: <secret:discord_channel>
             bindings:
               executors:
@@ -19,11 +19,11 @@ botkube:
   analytics:
     disable: true
   sources:
-    'prometheus':
+    "prometheus":
       botkube/prometheus:
         enabled: true
   actions:
-    'show-logs-on-error':
+    "show-logs-on-error":
       enabled: true
   executors:
     k8s-default-tools:

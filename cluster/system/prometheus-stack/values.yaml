@@ -18,25 +18,25 @@ kube-prometheus-stack:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - name: 'default'
+          - name: "default"
             orgId: 1
-            folder: ''
+            folder: ""
             type: file
             disableDeletion: true
             editable: false
             options:
               path: /var/lib/grafana/dashboards/default
-          - name: 'device'
+          - name: "device"
             orgId: 1
-            folder: 'Devices Metrics'
+            folder: "Devices Metrics"
             type: file
             disableDeletion: true
             editable: false
             options:
               path: /var/lib/grafana/dashboards/device
-          - name: 'grafana-dashboards-kubernetes'
+          - name: "grafana-dashboards-kubernetes"
             orgId: 1
-            folder: 'Kubernetes'
+            folder: "Kubernetes"
             type: file
             disableDeletion: true
             editable: false
@@ -48,28 +48,28 @@ kube-prometheus-stack:
       grafana-dashboards-kubernetes:
         k8s-system-api-server:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
-          token: ''
+          token: ""
         k8s-system-coredns:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
-          token: ''
+          token: ""
         k8s-views-global:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-global.json
-          token: ''
+          token: ""
         k8s-views-namespaces:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-namespaces.json
-          token: ''
+          token: ""
         k8s-views-nodes:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-nodes.json
-          token: ''
+          token: ""
         k8s-views-pods:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
-          token: ''
+          token: ""
         cncf:
           url: https://raw.githubusercontent.com/cloudnative-pg/charts/main/charts/cloudnative-pg/monitoring/grafana-dashboard.json
-          token: ''
+          token: ""
         argocd:
           url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
-          token: ''
+          token: ""
   alertmanager:
     config:
       global:
@@ -96,7 +96,7 @@ kube-prometheus-stack:
       serviceMonitorSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
       additionalScrapeConfigs:
-        - job_name: 'asusrouter'
+        - job_name: "asusrouter"
           scrape_interval: 5s
           static_configs:
-            - targets: ['router.asus.com:9101']
+            - targets: ["router.asus.com:9101"]

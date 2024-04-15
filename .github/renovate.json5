@@ -1,6 +1,6 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
     "github>mmalyska/renovate-config",
     "github>mmalyska/renovate-config:automerge-github-actions",
     "github>mmalyska/renovate-config:automerge-galaxy-collections",
@@ -11,11 +11,9 @@
     "local>mmalyska/home-ops//.github/renovate/disabledDatasources.json5",
     "local>mmalyska/home-ops//.github/renovate/groups.json5",
     "local>mmalyska/home-ops//.github/renovate/managers.json5",
-    "local>mmalyska/home-ops//.github/renovate/regexmanager.json5"
+    "local>mmalyska/home-ops//.github/renovate/regexmanager.json5",
   ],
-  "gitAuthor": "bendo-bot <126472327+bendo-bot[bot]@users.noreply.github.com>",
-  "ignorePaths": [".archive/**"],
-  "reviewers": [
-    "mmalyska"
-  ]
+  gitAuthor: "bendo-bot <126472327+bendo-bot[bot]@users.noreply.github.com>",
+  ignorePaths: [".archive/**"],
+  reviewers: ["mmalyska"],
 }

@@ -12,8 +12,8 @@ Deploying a cluster with [Talos](https://www.talos.dev) and [Terraform](https://
 
 ## 🧱 Core components
 
-
 ### 🚚 Provisioning
+
 For provisioning the following tools are used:
 
 - [Talos](https://www.talos.dev) - this is used to provision all nodes within cluster with uniform system and configuration as gitops

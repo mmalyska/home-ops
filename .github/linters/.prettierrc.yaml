@@ -1,8 +1,9 @@
 ---
-trailingComma: "es5"
+trailingComma: "all"
 tabWidth: 2
 semi: false
 singleQuote: false
 bracketSpacing: false
 useTabs: false
 bracketSameLine: true
+quoteProps: "preserve"
