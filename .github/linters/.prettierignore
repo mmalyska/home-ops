@@ -1,9 +1,10 @@
 **/.git
 charts/
-docs/
-.private/
+**/charts/
 .terraform/
+.task/
 .vscode/
+.archive/
 **/*.sops.*
 **/*.sec.*
 gotk-components.yaml

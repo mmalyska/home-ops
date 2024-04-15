@@ -19,8 +19,14 @@ tasks:
       - yamllint -c '.github/linters/.yamllint.yaml' .
     ignore_error: true
 
-  format:
-    desc: Lint general formatting
+  prettier:check:
+    desc: Lint general formatting (task lint:prettier:check)
     cmds:
-      - prettier --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --check .
+      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --check .
+    ignore_error: true
+
+  prettier:fix:
+    desc: Lint general formatting (task lint:prettier:fix)
+    cmds:
+      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' .
     ignore_error: true
