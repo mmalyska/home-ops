@@ -72,7 +72,6 @@ jobs:
         run: |
           prefix="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           input_list="$DOCKER_METADATA_OUTPUT_TAGS"
-          delimiter="\n"
 
           result_list=$(echo "$input_list" | sed "s|${prefix}:||g")
 
