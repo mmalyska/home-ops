@@ -8,7 +8,7 @@ In this repo I'm focusing on:
 - Configuring cloud services using [Terraform](https://www.terraform.io)
 - Deploying applications with use of [ArgoCD](https://argo-cd.readthedocs.io)
 
-# Tech Stack
+## Tech Stack
 
 [<img src="https://user-images.githubusercontent.com/58349712/86569446-0c3ef280-bf8c-11ea-98ec-62432dd18e17.png" alt="mkdocs" style=";object-fit:cover;width:200px;height:100px"/>](https://www.mkdocs.org)
 [<img src="https://argo-cd.readthedocs.io/en/stable/assets/logo.png" alt="argocd" style=";object-fit:cover;width:100px;height:100px"/>](https://argo-cd.readthedocs.io)

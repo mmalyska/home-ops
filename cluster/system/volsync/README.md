@@ -1,4 +1,4 @@
-## How to recover from backup
+# How to recover from backup
 
 1. Create PVC
 

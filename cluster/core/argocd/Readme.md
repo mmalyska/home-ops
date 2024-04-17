@@ -1,3 +1,5 @@
+# Installing cluster
+
 Install argocd using `kustomize`.
 
 ```sh

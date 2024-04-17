@@ -141,13 +141,13 @@ In order to use Terraform and `cert-manager` with the Cloudflare DNS challenge y
 
 ### ⚡ Preparing Talos nodes
 
-1. Get a ISO image of the installer from latest release https://github.com/mmalyska/talos-images/releases
+1. Get a ISO image of the installer from latest [release](https://github.com/mmalyska/talos-images/releases)
 
 2. Configure nodes inside `provision/talos/talconfig.yaml`
 
 3. Run `task talos:init` to generate talos configs for each node
 
-4. Follow guide on https://www.talos.dev/v1.6/introduction/getting-started/ for details on Talos installation
+4. Follow guide on [Getting Started](https://www.talos.dev/v1.6/introduction/getting-started/) for details on Talos installation
 
 ### ☁️ Configuring Cloudflare DNS with Terraform
 
