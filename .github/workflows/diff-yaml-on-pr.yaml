@@ -144,7 +144,7 @@ jobs:
           fi
       - name: Add diff item
         uses: actions/upload-artifact@v4
-        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+        if: steps.diff.outputs.diff-filename
         with:
           name: helm_diff_files
           path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
@@ -225,7 +225,7 @@ jobs:
           fi
       - name: Add diff item
         uses: actions/upload-artifact@v4
-        if: test -f ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
+        if: steps.diff.outputs.diff-filename
         with:
           name: kustomize_diff_files
           path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
