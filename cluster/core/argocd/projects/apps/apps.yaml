@@ -11,15 +11,15 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: "*"
+      kind: "*"
   description: Main apps project
   destinations:
-    - name: '*'
-      namespace: '*'
-      server: '*'
+    - name: "*"
+      namespace: "*"
+      server: "*"
   namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: "*"
+      kind: "*"
   sourceRepos:
-    - '*'
+    - "*"

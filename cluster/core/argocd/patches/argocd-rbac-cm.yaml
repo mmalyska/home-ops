@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: argocd-rbac-cm
 data:
-  policy.default: ''
+  policy.default: ""
   policy.csv: |
     g, ArgoCDAdmins, role:admin
     g, mmalyska, role:admin

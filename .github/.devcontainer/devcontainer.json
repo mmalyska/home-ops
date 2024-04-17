@@ -1,15 +1,15 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
-    "name": "home-ops",
-    "build": {
-        "dockerfile": "./Dockerfile",
-        "context": "."
-    },
-    "remoteUser": "vscode",
-    "features": {
-        "ghcr.io/devcontainers/features/go": {},
-        "./local-features/homebrew": {},
-        "./local-features/common": {}
-    }
+  "name": "home-ops",
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": "."
+  },
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/go": {},
+    "./local-features/homebrew": {},
+    "./local-features/common": {}
+  }
 }

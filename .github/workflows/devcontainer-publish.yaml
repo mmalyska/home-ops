@@ -5,15 +5,15 @@ on:
       confirm:
         description: 'If you are sure, type "yes"'
         required: true
-        default: 'no'
+        default: "no"
   pull_request:
     paths:
-      - '.github/.devcontainer/**'
+      - ".github/.devcontainer/**"
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-      - '.github/.devcontainer/**'
+      - ".github/.devcontainer/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,10 +23,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: mmalyska/home-ops-devcontainer
 
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,9 +72,8 @@ jobs:
         run: |
           prefix="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           input_list="$DOCKER_METADATA_OUTPUT_TAGS"
-          delimiter="\n"
 
-          result_list=$(echo "$input_list" | sed "s|${prefix}:||g")
+          result_list="${input_list//${prefix}:/}"
 
           echo "tags=$result_list" >> "$GITHUB_OUTPUT"
 

@@ -1,46 +1,46 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
-    "name": "home-ops",
-    "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:298c09ae2203b66dd69c1a9b4883383051e026f2c2695340b9ffe869fa233e7c",
-    "secrets": {
-        "SOPS_AGE_KEY": {
-            "description": "SOPS AGE key for decrypting secrets."
-        },
-        "TERRAFORM_TOKEN":{
-            "description": "Token to access terraform cloud."
-        }
+  "name": "home-ops",
+  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:298c09ae2203b66dd69c1a9b4883383051e026f2c2695340b9ffe869fa233e7c",
+  "secrets": {
+    "SOPS_AGE_KEY": {
+      "description": "SOPS AGE key for decrypting secrets."
     },
-    "containerEnv": {
-        "SOPS_AGE_KEY": "${localEnv:SOPS_AGE_KEY}",
-        "TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}"
-    },
-    "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
-    "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
-    "remoteUser": "vscode",
-    "containerUser": "vscode",
-    "customizations": {
-        "vscode": {
-            // Set *default* container specific settings.json values on container create.
-            "settings": {
-                "vs-kubernetes": {
-                    "vscode-kubernetes.kubectl-path": "/home/linuxbrew/.linuxbrew/bin/kubectl",
-                    "vscode-kubernetes.helm-path": "/home/linuxbrew/.linuxbrew/bin/helm"
-                }
-            },
-            "extensions": [
-                "HashiCorp.terraform",
-                "britesnow.vscode-toggle-quotes",
-                "mitchdenny.ecdc",
-                "ms-kubernetes-tools.vscode-kubernetes-tools",
-                "oderwat.indent-rainbow",
-                "redhat.ansible",
-                "signageos.signageos-vscode-sops",
-                "usernamehw.errorlens",
-                "fcrespo82.markdown-table-formatter",
-                "ms-azuretools.vscode-docker",
-                "github.vscode-pull-request-github"
-            ]
-        }
+    "TERRAFORM_TOKEN": {
+      "description": "Token to access terraform cloud."
     }
+  },
+  "containerEnv": {
+    "SOPS_AGE_KEY": "${localEnv:SOPS_AGE_KEY}",
+    "TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}"
+  },
+  "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
+  "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "customizations": {
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        "vs-kubernetes": {
+          "vscode-kubernetes.kubectl-path": "/home/linuxbrew/.linuxbrew/bin/kubectl",
+          "vscode-kubernetes.helm-path": "/home/linuxbrew/.linuxbrew/bin/helm"
+        }
+      },
+      "extensions": [
+        "HashiCorp.terraform",
+        "britesnow.vscode-toggle-quotes",
+        "mitchdenny.ecdc",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "oderwat.indent-rainbow",
+        "redhat.ansible",
+        "signageos.signageos-vscode-sops",
+        "usernamehw.errorlens",
+        "fcrespo82.markdown-table-formatter",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-pull-request-github"
+      ]
+    }
+  }
 }

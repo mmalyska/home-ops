@@ -5,13 +5,13 @@
       "description": "Disable kubernetes-api",
       "matchManagers": ["kubernetes"],
       "matchDatasources": ["kubernetes-api"],
-      "enabled": false
+      "enabled": false,
     },
     {
       "description": "Disable default manager for gitea",
       "matchManagers": ["helm-values"],
       "matchPackageNames": ["gitea/gitea"],
-      "enabled": false
-    }
-  ]
+      "enabled": false,
+    },
+  ],
 }

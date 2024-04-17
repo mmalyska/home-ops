@@ -1,16 +1,14 @@
 {
-    "name": "Homebrew",
-    "id": "homebrew",
-    "version": "1.0.0",
-    "description": "Installs Homebrew",
-    "options": {},
-    "containerEnv": {
-      "NONINTERACTIVE": "1",
-      "PATH": "${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin",
-      "MANPATH": "/home/linuxbrew/.linuxbrew/share/man:${MANPATH}",
-      "INFOPATH": "/home/linuxbrew/.linuxbrew/share/info:${INFOPATH}"
-    },
-    "installsAfter": [
-      "ghcr.io/devcontainers/features/common-utils"
-    ]
-  }
+  "name": "Homebrew",
+  "id": "homebrew",
+  "version": "1.0.0",
+  "description": "Installs Homebrew",
+  "options": {},
+  "containerEnv": {
+    "NONINTERACTIVE": "1",
+    "PATH": "${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin",
+    "MANPATH": "/home/linuxbrew/.linuxbrew/share/man:${MANPATH}",
+    "INFOPATH": "/home/linuxbrew/.linuxbrew/share/info:${INFOPATH}"
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}

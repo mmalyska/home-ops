@@ -59,7 +59,7 @@ gitea:
         CONN_STR: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
   ingress:
     enabled: true
-    annotations: { kubernetes.io/ingress.class: traefik }
+    annotations: {kubernetes.io/ingress.class: traefik}
     hosts:
       - host: git.<secret:private-domain>
         paths:

@@ -4,7 +4,7 @@ name: Lint
 on: # yamllint disable-line rule:truthy
   push:
     branches:
-      - 'renovate/**'
+      - "renovate/**"
   workflow_dispatch:
   pull_request:
     branches:

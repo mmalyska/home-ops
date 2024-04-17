@@ -131,10 +131,10 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
-  - 'Introduction': index.md
-  - 'General':
-      - 'Hardware': general/hardware.md
-      - 'Network': general/network.md
-  - 'Home Ops':
-      - 'Kubernetes':
-          - 'ArgoCd': index.md
+  - "Introduction": index.md
+  - "General":
+      - "Hardware": general/hardware.md
+      - "Network": general/network.md
+  - "Home Ops":
+      - "Kubernetes":
+          - "ArgoCd": index.md

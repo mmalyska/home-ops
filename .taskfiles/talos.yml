@@ -4,14 +4,13 @@ version: "3"
 vars:
   N: '{{ .N | default "1" }}'
   NODE:
-    sh: 'echo ${NODE:-192.168.48.{{ add .N 1 }}}'
+    sh: "echo ${NODE:-192.168.48.{{ add .N 1 }}}"
   # renovate: datasource=github-releases depName=mmalyska/talos-images
   TALOS_VERSION: "v1.6.7"
   # renovate: datasource=github-releases depName=siderolabs/kubelet
   KUBERNETES_VERSION: "v1.29.3"
 
 tasks:
-
   init:
     desc: Init talosctl and grab kubeconfig (task talos:init)
     cmds:
