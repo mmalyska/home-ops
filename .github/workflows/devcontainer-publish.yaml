@@ -73,7 +73,7 @@ jobs:
           prefix="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           input_list="$DOCKER_METADATA_OUTPUT_TAGS"
 
-          result_list=$(echo "${input_list//${prefix}:/}")
+          result_list="${input_list//${prefix}:/}"
 
           echo "tags=$result_list" >> "$GITHUB_OUTPUT"
 
