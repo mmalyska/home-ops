@@ -3,7 +3,7 @@
     "wake_word": "hej maniek",
     "author": "Michał Małyska",
     "website": "https://www.mmalyska.com/",
-    "model": "./hej_maniek.tflite",
+    "model": "https://github.com/mmalyska/home-ops/raw/main/cluster/home-automation/openwakeword/hej_maniek.tflite",
     "version": 1,
     "micro": {
       "probability_cutoff": 0.5,
