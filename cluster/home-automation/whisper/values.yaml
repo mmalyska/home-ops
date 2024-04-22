@@ -12,7 +12,7 @@ app-template:
             - --language
             - en
             - --model
-            - medium
+            - tiny-int8
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
