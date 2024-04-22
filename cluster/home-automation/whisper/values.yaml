@@ -10,9 +10,9 @@ app-template:
             pullPolicy: IfNotPresent
           args:
             - --language
-            - pl
+            - en
             - --model
-            - mmalyska/distil-whisper-large-v3-pl-ct2
+            - medium
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
