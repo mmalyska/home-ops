@@ -5,5 +5,5 @@ namespace: metallb-system
 
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
-  - github.com/metallb/metallb/config/native?ref=v0.14.4
+  - github.com/metallb/metallb/config/native?ref=v0.14.5
   - resources/config.yaml
