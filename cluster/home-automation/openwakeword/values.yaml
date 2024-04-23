@@ -13,10 +13,10 @@ app-template:
             - /custom
           resources:
             requests:
-              cpu: 100m
+              cpu: 500m
               memory: 200Mi
             limits:
-              cpu: 500m
+              cpu: 2000m
               memory: 1Gi
           probes:
             liveness:
@@ -35,7 +35,7 @@ app-template:
             - "/bin/sh"
             - -c
           args:
-            - cd /custom && apk --no-cache add curl && curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hej_maniek.tflite
+            - cd /custom && apk --no-cache add curl && curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hey_jenny.tflite
   service:
     maniek:
       annotations:

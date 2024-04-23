@@ -14,7 +14,7 @@ app-template:
             - --update-voices
           resources:
             requests:
-              cpu: 100m
+              cpu: 1000m
               memory: 1Gi
             limits:
               cpu: 4000m

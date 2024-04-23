@@ -12,12 +12,12 @@ app-template:
             - --language
             - en
             - --model
-            - tiny-int8
+            - base-int8
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
             requests:
-              cpu: 100m
+              cpu: 1000m
               memory: 1Gi
             limits:
               cpu: 4000m
