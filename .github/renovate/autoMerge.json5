@@ -13,9 +13,9 @@
         "Lucas-C/pre-commit-hooks",
         "adrienverge/yamllint",
         "pre-commit/pre-commit-hooks",
-        "ansible/ansible-lint",
+        "ansible/ansible-lint"
       ],
-      "ignoreTests": true,
+      "ignoreTests": true
     },
     {
       "description": "Auto merge devcontainer",
@@ -24,7 +24,19 @@
       "automergeType": "branch",
       "matchUpdateTypes": ["digest"],
       "matchFileNames": [".devcontainer/devcontainer.json"],
-      "ignoreTests": true,
+      "ignoreTests": true
     },
-  ],
+    {
+      "description": "Auto merge gh actions",
+      "matchDatasources": ["github-releases", "github-tags"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": [
+        "sigstore/cosign"
+      ],
+      "matchFileNames": [".github/**"],
+      "ignoreTests": true
+    }
+  ]
 }

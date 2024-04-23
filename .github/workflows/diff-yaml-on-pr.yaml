@@ -2,11 +2,6 @@
 name: Diff Releases on Pull Requests
 
 on: # yamllint disable-line rule:truthy
-  push:
-    branches:
-      - "renovate/**"
-    paths:
-      - "cluster/**.yaml"
   pull_request:
     branches:
       - main
