@@ -5,5 +5,5 @@ type: application
 version: 1.0.0
 dependencies:
   - name: vernemq
-    version: 1.9.0
+    version: 2.0.0
     repository: https://vernemq.github.io/docker-vernemq
