@@ -37,6 +37,30 @@
       ],
       "matchFileNames": [".github/**"],
       "ignoreTests": true
+    },
+    {
+      "description": "Auto cluster container apps",
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": [
+        "ghcr.io/mmalyska/s3-bucket-cleaner",
+        "docker.io/cloudflare/cloudflared",
+        "ghcr.io/coder/code-server"
+      ],
+      "matchFileNames": ["cluster/**"]
+    },
+    {
+      "description": "Auto cluster helm apps",
+      "matchDatasources": ["helm"],
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": [
+        "kube-prometheus-stack"
+      ],
+      "matchFileNames": ["cluster/**"]
     }
   ]
 }
