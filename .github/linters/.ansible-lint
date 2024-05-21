@@ -4,3 +4,4 @@ warn_list:
 
 exclude_paths:
   - .github/
+  - .archive/
