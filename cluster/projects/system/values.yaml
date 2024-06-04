@@ -27,16 +27,6 @@ app-of-apps:
         - ServerSideApply=true
         - RespectIgnoreDifferences=true
       ignoreDifferences:
-        - group: "admissionregistration.k8s.io"
-          kind: ValidatingWebhookConfiguration
-          name: cnpg-validating-webhook-configuration
-          jqPathExpressions:
-            - .webhooks[]?.clientConfig.caBundle
-        - group: "admissionregistration.k8s.io"
-          kind: MutatingWebhookConfiguration
-          name: cnpg-mutating-webhook-configuration
-          jqPathExpressions:
-            - .webhooks[]?.clientConfig.caBundle
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
       path: dashboard
@@ -111,16 +101,6 @@ app-of-apps:
           name: prometheus-stack-prometheus-node-exporter
           jqPathExpressions:
             - .spec.template.spec.containers[]?.resources
-        - group: "admissionregistration.k8s.io"
-          kind: ValidatingWebhookConfiguration
-          name: prometheus-stack-kube-prom-admission
-          jqPathExpressions:
-            - .webhooks[]?.clientConfig.caBundle
-        - group: "admissionregistration.k8s.io"
-          kind: MutatingWebhookConfiguration
-          name: prometheus-stack-kube-prom-admission
-          jqPathExpressions:
-            - .webhooks[]?.clientConfig.caBundle
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -179,11 +159,6 @@ app-of-apps:
       path: snapshot-controller
       selfHeal: true
       ignoreDifferences:
-        - group: "admissionregistration.k8s.io"
-          kind: ValidatingWebhookConfiguration
-          name: snapshot-validation-webhook
-          jqPathExpressions:
-            - .webhooks[]?.clientConfig.caBundle
         - kind: Secret
           name: snapshot-validation-webhook-tls
           jsonPointers:
