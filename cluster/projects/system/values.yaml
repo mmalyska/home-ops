@@ -25,6 +25,18 @@ app-of-apps:
       selfHeal: true
       extraSyncOptions:
         - ServerSideApply=true
+        - RespectIgnoreDifferences=true
+      ignoreDifferences:
+        - group: "admissionregistration.k8s.io"
+          kind: ValidatingWebhookConfiguration
+          name: cnpg-validating-webhook-configuration
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle
+        - group: "admissionregistration.k8s.io"
+          kind: MutatingWebhookConfiguration
+          name: cnpg-mutating-webhook-configuration
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
       path: dashboard
