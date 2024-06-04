@@ -90,6 +90,7 @@ app-of-apps:
           name: prometheus-stack-grafana
           jqPathExpressions:
             - .spec.template.spec.containers[]?.resources
+            - .spec.template.spec.initContainers[]?.resources
         - group: apps
           kind: DaemonSet
           namespace: monitoring
