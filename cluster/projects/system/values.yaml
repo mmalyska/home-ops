@@ -77,12 +77,42 @@ app-of-apps:
       namespace: monitoring
       path: prometheus-stack
       selfHeal: false
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          namespace: monitoring
+          name: prometheus-stack-kube-state-metrics
+          jqPathExpressions:
+            - spec.template.spec.containers[]?.resources
+        - group: apps
+          kind: Deployment
+          namespace: monitoring
+          name: prometheus-stack-grafana
+          jqPathExpressions:
+            - spec.template.spec.containers[]?.resources
+        - group: apps
+          kind: DaemonSet
+          namespace: monitoring
+          name: prometheus-stack-prometheus-node-exporter
+          jqPathExpressions:
+            - spec.template.spec.containers[]?.resources
+        - group: "admissionregistration.k8s.io"
+          kind: ValidatingWebhookConfiguration
+          name: prometheus-stack-kube-prom-admission
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle
+        - group: "admissionregistration.k8s.io"
+          kind: MutatingWebhookConfiguration
+          name: prometheus-stack-kube-prom-admission
+          jqPathExpressions:
+            - .webhooks[]?.clientConfig.caBundle
       plugin:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
       extraSyncOptions:
         - ServerSideApply=true
+        - RespectIgnoreDifferences=true
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
