@@ -95,7 +95,7 @@ app-of-apps:
           namespace: monitoring
           name: prometheus-stack-prometheus-node-exporter
           jqPathExpressions:
-            - .pec.template.spec.containers[]?.resources
+            - .spec.template.spec.containers[]?.resources
         - group: "admissionregistration.k8s.io"
           kind: ValidatingWebhookConfiguration
           name: prometheus-stack-kube-prom-admission
