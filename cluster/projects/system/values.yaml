@@ -23,6 +23,8 @@ app-of-apps:
       namespace: cnpg
       path: cloudnative-pg
       selfHeal: true
+      extraSyncOptions:
+        - ServerSideApply=true
     - name: kubernetes-dashboard
       namespace: kubernetes-dashboard
       path: dashboard
