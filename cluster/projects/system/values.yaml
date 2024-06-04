@@ -76,7 +76,7 @@ app-of-apps:
     - name: prometheus-stack
       namespace: monitoring
       path: prometheus-stack
-      selfHeal: true
+      selfHeal: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
