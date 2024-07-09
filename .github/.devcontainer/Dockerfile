@@ -1,7 +1,7 @@
 # See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu/.devcontainer/base.Dockerfile
 
 # [Choice] Ubuntu version (use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon): ubuntu-22.04, ubuntu-20.04, ubuntu-18.04
-FROM mcr.microsoft.com/devcontainers/base:ubuntu@sha256:08a925b41755bcff957285d31e9bf5f0b7fc74962f455a929c15dc341b984b6f
+FROM mcr.microsoft.com/devcontainers/base:ubuntu@sha256:8b4d256d1fc34834f7e2c4e1f48a0220d16fb762084ed386e2a4add22e542ad0
 
 # renovate: datasource=github-releases depName=budimanjojo/talhelper
 ARG TALHELPER=v3.0.3
