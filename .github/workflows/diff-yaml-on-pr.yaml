@@ -91,7 +91,7 @@ jobs:
             helm
             yq
           # renovate: datasource=github-releases depName=helm/helm
-          helm: "3.12.3"
+          helm: "3.15.3"
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           ref: ${{ env.conf_live_branch }}
