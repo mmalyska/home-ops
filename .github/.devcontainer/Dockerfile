@@ -4,7 +4,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu@sha256:992da2407303b4224362e0dac5c5c9235ae4371da4f7d9babe8f9013659f6933
 
 # renovate: datasource=github-releases depName=budimanjojo/talhelper
-ARG TALHELPER=v3.0.3
+ARG TALHELPER=v3.0.4
 # renovate: datasource=github-releases depName=mmalyska/talos-images
 ARG TALOS_CLI=v1.7.5
 
