@@ -4,7 +4,7 @@ global:
 image:
   pullPolicy: IfNotPresent
   repository: ghcr.io/linuxserver/jellyfin
-  tag: 10.9.7@sha256:d3d20076f277fd958c799e75f6f6bfdbf9a2c5a8f5b354b11223071d0691ad6a
+  tag: 10.9.7@sha256:6844dff8f5b130a19625c3ad051c63597480bc0b9da77b5bd10f58aa719dab91
 jellyfin:
   annotations: {}
   replicaCount: 1
