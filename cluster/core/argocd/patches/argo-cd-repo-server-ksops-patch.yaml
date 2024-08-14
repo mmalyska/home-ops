@@ -20,7 +20,7 @@ spec:
       containers:
         - name: sops-replacer-plugin-kustomize
           command: [/var/run/argocd/argocd-cmp-server]
-          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:3e31a6b05c370118ad7a55ccc21ed8f360ca58c2018546b50d73bf64c75ec461
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:5fd0b4b9381efb1d630c395d1d999c6239933a719bd547457e67cc2f83168a10
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -49,7 +49,7 @@ spec:
               subPath: age.agekey
         - name: sops-replacer-plugin-helm
           command: [/var/run/argocd/argocd-cmp-server]
-          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:3e31a6b05c370118ad7a55ccc21ed8f360ca58c2018546b50d73bf64c75ec461
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:5fd0b4b9381efb1d630c395d1d999c6239933a719bd547457e67cc2f83168a10
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
