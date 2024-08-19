@@ -17,6 +17,7 @@
   },
   "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
   "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
+  "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",
   "remoteUser": "vscode",
   "containerUser": "vscode",
   "customizations": {

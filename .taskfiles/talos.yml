@@ -9,13 +9,22 @@ vars:
   TALOS_VERSION: "v1.7.5"
   # renovate: datasource=github-releases depName=siderolabs/kubelet
   KUBERNETES_VERSION: "v1.30.4"
+  # renovate: datasource=github-releases depName=budimanjojo/talhelper
+  TALHELPER: "v3.0.4"
 
 tasks:
   init:
     desc: Init talosctl and grab kubeconfig (task talos:init)
     cmds:
+      - task: install
       - task: generate
       - task: generate-kubeconfig
+
+  install:
+    desc: Install talos and talhelper (task talos:install)
+    cmds:
+      - curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/${TALOS_VERSION}+g" | bash
+      - curl https://i.jpillora.com/budimanjojo/talhelper@${TALHELPER}\! | sudo bash
 
   dashboard:
     desc: Show talos dashboard fot N node (task talos:dashboard)
