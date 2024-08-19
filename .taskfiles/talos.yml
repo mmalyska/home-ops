@@ -23,8 +23,29 @@ tasks:
   install:
     desc: Install talos and talhelper (task talos:install)
     cmds:
+      - task: install:talos
+      - task: install:talhelper
+
+  install:talos:
+    internal: true
+    desc: Install talos and talhelper (task talos:install)
+    cmds:
+      - sudo rm -f /usr/local/bin/talosctl
       - curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/{{ .TALOS_VERSION }}+g" | bash
+    generates:
+      - /usr/local/bin/talosctl
+    status:
+      - talosctl version --client --short | grep -q 'Client {{ .TALOS_VERSION }}'
+
+  install:talhelper:
+    internal: true
+    desc: Install talos and talhelper (task talos:install)
+    cmds:
       - curl https://i.jpillora.com/budimanjojo/talhelper@{{ .TALHELPER }}\! | sudo bash
+    generates:
+      - /usr/local/bin/talhelper
+    status:
+      - talhelper --version | grep -q 'talhelper version {{ trimPrefix "v" .TALHELPER }}'
 
   dashboard:
     desc: Show talos dashboard fot N node (task talos:dashboard)
