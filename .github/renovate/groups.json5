@@ -55,5 +55,15 @@
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
       "separateMinorPatch": true,
     },
+    {
+      "description": "Helm",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": [
+        "helm/helm",
+      ],
+      "groupName": "helm",
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "separateMinorPatch": true,
+    },
   ],
 }
