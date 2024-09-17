@@ -1,10 +1,14 @@
+data "cloudflare_zone" "domain" {
+  name = local.cloudflare_domain
+}
+
 resource "cloudflare_zone_settings_override" "cloudflare_settings" {
   zone_id = data.cloudflare_zone.domain.id
   settings {
     # /ssl-tls
-    ssl = "strict"
-    # /ssl-tls/edge-certificates
     always_use_https         = "on"
+    ssl                      = "strict"
+    # /ssl-tls/edge-certificates
     min_tls_version          = "1.2"
     opportunistic_encryption = "on"
     tls_1_3                  = "zrt"
@@ -17,11 +21,6 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     security_level = "medium"
     # /speed/optimization
     brotli = "on"
-    minify {
-      css  = "on"
-      js   = "on"
-      html = "on"
-    }
     rocket_loader = "on"
     # /caching/configuration
     always_online    = "off"
@@ -37,7 +36,7 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     # /content-protection
     email_obfuscation   = "on"
     server_side_exclude = "on"
-    hotlink_protection  = "off"
+    hotlink_protection  = "on"
     # /workers
     security_header {
       enabled = false
