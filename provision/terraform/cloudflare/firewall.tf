@@ -38,7 +38,7 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
     description = "Expression to allow UptimeRobot IP addresses"
     enabled     = true
     logging {
-      enabled   = false
+      enabled   = true
     }
   }
 
