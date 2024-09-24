@@ -144,11 +144,13 @@ tasks:
       - task: apply-config
         vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
       - talosctl upgrade --nodes {{ .NODE }} --image ghcr.io/mmalyska/talos-installer:{{ .TALOS_VERSION }}
+      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy
     cmds:
+      - kubectl wait --timeout=5m --for=condition=Complete jobs --all --all-namespaces
       # Ensure CephCluster is healthy
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
       # Ensure CloudNative-PG cluster has 2 ready instances
