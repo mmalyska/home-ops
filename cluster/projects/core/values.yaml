@@ -69,3 +69,14 @@ app-of-apps:
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
+    - name: cilium
+      namespace: kube-system
+      path: cilium
+      selfHeal: true
+      extraSyncOptions:
+        - ServerSideApply=true
+      managedNamespaceMetadata:
+        labels:
+          pod-security.kubernetes.io/enforce: privileged
+          pod-security.kubernetes.io/audit: privileged
+          pod-security.kubernetes.io/warn: privileged

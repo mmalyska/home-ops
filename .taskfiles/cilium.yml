@@ -1,0 +1,32 @@
+---
+version: "3"
+
+vars:
+  # renovate: datasource=github-releases depName=cilium/cilium-cli
+  CILIUM_VERSION: "v0.16.18"
+  CLI_ARCH:
+    sh: 'if [ "$(uname -m)" = "aarch64" ]; then echo "arm64"; else echo "amd64"; fi'
+
+tasks:
+  init:
+    desc: Init cilium (task cilium:init)
+    cmds:
+      - task: install
+
+  install:
+    desc: Install cilium (task cilium:install)
+    cmds:
+      - task: install:cli
+
+  install:cli:
+    internal: true
+    desc: Install cilium cli
+    cmds:
+      - curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/{{ .CILIUM_VERSION }}/cilium-linux-{{ .CLI_ARCH }}.tar.gz{,.sha256sum}
+      - sha256sum --check cilium-linux-{{ .CLI_ARCH }}.tar.gz.sha256sum
+      - sudo tar xzvfC cilium-linux-{{ .CLI_ARCH }}.tar.gz /usr/local/bin
+      - rm cilium-linux-{{ .CLI_ARCH }}.tar.gz{,.sha256sum}
+    generates:
+      - /usr/local/bin/cilium
+    status:
+      - "cilium version --client | grep -q 'cilium-cli: {{ .CILIUM_VERSION }}'"

@@ -21,6 +21,7 @@ includes:
   lint: .taskfiles/lint.yml
   talos: .taskfiles/talos.yml
   mkdocs: .taskfiles/mkdocs.yml
+  cilium: .taskfiles/cilium.yml
 
 tasks:
   init:
@@ -63,3 +64,4 @@ tasks:
       - task: ansible:init
       - task: terraform:upgrade:cloudflare
       - task: talos:init
+      - task: cilium:init
