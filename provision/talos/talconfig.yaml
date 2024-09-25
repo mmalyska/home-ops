@@ -16,8 +16,6 @@ nodes:
     ipAddress: 192.168.48.2
     installDisk: /dev/nvme0n1
     controlPlane: true
-    nameservers:
-      - 192.168.50.9
     networkInterfaces:
       - interface: eth0
         addresses:
@@ -32,8 +30,6 @@ nodes:
     ipAddress: 192.168.48.3
     installDisk: /dev/nvme0n1
     controlPlane: true
-    nameservers:
-      - 192.168.50.9
     networkInterfaces:
       - interface: eth0
         addresses:
@@ -48,8 +44,6 @@ nodes:
     ipAddress: 192.168.48.4
     installDisk: /dev/nvme0n1
     controlPlane: true
-    nameservers:
-      - 192.168.50.9
     networkInterfaces:
       - interface: eth0
         addresses:
@@ -109,6 +103,13 @@ controlPlane:
               - os:etcd:backup
             allowedKubernetesNamespaces:
               - talos-backup
+          hostDNS:
+            enabled: true
+            resolveMemberNames: true
+            forwardKubeDNSToHost: true
+        network:
+          nameservers:
+            - 192.168.50.9
     - |-
       - op: add
         path: /cluster/controllerManager/extraArgs
