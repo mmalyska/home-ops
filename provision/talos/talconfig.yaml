@@ -5,7 +5,7 @@ talosVersion: v1.7.6
 kubernetesVersion: v1.30.5
 endpoint: https://${clusterDomain}:6443
 cniConfig:
-  name: flannel
+  name: none
 additionalMachineCertSans:
   - ${clusterEndpointIP}
   - ${clusterDomain}
