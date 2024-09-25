@@ -11,6 +11,11 @@ cilium:
     mode: kubernetes
   policyEnforcementMode: "default"
   kubeProxyReplacement: false
+  l2announcements:
+    enabled: true
+  devices: {eth0, net0}
+  externalIPs:
+    enabled: true
   bpf:
     hostLegacyRouting: true
   securityContext:

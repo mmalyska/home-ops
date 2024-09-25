@@ -15,26 +15,26 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-    - name: metallb
-      namespace: metallb-system
-      path: metallb-system/metallb
-      selfHeal: true
-      managedNamespaceMetadata:
-        labels:
-          pod-security.kubernetes.io/enforce: privileged
-          pod-security.kubernetes.io/audit: privileged
-          pod-security.kubernetes.io/warn: privileged
-      ignoreDifferences:
-        - group: "apiextensions.k8s.io"
-          kind: CustomResourceDefinition
-          name: bgppeers.metallb.io
-          jsonPointers:
-            - /spec/conversion/webhook/clientConfig/caBundle
-        - group: "apiextensions.k8s.io"
-          kind: CustomResourceDefinition
-          name: addresspools.metallb.io
-          jsonPointers:
-            - /spec/conversion/webhook/clientConfig/caBundle
+    # - name: metallb
+    #   namespace: metallb-system
+    #   path: metallb-system/metallb
+    #   selfHeal: true
+    #   managedNamespaceMetadata:
+    #     labels:
+    #       pod-security.kubernetes.io/enforce: privileged
+    #       pod-security.kubernetes.io/audit: privileged
+    #       pod-security.kubernetes.io/warn: privileged
+    #   ignoreDifferences:
+    #     - group: "apiextensions.k8s.io"
+    #       kind: CustomResourceDefinition
+    #       name: bgppeers.metallb.io
+    #       jsonPointers:
+    #         - /spec/conversion/webhook/clientConfig/caBundle
+    #     - group: "apiextensions.k8s.io"
+    #       kind: CustomResourceDefinition
+    #       name: addresspools.metallb.io
+    #       jsonPointers:
+    #         - /spec/conversion/webhook/clientConfig/caBundle
     - name: rook-ceph-cluster
       namespace: rook-ceph
       createNamespace: false
