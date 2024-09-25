@@ -2,17 +2,13 @@ cilium:
   operator:
     unmanagedPodWatcher:
       restart: true
-  tunnel: vxlan
-  tunnelPort: 8473
   cni:
     customConf: false
     uninstall: false
   encryption:
     nodeEncryption: false
   ipam:
-    mode: cluster-pool
-    operator:
-      clusterPoolIPv4PodCIDRList: ["10.245.0.0/16"]
+    mode: kubernetes
   policyEnforcementMode: "default"
   kubeProxyReplacement: false
   bpf:
