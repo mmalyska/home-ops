@@ -1,5 +1,6 @@
 ---
 {{ range $k, $v := $.Values.apps }}
+{{- if $v.enabled -}}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -48,4 +49,5 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 ---
+{{ end }}
 {{ end }}
