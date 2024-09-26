@@ -17,3 +17,6 @@ cilium:
     autoMount:
       enabled: false
     hostRoot: /sys/fs/cgroup
+  k8sClientRateLimit:
+    qps: 20
+    burst: 100

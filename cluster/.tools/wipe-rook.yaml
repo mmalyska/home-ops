@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: disk-wipe-mc1
-  namespace: rook-ceph
+  namespace: kube-system
 spec:
   restartPolicy: Never
   nodeName: mc1
@@ -37,7 +37,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: disk-wipe-mc2
-  namespace: rook-ceph
+  namespace: kube-system
 spec:
   restartPolicy: Never
   nodeName: mc2
@@ -71,7 +71,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: disk-wipe-mc3
-  namespace: rook-ceph
+  namespace: kube-system
 spec:
   restartPolicy: Never
   nodeName: mc3
@@ -83,7 +83,7 @@ spec:
       resources: {}
       env:
         - name: CEPH_DISK
-          value: /dev/sdb
+          value: /dev/sda
       command: ["/bin/sh", "-c"]
       args:
         - apk add --no-cache sgdisk util-linux parted;
