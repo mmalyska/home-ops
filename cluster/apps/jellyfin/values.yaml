@@ -7,7 +7,7 @@ image:
   tag: 10.9.11@sha256:50e541e59ef6b3adc667eee4eeb0c88af09cad46ac15a7e66cf335dfd2cc05bf
 jellyfin:
   annotations: {}
-  replicaCount: 1
+  replicaCount: 0
   env:
     - name: TZ
       value: CET
