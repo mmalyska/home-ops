@@ -70,6 +70,8 @@ controlPlane:
             oidc-issuer-url: ${oidcIssuerURL}
             oidc-username-claim: email
             oidc-username-prefix: 'oidc:'
+        proxy:
+          disabled: true
     - |-
       machine:
         files:
