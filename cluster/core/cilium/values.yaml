@@ -1,25 +1,14 @@
 cilium:
-  operator:
-    unmanagedPodWatcher:
-      restart: true
-  cni:
-    customConf: false
-    uninstall: false
-  encryption:
-    nodeEncryption: false
   ipam:
     mode: kubernetes
   policyEnforcementMode: "default"
   kubeProxyReplacement: true
   k8sServiceHost: localhost
-  k8sServicePort: 7445 #kubeprism port
+  k8sServicePort: 7445 # kubeprism port
   l2announcements:
     enabled: true
-  devices: {eth0, net0}
   externalIPs:
     enabled: true
-  bpf:
-    hostLegacyRouting: true
   securityContext:
     capabilities:
       ciliumAgent: ["CHOWN", "KILL", "NET_ADMIN", "NET_RAW", "IPC_LOCK", "SYS_ADMIN", "SYS_RESOURCE", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]

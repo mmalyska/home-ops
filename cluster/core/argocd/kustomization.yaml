@@ -16,9 +16,9 @@ resources:
   - resources/metrics.yaml
 
 # changes to config maps
-patchesStrategicMerge:
-  - patches/argocd-cm.yaml
-  - patches/argocd-rbac-cm.yaml
-  - patches/argocd-cmd-params-cm.yaml
-  - patches/argo-cd-repo-server-ksops-patch.yaml
-  - patches/argocd-secret.yaml
+patches:
+  - path: patches/argocd-cm.yaml
+  - path: patches/argocd-rbac-cm.yaml
+  - path: patches/argocd-cmd-params-cm.yaml
+  - path: patches/argo-cd-repo-server-ksops-patch.yaml
+  - path: patches/argocd-secret.yaml
