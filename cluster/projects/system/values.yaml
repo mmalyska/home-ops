@@ -114,6 +114,7 @@ app-of-apps:
     - name: traefik
       namespace: traefik
       path: traefik
+      enabled: true
       selfHeal: true
       plugin:
         env:
