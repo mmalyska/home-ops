@@ -3,12 +3,13 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: disk-wipe-mc1
+  namespace: rook-ceph
 spec:
   restartPolicy: Never
   nodeName: mc1
   containers:
     - name: disk-wipe
-      image: ghcr.io/onedr0p/alpine:rolling@sha256:3fbc581cb0fe29830376161ae026e2a765dcc11e1747477fe9ebf155720b8638
+      image: public.ecr.aws/docker/library/alpine:latest@sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d
       securityContext:
         privileged: true
       resources: {}
@@ -36,12 +37,13 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: disk-wipe-mc2
+  namespace: rook-ceph
 spec:
   restartPolicy: Never
   nodeName: mc2
   containers:
     - name: disk-wipe
-      image: ghcr.io/onedr0p/alpine:rolling@sha256:3fbc581cb0fe29830376161ae026e2a765dcc11e1747477fe9ebf155720b8638
+      image: public.ecr.aws/docker/library/alpine:latest@sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d
       securityContext:
         privileged: true
       resources: {}
@@ -69,18 +71,19 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: disk-wipe-mc3
+  namespace: rook-ceph
 spec:
   restartPolicy: Never
   nodeName: mc3
   containers:
     - name: disk-wipe
-      image: ghcr.io/onedr0p/alpine:rolling@sha256:3fbc581cb0fe29830376161ae026e2a765dcc11e1747477fe9ebf155720b8638
+      image: public.ecr.aws/docker/library/alpine:latest@sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d
       securityContext:
         privileged: true
       resources: {}
       env:
         - name: CEPH_DISK
-          value: /dev/sda
+          value: /dev/sdb
       command: ["/bin/sh", "-c"]
       args:
         - apk add --no-cache sgdisk util-linux parted;
