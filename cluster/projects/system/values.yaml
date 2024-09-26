@@ -166,6 +166,7 @@ app-of-apps:
     - name: external-secrets
       namespace: external-secrets
       path: external-secrets
+      enabled: true
       selfHeal: true
       plugin:
         env:
