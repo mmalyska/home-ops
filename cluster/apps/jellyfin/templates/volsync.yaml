@@ -22,32 +22,20 @@ spec:
   dataFrom:
     - extract:
         key: VOLSYNC_RESTIC_JSON
-{{- if and .Values.persistence.config.enabled }}
 ---
-# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/volsync.backube/replicationsource_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
-kind: ReplicationSource
+kind: ReplicationDestination
 metadata:
-  name: jellyfin
-  labels: {{- include "jellyfin.labels" . | nindent 4 }}
+  name: jellyfin-dest
+  namespace: jellyfin
 spec:
-  {{- if .Values.persistence.config.existingClaim }}
-  sourcePVC: .Values.persistence.config.existingClaim
-  {{- else }}
-  sourcePVC: {{ template "jellyfin.fullname" . }}-config
-  {{- end }}
   trigger:
-    schedule: "35 */12 * * *"
+    manual: restore-once
   restic:
-    copyMethod: Snapshot
-    pruneIntervalDays: 14
     repository: jellyfin-restic-secret
-    retain:
-      daily: 6
-      weekly: 4
-      monthly: 2
+    destinationPVC: jellyfin-config
+    copyMethod: Direct
     moverSecurityContext:
       runAsUser: 1001
       runAsGroup: 1001
       fsGroup: 1001
-{{- end }}
