@@ -19,10 +19,12 @@ app-of-apps:
     - name: cloudflared
       namespace: cloudflared
       path: cloudflared
+      enabled: true
       selfHeal: true
     - name: cloudnative-pg
       namespace: cnpg
       path: cloudnative-pg
+      enabled: true
       selfHeal: true
       extraSyncOptions:
         - ServerSideApply=true
@@ -46,6 +48,7 @@ app-of-apps:
     - name: dyndns
       namespace: dyndns
       path: dyndns
+      enabled: true
       selfHeal: true
       plugin:
         env:
@@ -62,9 +65,11 @@ app-of-apps:
     - name: metrics-server
       namespace: metrics-server
       path: metrics-server
+      enabled: true
     - name: nfs-subdir-external-provisioner
       namespace: nfs-subdir-provisioner
       path: nfs-subdir-external-provisioner
+      enabled: true
       selfHeal: true
       plugin:
         env:
@@ -73,6 +78,7 @@ app-of-apps:
     - name: oauth2-proxy
       namespace: oauth2-proxy
       path: oauth2-proxy
+      enabled: true
       selfHeal: true
       plugin:
         env:
@@ -125,6 +131,7 @@ app-of-apps:
     - name: node-feature-discovery
       namespace: node-feature-discovery
       path: node-feature-discovery
+      enabled: true
       selfHeal: true
       extraSyncOptions:
         - RespectIgnoreDifferences=true
@@ -139,6 +146,7 @@ app-of-apps:
     - name: intel-device-plugins-operator
       namespace: intel-device-plugins-operator
       path: intel-device-plugins-operator
+      enabled: true
       selfHeal: true
       managedNamespaceMetadata:
         labels:
@@ -146,6 +154,7 @@ app-of-apps:
     - name: intel-gpu-plugin
       namespace: intel-gpu-plugin
       path: intel-gpu-plugin
+      enabled: true
       selfHeal: true
       extraSyncOptions:
         - RespectIgnoreDifferences=true
@@ -160,6 +169,7 @@ app-of-apps:
     - name: snapshot-controller
       namespace: snapshot-controller
       path: snapshot-controller
+      enabled: true
       selfHeal: true
       ignoreDifferences:
         - kind: Secret
@@ -183,8 +193,10 @@ app-of-apps:
     - name: volsync
       namespace: volsync
       path: volsync
+      enabled: true
       selfHeal: true
     - name: talos-backup
       namespace: talos-backup
       path: talos-backup
+      enabled: true
       selfHeal: true
