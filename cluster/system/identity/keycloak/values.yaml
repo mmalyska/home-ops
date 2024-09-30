@@ -119,7 +119,7 @@ postgres:
     externalClusters:
       - name: cluster-pg15
         connectionParameters:
-          host: keycloakdb-cnpg-rw
+          host: keycloakdb-old-cnpg-rw
           user: app
           dbname: app
         password:
