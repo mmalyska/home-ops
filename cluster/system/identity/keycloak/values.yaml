@@ -63,43 +63,44 @@ server:
     timeoutSeconds: 2
   resources: {}
 postgres:
-  name: keycloakdb
-  instances: 2
-  storage:
-    size: 2Gi
-  bootstrap:
-    recovery:
-      source: crunchy-cluster
-  externalClusters:
-    - name: crunchy-cluster
-      barmanObjectStore:
-        serverName: keycloakdb-cnpg
-        destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
-        endpointURL: <secret:s3_endpoint>
-        s3Credentials:
-          accessKeyId:
-            name: keycloakdb-secrets
-            key: S3_ACCESS_KEY_ID
-          secretAccessKey:
-            name: keycloakdb-secrets
-            key: S3_ACCESS_SECRET_KEY
-  monitoring:
-    enablePodMonitor: true
-  # backup:
-  #   retentionPolicy: "10d"
-  #   barmanObjectStore:
-  #     destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
-  #     endpointURL: <secret:s3_endpoint>
-  #     s3Credentials:
-  #       accessKeyId:
-  #         name: keycloakdb-secrets
-  #         key: S3_ACCESS_KEY_ID
-  #       secretAccessKey:
-  #         name: keycloakdb-secrets
-  #         key: S3_ACCESS_SECRET_KEY
-  # scheduledBackups:
-  #   - name: keycloakdb-cnpg-backup
-  #     spec:
-  #       immediate: true
-  #       schedule: "55 0 0 * * *"
-  #       backupOwnerReference: self
+  - name: keycloakdb-old
+    imageName: ghcr.io/cloudnative-pg/postgresql:15.6
+    instances: 2
+    storage:
+      size: 2Gi
+    bootstrap:
+      recovery:
+        source: crunchy-cluster
+    externalClusters:
+      - name: crunchy-cluster
+        barmanObjectStore:
+          serverName: keycloakdb-old-cnpg
+          destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
+          endpointURL: <secret:s3_endpoint>
+          s3Credentials:
+            accessKeyId:
+              name: keycloakdb-secrets
+              key: S3_ACCESS_KEY_ID
+            secretAccessKey:
+              name: keycloakdb-secrets
+              key: S3_ACCESS_SECRET_KEY
+    monitoring:
+      enablePodMonitor: true
+    # backup:
+    #   retentionPolicy: "10d"
+    #   barmanObjectStore:
+    #     destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
+    #     endpointURL: <secret:s3_endpoint>
+    #     s3Credentials:
+    #       accessKeyId:
+    #         name: keycloakdb-secrets
+    #         key: S3_ACCESS_KEY_ID
+    #       secretAccessKey:
+    #         name: keycloakdb-secrets
+    #         key: S3_ACCESS_SECRET_KEY
+    # scheduledBackups:
+    #   - name: keycloakdb-cnpg-backup
+    #     spec:
+    #       immediate: true
+    #       schedule: "55 0 0 * * *"
+    #       backupOwnerReference: self
