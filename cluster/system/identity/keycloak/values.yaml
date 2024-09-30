@@ -70,11 +70,11 @@ postgres:
       size: 2Gi
     bootstrap:
       recovery:
-        source: keycloakdb-cnpg
+        source: crunchy-cluster
     externalClusters:
-      - name: keycloakdb-cnpg
+      - name: crunchy-cluster
         barmanObjectStore:
-          serverName: keycloakdb-old-cnpg
+          serverName: keycloakdb-cnpg
           destinationPath: "s3://k8s-at-home-backup/cnpg/keycloak"
           endpointURL: <secret:s3_endpoint>
           s3Credentials:
