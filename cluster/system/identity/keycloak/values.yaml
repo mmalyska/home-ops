@@ -6,7 +6,7 @@ global:
     imagePullPolicy: IfNotPresent
 server:
   name: server
-  replicas: 0
+  replicas: 1
   podAnnotations: {}
   podLabels: {}
   containerPort: 8080
