@@ -30,21 +30,6 @@ app-of-apps:
         - ServerSideApply=true
         - RespectIgnoreDifferences=true
       ignoreDifferences:
-    - name: kubernetes-dashboard
-      namespace: kubernetes-dashboard
-      path: dashboard
-      selfHeal: true
-      plugin:
-        env:
-          - name: SOPS_SECRET_FILE
-            value: secret.sec.yaml
-      extraSyncOptions:
-        - RespectIgnoreDifferences=true
-      ignoreDifferences:
-        - name: kubernetes-dashboard-csrf
-          kind: Secret
-          jsonPointers:
-            - /data/csrf
     - name: dyndns
       namespace: dyndns
       path: dyndns
@@ -57,6 +42,7 @@ app-of-apps:
     - name: keycloak
       namespace: identity
       path: identity/keycloak
+      enabled: true
       selfHeal: true
       plugin:
         env:
