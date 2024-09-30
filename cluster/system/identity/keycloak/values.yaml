@@ -109,22 +109,21 @@ postgres:
     storage:
       size: 2Gi
     bootstrap:
-      pg_basebackup:
-        source: cluster-example
+      initdb:
+        import:
+          type: microservice
+          databases:
+            - app
+          source:
+            externalCluster: cluster-pg15
     externalClusters:
-      - name: cluster-example
+      - name: cluster-pg15
         connectionParameters:
-          host: keycloakdb-old-cnpg-rw.default.svc
-          user: streaming_replica
-          sslmode: verify-full
-        sslKey:
-          name: cluster-example-replication
-          key: tls.key
-        sslCert:
-          name: cluster-example-replication
-          key: tls.crt
-        sslRootCert:
-          name: cluster-example-ca
-          key: ca.crt
+          host: keycloakdb-cnpg-rw
+          user: app
+          dbname: app
+        password:
+          name: keycloakdb-old-cnpg-app
+          key: password
     monitoring:
       enablePodMonitor: true
