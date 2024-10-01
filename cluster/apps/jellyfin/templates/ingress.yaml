@@ -26,6 +26,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "jellyfin.fullname" . }}-tcp
+                name: {{ include "jellyfin.fullname" . }}
                 port:
                   name: http
