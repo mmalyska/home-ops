@@ -1,41 +1,26 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ include "jellyfin.fullname" . }}-tcp
+  name: {{ include "jellyfin.fullname" . }}
   labels: {{- include "jellyfin.labels" . | nindent 4 }}
   annotations:
-    metallb.universe.tf/allow-shared-ip: {{ include "jellyfin.fullname" . }}
+    io.cilium/lb-ipam-sharing-key: {{ include "jellyfin.fullname" . }}
+    io.cilium/lb-ipam-ips: {{ .Values.jellyfin.service.ip }}
 spec:
   selector:
     {{- include "jellyfin.selectorLabels" . | nindent 4 }}
   ports:
-  - port: 8096
-    targetPort: 8096
-    name: http
-    protocol: TCP
+    - port: 8096
+      targetPort: 8096
+      name: http
+      protocol: TCP
+    - port: 1900
+      targetPort: 1900
+      name: dlna-udp
+      protocol: UDP
+    - port: 7359
+      targetPort: 7359
+      name: discovery-udp
+      protocol: UDP
   type: LoadBalancer
-  loadBalancerIP: {{ .Values.jellyfin.service.ip }}
-  sessionAffinity: ClientIP
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: {{ include "jellyfin.fullname" . }}-udp
-  labels: {{- include "jellyfin.labels" . | nindent 4 }}
-  annotations:
-    metallb.universe.tf/allow-shared-ip: {{ include "jellyfin.fullname" . }}
-spec:
-  selector:
-    {{- include "jellyfin.selectorLabels" . | nindent 4 }}
-  ports:
-  - port: 1900
-    targetPort: 1900
-    name: dlna-udp
-    protocol: UDP
-  - port: 7359
-    targetPort: 7359
-    name: discovery-udp
-    protocol: UDP
-  type: LoadBalancer
-  loadBalancerIP: {{ .Values.jellyfin.service.ip }}
   sessionAffinity: ClientIP
