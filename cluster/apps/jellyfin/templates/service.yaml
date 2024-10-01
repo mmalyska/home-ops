@@ -4,7 +4,6 @@ metadata:
   name: {{ include "jellyfin.fullname" . }}
   labels: {{- include "jellyfin.labels" . | nindent 4 }}
   annotations:
-    io.cilium/lb-ipam-sharing-key: {{ include "jellyfin.fullname" . }}
     io.cilium/lb-ipam-ips: {{ .Values.jellyfin.service.ip }}
 spec:
   selector:
