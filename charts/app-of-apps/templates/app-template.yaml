@@ -10,6 +10,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
   annotations:
     argocd.argoproj.io/compare-options: ServerSideDiff=true
+    argocd.argoproj.io/manifest-generate-paths: .
 spec:
   project: {{ $.Values.project }}
   source:
@@ -33,7 +34,9 @@ spec:
   syncPolicy:
     {{- if hasKey $v "selfHeal" | ternary $v.selfHeal false }}
     automated:
-      selfHeal: {{ hasKey $v "selfHeal" | ternary $v.selfHeal false }}
+      selfHeal: true
+      prune: true
+      allowEmpty: false
     {{- end }}
     {{- with $v.managedNamespaceMetadata }}
     managedNamespaceMetadata:
@@ -41,6 +44,10 @@ spec:
     {{- end }}
     syncOptions:
       - CreateNamespace=true
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
     {{- with $v.extraSyncOptions }}
       {{- toYaml . | nindent 6 }}
     {{- end }}
@@ -48,6 +55,7 @@ spec:
   ignoreDifferences:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  revisionHistoryLimit: 2
 ---
 {{ end }}
 {{ end }}
