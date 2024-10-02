@@ -26,9 +26,6 @@ app-of-apps:
       path: cloudnative-pg
       enabled: true
       selfHeal: true
-      extraSyncOptions:
-        - ServerSideApply=true
-        - RespectIgnoreDifferences=true
       ignoreDifferences:
     - name: dyndns
       namespace: dyndns
@@ -52,6 +49,7 @@ app-of-apps:
       namespace: metrics-server
       path: metrics-server
       enabled: true
+      selfHeal: true
     - name: nfs-subdir-external-provisioner
       namespace: nfs-subdir-provisioner
       path: nfs-subdir-external-provisioner
@@ -99,9 +97,6 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-      extraSyncOptions:
-        - ServerSideApply=true
-        - RespectIgnoreDifferences=true
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
@@ -119,8 +114,6 @@ app-of-apps:
       path: node-feature-discovery
       enabled: true
       selfHeal: true
-      extraSyncOptions:
-        - RespectIgnoreDifferences=true
       ignoreDifferences:
         - group: apps
           kind: DaemonSet
@@ -142,8 +135,6 @@ app-of-apps:
       path: intel-gpu-plugin
       enabled: true
       selfHeal: true
-      extraSyncOptions:
-        - RespectIgnoreDifferences=true
       ignoreDifferences:
         - group: deviceplugin.intel.com
           kind: GpuDevicePlugin

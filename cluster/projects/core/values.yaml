@@ -26,9 +26,6 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
-      extraSyncOptions:
-        - RespectIgnoreDifferences=true
-        - ServerSideApply=true
       ignoreDifferences:
         - group: ceph.rook.io
           kind: CephCluster
@@ -57,9 +54,6 @@ app-of-apps:
       path: cilium
       enabled: true
       selfHeal: true
-      extraSyncOptions:
-        - ServerSideApply=true
-        - RespectIgnoreDifferences=true
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
