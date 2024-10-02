@@ -9,6 +9,7 @@ data:
   statusbadge.enabled: "true"
   resource.customizations.useOpenLibs.cert-manager.io_Certificate: "true"
   users.session.duration: "24h"
+  timeout.reconciliation: "1h"
   accounts.mmalyska: apiKey,login
   oidc.config: |
     name: Keycloak

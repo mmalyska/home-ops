@@ -10,6 +10,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
   annotations:
     argocd.argoproj.io/compare-options: ServerSideDiff=true
+    argocd.argoproj.io/manifest-generate-paths: .
 spec:
   project: {{ $.Values.project }}
   source:
