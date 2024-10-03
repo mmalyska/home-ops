@@ -20,4 +20,7 @@ cilium:
   k8sClientRateLimit:
     qps: 20
     burst: 100
-  hubble.tls.auto.method: cronJob
+  hubble:
+    tls:
+      auto:
+        method: cronJob
