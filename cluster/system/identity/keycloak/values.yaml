@@ -12,7 +12,7 @@ server:
   containerPort: 8080
   env:
     - name: KC_HOSTNAME
-      value: "l.<secret:private-domain>"
+      value: "https://l.<secret:private-domain>"
     - name: KC_PROXY
       value: "edge"
     - name: KC_DB
