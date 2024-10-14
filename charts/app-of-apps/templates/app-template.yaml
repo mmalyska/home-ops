@@ -36,7 +36,6 @@ spec:
     automated:
       selfHeal: true
       prune: true
-      allowEmpty: false
     {{- end }}
     {{- with $v.managedNamespaceMetadata }}
     managedNamespaceMetadata:
