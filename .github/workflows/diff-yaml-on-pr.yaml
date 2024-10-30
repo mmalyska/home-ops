@@ -12,7 +12,7 @@ env:
   conf_live_branch: main
   conf_ignore_known_labels_containing_versions: true
   # renovate: datasource=github-releases depName=siderolabs/kubelet
-  kube_version: v1.30.6
+  kube_version: v1.31.2
   kube_api_versions: |
     acme.cert-manager.io/v1
     admissionregistration.k8s.io/v1
@@ -173,7 +173,7 @@ jobs:
       - uses: mmalyska/action-setup-kube-tools@releases/v0.12.0
         with:
           # renovate: datasource=github-releases depName=siderolabs/kubelet
-          kubectl: "v1.30.6"
+          kubectl: "v1.31.2"
           setup-tools: |
             kubectl
             yq
