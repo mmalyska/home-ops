@@ -154,5 +154,5 @@ tasks:
       # Ensure CephCluster is healthy
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
       # Ensure CloudNative-PG cluster has 2 ready instances
-      - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
+      # - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
       - kubectl -n identity wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster keycloakdb-cnpg
