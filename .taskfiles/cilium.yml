@@ -3,7 +3,7 @@ version: "3"
 
 vars:
   # renovate: datasource=github-releases depName=cilium/cilium-cli
-  CILIUM_VERSION: "v0.16.19"
+  CILIUM_VERSION: "v0.16.20"
   CLI_ARCH:
     sh: 'if [ "$(uname -m)" = "aarch64" ]; then echo "arm64"; else echo "amd64"; fi'
 
