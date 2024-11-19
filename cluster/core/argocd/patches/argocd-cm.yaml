@@ -5,7 +5,7 @@ metadata:
   name: argocd-cm
 data:
   url: "https://argocd.<secret:private-domain>"
-  admin.enabled: "false"
+  admin.enabled: "true"
   statusbadge.enabled: "true"
   resource.customizations.useOpenLibs.cert-manager.io_Certificate: "true"
   users.session.duration: "24h"
