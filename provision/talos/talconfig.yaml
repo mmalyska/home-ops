@@ -1,6 +1,6 @@
 clusterName: home
 # renovate: datasource=github-releases depName=mmalyska/talos-images
-talosVersion: v1.8.2
+talosVersion: v1.8.3
 # renovate: datasource=github-releases depName=siderolabs/kubelet
 kubernetesVersion: v1.31.2
 endpoint: https://${clusterDomain}:6443
@@ -95,7 +95,7 @@ controlPlane:
           fs.inotify.max_user_instances: "8192"
         install:
           # renovate-docker
-          image: ghcr.io/mmalyska/talos-installer:v1.8.2@sha256:d8a6c31cbc6ffe0f3f53845452ffbc443763acc3e58172cdd981390433fe9092
+          image: ghcr.io/mmalyska/talos-installer:v1.8.3@sha256:ce02178d8fecaca7cf4a1f9ea1b996cfef7a4813c27ce9dd9017cbc329688023
           extraKernelArgs:
             - net.ifnames=0
         features:
