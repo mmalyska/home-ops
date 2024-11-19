@@ -1,0 +1,11 @@
+{
+  "name": "sops-replacer",
+  "id": "sops-replacer",
+  "version": "1.0.0",
+  "description": "Installs sops replacer",
+  "options": {},
+  "containerEnv": {
+    "NONINTERACTIVE": "1"
+  },
+  "installsAfter": ["./local-features/common"]
+}

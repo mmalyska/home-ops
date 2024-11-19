@@ -10,6 +10,7 @@
   "features": {
     "ghcr.io/devcontainers/features/go": {},
     "./local-features/homebrew": {},
-    "./local-features/common": {}
+    "./local-features/common": {},
+    "./local-features/sops-replacer": {}
   }
 }
