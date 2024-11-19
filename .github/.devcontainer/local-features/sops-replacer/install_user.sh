@@ -1,5 +1,6 @@
 #!/bin/bash -i
 
+# renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
 VERSION=0.3.0
 ARCH=$(dpkg --print-architecture)
 
