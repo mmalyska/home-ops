@@ -20,7 +20,7 @@ app-of-apps:
       namespace: rook-ceph
       createNamespace: false
       path: rook-ceph/rook-ceph-cluster
-      enabled: true
+      enabled: false
       selfHeal: true
       plugin:
         env:
@@ -42,7 +42,7 @@ app-of-apps:
     - name: rook-ceph-operator
       namespace: rook-ceph
       path: rook-ceph/rook-ceph-operator
-      enabled: true
+      enabled: false
       selfHeal: true
       extraSyncOptions:
         - ServerSideApply=true
