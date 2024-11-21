@@ -39,4 +39,4 @@ traefik:
       enabled: true
       filters:
         statuscodes: "400-405,500"
-        minDuration: "10ms"
+        minduration: "10ms"
