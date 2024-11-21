@@ -49,7 +49,7 @@ spec:
       resources: {}
       env:
         - name: CEPH_DISK
-          value: /dev/sda
+          value: /dev/sdb
       command: ["/bin/sh", "-c"]
       args:
         - apk add --no-cache sgdisk util-linux parted;
@@ -83,7 +83,7 @@ spec:
       resources: {}
       env:
         - name: CEPH_DISK
-          value: /dev/sda
+          value: /dev/sdb
       command: ["/bin/sh", "-c"]
       args:
         - apk add --no-cache sgdisk util-linux parted;
