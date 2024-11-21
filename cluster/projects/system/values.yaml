@@ -71,7 +71,7 @@ app-of-apps:
     - name: prometheus-stack
       namespace: monitoring
       path: prometheus-stack
-      enabled: false
+      enabled: true
       selfHeal: true
       ignoreDifferences:
         - group: apps
