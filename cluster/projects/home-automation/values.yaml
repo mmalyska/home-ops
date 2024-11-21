@@ -8,10 +8,12 @@ app-of-apps:
     path: cluster/home-automation
   apps:
     - name: vernemq
+      enabled: false
       namespace: ha-vernemq
       path: vernemq
       selfHeal: true
     - name: home-assistant
+      enabled: false
       namespace: ha-home-assistant
       path: home-assistant
       selfHeal: true
@@ -20,14 +22,17 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: piper
+      enabled: false
       namespace: ha-piper
       path: piper
       selfHeal: true
     - name: whisper
+      enabled: false
       namespace: ha-whisper
       path: whisper
       selfHeal: true
     - name: openwakeword
+      enabled: false
       namespace: ha-openwakeword
       path: openwakeword
       selfHeal: true
