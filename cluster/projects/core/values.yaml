@@ -20,7 +20,7 @@ app-of-apps:
       namespace: rook-ceph
       createNamespace: false
       path: rook-ceph/rook-ceph-cluster
-      enabled: false
+      enabled: true
       selfHeal: true
       plugin:
         env:
