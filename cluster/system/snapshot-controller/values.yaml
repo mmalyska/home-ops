@@ -22,5 +22,4 @@ snapshot-controller:
     serviceMonitor:
       create: true
   webhook:
-    enabled: true
-    replicaCount: 1
+    enabled: false
