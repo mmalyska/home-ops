@@ -11,12 +11,12 @@ app-of-apps:
       enabled: false
       namespace: ha-vernemq
       path: vernemq
-      selfHeal: true
+      selfHeal: false
     - name: home-assistant
       enabled: false
       namespace: ha-home-assistant
       path: home-assistant
-      selfHeal: true
+      selfHeal: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -25,14 +25,14 @@ app-of-apps:
       enabled: false
       namespace: ha-piper
       path: piper
-      selfHeal: true
+      selfHeal: false
     - name: whisper
       enabled: false
       namespace: ha-whisper
       path: whisper
-      selfHeal: true
+      selfHeal: false
     - name: openwakeword
       enabled: false
       namespace: ha-openwakeword
       path: openwakeword
-      selfHeal: true
+      selfHeal: false
