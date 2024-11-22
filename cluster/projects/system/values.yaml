@@ -39,7 +39,7 @@ app-of-apps:
     - name: keycloak
       namespace: identity
       path: identity/keycloak
-      enabled: false
+      enabled: true
       selfHeal: false
       plugin:
         env:
