@@ -73,8 +73,8 @@ app-of-apps:
     - name: jellyfin
       namespace: jellyfin
       path: jellyfin
-      enabled: false
-      selfHeal: true
+      enabled: true
+      selfHeal: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
