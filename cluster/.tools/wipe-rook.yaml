@@ -9,7 +9,7 @@ spec:
   nodeName: mc1
   initContainers:
     - name: data
-      image: docker.io/library/alpine:latest
+      image: docker.io/library/alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
       command: ["/bin/sh", "-c"]
       args: ["rm -rf /mnt/host_var/lib/rook"]
       volumeMounts:
@@ -20,7 +20,7 @@ spec:
       resources: {}
   containers:
     - name: disk
-      image: docker.io/library/alpine:latest
+      image: docker.io/library/alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -57,7 +57,7 @@ spec:
   nodeName: mc2
   initContainers:
     - name: data
-      image: docker.io/library/alpine:latest
+      image: docker.io/library/alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
       command: ["/bin/sh", "-c"]
       args: ["rm -rf /mnt/host_var/lib/rook"]
       volumeMounts:
@@ -68,7 +68,7 @@ spec:
       resources: {}
   containers:
     - name: disk
-      image: docker.io/library/alpine:latest
+      image: docker.io/library/alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -105,7 +105,7 @@ spec:
   nodeName: mc3
   initContainers:
     - name: data
-      image: docker.io/library/alpine:latest
+      image: docker.io/library/alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
       command: ["/bin/sh", "-c"]
       args: ["rm -rf /mnt/host_var/lib/rook"]
       volumeMounts:
@@ -116,7 +116,7 @@ spec:
       resources: {}
   containers:
     - name: disk
-      image: docker.io/library/alpine:latest
+      image: docker.io/library/alpine:latest@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
       command: ["/bin/sh", "-c"]
       args:
         - |
