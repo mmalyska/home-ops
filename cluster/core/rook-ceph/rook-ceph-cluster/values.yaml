@@ -13,9 +13,9 @@ rook-ceph-cluster:
   toolbox:
     enabled: true
   ingress:
-    ingressClassName: "internal-nginx"
     dashboard:
       annotations:
+        kubernetes.io/ingress.class: traefik
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/ingressEndpoint.hostname: &host rook.<secret:private-domain>

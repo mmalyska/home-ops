@@ -28,7 +28,7 @@ spec:
           DISK=$(find /dev/disk/by-id/ -iname "*CT500MX500SSD1*" -not -name "*-part[0-9+]");
           echo "=== Wiping $DISK ===";
           sgdisk --zap-all $DISK;
-          dd if=/dev/zero of="$DISK" bs=1M count=100 oflag=direct;
+          dd if=/dev/zero of="$DISK" bs=1M oflag=direct;
           blkdiscard $DISK;
           partprobe $DISK;
       securityContext:
@@ -76,7 +76,7 @@ spec:
           DISK=$(find /dev/disk/by-id/ -iname "*CT500MX500SSD1*" -not -name "*-part[0-9+]");
           echo "=== Wiping $DISK ===";
           sgdisk --zap-all $DISK;
-          dd if=/dev/zero of="$DISK" bs=1M count=100 oflag=direct;
+          dd if=/dev/zero of="$DISK" bs=1M oflag=direct;
           blkdiscard $DISK;
           partprobe $DISK;
       securityContext:
@@ -124,7 +124,7 @@ spec:
           DISK=$(find /dev/disk/by-id/ -iname "*CT500MX500SSD1*" -not -name "*-part[0-9+]");
           echo "=== Wiping $DISK ===";
           sgdisk --zap-all $DISK;
-          dd if=/dev/zero of="$DISK" bs=1M count=100 oflag=direct;
+          dd if=/dev/zero of="$DISK" bs=1M oflag=direct;
           blkdiscard $DISK;
           partprobe $DISK;
       securityContext:
