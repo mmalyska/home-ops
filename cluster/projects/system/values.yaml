@@ -152,7 +152,8 @@ app-of-apps:
         - kind: Secret
           name: snapshot-validation-webhook-tls
           jsonPointers:
-            - /data
+            - /data/tls.crt
+            - /data/tls.key
     - name: external-secrets
       namespace: external-secrets
       path: external-secrets
