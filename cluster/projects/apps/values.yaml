@@ -46,7 +46,7 @@ app-of-apps:
     - name: hass-proxy
       namespace: hass-proxy
       path: hass
-      enabled: false
+      enabled: true
       selfHeal: true
       plugin:
         env:
@@ -55,7 +55,7 @@ app-of-apps:
     - name: nfs-mounts
       namespace: nfs-mounts
       path: nfs-mounts
-      enabled: false
+      enabled: true
       selfHeal: true
       plugin:
         env:
@@ -64,7 +64,7 @@ app-of-apps:
     - name: qnap-proxy
       namespace: qnap-proxy
       path: qnap-proxy
-      enabled: false
+      enabled: true
       selfHeal: true
       plugin:
         env:
