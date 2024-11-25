@@ -64,6 +64,7 @@ server:
   resources: {}
 postgres:
   - name: keycloakdb
+    imageName: ghcr.io/cloudnative-pg/postgresql:16.6
     instances: 2
     storage:
       size: 2Gi
