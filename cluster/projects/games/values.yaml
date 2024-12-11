@@ -1,0 +1,18 @@
+---
+app-of-apps:
+  project: games
+  destination:
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://github.com/mmalyska/home-ops
+    path: cluster/games
+  apps:
+    - name: vintagestory
+      enabled: false
+      namespace: vintagestory
+      path: vintagestory
+      selfHeal: false
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml

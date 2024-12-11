@@ -1,0 +1,16 @@
+image:
+  repository: ghcr.io/mmalyska/vintagestory
+  tag: 1.19.8@sha256:df910dd5a7b3911aa5b1bcedfbf8235202db86711eab3f6c8eae020990afd69e
+  pullPolicy: IfNotPresent
+env:
+  DATA_PATH: /server/world
+service:
+  main:
+    ports:
+      udp:
+        port: 2456
+persistence:
+  config:
+    enabled: true
+    storageClass: ceph-block
+    size: 2Gi
