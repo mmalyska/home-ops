@@ -11,7 +11,7 @@ app-of-apps:
       enabled: false
       namespace: vintagestory
       path: vintagestory
-      selfHeal: true
+      selfHeal: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
