@@ -4,7 +4,6 @@ name: apps-apps
 type: application
 version: 1.0.0
 appVersion: "1.0.0"
-
 dependencies:
   - name: app-of-apps
     version: 1.0.2
