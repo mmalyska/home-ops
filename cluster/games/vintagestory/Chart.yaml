@@ -1,0 +1,12 @@
+---
+apiVersion: v2
+name: vintagestory
+description: Basic chart for deploying vintagestory
+type: application
+version: 1.0.0
+appVersion: 1.0.0
+kubeVersion: ">=1.16.0-0"
+dependencies:
+  - name: common
+    repository: https://library-charts.k8s-at-home.com
+    version: 4.5.2
