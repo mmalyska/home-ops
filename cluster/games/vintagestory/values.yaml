@@ -25,7 +25,7 @@ app-template:
               cpu: 500m
               memory: 100Mi
             limits:
-              memory: 1Gb
+              memory: 1Gi
   service:
     vintagestory:
       controller: main
