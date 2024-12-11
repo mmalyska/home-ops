@@ -12,6 +12,7 @@ app-template:
     main:
       type: statefulset
       strategy: RollingUpdate
+      replicas: 1
       containers:
         vintagestory:
           image:
