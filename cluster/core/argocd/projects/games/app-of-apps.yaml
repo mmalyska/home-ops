@@ -1,0 +1,21 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: games
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+  project: games
+  source:
+    path: cluster/projects/games
+    repoURL: https://github.com/mmalyska/home-ops
+    targetRevision: main
+  syncPolicy:
+    # automated:
+    #   selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
