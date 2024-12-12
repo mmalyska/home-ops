@@ -39,7 +39,7 @@ app-template:
   service:
     maniek:
       annotations:
-        metallb.universe.tf/allow-shared-ip: "voice-pipeline"
+        lbipam.cilium.io/sharing-key: "voice-pipeline"
       type: LoadBalancer
       loadBalancerIP: 192.168.48.27
       controller: openwakeword
