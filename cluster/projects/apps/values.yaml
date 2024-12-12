@@ -8,7 +8,7 @@ app-of-apps:
     path: cluster/apps
   apps:
     - name: botkube
-      enabled: false
+      enabled: true
       namespace: botkube
       path: botkube
       selfHeal: false
@@ -17,7 +17,7 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: calibre
-      enabled: false
+      enabled: true
       namespace: calibre
       path: calibre
       selfHeal: false
@@ -26,7 +26,7 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: gitea
-      enabled: false
+      enabled: true
       namespace: gitea
       path: gitea
       selfHeal: false
@@ -35,7 +35,7 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: grocy
-      enabled: false
+      enabled: true
       namespace: grocy
       path: grocy
       selfHeal: false
@@ -80,7 +80,7 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: homepage
-      enabled: false
+      enabled: true
       namespace: homepage
       path: gethomepage
       selfHeal: false
