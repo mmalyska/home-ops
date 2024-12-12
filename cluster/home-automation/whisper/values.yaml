@@ -39,6 +39,7 @@ app-template:
     pl:
       annotations:
         io.cilium/lb-ipam-sharing-key: "voice-pipeline"
+        lbipam.cilium.io/sharing-cross-namespace: "*"
       type: LoadBalancer
       loadBalancerIP: 192.168.48.27
       controller: whisper
