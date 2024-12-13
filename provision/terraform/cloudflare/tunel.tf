@@ -1,4 +1,4 @@
-resource "cloudflare_tunnel" "jaskinia" {
+resource "cloudflare_zero_trust_tunnel_cloudflared" "jaskinia" {
   account_id = cloudflare_account.main.id
   name       = "Jaskinia"
   secret     = local.cloudflare_tunnel_secret
@@ -10,21 +10,21 @@ resource "doppler_secret" "cloudflare_tunnel" {
   project = "home-ops"
   config  = "prd"
   name = "CLOUDFLARE_TUNNEL_TOKEN"
-  value = cloudflare_tunnel.jaskinia.tunnel_token
+  value = cloudflare_zero_trust_tunnel_cloudflared.jaskinia.tunnel_token
 }
 
 resource "cloudflare_record" "ingress" {
   name    = "ingress"
   zone_id = data.cloudflare_zone.domain.id
-  content   = "${cloudflare_tunnel.jaskinia.id}.cfargotunnel.com"
+  content   = "${cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id}.cfargotunnel.com"
   proxied = true
   type    = "CNAME"
   ttl     = 1
 }
 
-resource "cloudflare_tunnel_config" "jaskinia_config" {
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
   account_id = cloudflare_account.main.id
-  tunnel_id  = cloudflare_tunnel.jaskinia.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id
 
   config {
     ingress_rule {
