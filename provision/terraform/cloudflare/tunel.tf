@@ -1,4 +1,4 @@
-resource "cloudflare_tunnel" "jaskinia" {
+resource "cloudflare_zero_trust_tunnel_cloudflared" "jaskinia" {
   account_id = cloudflare_account.main.id
   name       = "Jaskinia"
   secret     = local.cloudflare_tunnel_secret
@@ -22,7 +22,7 @@ resource "cloudflare_record" "ingress" {
   ttl     = 1
 }
 
-resource "cloudflare_tunnel_config" "jaskinia_config" {
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
   account_id = cloudflare_account.main.id
   tunnel_id  = cloudflare_tunnel.jaskinia.id
 
