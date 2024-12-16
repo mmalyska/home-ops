@@ -8,3 +8,6 @@ dependencies:
   - name: keda
     version: 2.16.0
     repository: https://kedacore.github.io/charts
+  - name: keda-add-ons-http
+    version: 0.8.0
+    repository: https://kedacore.github.io/charts
