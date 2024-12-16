@@ -177,3 +177,8 @@ app-of-apps:
       path: talos-backup
       enabled: true
       selfHeal: false
+    - name: keda
+      namespace: keda
+      path: keda
+      enabled: true
+      selfHeal: false

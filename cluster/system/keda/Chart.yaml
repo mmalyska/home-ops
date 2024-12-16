@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: keda-subchart
+type: application
+version: 1.0.0
+appVersion: 2.16.0
+dependencies:
+  - name: keda
+    version: 2.16.0
+    repository: https://kedacore.github.io/charts
