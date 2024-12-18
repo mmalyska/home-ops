@@ -74,7 +74,8 @@ gitea:
   persistence:
     enabled: true
     claimName: gitea-data
-    accessModes: ReadWriteOnce
+    accessModes:
+      - ReadWriteOnce
     storageClass: ceph-block
   replicaCount: 1
   deployment:
