@@ -94,7 +94,7 @@ gitea:
             key: password
 postgres:
   name: giteadb
-  imageName: ghcr.io/cloudnative-pg/postgresql:16.6
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.10
   instances: 2
   storage:
     size: 5Gi
