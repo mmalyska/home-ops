@@ -17,7 +17,7 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: calibre
-      enabled: true
+      enabled: false
       namespace: calibre
       path: calibre
       selfHeal: false
@@ -35,7 +35,7 @@ app-of-apps:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
     - name: grocy
-      enabled: true
+      enabled: false
       namespace: grocy
       path: grocy
       selfHeal: false
