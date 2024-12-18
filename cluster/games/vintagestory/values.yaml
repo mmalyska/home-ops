@@ -41,6 +41,7 @@ app-template:
           port: 42420
   persistence:
     config:
+      enabled: true
       type: persistentVolumeClaim
       accessMode: ReadWriteOnce
       size: 5Gi
