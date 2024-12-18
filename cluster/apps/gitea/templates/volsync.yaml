@@ -47,3 +47,19 @@ spec:
       runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
       runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
       fsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: gitea-dest
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: gitea-restic-secret
+    destinationPVC: {{ .Values.gitea.persistence.claimName }}
+    copyMethod: Direct
+    moverSecurityContext:
+      runAsUser: {{ .Values.gitea.podSecurityContext.fsGroup }}
+      runAsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}
+      fsGroup: {{ .Values.gitea.podSecurityContext.fsGroup }}

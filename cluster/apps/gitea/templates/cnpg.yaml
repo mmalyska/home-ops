@@ -4,6 +4,9 @@ metadata:
   name: {{ printf "%s-%s" .Values.postgres.name "cnpg" }}
 spec:
   instances: {{ .Values.postgres.instances }}
+  {{- if .Values.postgres.imageName }}
+  imageName: {{ .Values.postgres.imageName }}
+  {{- end }}
   primaryUpdateStrategy: unsupervised
   storage:
     size: {{ .Values.postgres.storage.size }}
