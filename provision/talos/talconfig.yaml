@@ -1,7 +1,7 @@
 clusterName: &clusterName home
 
 # renovate: datasource=github-releases depName=mmalyska/talos-images
-talosVersion: v1.8.4
+talosVersion: v1.9.0
 # renovate: datasource=github-releases depName=siderolabs/kubelet
 kubernetesVersion: v1.31.4
 
@@ -147,7 +147,7 @@ controlPlane:
       machine:
         install:
           # renovate-docker
-          image: ghcr.io/mmalyska/talos-installer:v1.8.4@sha256:910e0fa94ab0574c23e5666f64e9aeb40614138c573a6208a02d6415ecd8afd6
+          image: ghcr.io/mmalyska/talos-installer:v1.9.0@sha256:978cc43e505cd04d7c87f58da075ed20f2f27974a0256517e9e353aea269523f
           extraKernelArgs:
             - net.ifnames=0
 
