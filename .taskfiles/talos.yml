@@ -90,6 +90,7 @@ tasks:
       - task: apply-config
         vars: {CLI_ARGS: "-m staged"}
       - talosctl reboot --nodes {{ .NODE }} --wait
+      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   apply:
     desc: Apply Talos config to a specific node without reboot (task talos:apply N=1)
@@ -154,5 +155,5 @@ tasks:
       # Ensure CephCluster is healthy
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
       # Ensure CloudNative-PG cluster has 2 ready instances
-      # - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
+      - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
       - kubectl -n identity wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster keycloakdb-cnpg
