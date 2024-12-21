@@ -10,9 +10,9 @@ app-template:
             pullPolicy: IfNotPresent
           args:
             - --language
-            - en
+            - pl
             - --model
-            - base-int8
+            - turbo
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
