@@ -6,7 +6,8 @@ ollama:
       run:
         - llama3.2
   extraEnv:
-    - OLLAMA_NUM_PARALLEL: 4
+    - name: OLLAMA_NUM_PARALLEL
+      value: 4
   service:
     annotations:
       io.cilium/lb-ipam-sharing-key: "voice-pipeline"
