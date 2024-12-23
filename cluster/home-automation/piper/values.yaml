@@ -10,7 +10,7 @@ app-template:
             pullPolicy: IfNotPresent
           args:
             - --voice
-            - en_GB-jenny_dioco-medium
+            - pl_PL-darkman-medium
             - --update-voices
           resources:
             requests:
