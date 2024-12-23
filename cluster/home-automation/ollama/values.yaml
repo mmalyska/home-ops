@@ -1,0 +1,24 @@
+ollama:
+  models:
+    pull:
+      - llama3.2
+  ingress:
+    enabled: true
+    className: "traefik"
+    hosts:
+      - host: &host ollama.<secret:private-domain>
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - *host
+  persistentVolume:
+    enabled: true
+    size: "30Gi"
+  resources:
+    limits:
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
