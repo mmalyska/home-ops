@@ -1,7 +1,8 @@
 ollama:
-  models:
-    pull:
-      - llama3.2
+  ollama:
+    models:
+      pull:
+        - llama3.2
   service:
     annotations:
       io.cilium/lb-ipam-sharing-key: "voice-pipeline"
