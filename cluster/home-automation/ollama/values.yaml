@@ -2,6 +2,12 @@ ollama:
   models:
     pull:
       - llama3.2
+  service:
+    annotations:
+      io.cilium/lb-ipam-sharing-key: "voice-pipeline"
+      lbipam.cilium.io/sharing-cross-namespace: "*"
+      loadBalancerIP: 192.168.48.27
+    type: LoadBalancer
   ingress:
     enabled: true
     className: "traefik"
