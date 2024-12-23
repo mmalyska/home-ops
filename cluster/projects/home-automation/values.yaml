@@ -41,3 +41,7 @@ app-of-apps:
       namespace: ha-ollama
       path: ollama
       selfHeal: false
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
