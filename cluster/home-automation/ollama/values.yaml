@@ -3,6 +3,8 @@ ollama:
     models:
       pull:
         - llama3.2
+      run:
+        - llama3.2
   service:
     annotations:
       io.cilium/lb-ipam-sharing-key: "voice-pipeline"
@@ -25,7 +27,7 @@ ollama:
     size: "30Gi"
   resources:
     limits:
-      memory: 4Gi
+      memory: 8Gi
     requests:
       cpu: 500m
-      memory: 1Gi
+      memory: 6Gi
