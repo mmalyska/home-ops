@@ -73,9 +73,8 @@ controlPlane:
 
       systemExtensions:
         officialExtensions:
-          # - siderolabs/i915
+          - siderolabs/i915
           - siderolabs/intel-ucode
-          - siderolabs/i915-ucode
 
   patches:
     # Configure containerd

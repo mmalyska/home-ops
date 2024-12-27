@@ -13,7 +13,6 @@ vars:
   TALHELPER: "v3.0.14"
   TALOS_CONTROLLER:
     sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
-  TALOS_SCHEMATIC_ID: dfc7e04f503c3dec624d436a490e8a7a62447baf8487c4a0531eb4feea9a9147
 
 tasks:
   init:
@@ -149,12 +148,17 @@ tasks:
     dir: provision/talos
     status:
       - talosctl version --nodes {{ .NODE }} --short | grep 'Tag.*{{ .TALOS_VERSION }}'
+    vars:
+      FILE:
+        sh: ls {{.TALOS_DIR}}/clusterconfig/home-mc{{ .N }}.yaml
+      TALOS_IMAGE:
+        sh: yq '.machine.install.image' < "{{.FILE}}"
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
       - task: apply-config
         vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
-      - talosctl upgrade --nodes {{ .NODE }} --image factory.talos.dev/installer/{{ .TALOS_SCHEMATIC_ID }}:{{ .TALOS_VERSION }}
+      - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   wait_for_health:
