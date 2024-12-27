@@ -20,6 +20,7 @@
         "alpine/k8s",
         "kubernetes/kubernetes",
         "siderolabs/kubelet",
+        "ghcr.io/siderolabs/kubelet",
       ],
     },
   ],
