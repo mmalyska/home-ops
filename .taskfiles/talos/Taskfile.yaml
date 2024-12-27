@@ -11,6 +11,9 @@ vars:
   KUBERNETES_VERSION: "v1.31.4"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
   TALHELPER: "v3.0.13"
+  TALOS_CONTROLLER:
+    sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
+  TALOS_SCHEMATIC_ID: dfc7e04f503c3dec624d436a490e8a7a62447baf8487c4a0531eb4feea9a9147
 
 tasks:
   init:
@@ -51,12 +54,15 @@ tasks:
     desc: Show talos dashboard fot N node (task talos:dashboard)
     cmds:
       - task: generate
-      - talosctl --talosconfig=provision/talos/clusterconfig/talosconfig --nodes {{ .NODE }} dashboard
+      - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} dashboard
 
-  install:cni:
-    desc: Install CNI and cert approver helm releases (task talos:cni)
+  shutdown:
+    desc: Shutdown talos N node (task talos:shutdown N=X)
     cmds:
-      - kubectl kustomize provision/talos --enable-helm | kubectl apply -f -
+      - task: generate
+      - task: wait_for_health
+        vars: {TIMEOUT: 10m}
+      - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} shutdown --wait
 
   upgrade:k8s:
     dir: provision/talos
@@ -107,7 +113,7 @@ tasks:
     desc: Generate Talos kubeconfig (task talos:generate-kubeconfig)
     dir: provision/talos
     cmds:
-      - cmd: talosctl --talosconfig=clusterconfig/talosconfig kubeconfig -f --nodes {{ .NODE }} $KUBECONFIG
+      - cmd: talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig kubeconfig -f --nodes {{ .NODE }} $KUBECONFIG
     status:
       - test -f $KUBECONFIG
 
@@ -125,13 +131,17 @@ tasks:
     generates:
       - clusterconfig/*.yaml
       - clusterconfig/talosconfig
+    preconditions:
+      - test -f {{.TALOS_DIR}}/talconfig.yaml
 
   apply-config:
     internal: true
     desc: Apply Talos config to a specific node (task talos:apply N=0)
     dir: provision/talos
     cmds:
-      - talosctl apply-config --nodes {{ .NODE }} --file clusterconfig/home-mc{{ .N }}.yaml {{ .CLI_ARGS }}
+      - talosctl apply-config --nodes {{ .NODE }} --file {{.TALOS_DIR}}/clusterconfig/home-mc{{ .N }}.yaml {{ .CLI_ARGS }}
+    preconditions:
+      - test -f {{.TALOS_DIR}}/talconfig.yaml
 
   upgrade:
     internal: true
@@ -144,7 +154,7 @@ tasks:
         vars: {TIMEOUT: 10m}
       - task: apply-config
         vars: {NODE: "{{ .NODE }}", N: "{{ .N }}", CLI_ARGS: "-m staged"}
-      - talosctl upgrade --nodes {{ .NODE }} --image ghcr.io/mmalyska/talos-installer:{{ .TALOS_VERSION }}
+      - talosctl upgrade --nodes {{ .NODE }} --image factory.talos.dev/installer/{{ .TALOS_SCHEMATIC_ID }}:{{ .TALOS_VERSION }}
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   wait_for_health:

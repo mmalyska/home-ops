@@ -7,23 +7,26 @@ vars:
   CLUSTER_DIR: "{{.PROJECT_DIR}}/cluster"
   ANSIBLE_DIR: "{{.PROJECT_DIR}}/provision/ansible"
   TERRAFORM_DIR: "{{.PROJECT_DIR}}/provision/terraform"
+  TALOS_DIR: "{{.PROJECT_DIR}}/provision/talos"
 
 env:
   KUBECONFIG: "/home/vscode/.kube/config"
 
 includes:
-  ansible: .taskfiles/ansible.yml
-  argocd: .taskfiles/argocd.yml
+  bootstrap: .taskfiles/bootstrap
+  external-secrets: .taskfiles/externalsecrets
+  argocd: .taskfiles/argocd
   precommit: .taskfiles/pre-commit.yml
   terraform: .taskfiles/terraform.yml
-  cluster: .taskfiles/cluster.yml
+  kubernetes: .taskfiles/kubernetes
   format: .taskfiles/format.yml
   lint: .taskfiles/lint.yml
-  talos: .taskfiles/talos.yml
+  talos: .taskfiles/talos
   mkdocs: .taskfiles/mkdocs.yml
   cilium: .taskfiles/cilium.yml
 
 tasks:
+  default: task -l
   init:
     desc: Initialize workstation dependencies with Brew
     cmds:
@@ -57,11 +60,11 @@ tasks:
         k9s
         pre-commit
         mkdocs
+        helmfile
   init-subtasks:
     desc: Initialize subtasks
     cmds:
       - task: precommit:init
-      - task: ansible:init
       - task: terraform:upgrade:cloudflare
       - task: talos:init
       - task: cilium:init

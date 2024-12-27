@@ -1,0 +1,37 @@
+---
+version: "3"
+
+vars:
+  KUBERNETES_RESOURCES_DIR: "{{.ROOT_DIR}}/.taskfiles/kubernetes/resources"
+
+tasks:
+
+  browse-pvc:
+    desc: Browse a PersistentVolumeClaim
+    summary: |
+      ns: Namespace to browse PersistentVolumeClaims in (default: default)
+      claim: PersistentVolumeClaim to browse (required)
+    interactive: true
+    cmd: kubectl browse-pvc --namespace {{.ns}} {{.claim}}
+    vars:
+      ns: '{{.ns | default "default"}}'
+    requires:
+      vars: ["claim"]
+    preconditions:
+      - kubectl --namespace {{.ns}} get persistentvolumeclaims {{.claim}}
+
+  delete-failed-pods:
+    desc: Delete all pods with an Evicted/Failed/Succeeded status
+    cmds:
+      - for: ["Evicted", "Failed", "Succeeded"]
+        cmd: kubectl delete pods --field-selector status.phase={{.ITEM}} -A --ignore-not-found=true
+
+  privileged:
+    desc: Run a privileged pod
+    cmd: |
+      kubectl run privileged-{{.node}} -i --rm --image=null \
+        --overrides="$(yq {{.KUBERNETES_RESOURCES_DIR}}/privileged-pod.tmpl.yaml -o=json | envsubst)"
+    env:
+      node: '{{.node}}'
+    preconditions:
+      - test -f {{.KUBERNETES_RESOURCES_DIR}}/privileged-pod.tmpl.yaml

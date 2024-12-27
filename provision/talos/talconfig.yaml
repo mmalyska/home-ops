@@ -65,6 +65,18 @@ controlPlane:
     topology.kubernetes.io/region: *clusterName
     topology.kubernetes.io/zone: m
 
+  schematic:
+    customization:
+      extraKernelArgs:
+        - net.ifnames=0
+        - console=ttyS0
+
+      systemExtensions:
+        officialExtensions:
+          # - siderolabs/i915
+          - siderolabs/intel-ucode
+          - siderolabs/i915-ucode
+
   patches:
     # Configure containerd
     - |-
@@ -89,14 +101,13 @@ controlPlane:
           hostDNS:
             enabled: true
             resolveMemberNames: true
-            forwardKubeDNSToHost: true
+            forwardKubeDNSToHost: false
 
     # Configure kubelet
     - |-
       machine:
         kubelet:
           extraArgs:
-            feature-gates: GracefulNodeShutdown=true
             rotate-server-certificates: "true"
 
     # Enable KubePrism
@@ -115,6 +126,7 @@ controlPlane:
           fs.inotify.max_user_watches: 1048576   # Watchdog
           net.core.rmem_max: 67108864            # Cloudflared / QUIC
           net.core.wmem_max: 67108864            # Cloudflared / QUIC
+          vm.nr_hugepages: 1024                  # Postgres
 
     # Enable K8s Talos API Access
     - |-
@@ -142,14 +154,23 @@ controlPlane:
           nameservers:
             - 192.168.50.9
 
-    # Configure install image
+    # Various udev rules
     - |-
       machine:
-        install:
-          # renovate-docker
-          image: ghcr.io/mmalyska/talos-installer:v1.8.4@sha256:910e0fa94ab0574c23e5666f64e9aeb40614138c573a6208a02d6415ecd8afd6
-          extraKernelArgs:
-            - net.ifnames=0
+        udev:
+          rules:
+            # Intel GPU
+            - SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="44", MODE="0660"
+
+    # Enable cluster discovery
+    - |-
+      cluster:
+        discovery:
+          registries:
+            kubernetes:
+              disabled: false
+            service:
+              disabled: true
 
     # Configure cluster
     - |-
