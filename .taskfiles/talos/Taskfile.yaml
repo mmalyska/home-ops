@@ -106,6 +106,7 @@ tasks:
         vars: {TIMEOUT: 10m}
       - task: apply-config
         vars: {CLI_ARGS: "-m auto"}
+      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   generate-kubeconfig:
     internal: true
@@ -137,8 +138,11 @@ tasks:
     internal: true
     desc: Apply Talos config to a specific node (task talos:apply N=0)
     dir: provision/talos
+    vars:
+      FILE:
+        sh: ls {{.TALOS_DIR}}/clusterconfig/home-mc{{ .N }}.yaml
     cmds:
-      - talosctl apply-config --nodes {{ .NODE }} --file {{.TALOS_DIR}}/clusterconfig/home-mc{{ .N }}.yaml {{ .CLI_ARGS }}
+      - talosctl apply-config --nodes {{ .NODE }} --file {{.FILE}} {{ .CLI_ARGS }}
     preconditions:
       - test -f {{.TALOS_DIR}}/talconfig.yaml
 
