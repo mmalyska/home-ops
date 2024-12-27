@@ -180,5 +180,5 @@ app-of-apps:
     - name: keda
       namespace: keda
       path: keda
-      enabled: true
+      enabled: false
       selfHeal: false
