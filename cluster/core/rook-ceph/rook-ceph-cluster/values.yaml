@@ -23,49 +23,6 @@ rook-ceph-cluster:
         name: *host
         path: "/"
   cephClusterSpec:
-    resources:
-      mgr:
-        requests:
-          cpu: "125m"
-          memory: "549M"
-        limits:
-          memory: "1219M"
-      mon:
-        requests:
-          cpu: "49m"
-          memory: "477M"
-        limits:
-          memory: "1059M"
-      osd:
-        requests:
-          cpu: "442m"
-          memory: "2678M"
-        limits:
-          memory: "5944M"
-      mgr-sidecar:
-        requests:
-          cpu: "49m"
-          memory: "94M"
-        limits:
-          memory: "208M"
-      crashcollector:
-        requests:
-          cpu: "15m"
-          memory: "64M"
-        limits:
-          memory: "64M"
-      logcollector:
-        requests:
-          cpu: "100m"
-          memory: "100M"
-        limits:
-          memory: "1G"
-      cleanup:
-        requests:
-          cpu: "250m"
-          memory: "100M"
-        limits:
-          memory: "1G"
     storage:
       useAllNodes: true
       useAllDevices: false
@@ -124,7 +81,7 @@ rook-ceph-cluster:
               cpu: "35m"
               memory: "64M"
             limits:
-              memory: "1G"
+              memory: "2G"
           priorityClassName: system-cluster-critical
       storageClass:
         enabled: true
@@ -168,7 +125,7 @@ rook-ceph-cluster:
               cpu: 100m
               memory: 128M
             limits:
-              memory: 2Gi
+              memory: 4Gi
           instances: 1
           priorityClassName: system-cluster-critical
       storageClass:
