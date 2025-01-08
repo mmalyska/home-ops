@@ -20,6 +20,7 @@ app-template:
             tag: 1.19.8@sha256:f239f1944a2eb59c97e394c015c3024ec5643799d3d35ac82c3cc5a5f77aed07
           env:
             DATA_PATH: /config
+            ADD_MOD_PATH: /mods
           resources:
             requests:
               cpu: 500m
@@ -47,3 +48,10 @@ app-template:
       size: 5Gi
       globalMounts:
         - path: /config
+    mods:
+      enabled: true
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /mods
