@@ -21,7 +21,8 @@ app-template:
           env:
             DATA_PATH: /config
           args:
-            - --addModPath /mods
+            - --addModPath
+            - /mods
           resources:
             requests:
               cpu: 500m
