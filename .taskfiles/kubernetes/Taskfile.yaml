@@ -7,7 +7,7 @@ vars:
 tasks:
 
   browse-pvc:
-    desc: Browse a PersistentVolumeClaim
+    desc: Browse a PersistentVolumeClaim (task kubernetes:browse-pvc ns=vintagestory claim=vintagestory-config)
     summary: |
       ns: Namespace to browse PersistentVolumeClaims in (default: default)
       claim: PersistentVolumeClaim to browse (required)
