@@ -16,6 +16,8 @@ direnv allow
   tar zxvf "${KREW}.tar.gz" &&
   ./"${KREW}" install krew
 )
+echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> /home/vscode/.zshrc
+echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> /home/vscode/.bashrc
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 kubectl krew install browse-pvc
 
