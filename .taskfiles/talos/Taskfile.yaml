@@ -8,7 +8,7 @@ vars:
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
   TALOS_VERSION: "v1.9.2"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-  KUBERNETES_VERSION: "v1.31.4"
+  KUBERNETES_VERSION: "v1.31.5"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
   TALHELPER: "v3.0.15"
   TALOS_CONTROLLER:
