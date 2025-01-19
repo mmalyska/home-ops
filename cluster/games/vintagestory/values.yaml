@@ -1,6 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/refs/tags/app-template-3.6.1/charts/other/app-template/values.schema.json
 ---
-# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/app-template-3.2.0/charts/other/app-template/values.schema.json
-
 app-template:
   defaultPodOptions:
     securityContext:
@@ -13,6 +12,26 @@ app-template:
       type: statefulset
       strategy: RollingUpdate
       replicas: 1
+      initContainers:
+        init:
+          image:
+            repository: docker.io/library/alpine
+            tag: latest@sha256:56fa17d2a7e7f168a043a2712e63aed1f8543aeafdcee47c58dcffe38ed51099
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cd /mods;
+              rm *;
+              wget https://mods.vintagestory.at/files/asset/17347/ACulinaryArtillery%201.2.2.zip;
+              wget https://mods.vintagestory.at/files/asset/17779/BetterRuinsv0.4.6.zip;
+              wget https://mods.vintagestory.at/files/asset/16885/BetterTradersv0.0.9.zip;
+              wget https://mods.vintagestory.at/files/asset/11981/buzzwords_1.7.0.zip;
+              wget https://mods.vintagestory.at/files/asset/15078/CarryOn-1.20.0-pre_v1.8.0-pre.1.zip;
+              wget https://mods.vintagestory.at/files/asset/17428/configlib_1.4.3.zip;
+              wget https://mods.vintagestory.at/files/asset/14914/ExpandedFoods%201.7.2.zip;
+              wget https://mods.vintagestory.at/files/asset/16918/primitivesurvival_3.7.5.zip;
+              wget https://mods.vintagestory.at/files/asset/15316/vsimgui_1.1.7.zip;
+              wget https://mods.vintagestory.at/files/asset/16922/wildfarmingrevival_1.3.4.zip;
       containers:
         vintagestory:
           image:
@@ -52,8 +71,4 @@ app-template:
         - path: /config
     mods:
       enabled: true
-      type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      size: 1Gi
-      globalMounts:
-        - path: /mods
+      type: emptyDir
