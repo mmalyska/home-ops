@@ -45,7 +45,7 @@ spec:
       weekly: 4
       monthly: 2
     moverSecurityContext:
-      runAsUser: 1001
-      runAsGroup: 1001
-      fsGroup: 1001
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
 {{- end }}
