@@ -38,7 +38,7 @@ server:
     - name: KC_HEALTH_ENABLED
       value: "true"
     - name: KC_HTTP_ENABLED
-      value: "false"
+      value: "true"
   envFrom: []
   image:
     imagePullPolicy: IfNotPresent
