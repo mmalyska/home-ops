@@ -13,8 +13,6 @@ server:
   env:
     - name: KC_HOSTNAME
       value: "https://l.<secret:private-domain>"
-    - name: KC_PROXY
-      value: "edge"
     - name: KC_DB
       value: "postgres"
     - name: KC_DB_USERNAME
@@ -39,6 +37,8 @@ server:
       value: "true"
     - name: KC_HTTP_ENABLED
       value: "true"
+    - name: KC_PROXY_HEADERS
+      value: xforwarded
   envFrom: []
   image:
     imagePullPolicy: IfNotPresent
