@@ -53,18 +53,18 @@ server:
     host: l.<secret:private-domain>
   readinessProbe:
     enabled: true
-    failureThreshold: 5
-    initialDelaySeconds: 10
+    failureThreshold: 10
+    initialDelaySeconds: 20
     periodSeconds: 10
     successThreshold: 1
-    timeoutSeconds: 2
+    timeoutSeconds: 5
   livenessProbe:
     enabled: true
-    failureThreshold: 5
-    initialDelaySeconds: 10
+    failureThreshold: 10
+    initialDelaySeconds: 20
     periodSeconds: 10
     successThreshold: 1
-    timeoutSeconds: 2
+    timeoutSeconds: 5
   resources: {}
 postgres:
   - name: keycloakdb
