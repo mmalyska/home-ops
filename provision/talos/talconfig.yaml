@@ -1,7 +1,7 @@
 clusterName: &clusterName home
 
 # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-talosVersion: v1.9.2
+talosVersion: v1.9.3
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
 kubernetesVersion: v1.31.5
 
