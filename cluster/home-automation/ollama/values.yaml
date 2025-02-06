@@ -27,10 +27,10 @@ ollama:
           - *host
   persistentVolume:
     enabled: true
-    size: "30Gi"
+    size: "100Gi"
   resources:
     limits:
-      memory: 8Gi
+      memory: 16Gi
     requests:
       cpu: 500m
       memory: 8Gi
