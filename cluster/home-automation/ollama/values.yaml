@@ -3,7 +3,6 @@ ollama:
     models:
       pull:
         - llama3.2
-        - llama3
   extraEnv:
     - name: OLLAMA_NUM_PARALLEL
       value: "2"
