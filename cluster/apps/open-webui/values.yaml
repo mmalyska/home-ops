@@ -12,3 +12,6 @@ open-webui:
     pullPolicy: "IfNotPresent"
   websocket:
     enabled: false
+  resources:
+    requests:
+      gpu.intel.com/i915: 1
