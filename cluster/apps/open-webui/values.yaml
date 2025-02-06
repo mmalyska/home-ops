@@ -6,3 +6,9 @@ open-webui:
     class: "traefik"
     host: chat.<secret:private-domain>
     tls: true
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: "0.5.10"
+    pullPolicy: "IfNotPresent"
+  websocket:
+    enabled: true
