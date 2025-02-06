@@ -24,7 +24,9 @@ ollama:
     size: "100Gi"
   resources:
     limits:
+      gpu.intel.com/i915: 2
       memory: 16Gi
     requests:
+      gpu.intel.com/i915: 1
       cpu: 500m
       memory: 8Gi
