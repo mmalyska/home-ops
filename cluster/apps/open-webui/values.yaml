@@ -1,0 +1,8 @@
+open-webui:
+  ollama:
+    enabled: false
+  ingress:
+    enabled: true
+    class: "traefik"
+    host: chat.<secret:private-domain>
+    tls: true
