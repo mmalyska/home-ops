@@ -1,10 +1,4 @@
 ollama:
-  ollama:
-    models:
-      pull:
-        - llama3.2
-      run:
-        - llama3.2
   extraEnv:
     - name: OLLAMA_NUM_PARALLEL
       value: "2"
