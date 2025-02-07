@@ -50,3 +50,12 @@ resource "cloudflare_record" "doppler" {
   type    = "TXT"
   ttl     = 1
 }
+
+resource "cloudflare_record" "chat" {
+  name    = "chat"
+  zone_id = data.cloudflare_zone.domain.id
+  content   = cloudflare_record.ingress.hostname
+  proxied = true
+  type    = "CNAME"
+  ttl     = 1
+}
