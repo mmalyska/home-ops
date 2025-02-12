@@ -12,7 +12,3 @@ open-webui:
     pullPolicy: "IfNotPresent"
   websocket:
     enabled: false
-  extraEnvVars:
-  # -- Default API key value for Pipelines. Should be updated in a production deployment, or be changed to the required API key if not using Pipelines
-    - name: ENV
-      value: dev
