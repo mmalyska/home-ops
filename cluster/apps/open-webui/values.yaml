@@ -8,7 +8,7 @@ open-webui:
     tls: true
   image:
     repository: ghcr.io/open-webui/open-webui
-    tag: "0.5.10"
+    tag: "v0.5.11@sha256:f4396ddb52979a87ca0626f100a8b51f1318b9b8e95544329ba095d1e1860018"
     pullPolicy: "IfNotPresent"
   websocket:
     enabled: false
