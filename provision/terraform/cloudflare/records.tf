@@ -69,10 +69,13 @@ resource "cloudflare_dns_record" "doppler" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "chat" {
+resource "cloudflare_dns_record" "chat" {
+  depends_on  = [
+    cloudflare_dns_record.ingress,
+  ]
   name    = "chat"
-  zone_id = data.cloudflare_zone.domain.id
-  content   = cloudflare_record.ingress.hostname
+  zone_id = cloudflare_zone.domain.id
+  content   = cloudflare_dns_record.ingress.content
   proxied = true
   type    = "CNAME"
   ttl     = 1
