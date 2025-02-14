@@ -3,5 +3,5 @@ resource "cloudflare_account" "main" {
   type              = "standard"
   settings = {
       enforce_twofactor = true
-    }
+  }
 }
