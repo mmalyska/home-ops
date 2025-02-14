@@ -1,0 +1,14 @@
+open-webui:
+  ollama:
+    enabled: false
+  ingress:
+    enabled: true
+    class: "traefik"
+    host: chat.<secret:private-domain>
+    tls: true
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: "0.5.12@sha256:492d8941ccc1976f647302be853f17c5b7e24f16d31adf0878450ba975b9da46"
+    pullPolicy: "IfNotPresent"
+  websocket:
+    enabled: false

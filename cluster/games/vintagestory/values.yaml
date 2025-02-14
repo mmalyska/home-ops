@@ -32,11 +32,12 @@ app-template:
               wget https://mods.vintagestory.at/files/asset/16918/primitivesurvival_3.7.5.zip;
               wget https://mods.vintagestory.at/files/asset/15316/vsimgui_1.1.7.zip;
               wget https://mods.vintagestory.at/files/asset/16922/wildfarmingrevival_1.3.4.zip;
+              wget https://mods.vintagestory.at/files/asset/916/FarmlandDropsSoil-VS1.15-v1.4.0.zip;
       containers:
         vintagestory:
           image:
             repository: ghcr.io/mmalyska/vintagestory
-            tag: 1.20.3@sha256:c6b9c94584d29b3aa2b72d9ffc041c6d5eff7572a592b2c9b24612b366976814
+            tag: 1.20.4@sha256:248bc1bd81a47930c394f8384c801e61144e474193916b009232708c36b75dae
           env:
             DATA_PATH: /config
           args:

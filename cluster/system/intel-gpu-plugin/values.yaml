@@ -4,3 +4,4 @@ intel-device-plugins-gpu:
   enableMonitoring: true
   resourceManager: false
   nodeFeatureRule: false
+  tolerations: []

@@ -1,10 +1,4 @@
 ollama:
-  ollama:
-    models:
-      pull:
-        - llama3.2
-      run:
-        - llama3.2
   extraEnv:
     - name: OLLAMA_NUM_PARALLEL
       value: "2"
@@ -27,10 +21,12 @@ ollama:
           - *host
   persistentVolume:
     enabled: true
-    size: "30Gi"
+    size: "100Gi"
   resources:
     limits:
-      memory: 8Gi
+      gpu.intel.com/i915: 1
+      memory: 16Gi
     requests:
+      gpu.intel.com/i915: 1
       cpu: 500m
       memory: 8Gi

@@ -39,11 +39,11 @@ repos:
     hooks:
       - id: fix-smartquotes
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.23.2
+    rev: v8.23.3
     hooks:
       - id: gitleaks
   - repo: https://github.com/ansible/ansible-lint
-    rev: v25.1.1
+    rev: v25.1.2
     hooks:
       - id: ansible-lint
         args:
