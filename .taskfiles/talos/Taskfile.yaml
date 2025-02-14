@@ -6,11 +6,11 @@ vars:
   NODE:
     sh: "echo ${NODE:-192.168.48.{{ add .N 1 }}}"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: "v1.9.3"
+  TALOS_VERSION: "v1.9.4"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.31.5"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
-  TALHELPER: "v3.0.18"
+  TALHELPER: "v3.0.19"
   TALOS_CONTROLLER:
     sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
 
