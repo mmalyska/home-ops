@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/linuxserver/calibre-web
-  tag: 0.6.24@sha256:a9920b3c5125b56f0b31a454075bbb06a9d211f2eee1fe419fd73b1f2a0201a5
+  tag: 0.6.24@sha256:fa19a5c26728cb5035273cf0d5242021e7af036faf5cdbd08dc1c3d8b0d9020a
   pullPolicy: IfNotPresent
 env:
   TZ: CET
