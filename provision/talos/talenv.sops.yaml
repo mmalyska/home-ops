@@ -4,6 +4,9 @@ oidcClientId: ENC[AES256_GCM,data:5z3D,iv:P3EdigaOn4+Z312swg3moFeNSDBTfvDIFXyf2A
 oidcIssuerURL: ENC[AES256_GCM,data:mjYKNWEJBu9NDwCgpisUaA/dz2hjoocrnkQfHSqHHMesStLw,iv:gX52ji2+bkZEaOSvnngCl2MriHPM92h7QVSOF8s1das=,tag:Y4lYc4XTWMKSpUqEVA499A==,type:str]
 qnapIp: ENC[AES256_GCM,data:dGWha3Ud7E6AXBH8,iv:fkeiHuKNNZYGymHbptuBHrqVpXg8SyafN4Lph18TAVM=,tag:MWjEJgiK5tOYocJiXVA/Qg==,type:str]
 qnapName: ENC[AES256_GCM,data:M1gntn1FvOZ9iLXEUsUHCbU=,iv:p7CrRABNA8RrQXegivKpIIN9eL50bTR68mHae5fCuQ8=,tag:8tt3y1oh4AnWtvmP6zpuWw==,type:str]
+upsmonUser: ENC[AES256_GCM,data:ogJNAAsXWw==,iv:vpgsVQS77tXKbUpAe7whZwDt8cQRKQmAHCquq0Y5jEY=,tag:kuZ6cFxgDCHSlF2gzpXOfQ==,type:str]
+upsmonPasswd: ENC[AES256_GCM,data:p6ABoC9e0NZJWdpEYxEB8qbS,iv:zyToHV6Gs4zFBOll8Q255asbazbyf/QGeJ2cj2qeMLs=,tag:roctKqvSSXhscDgROtnv6Q==,type:str]
+upsmonHost: ENC[AES256_GCM,data:nalvsb9MLFUktEt3ghjEHR3um6s=,iv:m3zgHofU3Fw8oUHNVdirECOSo2qFfVcfZAd8A6qMw+A=,tag:AjAP1rCI4EJwzekaOaB9Kw==,type:str]
 sops:
     kms: []
     gcp_kms: []
@@ -19,8 +22,8 @@ sops:
             alpEWjE3aWtDUzkvbGlBUkZBVWNOYkEKRbss9ZUJ1+6LxFjFFXIJq5IQ8oD5k1gd
             +q/UnE0/V0d0H2/fmf3AurFLzRzZs7Zm6Kkl5i/YZbQ+CZDsuzixIg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2023-04-21T14:38:10Z"
-    mac: ENC[AES256_GCM,data:kV09zFC5hSEXLlMNOIXUjLXcfC6/Sx5oWRvwjdduPkoRyCvTqUxJPQ/2aWr1rM3e+7KPfO6xPskPUPXK7KbPsch6qWDqtZykv6DY/mMgor3XEnTVtVyW3of9EdSeUMhNhBExPWi8Xp6TQHvSnO20UV2e5/Ay850mJMFcbEC1ero=,iv:UvPUj1LHFQyLS7E6noK+wEpPl6gMqVpkhHHIfn1G0b4=,tag:qbWkTGo23X9sgpxwVUIu1Q==,type:str]
+    lastmodified: "2025-02-20T11:18:10Z"
+    mac: ENC[AES256_GCM,data:xYra2Xi+aFuIU7xXowWNMJ3nR9H4Rhf09hRKD1F2HZQZyi6TgHAl9BSD635Us45PdKchVhan5/X+0QYR2Yn1JX9dT0i4ql2kaKhSNc+4AexZtica8n3W8BRKZRp+2tP+todux3vf64WdijBv2qHc+6vXByiHxo3Ysg/1nIzYBtg=,iv:/ItlOmDmOsoNJu+8icxiFN90/gL5hoev26WYznZTIIE=,tag:6r3g17s8c4HLkBktVNAfeQ==,type:str]
     pgp: []
     unencrypted_regex: ^(kind)$
-    version: 3.7.3
+    version: 3.9.4

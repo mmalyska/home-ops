@@ -1,3 +1,6 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+
 clusterName: &clusterName home
 
 # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
@@ -6,7 +9,6 @@ talosVersion: v1.9.4
 kubernetesVersion: v1.31.6
 
 endpoint: https://${clusterDomain}:6443
-
 cniConfig:
   name: none
 
@@ -15,6 +17,9 @@ additionalMachineCertSans: &sans
   - ${clusterDomain}
   - 127.0.0.1 # KubePrism
 additionalApiServerCertSans: *sans
+
+clusterPodNets: ["10.244.0.0/16"]
+clusterSvcNets: ["10.96.0.0/12"]
 
 nodes:
   - hostname: mc1
@@ -65,16 +70,32 @@ controlPlane:
     topology.kubernetes.io/region: *clusterName
     topology.kubernetes.io/zone: m
 
+  extensionServices: &extensionServices
+    - name: nut-client
+      configFiles:
+        - mountPath: /usr/local/etc/nut/upsmon.conf
+          content: |
+            MONITOR ${upsmonHost} 1 ${upsmonUser} ${upsmonPasswd} secondary
+            SHUTDOWNCMD "/sbin/poweroff"
+
   schematic:
     customization:
       extraKernelArgs:
-        - net.ifnames=0
+        - apparmor=0 # Less security, more speed
+        - init_on_alloc=0 # Less security, more speed
+        - init_on_free=0 # Less security, more speed
+        - intel_iommu=on # PCI Passthrough
+        - iommu=pt # PCI Passthrough
+        - mitigations=off # Less security, more speed
+        - security=none # Less security, more speed
+        - net.ifnames=0 # Disable predictable NIC naming
         - console=ttyS0
 
       systemExtensions:
         officialExtensions:
           - siderolabs/i915
           - siderolabs/intel-ucode
+          - siderolabs/nut-client
 
   patches:
     # Configure containerd
