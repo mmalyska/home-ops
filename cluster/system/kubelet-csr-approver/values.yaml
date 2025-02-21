@@ -1,4 +1,4 @@
 kubelet-csr-approver:
   providerRegex: |
-    ^(mc1|mc2|mc3)$
+    ^(mc1|mc2|mc3|nv1)$
   bypassDnsResolution: true
