@@ -64,9 +64,24 @@ nodes:
             gateway: 192.168.50.1
         vip:
           ip: *talosControlplaneVip
+  - hostname: nv1
+    ipAddress: 192.168.48.5
+    installDisk: /dev/nvme0n1
+    controlPlane: false
+    networkInterfaces:
+      - interface: enP8p1s0
+        addresses:
+          - 192.168.48.5/22
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.50.1
+    nodeTaints:
+      nv: :NoSchedule
+
 
 controlPlane:
-  nodeLabels:
+  nodeLabels: &nodeLabels
     topology.kubernetes.io/region: *clusterName
     topology.kubernetes.io/zone: m
 
@@ -99,7 +114,7 @@ controlPlane:
 
   patches:
     # Configure containerd
-    - |-
+    - &patchContainerd |-
       machine:
         files:
           - op: create
@@ -115,7 +130,7 @@ controlPlane:
                 discard_unpacked_layers = false
 
     # Disable Host DNS
-    - |-
+    - &patchHostDNS |-
       machine:
         features:
           hostDNS:
@@ -124,14 +139,14 @@ controlPlane:
             forwardKubeDNSToHost: false
 
     # Configure kubelet
-    - |-
+    - &patchKubelet |-
       machine:
         kubelet:
           extraArgs:
             rotate-server-certificates: "true"
 
     # Enable KubePrism
-    - |-
+    - &patchKubePrism |-
       machine:
         features:
           kubePrism:
@@ -149,7 +164,7 @@ controlPlane:
           vm.nr_hugepages: 1024                  # Postgres
 
     # Enable K8s Talos API Access
-    - |-
+    - &patchTalosAPIAccess |-
       machine:
         features:
           kubernetesTalosAPIAccess:
@@ -160,7 +175,7 @@ controlPlane:
               - talos-backup
 
     # Configure time server
-    - |-
+    - &patchTimeServer |-
       machine:
         time:
           disabled: false
@@ -168,7 +183,7 @@ controlPlane:
             - 192.168.50.1
 
     # Configure main DNS
-    - |-
+    - &patchDNS |-
       machine:
         network:
           nameservers:
@@ -183,7 +198,7 @@ controlPlane:
             - SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="44", MODE="0660"
 
     # Enable cluster discovery
-    - |-
+    - &patchClusterDiscovery |-
       cluster:
         discovery:
           registries:
@@ -208,7 +223,7 @@ controlPlane:
           disabled: true
 
     # Configure bind-address
-    - |-
+    - &patchBindAddress |-
       - op: add
         path: /cluster/controllerManager/extraArgs
         value:
@@ -221,3 +236,13 @@ controlPlane:
         path: /cluster/proxy/extraArgs
         value:
           bind-address: 0.0.0.0
+
+worker:
+  nodeLabels: *nodeLabels
+  extensionServices: *extensionServices
+  patches:
+    - *patchContainerd
+    - *patchHostDNS
+    - *patchTimeServer
+    - *patchDNS
+    - *patchClusterDiscovery
