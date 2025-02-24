@@ -112,6 +112,13 @@ tasks:
         vars: {CLI_ARGS: "-m auto"}
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
+  apply:reinstall:
+    desc: Apply Talos config to a specific node without reboot (task talos:apply:reinstall N=X)
+    dir: provision/talos
+    cmds:
+      - task: generate
+      - task: upgrade
+
   generate-kubeconfig:
     internal: true
     desc: Generate Talos kubeconfig (task talos:generate-kubeconfig)
@@ -155,7 +162,7 @@ tasks:
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=X)
     dir: provision/talos
     status:
-      - talosctl version --nodes {{ .NODE }} --short | grep 'Tag.*{{ .TALOS_VERSION }}'
+      - $(if [[ "{{ .FORCE }}" == "true" ]]; then echo false ; talosctl version --nodes {{ .NODE }} --short | grep 'Tag.*{{ .TALOS_VERSION }}; fi'
     vars:
       FILE:
         sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .NODE_NAME }}.yaml
