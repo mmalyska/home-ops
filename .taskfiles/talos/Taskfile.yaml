@@ -113,7 +113,7 @@ tasks:
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   apply:reinstall:
-    desc: Apply Talos config to a specific node without reboot (task talos:apply:reinstall N=X)
+    desc: Apply Talos config to a specific node without reboot (task talos:apply:reinstall N=X FORCE=false)
     dir: provision/talos
     cmds:
       - task: generate
@@ -168,13 +168,10 @@ tasks:
         sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .NODE_NAME }}.yaml
       TALOS_IMAGE:
         sh: yq '.machine.install.image' < "{{.FILE}}"
+      FORCE:
     cmds:
-      - task: wait_for_health
-        vars: {TIMEOUT: 10m}
-      - task: apply-config
-        vars: {N: "{{ .N }}", CLI_ARGS: "-m staged"}
-      - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - cmd: echo {{ .FORCE }}
+
 
   wait_for_health:
     internal: true

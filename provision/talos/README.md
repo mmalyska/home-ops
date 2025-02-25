@@ -25,3 +25,5 @@ kustomize build cluster/core/argocd | argocd-secret-replacer sops -f cluster/cor
 `talosctl --nodes 192.168.48.4 upgrade --image ghcr.io/siderolabs/installer:v1.4.2` -> upgrade talos
 
 `talosctl --nodes 192.168.48.4 upgrade-k8s --to 1.27.2` -> upgrade k8s
+
+`talosctl -n 192.168.48.5 read /sys/class/thermal/thermal_zone0/temp` -> get jetson cpu temp
