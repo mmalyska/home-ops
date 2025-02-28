@@ -170,7 +170,12 @@ tasks:
         sh: yq '.machine.install.image' < "{{.FILE}}"
       FORCE:
     cmds:
-      - cmd: echo {{ .FORCE }}
+      - task: wait_for_health
+        vars: {TIMEOUT: 10m}
+      - task: apply-config
+        vars: {N: "{{ .N }}", CLI_ARGS: "-m staged"}
+      - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
+      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
 
   wait_for_health:
