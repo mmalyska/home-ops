@@ -34,8 +34,8 @@ spec:
   syncPolicy:
     {{- if hasKey $v "selfHeal" | ternary $v.selfHeal false }}
     automated:
-      selfHeal: true
-      prune: true
+      selfHeal: {{ ternary $v.selfHeal false }}
+      prune: {{ $v.prune }}
     {{- end }}
     {{- with $v.managedNamespaceMetadata }}
     managedNamespaceMetadata:
