@@ -24,6 +24,7 @@ includes:
   talos: .taskfiles/talos
   mkdocs: .taskfiles/mkdocs.yml
   cilium: .taskfiles/cilium.yml
+  volsync: .taskfiles/volsync
 
 tasks:
   default: task -l

@@ -1,0 +1,17 @@
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: tmp-replication-dest
+  namespace: ${namespace}
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: ${restic_secret}
+    destinationPVC: ${destination_pvc}
+    copyMethod: Direct
+    moverSecurityContext:
+      runAsUser: ${user_group}
+      runAsGroup: ${user_group}
+      fsGroup: ${user_group}

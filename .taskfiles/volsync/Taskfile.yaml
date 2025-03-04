@@ -1,0 +1,30 @@
+---
+version: "3"
+
+vars:
+  VOLSYNC_RESOURCES_DIR: "{{.ROOT_DIR}}/.taskfiles/volsync/resources"
+
+tasks:
+
+  restore-pvc:
+    desc: Browse a PersistentVolumeClaim (task volsync:restore-pvc ns=vintagestory OPTIONAL(pvc=vintagestory-config rs=vintagestory-restic-secret ug=1001))
+    summary: |
+      ns: Namespace to restore PersistentVolumeClaims in (default: default)
+      rs: restic Secret (optional)
+      pvc: PersistentVolumeClaim name to be used (optional)
+      ug: user gropu restic having files (default: 1001) (optional)
+    interactive: true
+    cmds:
+      - envsubst < <(cat {{.VOLSYNC_RESOURCES_DIR}}/volsync-restore.tmpl.yaml) | kubectl apply -f -
+      - kubectl -n {{.ns}} wait ReplicationDestination/tmp-replication-dest --for jsonpath='{.status.latestMoverStatus.result}'=Successful --timeout=120m
+      - kubectl -n {{.ns}} delete replicationdestination tmp-replication-dest
+    env:
+      namespace: '{{.ns | default "default"}}'
+      restic_secret: '{{.rs | list (.ns | default "default") "restic-secret" | join "-"}}'
+      destination_pvc: '{{.pvc | list (.ns | default "default") "config" | join "-"}}'
+      user_group: '{{.ug | default 1001}}'
+    preconditions:
+      - test -f {{.VOLSYNC_RESOURCES_DIR}}/volsync-restore.tmpl.yaml
+      - kubectl --namespace {{.ns}} get persistentvolumeclaims '{{.pvc | list (.ns | default "default") "config" | join "-"}}'
+      - kubectl --namespace {{.ns}} get secret '{{.rs | list (.ns | default "default") "restic-secret" | join "-"}}'
+      - kubectl --namespace {{.ns}} get ReplicationDestination tmp-replication-dest &> /dev/null && exit 1 || exit 0
