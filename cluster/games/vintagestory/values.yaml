@@ -22,17 +22,17 @@ app-template:
             - |
               cd /mods;
               rm *;
-              wget https://mods.vintagestory.at/files/asset/18200/ACulinaryArtillery%201.2.3.zip;
-              wget https://mods.vintagestory.at/files/asset/17779/BetterRuinsv0.4.6.zip;
-              wget https://mods.vintagestory.at/files/asset/16885/BetterTradersv0.0.9.zip;
-              wget https://mods.vintagestory.at/files/asset/11981/buzzwords_1.7.0.zip;
-              wget https://mods.vintagestory.at/files/asset/15078/CarryOn-1.20.0-pre_v1.8.0-pre.1.zip;
-              wget https://mods.vintagestory.at/files/asset/18086/configlib_1.4.4.zip;
-              wget https://mods.vintagestory.at/files/asset/18196/ExpandedFoods%201.7.3.zip;
-              wget https://mods.vintagestory.at/files/asset/16918/primitivesurvival_3.7.5.zip;
-              wget https://mods.vintagestory.at/files/asset/15316/vsimgui_1.1.7.zip;
-              wget https://mods.vintagestory.at/files/asset/16922/wildfarmingrevival_1.3.4.zip;
-              wget https://mods.vintagestory.at/files/asset/916/FarmlandDropsSoil-VS1.15-v1.4.0.zip;
+              wget https://moddbcdn.vintagestory.at/ACulinaryArtillery+1_2542abbf8ad4e2daa7ccd61eef06aef2.zip?dl=ACulinaryArtillery%201.2.3.zip;
+              wget https://moddbcdn.vintagestory.at/BetterRuinsv0.4.6_88953addbf6754fc233487d42f0ce185.zip?dl=BetterRuinsv0.4.6.zip;
+              wget https://moddbcdn.vintagestory.at/BetterTradersv0.0.9_e2cbaa1ac6b6d2120c2574b7bbd9bfc9.zip?dl=BetterTradersv0.0.9.zip;
+              wget https://moddbcdn.vintagestory.at/buzzwords_1.7.0_4eb563463529e10b0a81627a18037edc.zip?dl=buzzwords_1.7.0.zip;
+              wget https://moddbcdn.vintagestory.at/CarryOn-1.20.0-pre_v_7805583c8a1301120e16e1119955b389.zip?dl=CarryOn-1.20.0-pre_v1.8.0-pre.1.zip;
+              wget https://moddbcdn.vintagestory.at/configlib_1.4.4_2f8fa6d6bc5844667aecab3808a1abfa.zip?dl=configlib_1.4.4.zip;
+              wget https://moddbcdn.vintagestory.at/ExpandedFoods+1.7.3_c53fee0815af9cc9b3538c2acc9c0d9e.zip?dl=ExpandedFoods%201.7.3.zip;
+              wget https://moddbcdn.vintagestory.at/primitivesurvival_3._749ac8488f2d203c877f3232ca7eba36.zip?dl=primitivesurvival_3.7.5.zip;
+              wget https://moddbcdn.vintagestory.at/vsimgui_1.1.7_6c1228a251c9238888eefc5a0b024da1.zip?dl=vsimgui_1.1.7.zip;
+              wget https://moddbcdn.vintagestory.at/wildfarmingrevival_1_8b3c819f83eeeb80a947b76d72c23808.zip?dl=wildfarmingrevival_1.3.4.zip;
+              wget https://moddbcdn.vintagestory.at/FarmlandDropsSoil-VS_31d8743185bc640b86a56978d94c7b0c.zip?dl=FarmlandDropsSoil-VS1.15-v1.4.0.zip;
       containers:
         vintagestory:
           image:
