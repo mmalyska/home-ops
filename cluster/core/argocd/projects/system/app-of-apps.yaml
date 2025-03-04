@@ -17,8 +17,8 @@ spec:
     repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:
-    automated:
-      selfHeal: false
-      prune: false
+    # automated:
+    #   selfHeal: false
+    #   prune: false
     syncOptions:
       - CreateNamespace=true
