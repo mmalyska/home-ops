@@ -6,6 +6,8 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   destination:
     server: https://kubernetes.default.svc
@@ -15,8 +17,8 @@ spec:
     repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:
-    automated:
-      selfHeal: false
-      prune: false
+    # automated:
+    #   selfHeal: false
+    #   prune: false
     syncOptions:
       - CreateNamespace=true
