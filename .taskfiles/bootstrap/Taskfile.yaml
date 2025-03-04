@@ -97,10 +97,7 @@ tasks:
   argocd:
     internal: true
     cmds:
-      - sops --decrypt {{.KUBERNETES_DIR}}/bootstrap/argocd/age-key.secret.sops.yaml | kubectl apply --server-side --filename -
+      - cat {{.ROOT_DIR}}/age.key | kubectl --context {{.cluster}} -n flux-system create secret generic sops-age --from-file=age.agekey=/dev/stdin
       - kubectl apply --server-side --kustomize {{.KUBERNETES_DIR}}/core/argocd
-      - kubectl apply --server-side --kustomize {{.KUBERNETES_DIR}}/bootstrap/argocd
     preconditions:
       - test -f {{.ROOT_DIR}}/age.key
-      - test -f {{.KUBERNETES_DIR}}/bootstrap/argocd/age-key.secret.sops.yaml
-      - sops filestatus {{.KUBERNETES_DIR}}/bootstrap/argocd/age-key.secret.sops.yaml | jq --exit-status '.encrypted'

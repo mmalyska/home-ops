@@ -12,6 +12,7 @@ app-of-apps:
       namespace: botkube
       path: botkube
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -21,6 +22,7 @@ app-of-apps:
       namespace: calibre
       path: calibre
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -30,6 +32,7 @@ app-of-apps:
       namespace: gitea
       path: gitea
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -39,6 +42,7 @@ app-of-apps:
       namespace: grocy
       path: grocy
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -48,6 +52,7 @@ app-of-apps:
       path: hass
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -57,6 +62,7 @@ app-of-apps:
       path: nfs-mounts
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -66,6 +72,7 @@ app-of-apps:
       path: qnap-proxy
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -75,6 +82,7 @@ app-of-apps:
       path: jellyfin
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -84,6 +92,7 @@ app-of-apps:
       namespace: homepage
       path: gethomepage
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -93,6 +102,7 @@ app-of-apps:
       namespace: open-webui
       path: open-webui
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE

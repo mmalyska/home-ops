@@ -12,6 +12,7 @@ app-of-apps:
       path: cert-manager
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -21,17 +22,20 @@ app-of-apps:
       path: cloudflared
       enabled: true
       selfHeal: false
+      prune: false
     - name: cloudnative-pg
       namespace: cnpg
       path: cloudnative-pg
       enabled: true
       selfHeal: false
+      prune: false
       ignoreDifferences:
     - name: dyndns
       namespace: dyndns
       path: dyndns
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -41,6 +45,7 @@ app-of-apps:
       path: identity/keycloak
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -50,11 +55,13 @@ app-of-apps:
       path: metrics-server
       enabled: true
       selfHeal: false
+      prune: false
     - name: nfs-subdir-external-provisioner
       namespace: nfs-subdir-provisioner
       path: nfs-subdir-external-provisioner
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -64,6 +71,7 @@ app-of-apps:
       path: oauth2-proxy
       enabled: false
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -73,6 +81,7 @@ app-of-apps:
       path: prometheus-stack
       enabled: true
       selfHeal: false
+      prune: false
       ignoreDifferences:
         - group: apps
           kind: Deployment
@@ -105,6 +114,7 @@ app-of-apps:
       path: traefik
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -114,6 +124,7 @@ app-of-apps:
       path: node-feature-discovery
       enabled: true
       selfHeal: false
+      prune: false
       ignoreDifferences:
         - group: apps
           kind: DaemonSet
@@ -127,6 +138,7 @@ app-of-apps:
       path: intel-device-plugins-operator
       enabled: true
       selfHeal: false
+      prune: false
       managedNamespaceMetadata:
         labels:
           pod-security.kubernetes.io/enforce: privileged
@@ -135,6 +147,7 @@ app-of-apps:
       path: intel-gpu-plugin
       enabled: true
       selfHeal: false
+      prune: false
       ignoreDifferences:
         - group: deviceplugin.intel.com
           kind: GpuDevicePlugin
@@ -148,6 +161,7 @@ app-of-apps:
       path: snapshot-controller
       enabled: true
       selfHeal: false
+      prune: false
       ignoreDifferences:
         - kind: Secret
           name: snapshot-validation-webhook-tls
@@ -158,6 +172,7 @@ app-of-apps:
       path: external-secrets
       enabled: true
       selfHeal: false
+      prune: false
       plugin:
         env:
           - name: SOPS_SECRET_FILE
@@ -167,18 +182,22 @@ app-of-apps:
       path: kubelet-csr-approver
       enabled: true
       selfHeal: false
+      prune: false
     - name: volsync
       namespace: volsync
       path: volsync
       enabled: true
       selfHeal: false
+      prune: false
     - name: talos-backup
       namespace: talos-backup
       path: talos-backup
       enabled: true
       selfHeal: false
+      prune: false
     - name: keda
       namespace: keda
       path: keda
       enabled: false
       selfHeal: false
+      prune: false
