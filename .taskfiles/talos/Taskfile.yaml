@@ -12,7 +12,7 @@ vars:
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.31.6"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
-  TALHELPER: "v3.0.19"
+  TALHELPER: "v3.0.20"
   TALOS_CONTROLLER:
     sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
 
