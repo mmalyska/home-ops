@@ -13,9 +13,6 @@ litellm-helm:
           - path: /
             pathType: ImplementationSpecific
   resources:
-    limits:
-      cpu: 200m
-      memory: 512Mi
     requests:
       cpu: 100m
       memory: 128Mi
@@ -47,9 +44,13 @@ litellm-helm:
       - credential_name: default_anthropic_credential
         credential_values:
           api_key: os.environ/ANTHROPIC_API_KEY
+        credential_info:
+          description: "Anthropic key"
       - credential_name: default_openai_credential
         credential_values:
           api_key: os.environ/OPENAI_API_KEY
+        credential_info:
+          description: "Open AI key"
   db:
     deployStandalone: false
     useExisting: true
