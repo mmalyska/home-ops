@@ -25,23 +25,23 @@ litellm-helm:
     model_list:
       - model_name: Claude 3.5
         litellm_params:
-          model: claude-3-5-haiku-latest
+          model: anthropic/claude-3-5-haiku-latest
           litellm_credential_name: default_anthropic_credential
       - model_name: Claude 3.7
         litellm_params:
-          model: claude-3-7-sonnet-latest
+          model: anthropic/claude-3-7-sonnet-latest
           litellm_credential_name: default_anthropic_credential
       - model_name: gpt-4o
         litellm_params:
-          model: gpt-4o-latest
+          model: openai/gpt-4o-latest
           litellm_credential_name: default_openai_credential
       - model_name: o3-mini
         litellm_params:
-          model: o3-mini-latest
+          model: openai/o3-mini-latest
           litellm_credential_name: default_openai_credential
       - model_name: gpt-4.5
         litellm_params:
-          model: gpt-4.5-preview-latest
+          model: openai/gpt-4.5-preview-latest
           litellm_credential_name: default_openai_credential
     credential_list:
       - credential_name: default_anthropic_credential
