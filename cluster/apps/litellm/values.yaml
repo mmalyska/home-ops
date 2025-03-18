@@ -17,7 +17,7 @@ litellm-helm:
       cpu: 100m
       memory: 128Mi
   environmentSecrets:
-    - litell-secrets
+    - litellm-secrets
   proxy_config:
     model_list:
       - model_name: Claude 3.5
@@ -77,10 +77,10 @@ pgsql-cnpg:
   #       endpointURL: <secret:s3_endpoint>
   #       s3Credentials:
   #         accessKeyId:
-  #           name: litell-secrets
+  #           name: litellm-secrets
   #           key: S3_ACCESS_KEY_ID
   #         secretAccessKey:
-  #           name: litell-secrets
+  #           name: litellm-secrets
   #           key: S3_ACCESS_SECRET_KEY
   monitoring:
     enablePodMonitor: true
@@ -91,10 +91,10 @@ pgsql-cnpg:
       endpointURL: <secret:s3_endpoint>
       s3Credentials:
         accessKeyId:
-          name: litell-secrets
+          name: litellm-secrets
           key: S3_ACCESS_KEY_ID
         secretAccessKey:
-          name: litell-secrets
+          name: litellm-secrets
           key: S3_ACCESS_SECRET_KEY
   scheduledBackups:
     - name: litelldb-cnpg-backup
