@@ -57,6 +57,16 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
+    - name: litellm
+      namespace: litellm
+      path: litellm
+      enabled: true
+      selfHeal: false
+      prune: false
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
     - name: nfs-mounts
       namespace: nfs-mounts
       path: nfs-mounts

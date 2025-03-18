@@ -1,0 +1,103 @@
+litellm-helm:
+  masterkey: <secret:masterkey>
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: &host litellm.<secret:private-domain>
+    hosts:
+      - host: *host
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  environmentSecrets:
+    - litell-secrets
+  proxy_config:
+    model_list:
+      - model_name: Claude 3.5
+        litellm_params:
+          model: claude-3-5-haiku-latest
+          litellm_credential_name: default_anthropic_credential
+      - model_name: Claude 3.7
+        litellm_params:
+          model: claude-3-7-sonnet-latest
+          litellm_credential_name: default_anthropic_credential
+      - model_name: gpt-4o
+        litellm_params:
+          model: gpt-4o-latest
+          litellm_credential_name: default_openai_credential
+      - model_name: o3-mini
+        litellm_params:
+          model: o3-mini-latest
+          litellm_credential_name: default_openai_credential
+      - model_name: gpt-4.5
+        litellm_params:
+          model: gpt-4.5-preview-latest
+          litellm_credential_name: default_openai_credential
+    credential_list:
+      - credential_name: default_anthropic_credential
+        credential_values:
+          api_key: os.environ/ANTHROPIC_API_KEY
+      - credential_name: default_openai_credential
+        credential_values:
+          api_key: os.environ/OPENAI_API_KEY
+  db:
+    deployStandalone: false
+    useExisting: true
+    endpoint: litellmdb-cnpg-rw
+    database: app
+    secret:
+      name: litellmdb-cnpg-app
+      usernameKey: username
+      passwordKey: password
+pgsql-cnpg:
+  name: litellmdb
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4
+  instances: 2
+  storage:
+    size: 15Gi
+  # bootstrap:
+  #   recovery:
+  #     source: crunchy-cluster
+  # externalClusters:
+  #   - name: crunchy-cluster
+  #     barmanObjectStore:
+  #       serverName: litelldb-cnpg
+  #       destinationPath: "s3://k8s-at-home-backup/cnpg/litell"
+  #       endpointURL: <secret:s3_endpoint>
+  #       s3Credentials:
+  #         accessKeyId:
+  #           name: litell-secrets
+  #           key: S3_ACCESS_KEY_ID
+  #         secretAccessKey:
+  #           name: litell-secrets
+  #           key: S3_ACCESS_SECRET_KEY
+  monitoring:
+    enablePodMonitor: true
+  backup:
+    retentionPolicy: "10d"
+    barmanObjectStore:
+      destinationPath: "s3://k8s-at-home-backup/cnpg/litell"
+      endpointURL: <secret:s3_endpoint>
+      s3Credentials:
+        accessKeyId:
+          name: litell-secrets
+          key: S3_ACCESS_KEY_ID
+        secretAccessKey:
+          name: litell-secrets
+          key: S3_ACCESS_SECRET_KEY
+  scheduledBackups:
+    - name: litelldb-cnpg-backup
+      spec:
+        immediate: true
+        schedule: "5 0 0 * * *"
+        backupOwnerReference: self
