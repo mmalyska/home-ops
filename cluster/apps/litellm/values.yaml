@@ -13,6 +13,9 @@ litellm-helm:
           - path: /
             pathType: ImplementationSpecific
   resources:
+    limits:
+      cpu: 200m
+      memory: 1024Mi
     requests:
       cpu: 100m
       memory: 128Mi
@@ -30,15 +33,15 @@ litellm-helm:
           litellm_credential_name: default_anthropic_credential
       - model_name: gpt-4o
         litellm_params:
-          model: openai/gpt-4o-latest
+          model: openai/gpt-4o-2024-11-20
           litellm_credential_name: default_openai_credential
       - model_name: o3-mini
         litellm_params:
-          model: openai/o3-mini-latest
+          model: openai/o3-mini-2025-01-31
           litellm_credential_name: default_openai_credential
       - model_name: gpt-4.5
         litellm_params:
-          model: openai/gpt-4.5-preview-latest
+          model: openai/gpt-4.5-preview-2025-02-27
           litellm_credential_name: default_openai_credential
     credential_list:
       - credential_name: default_anthropic_credential
