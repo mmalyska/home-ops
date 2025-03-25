@@ -1,10 +1,12 @@
-data "cloudflare_zone" "domain" {
+resource "cloudflare_zone" "domain" {
+  account = {
+    id = cloudflare_account.main.id
+  }
   name = local.cloudflare_domain
 }
 
-resource "cloudflare_zone_settings_override" "cloudflare_settings" {
-  zone_id = data.cloudflare_zone.domain.id
-  settings {
+resource "cloudflare_zone_setting" "cloudflare_settings" {
+  for_each = tomap({
     # /ssl-tls
     always_use_https         = "on"
     ssl                      = "strict"
@@ -38,8 +40,11 @@ resource "cloudflare_zone_settings_override" "cloudflare_settings" {
     server_side_exclude = "on"
     hotlink_protection  = "on"
     # /workers
-    security_header {
-      enabled = false
-    }
-  }
+    # security_header = {
+    #   enabled = false
+    # }
+  })
+  zone_id = cloudflare_zone.domain.id
+  setting_id = each.key
+  value = each.value
 }
