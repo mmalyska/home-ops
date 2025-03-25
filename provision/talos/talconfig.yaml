@@ -75,9 +75,9 @@ nodes:
           - console=ttyS0,115200
           - sysctl.kernel.kexec_load_disabled=1
           - talos.dashboard.disabled=1
-        systemExtensions:
-          officialExtensions:
-            - siderolabs/nvidia-container-toolkit-production
+        # systemExtensions:
+        #   officialExtensions:
+        #     - siderolabs/nvidia-container-toolkit-production
     networkInterfaces:
       - interface: enP8p1s0
         addresses:

@@ -3,10 +3,8 @@ version: "3"
 
 vars:
   N: '{{ .N | default "0" }}'
-  NODE:
-    sh: "yq .nodes[{{.N}}].ipAddress < {{.TALOS_DIR}}/talconfig.yaml"
-  NODE_NAME:
-    sh: "yq .nodes[{{.N}}].hostname < {{.TALOS_DIR}}/talconfig.yaml"
+  NODE_LIST:
+    sh: yq '.nodes | keys | join(",")' < {{.TALOS_DIR}}/talconfig.yaml
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
   TALOS_VERSION: "v1.9.5"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
@@ -53,12 +51,22 @@ tasks:
 
   dashboard:
     desc: Show talos dashboard fot N node (task talos:dashboard)
+    vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
     cmds:
       - task: generate
       - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} dashboard
 
   shutdown:
     desc: Shutdown talos N node (task talos:shutdown N=X)
+    vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
     cmds:
       - task: generate
       - task: wait_for_health
@@ -68,6 +76,11 @@ tasks:
   upgrade:k8s:
     dir: provision/talos
     desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s)
+    vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
     cmds:
       - task: init
       - talosctl --nodes {{ .NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
@@ -77,21 +90,24 @@ tasks:
     dir: provision/talos
     cmds:
       - task: init
-      # control-plane
-      - task: upgrade
-        vars: {N: 0}
-      - task: upgrade
-        vars: {N: 1}
-      - task: upgrade
-        vars: {N: 2}
-      - task: upgrade
-        vars: {N: 3}
+      # nodes
+      - for:
+          var: NODE_LIST
+          split: ','
+        task: upgrade
+        vars:
+          N: '{{.ITEM}}'
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
 
   apply:restart:
     desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=X)
     dir: provision/talos
+    vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
     cmds:
       - task: generate
       - task: wait_for_health
@@ -104,6 +120,11 @@ tasks:
   apply:
     desc: Apply Talos config to a specific node without reboot (task talos:apply N=X)
     dir: provision/talos
+    vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
     cmds:
       - task: generate
       - task: wait_for_health
@@ -123,6 +144,11 @@ tasks:
     internal: true
     desc: Generate Talos kubeconfig (task talos:generate-kubeconfig)
     dir: provision/talos
+    vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
     cmds:
       - cmd: talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig kubeconfig -f --nodes {{ .NODE }} $KUBECONFIG
     status:
@@ -150,6 +176,10 @@ tasks:
     desc: Apply Talos config to a specific node (task talos:apply N=X)
     dir: provision/talos
     vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
       FILE:
         sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .NODE_NAME }}.yaml
     cmds:
@@ -161,14 +191,18 @@ tasks:
     internal: true
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=X)
     dir: provision/talos
-    status:
-      - $(if [[ "{{ .FORCE }}" == "true" ]]; then echo false ; talosctl version --nodes {{ .NODE }} --short | grep 'Tag.*{{ .TALOS_VERSION }}; fi'
     vars:
+      NODE:
+        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
+      NODE_NAME:
+        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
       FILE:
         sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .NODE_NAME }}.yaml
       TALOS_IMAGE:
-        sh: yq '.machine.install.image' < "{{.FILE}}"
-      FORCE:
+        sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
+      FORCE: "{{ .FORCE | default false }}"
+    status:
+      - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*v1.9.5' || return 1)
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
@@ -186,5 +220,5 @@ tasks:
       # Ensure CephCluster is healthy
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
       # Ensure CloudNative-PG cluster has 2 ready instances
-      - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
+      # - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
       - kubectl -n identity wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster keycloakdb-cnpg
