@@ -1,4 +1,9 @@
 ollama:
+  ollama:
+    models:
+      pull:
+        - deepcoder:14b
+        - llama3.2:3b
   extraEnv:
     - name: OLLAMA_NUM_PARALLEL
       value: "2"
