@@ -37,7 +37,7 @@ app-template:
         vintagestory:
           image:
             repository: ghcr.io/mmalyska/vintagestory
-            tag: 1.20.4@sha256:d6c7f570eb7f32c029c5bc6580ac4e5b19be57c34ce6e2c439cffe4c3bac0bd8
+            tag: 1.20.10@sha256:f9c50e17a209585c604f8be956e18858be972a02283eabb6c4cf64fd5a310cd4
           env:
             DATA_PATH: /config
           args:
