@@ -16,3 +16,13 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
+    - name: minecraft-bedrock
+      enabled: true
+      namespace: minecraft-bedrock
+      path: minecraft/bedrock
+      selfHeal: false
+      prune: false
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml
