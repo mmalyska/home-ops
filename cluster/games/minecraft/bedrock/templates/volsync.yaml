@@ -41,3 +41,16 @@ spec:
       daily: 6
       weekly: 4
       monthly: 2
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: minecraft-bedrock
+  namespace: minecraft-bedrock
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: minecraft-bedrock-restic-secret
+    destinationPVC: {{ template "minecraft.bedrock.fullname" . }}-datadir
+    copyMethod: Direct
