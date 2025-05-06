@@ -54,3 +54,7 @@ spec:
     repository: minecraft-bedrock-restic-secret
     destinationPVC: {{ template "minecraft.bedrock.fullname" . }}-datadir
     copyMethod: Direct
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
