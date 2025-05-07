@@ -22,22 +22,22 @@ app-template:
             - |
               cd /mods;
               rm *;
-              wget https://moddbcdn.vintagestory.at/ACulinaryArtillery+1_2542abbf8ad4e2daa7ccd61eef06aef2.zip?dl=ACulinaryArtillery%201.2.3.zip;
-              wget https://moddbcdn.vintagestory.at/BetterRuinsv0.4.6_88953addbf6754fc233487d42f0ce185.zip?dl=BetterRuinsv0.4.6.zip;
-              wget https://moddbcdn.vintagestory.at/BetterTradersv0.0.9_e2cbaa1ac6b6d2120c2574b7bbd9bfc9.zip?dl=BetterTradersv0.0.9.zip;
+              wget https://moddbcdn.vintagestory.at/ACulinaryArtillery+1_d7a64a8bcfe7ff7204c7154277ece52b.zip?dl=ACulinaryArtillery%201.2.5.zip;
+              wget https://moddbcdn.vintagestory.at/BetterRuinsv0.4.12_25b075e36256134fbfae588ac12cc1d3.zip?dl=BetterRuinsv0.4.12.zip;
+              wget https://moddbcdn.vintagestory.at/BetterTradersv0.0.10_bbcccf273545d9dd48948af3bf2a35e5.zip?dl=BetterTradersv0.0.10.zip;
               wget https://moddbcdn.vintagestory.at/buzzwords_1.7.0_4eb563463529e10b0a81627a18037edc.zip?dl=buzzwords_1.7.0.zip;
-              wget https://moddbcdn.vintagestory.at/CarryOn-1.20.0-pre_v_7805583c8a1301120e16e1119955b389.zip?dl=CarryOn-1.20.0-pre_v1.8.0-pre.1.zip;
-              wget https://moddbcdn.vintagestory.at/configlib_1.4.4_2f8fa6d6bc5844667aecab3808a1abfa.zip?dl=configlib_1.4.4.zip;
-              wget https://moddbcdn.vintagestory.at/ExpandedFoods+1.7.3_c53fee0815af9cc9b3538c2acc9c0d9e.zip?dl=ExpandedFoods%201.7.3.zip;
-              wget https://moddbcdn.vintagestory.at/primitivesurvival_3._749ac8488f2d203c877f3232ca7eba36.zip?dl=primitivesurvival_3.7.5.zip;
-              wget https://moddbcdn.vintagestory.at/vsimgui_1.1.7_6c1228a251c9238888eefc5a0b024da1.zip?dl=vsimgui_1.1.7.zip;
-              wget https://moddbcdn.vintagestory.at/wildfarmingrevival_1_8b3c819f83eeeb80a947b76d72c23808.zip?dl=wildfarmingrevival_1.3.4.zip;
+              wget https://moddbcdn.vintagestory.at/CarryOn-1.20_v1.8.0-_27480f7eda427c60a83c18e6f0bc3da5.zip?dl=CarryOn-1.20_v1.8.0-rc.4.zip;
+              wget https://moddbcdn.vintagestory.at/configlib_1.5.3_1298f9fc99efb8e223706f04a03ab62b.zip?dl=configlib_1.5.3.zip;
+              wget https://moddbcdn.vintagestory.at/ExpandedFoods+1.7.4_19f8d5870ae1a1ffb0bb4270de555d1b.zip?dl=ExpandedFoods%201.7.4.zip;
+              wget https://moddbcdn.vintagestory.at/primitivesurvival_3._37f0da5e27d730e2bfeadc852b08588f.zip?dl=primitivesurvival_3.7.7.zip;
+              wget https://moddbcdn.vintagestory.at/vsimgui_1.1.8_77ec239145f565699f9b8b89c8b82312.zip?dl=vsimgui_1.1.8.zip;
+              wget https://moddbcdn.vintagestory.at/wildfarmingrevival_1_048f9f5dec0a07cb8aa758f5deab436d.zip?dl=wildfarmingrevival_1.3.6.zip;
               wget https://moddbcdn.vintagestory.at/FarmlandDropsSoil-VS_31d8743185bc640b86a56978d94c7b0c.zip?dl=FarmlandDropsSoil-VS1.15-v1.4.0.zip;
       containers:
         vintagestory:
           image:
             repository: ghcr.io/mmalyska/vintagestory
-            tag: 1.20.4@sha256:d6c7f570eb7f32c029c5bc6580ac4e5b19be57c34ce6e2c439cffe4c3bac0bd8
+            tag: 1.20.10@sha256:f9c50e17a209585c604f8be956e18858be972a02283eabb6c4cf64fd5a310cd4
           env:
             DATA_PATH: /config
           args:
