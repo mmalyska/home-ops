@@ -1,23 +1,15 @@
 {
-    "ansible.ansibleLint.arguments": "-c .github/linters/.ansible-lint",
     "files.associations": {
         "*.json5": "jsonc",
-        "**/provision/ansible/**/*.yml": "ansible",
-        "**/provision/ansible/**/*.sops.yml": "yaml",
-        "**/provision/ansible/**/inventory/**/*.yml": "yaml",
         "**/provision/terraform/**/*.tf": "terraform"
     },
     "prettier.configPath": ".github/linters/.prettierrc.yaml",
     "prettier.ignorePath": ".github/linters/.prettierignore",
     "yaml.schemas": {
         "Kubernetes": "cluster/*.y*ml",
-        "ansible": [
-            "provision/ansible/*.y*ml"
-        ],
         "https://taskfile.dev/schema.json": ".taskfiles/*.y*ml"
     },
     "editor.bracketPairColorization.enabled": true,
     "editor.guides.bracketPairs":"active",
-    "editor.hover.delay": 1500,
-    "ansible.python.interpreterPath": "/home/linuxbrew/.linuxbrew/bin/python3"
+    "editor.hover.delay": 1500
 }

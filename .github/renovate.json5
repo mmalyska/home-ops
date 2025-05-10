@@ -3,8 +3,6 @@
   extends: [
     "github>mmalyska/renovate-config",
     "github>mmalyska/renovate-config:automerge-github-actions",
-    "github>mmalyska/renovate-config:automerge-galaxy-collections",
-    "github>mmalyska/renovate-config:automerge-galaxy-roles",
     "github>mmalyska/renovate-config:automerge-terraform-providers",
     "local>mmalyska/home-ops//.github/renovate/allowedVersions.json5",
     "local>mmalyska/home-ops//.github/renovate/autoMerge.json5",
