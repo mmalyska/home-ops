@@ -71,10 +71,12 @@ nodes:
     schematic:
       customization:
         extraKernelArgs:
+          - -selinux
           - console=tty0
           - console=ttyS0,115200
           - sysctl.kernel.kexec_load_disabled=1
           - talos.dashboard.disabled=1
+          - talos.auditd.disabled=1
         # systemExtensions:
         #   officialExtensions:
         #     - siderolabs/nvidia-container-toolkit-production
@@ -111,15 +113,16 @@ controlPlane:
   schematic:
     customization:
       extraKernelArgs:
-        - apparmor=0 # Less security, more speed
-        - init_on_alloc=0 # Less security, more speed
-        - init_on_free=0 # Less security, more speed
-        - intel_iommu=on # PCI Passthrough
-        - iommu=pt # PCI Passthrough
-        - mitigations=off # Less security, more speed
-        - security=none # Less security, more speed
-        - net.ifnames=0 # Disable predictable NIC naming
-        - console=ttyS0
+        - -selinux                            # Less security, more speed
+        - apparmor=0                          # Less security, more speed
+        - init_on_alloc=0                     # Less security, more speed
+        - init_on_free=0                      # Less security, more speed
+        - intel_iommu=on                      # PCI Passthrough
+        - iommu=pt                            # PCI Passthrough
+        - mitigations=off                     # Less security, more speed
+        - security=none                       # Less security, more speed
+        - net.ifnames=0                       # Disable predictable NIC naming
+        - talos.auditd.disabled=1             # Less security, faster puter
 
       systemExtensions:
         officialExtensions:

@@ -10,7 +10,7 @@ vars:
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.32.4"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
-  TALHELPER: "v3.0.23"
+  TALHELPER: "v3.0.24"
   TALOS_CONTROLLER:
     sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
 
@@ -37,7 +37,7 @@ tasks:
     generates:
       - /usr/local/bin/talosctl
     status:
-      - talosctl version --client --short | grep -q 'Client {{ .TALOS_VERSION }}'
+      - talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
 
   install:talhelper:
     internal: true
@@ -202,7 +202,7 @@ tasks:
         sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
       FORCE: "{{ .FORCE | default false }}"
     status:
-      - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*v1.9.5' || return 1)
+      - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .TALOS_VERSION }}' || return 1)
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
