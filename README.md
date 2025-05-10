@@ -47,7 +47,6 @@ For fast setup I use devcontainer to have same environment across different devi
 
    - Required:
      [age](https://github.com/FiloSottile/age),
-     [ansible](https://www.ansible.com),
      [go-task](https://github.com/go-task/task),
      [ipcalc](http://jodies.de/ipcalc),
      [jq](https://stedolan.github.io/jq/),
@@ -69,7 +68,6 @@ For fast setup I use devcontainer to have same environment across different devi
      [gitleaks](https://github.com/gitleaks/gitleaks),
      [argocd](https://argoproj.github.io/cd/),
      [kubelogin](https://github.com/int128/kubelogin),
-     [ansible-lint](https://ansible.readthedocs.io/projects/lint/),
      [k9s](https://k9scli.io/)
 
 2. This guide heavily relies on [go-task](https://github.com/go-task/task) as a framework for setting things up. It is advised to learn and understand the commands it is running under the hood.

@@ -1,7 +1,0 @@
-# .ansible-lint
-warn_list:
-  - unnamed-task
-
-exclude_paths:
-  - .github/
-  - .archive/

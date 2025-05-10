@@ -1,7 +1,4 @@
 ---
-area/ansible:
-  - changed-files:
-      - any-glob-to-any-file: "provision/ansible/**/*"
 area/github:
   - changed-files:
       - any-glob-to-any-file: ".github/**/*"
