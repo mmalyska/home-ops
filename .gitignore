@@ -16,7 +16,6 @@ xanmanning.k3s*
 .terraform
 .terraform.tfstate*
 terraform.tfstate*
-.terraform.lock.hcl
 # Helm
 Chart.lock
 *.tgz
