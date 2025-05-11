@@ -7,7 +7,8 @@ global:
 name: gitea
 gitea:
   image:
-    repository: gitea/gitea
+    registry: docker.gitea.com
+    repository: gitea
     tag: 1.23.7
     digest: sha256:e39a5a7eb0b2aca06169b6d7a0fde1d4b00f86eb3dd5d9167232b4752bad7281
     pullPolicy: IfNotPresent
