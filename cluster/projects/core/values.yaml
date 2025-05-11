@@ -33,9 +33,7 @@ app-of-apps:
           kind: CephCluster
           jsonPointers:
             - /spec/monitoring/rulesNamespaceOverride
-        - group: ceph.rook.io
-          kind: CephCluster
-          jsonPointers:
+            - /metadata/labels
             - /spec/monitoring/createPrometheusRules
         - group: ceph.rook.io
           kind: CephObjectStore
