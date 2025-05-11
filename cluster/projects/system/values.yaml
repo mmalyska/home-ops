@@ -69,7 +69,7 @@ app-of-apps:
     - name: oauth2-proxy
       namespace: oauth2-proxy
       path: oauth2-proxy
-      enabled: false
+      enabled: true
       selfHeal: false
       prune: false
       plugin:
