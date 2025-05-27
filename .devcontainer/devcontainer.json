@@ -11,10 +11,7 @@
       "description": "Token to access terraform cloud."
     }
   },
-  "containerEnv": {
-    "SOPS_AGE_KEY": "${localEnv:SOPS_AGE_KEY}",
-    "TERRAFORM_TOKEN": "${localEnv:TERRAFORM_TOKEN}"
-  },
+  "runArgs": ["--env-file",".devcontainer/devcontainer.env"],
   "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
   "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
   "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",
