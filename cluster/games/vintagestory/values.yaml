@@ -67,6 +67,8 @@ app-template:
       enabled: true
       type: persistentVolumeClaim
       accessMode: ReadWriteOnce
+      storageClass: ceph-block
+      retain: true
       size: 5Gi
       globalMounts:
         - path: /config
