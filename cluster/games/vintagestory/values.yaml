@@ -68,7 +68,7 @@ app-template:
       type: persistentVolumeClaim
       accessMode: ReadWriteOnce
       storageClass: ceph-block
-      retain: true
+      volumeName: pvc-d90638e7-a275-456c-b359-9b6b3c3c874f
       size: 5Gi
       globalMounts:
         - path: /config
