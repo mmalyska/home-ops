@@ -31,32 +31,30 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
   ]
 
   # Accept UptimeRobot Addresses
-  rules {
+  rules = [{
     action      = "skip"
-    action_parameters {
+    action_parameters = {
       ruleset = "current"
     }
     expression  = "(ip.src in $uptimerobot)"
     description = "Expression to allow UptimeRobot IP addresses"
     enabled     = true
-    logging {
+    logging = {
       enabled   = true
     }
-  }
-
+  },
   # Block Countries
-  rules {
+  {
     action      = "block"
     expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
     description = "Expression to block countries"
     enabled     = true
-  }
-
+  },
   # Block Bots
-  rules {
+  {
     action      = "block"
     expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
     description = "Expression to block bots determined by CF"
     enabled     = true
-  }
+  }]
 }
