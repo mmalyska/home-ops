@@ -26,17 +26,23 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
   account_id = cloudflare_account.main.id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id
 
-  config {
-    ingress_rule {
+  config = {
+    ingress_rule = [{
       hostname = "${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
-    }
-    ingress_rule {
+      origin_request = {
+        origin_server_name = cloudflare_record.ingress.hostname
+      }
+    },
+    {
       hostname = "*.${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
-    }
-    ingress_rule {
+      origin_request = {
+        origin_server_name = cloudflare_record.ingress.hostname
+      }
+    },
+    {
       service = "http_status:404"
-    }
+    }]
   }
 }
