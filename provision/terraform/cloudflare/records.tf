@@ -2,7 +2,7 @@
 resource "cloudflare_dns_record" "root" {
   name    = local.cloudflare_domain
   zone_id = cloudflare_zone.domain.id
-  content   = cloudflare_dns_record.ingress.hostname
+  content   = local.cloudflare_ingress_hostname
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -11,7 +11,7 @@ resource "cloudflare_dns_record" "root" {
 resource "cloudflare_dns_record" "grocy" {
   name    = "grocy"
   zone_id = cloudflare_zone.domain.id
-  content   = cloudflare_dns_record.ingress.hostname
+  content   = local.cloudflare_ingress_hostname
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -20,7 +20,7 @@ resource "cloudflare_dns_record" "grocy" {
 resource "cloudflare_dns_record" "hass" {
   name    = "hass"
   zone_id = cloudflare_zone.domain.id
-  content   = cloudflare_dns_record.ingress.hostname
+  content   = local.cloudflare_ingress_hostname
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -29,7 +29,7 @@ resource "cloudflare_dns_record" "hass" {
 resource "cloudflare_dns_record" "l" {
   name    = "l"
   zone_id = cloudflare_zone.domain.id
-  content   = cloudflare_dns_record.ingress.hostname
+  content   = local.cloudflare_ingress_hostname
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -38,7 +38,7 @@ resource "cloudflare_dns_record" "l" {
 resource "cloudflare_dns_record" "oauth" {
   name    = "oauth"
   zone_id = cloudflare_zone.domain.id
-  content   = cloudflare_dns_record.ingress.hostname
+  content   = local.cloudflare_ingress_hostname
   proxied = true
   type    = "CNAME"
   ttl     = 1
@@ -55,7 +55,7 @@ resource "cloudflare_dns_record" "doppler" {
 resource "cloudflare_dns_record" "chat" {
   name    = "chat"
   zone_id = cloudflare_zone.domain.id
-  content   = cloudflare_dns_record.ingress.hostname
+  content   = local.cloudflare_ingress_hostname
   proxied = true
   type    = "CNAME"
   ttl     = 1

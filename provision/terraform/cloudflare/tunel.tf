@@ -22,6 +22,10 @@ resource "cloudflare_dns_record" "ingress" {
   ttl     = 1
 }
 
+locals {
+  cloudflare_ingress_hostname = "${cloudflare_dns_record.ingress.name}.${local.cloudflare_domain}"
+}
+
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
   account_id = cloudflare_account.main.id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id
@@ -31,14 +35,14 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
       hostname = "${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
       origin_request = {
-        origin_server_name = cloudflare_record.ingress.hostname
+        origin_server_name = local.cloudflare_ingress_hostname
       }
     },
     {
       hostname = "*.${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
       origin_request = {
-        origin_server_name = cloudflare_record.ingress.hostname
+        origin_server_name = local.cloudflare_ingress_hostname
       }
     },
     {
