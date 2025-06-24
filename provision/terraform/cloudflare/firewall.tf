@@ -9,7 +9,7 @@ resource "cloudflare_list" "uptimerobot" {
   description = "List of UptimeRobot IP Addresses"
 
   dynamic "item" {
-    for_each = split("\r\n", chomp(data.http.uptimerobot_ips.response_body))
+    for_each = split("\n", chomp(data.http.uptimerobot_ips.response_body))
     content {
       value {
         ip = item.value
