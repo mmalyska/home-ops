@@ -32,7 +32,7 @@ output "test1" {
 }
 
 output "test2" {
-      value = "${local.cloudflare_domain}"
+      value = nonsensitive("${local.cloudflare_domain}")
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
