@@ -1,3 +1,8 @@
+import {
+  to = cloudflare_zone.domain
+  id = "c5e91ea7f665fcc82489bd09042fc648"
+}
+
 resource "cloudflare_zone" "domain" {
   account = {
     id = cloudflare_account.main.id
