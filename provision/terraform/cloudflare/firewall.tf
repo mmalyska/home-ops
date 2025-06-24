@@ -3,7 +3,7 @@ data "http" "uptimerobot_ips" {
 }
 
 locals {
-  uptime_ips = split("\r\n", data.http.uptimerobot_ips.response_body)
+  uptime_ips = split("\n", data.http.uptimerobot_ips.response_body)
 }
 
 resource "cloudflare_list" "uptimerobot" {
