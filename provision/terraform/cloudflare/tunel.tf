@@ -27,14 +27,6 @@ resource "cloudflare_dns_record" "ingress" {
   ttl     = 1
 }
 
-output "test1" {
-      value = nonsensitive(cloudflare_dns_record.ingress.name)
-}
-
-output "test2" {
-      value = nonsensitive("${local.cloudflare_domain}")
-}
-
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
   account_id = cloudflare_account.main.id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id
@@ -48,11 +40,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
       }
     },
     {
-      hostname = "*.${local.cloudflare_domain}"
-      service  = "https://traefik.traefik.svc.cluster.local:443"
-      origin_request = {
-        origin_server_name = cloudflare_dns_record.ingress.name
-      }
+      service = "http_status:404"
     }]
   }
 }
