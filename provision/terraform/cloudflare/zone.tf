@@ -46,12 +46,6 @@ resource "cloudflare_zone_setting" "zone_setting_automatic_https_rewrites" {
   value = "on"
 }
 
-resource "cloudflare_zone_setting" "zone_setting_universal_ssl" {
-  zone_id = cloudflare_zone.domain.id
-  setting_id = "universal_ssl"
-  value = "on"
-}
-
 resource "cloudflare_zone_setting" "zone_setting_browser_check" {
   zone_id = cloudflare_zone.domain.id
   setting_id = "browser_check"
@@ -109,12 +103,6 @@ resource "cloudflare_zone_setting" "zone_setting_http3" {
 resource "cloudflare_zone_setting" "zone_setting_opportunistic_onion" {
   zone_id = cloudflare_zone.domain.id
   setting_id = "opportunistic_onion"
-  value = "on"
-}
-
-resource "cloudflare_zone_setting" "zone_setting_zero_rtt" {
-  zone_id = cloudflare_zone.domain.id
-  setting_id = "zero_rtt"
   value = "on"
 }
 
