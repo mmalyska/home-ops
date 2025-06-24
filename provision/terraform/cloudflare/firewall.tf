@@ -16,6 +16,6 @@ resource "cloudflare_list" "uptimerobot" {
 resource "cloudflare_list_item" "example" {
   account_id = cloudflare_account.main.id
   list_id = cloudflare_list.uptimerobot.id
-  for_each = local.uptime_ips
+  for_each = toset(local.uptime_ips)
   ip = each.value
 }
