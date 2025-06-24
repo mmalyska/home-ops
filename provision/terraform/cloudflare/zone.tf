@@ -50,12 +50,6 @@ resource "cloudflare_zone_setting" "zone_setting_browser_check" {
   value = "on"
 }
 
-resource "cloudflare_zone_setting" "zone_setting_browser_check" {
-  zone_id = data.cloudflare_zone.domain.id
-  setting_id = "browser_check"
-  value = "on"
-}
-
 resource "cloudflare_zone_setting" "zone_setting_challenge_ttl" {
   zone_id = data.cloudflare_zone.domain.id
   setting_id = "challenge_ttl"
