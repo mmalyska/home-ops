@@ -45,9 +45,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
       origin_request = {
         origin_server_name = cloudflare_dns_record.ingress.name
       }
-    },
-    {
-      service = "http_status:404"
     }]
   }
 }
