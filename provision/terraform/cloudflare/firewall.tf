@@ -7,13 +7,11 @@ resource "cloudflare_list" "uptimerobot" {
   name        = "uptimerobot"
   kind        = "ip"
   description = "List of UptimeRobot IP Addresses"
+}
 
-  dynamic "item" {
-    for_each = split("\n", chomp(data.http.uptimerobot_ips.response_body))
-    content {
-      value {
-        ip = item.value
-      }
-    }
-  }
+resource "cloudflare_list_item" "example" {
+  account_id = cloudflare_account.main.id
+  list_id = cloudflare_list.uptimerobot.id
+  for_each = split("\r\n", chomp(data.http.uptimerobot_ips.response_body))
+  ip = each.value
 }
