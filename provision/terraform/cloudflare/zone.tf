@@ -1,4 +1,7 @@
-data "cloudflare_zone" "domain" {
+resource "cloudflare_zone" "domain" {
+  account = {
+    id = cloudflare_account.main.id
+  }
   name = local.cloudflare_domain
 }
 

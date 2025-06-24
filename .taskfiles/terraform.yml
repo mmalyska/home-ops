@@ -36,3 +36,9 @@ tasks:
     dir: provision/terraform/cloudflare
     cmds:
       - "terraform apply"
+
+  import:cloudflare:
+    desc: Import terraform resource
+    dir: provision/terraform/cloudflare
+    cmds:
+      - "terraform import {{ .CLI_ARGS }}"
