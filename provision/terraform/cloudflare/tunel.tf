@@ -15,7 +15,7 @@ resource "doppler_secret" "cloudflare_tunnel" {
 
 resource "cloudflare_dns_record" "ingress" {
   name    = "ingress"
-  zone_id = data.cloudflare_zone.domain.id
+  zone_id = cloudflare_zone.domain.id
   content   = "${cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id}.cfargotunnel.com"
   proxied = true
   type    = "CNAME"
