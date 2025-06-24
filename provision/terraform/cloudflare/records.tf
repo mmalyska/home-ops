@@ -1,4 +1,4 @@
-resource "cloudflare_record" "root" {
+resource "cloudflare_dns_record" "root" {
   name    = local.cloudflare_domain
   zone_id = data.cloudflare_zone.domain.id
   content   = cloudflare_record.ingress.hostname
@@ -7,7 +7,7 @@ resource "cloudflare_record" "root" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "grocy" {
+resource "cloudflare_dns_record" "grocy" {
   name    = "grocy"
   zone_id = data.cloudflare_zone.domain.id
   content   = cloudflare_record.ingress.hostname
@@ -16,7 +16,7 @@ resource "cloudflare_record" "grocy" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "hass" {
+resource "cloudflare_dns_record" "hass" {
   name    = "hass"
   zone_id = data.cloudflare_zone.domain.id
   content   = cloudflare_record.ingress.hostname
@@ -25,7 +25,7 @@ resource "cloudflare_record" "hass" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "l" {
+resource "cloudflare_dns_record" "l" {
   name    = "l"
   zone_id = data.cloudflare_zone.domain.id
   content   = cloudflare_record.ingress.hostname
@@ -34,7 +34,7 @@ resource "cloudflare_record" "l" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "oauth" {
+resource "cloudflare_dns_record" "oauth" {
   name    = "oauth"
   zone_id = data.cloudflare_zone.domain.id
   content   = cloudflare_record.ingress.hostname
@@ -43,7 +43,7 @@ resource "cloudflare_record" "oauth" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "doppler" {
+resource "cloudflare_dns_record" "doppler" {
   name    = local.doppler_domain
   zone_id = data.cloudflare_zone.domain.id
   content   = local.doppler_value
@@ -51,7 +51,7 @@ resource "cloudflare_record" "doppler" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "chat" {
+resource "cloudflare_dns_record" "chat" {
   name    = "chat"
   zone_id = data.cloudflare_zone.domain.id
   content   = cloudflare_record.ingress.hostname
