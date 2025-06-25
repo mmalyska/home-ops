@@ -147,11 +147,3 @@ resource "cloudflare_zone_setting" "zone_setting_hotlink_protection" {
   setting_id = "hotlink_protection"
   value = "on"
 }
-
-resource "cloudflare_zone_setting" "zone_setting_security_header" {
-  zone_id = cloudflare_zone.domain.id
-  setting_id = "security_header"
-  value = {
-    enabled = false
-  }
-}
