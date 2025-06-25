@@ -32,6 +32,9 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "jaskinia_config" {
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.jaskinia.id
 
   config = {
+    warp_routing = {
+      enabled = true
+    }
     ingress = [{
       hostname = "${local.cloudflare_domain}"
       service  = "https://traefik.traefik.svc.cluster.local:443"
