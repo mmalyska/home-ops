@@ -1,77 +1,77 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/refs/tags/app-template-3.6.1/charts/other/app-template/values.schema.json
 ---
-app-template:
-  defaultPodOptions:
-    securityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: "OnRootMismatch"
-  controllers:
-    main:
-      type: statefulset
-      strategy: RollingUpdate
-      replicas: 1
-      initContainers:
+defaultPodOptions:
+  securityContext:
+    runAsUser: 568
+    runAsGroup: 568
+    fsGroup: 568
+    fsGroupChangePolicy: "OnRootMismatch"
+controllers:
+  main:
+    type: statefulset
+    strategy: RollingUpdate
+    replicas: 1
+    initContainers:
+      init:
+        image:
+          repository: ghcr.io/mmalyska/vintagestory-mods-downloader
+          tag: v0.1.0@sha256:0648c458bfebedb4a3230526357596362313e5d9c34a2d7c0e4b17fb623dc828
+        env:
+          download-path: /mods
+          # renovate: datasource=docker depName=ghcr.io/mmalyska/vintagestory
+          vs-version: 1.20.10
+          config-file: mods.json
+    containers:
+      vintagestory:
+        image:
+          repository: ghcr.io/mmalyska/vintagestory
+          tag: 1.20.10@sha256:f9c50e17a209585c604f8be956e18858be972a02283eabb6c4cf64fd5a310cd4
+        env:
+          DATA_PATH: /config
+        args:
+          - --addModPath
+          - /mods
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            memory: 6Gi
+service:
+  vintagestory:
+    controller: main
+    annotations:
+      io.cilium/lb-ipam-ips: "192.168.48.28"
+    type: LoadBalancer
+    ports:
+      tcp:
+        protocol: TCP
+        port: 42420
+      udp:
+        protocol: UDP
+        port: 42420
+persistence:
+  config:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    storageClass: ceph-block
+    volumeName: pvc-d90638e7-a275-456c-b359-9b6b3c3c874f
+    size: 5Gi
+    globalMounts:
+      - path: /config
+  mods:
+    enabled: true
+    type: emptyDir
+  mods-config:
+    enabled: true
+    name: mods-config
+    type: configMap
+    advancedMounts:
+      main:
         init:
-          image:
-            repository: docker.io/library/alpine
-            tag: latest@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              cd /mods;
-              rm *;
-              wget https://moddbcdn.vintagestory.at/ACulinaryArtillery+1_d7a64a8bcfe7ff7204c7154277ece52b.zip?dl=ACulinaryArtillery%201.2.5.zip;
-              wget https://moddbcdn.vintagestory.at/BetterRuinsv0.4.12_25b075e36256134fbfae588ac12cc1d3.zip?dl=BetterRuinsv0.4.12.zip;
-              wget https://moddbcdn.vintagestory.at/BetterTradersv0.0.10_bbcccf273545d9dd48948af3bf2a35e5.zip?dl=BetterTradersv0.0.10.zip;
-              wget https://moddbcdn.vintagestory.at/buzzwords_1.7.0_4eb563463529e10b0a81627a18037edc.zip?dl=buzzwords_1.7.0.zip;
-              wget https://moddbcdn.vintagestory.at/CarryOn-1.20_v1.8.0-_27480f7eda427c60a83c18e6f0bc3da5.zip?dl=CarryOn-1.20_v1.8.0-rc.4.zip;
-              wget https://moddbcdn.vintagestory.at/configlib_1.5.3_1298f9fc99efb8e223706f04a03ab62b.zip?dl=configlib_1.5.3.zip;
-              wget https://moddbcdn.vintagestory.at/ExpandedFoods+1.7.4_19f8d5870ae1a1ffb0bb4270de555d1b.zip?dl=ExpandedFoods%201.7.4.zip;
-              wget https://moddbcdn.vintagestory.at/primitivesurvival_3._37f0da5e27d730e2bfeadc852b08588f.zip?dl=primitivesurvival_3.7.7.zip;
-              wget https://moddbcdn.vintagestory.at/vsimgui_1.1.8_77ec239145f565699f9b8b89c8b82312.zip?dl=vsimgui_1.1.8.zip;
-              wget https://moddbcdn.vintagestory.at/wildfarmingrevival_1_048f9f5dec0a07cb8aa758f5deab436d.zip?dl=wildfarmingrevival_1.3.6.zip;
-              wget https://moddbcdn.vintagestory.at/FarmlandDropsSoil-VS_31d8743185bc640b86a56978d94c7b0c.zip?dl=FarmlandDropsSoil-VS1.15-v1.4.0.zip;
-      containers:
-        vintagestory:
-          image:
-            repository: ghcr.io/mmalyska/vintagestory
-            tag: 1.20.10@sha256:f9c50e17a209585c604f8be956e18858be972a02283eabb6c4cf64fd5a310cd4
-          env:
-            DATA_PATH: /config
-          args:
-            - --addModPath
-            - /mods
-          resources:
-            requests:
-              cpu: 500m
-              memory: 2Gi
-            limits:
-              memory: 6Gi
-  service:
-    vintagestory:
-      controller: main
-      annotations:
-        io.cilium/lb-ipam-ips: "192.168.48.28"
-      type: LoadBalancer
-      ports:
-        tcp:
-          protocol: TCP
-          port: 42420
-        udp:
-          protocol: UDP
-          port: 42420
-  persistence:
-    config:
-      enabled: true
-      type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      storageClass: ceph-block
-      volumeName: pvc-d90638e7-a275-456c-b359-9b6b3c3c874f
-      size: 5Gi
-      globalMounts:
-        - path: /config
-    mods:
-      enabled: true
-      type: emptyDir
+          - path: /app
+            readOnly: true
+configMapsFromFolder:
+  basePath: "files/configmaps"
+  enabled: true
