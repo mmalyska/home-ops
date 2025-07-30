@@ -15,7 +15,7 @@ controllers:
       init:
         image:
           repository: ghcr.io/mmalyska/vintagestory-mods-downloader
-          tag: v0.1.0@sha256:0648c458bfebedb4a3230526357596362313e5d9c34a2d7c0e4b17fb623dc828
+          tag: v0.1.1@sha256:38844e2245a7e603a797447651b855c592bcbfd3cbb65d848d93522b301a0e90
         env:
           download-path: /mods
           # renovate: datasource=docker depName=ghcr.io/mmalyska/vintagestory
