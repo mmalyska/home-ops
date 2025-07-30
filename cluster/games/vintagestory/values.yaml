@@ -70,7 +70,7 @@ persistence:
     advancedMounts:
       main:
         init:
-          - path: /
+          - path: /app
             readOnly: true
 configMapsFromFolder:
   basePath: "files/configmaps"
