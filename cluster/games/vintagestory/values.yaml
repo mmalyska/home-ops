@@ -75,3 +75,6 @@ persistence:
 configMapsFromFolder:
   basePath: "files/configmaps"
   enabled: true
+  configMapsOverrides:
+    mods-config:
+      forceRename: mods-config
