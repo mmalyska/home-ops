@@ -1,0 +1,4 @@
+---
+{{- include "bjw-s.common.loader.init" . }}
+{{/* Render the templates */}}
+{{ include "bjw-s.common.loader.generate" . }}
