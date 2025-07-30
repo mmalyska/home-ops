@@ -64,11 +64,14 @@ persistence:
     enabled: true
     type: emptyDir
   mods-config:
-    existingClaim: qbittorrent-config
+    enabled: true
+    name: mods-config
+    type: configMap
     advancedMounts:
       main:
-        main:
+        init:
           - path: /
+            readOnly: true
 configMapsFromFolder:
   basePath: "files/configmaps"
   enabled: true

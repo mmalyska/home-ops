@@ -21,7 +21,7 @@ spec:
   dataFrom:
     - extract:
         key: VOLSYNC_RESTIC_JSON
-{{- if and (index .Values "app-template").persistence.config.enabled }}
+{{- if and .Values.persistence.config.enabled }}
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/volsync.backube/replicationsource_v1alpha1.json
 apiVersion: volsync.backube/v1alpha1
@@ -29,8 +29,8 @@ kind: ReplicationSource
 metadata:
   name: vintagestory
 spec:
-  {{- if (index .Values "app-template").persistence.config.existingClaim }}
-  sourcePVC: {{ (index .Values "app-template").persistence.config.existingClaim }}
+  {{- if .Values.persistence.config.existingClaim }}
+  sourcePVC: {{ .Values.persistence.config.existingClaim }}
   {{- else }}
   sourcePVC: vintagestory-config
   {{- end }}
