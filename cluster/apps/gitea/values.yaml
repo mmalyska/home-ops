@@ -9,7 +9,7 @@ gitea:
   image:
     registry: docker.gitea.com
     repository: gitea
-    tag: 1.24.3@sha256:ce9ab318a2dab6a4411dd5533496bb9eb2092c9384c7ab30344662617952fef9
+    tag: 1.24.4@sha256:dd29b53ab01132b92aab264aa9289db6f1588cdde2820ddb4d3d0874e0b8f9fd
     digest: sha256:8e2e3f40c5ff3fee920c6d0faac0db9cca2183d80ff23965d1022434d37e7910
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
