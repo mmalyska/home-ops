@@ -6,7 +6,7 @@ version: 1.0.0
 appVersion: "1.16.1"
 dependencies:
   - name: gitea
-    version: 12.1.2
+    version: 12.1.3
     repository: https://dl.gitea.io/charts/
   - name: pgsql-cnpg
     version: 1.0.0
