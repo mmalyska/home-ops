@@ -11,13 +11,13 @@ app-of-apps:
       enabled: true
       namespace: ha-vernemq
       path: vernemq
-      selfHeal: false
+      selfHeal: true
       prune: false
     - name: home-assistant
       enabled: false
       namespace: ha-home-assistant
       path: home-assistant
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -27,25 +27,25 @@ app-of-apps:
       enabled: true
       namespace: ha-piper
       path: piper
-      selfHeal: false
+      selfHeal: true
       prune: false
     - name: whisper
       enabled: true
       namespace: ha-whisper
       path: whisper
-      selfHeal: false
+      selfHeal: true
       prune: false
     - name: openwakeword
       enabled: true
       namespace: ha-openwakeword
       path: openwakeword
-      selfHeal: false
+      selfHeal: true
       prune: false
     - name: ollama
       enabled: true
       namespace: ha-ollama
       path: ollama
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:

@@ -11,7 +11,7 @@ app-of-apps:
       enabled: true
       namespace: botkube
       path: botkube
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -21,7 +21,7 @@ app-of-apps:
       enabled: false
       namespace: calibre
       path: calibre
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -31,7 +31,7 @@ app-of-apps:
       enabled: true
       namespace: gitea
       path: gitea
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -41,7 +41,7 @@ app-of-apps:
       enabled: false
       namespace: grocy
       path: grocy
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -51,7 +51,7 @@ app-of-apps:
       namespace: hass-proxy
       path: hass
       enabled: true
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -61,7 +61,7 @@ app-of-apps:
       namespace: litellm
       path: litellm
       enabled: true
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -71,7 +71,7 @@ app-of-apps:
       namespace: nfs-mounts
       path: nfs-mounts
       enabled: true
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -81,7 +81,7 @@ app-of-apps:
       namespace: qnap-proxy
       path: qnap-proxy
       enabled: true
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -91,7 +91,7 @@ app-of-apps:
       namespace: jellyfin
       path: jellyfin
       enabled: true
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -101,7 +101,7 @@ app-of-apps:
       enabled: true
       namespace: homepage
       path: gethomepage
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:
@@ -111,7 +111,7 @@ app-of-apps:
       enabled: true
       namespace: open-webui
       path: open-webui
-      selfHeal: false
+      selfHeal: true
       prune: false
       plugin:
         env:

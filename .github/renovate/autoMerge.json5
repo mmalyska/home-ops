@@ -51,15 +51,12 @@
       "matchFileNames": ["cluster/**"]
     },
     {
-      "description": "Auto cluster helm apps",
-      "matchDatasources": ["helm"],
+      "description": "Auto cluster apps",
+      "matchDatasources": ["github-releases", "github-tags", "helm", "docker"],
       "automerge": true,
       "automergeType": "branch",
-      "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": [
-        "kube-prometheus-stack"
-      ],
-      "matchFileNames": ["cluster/**"]
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "matchFileNames": ["cluster/**", "!cluster/core/**"]
     }
   ]
 }
