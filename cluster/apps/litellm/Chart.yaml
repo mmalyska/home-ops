@@ -5,7 +5,7 @@ type: application
 version: 1.0.0
 dependencies:
   - name: litellm-helm
-    version: 0.1.756
+    version: 0.1.757
     repository: oci://ghcr.io/berriai
   - name: pgsql-cnpg
     version: 1.0.0
