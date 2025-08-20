@@ -44,21 +44,31 @@ oauth2-proxy:
       passwordKey: redis-password
   redis:
     enabled: true
-    replicas: 1
+
     auth: true
     existingSecret: oauth-secret
     authKey: redis-password
-    persistentVolume:
-      enabled: false
-    # For Redis 7.2.x, mandatory for standalone mode:
+
+    replicas: 1
+
+    # Remove sentinel overhead, speed up startup and redis itself
+    sentinel:
+      livenessProbe:
+        enabled: false
+      readinessProbe:
+        enabled: false
+      startupProbe:
+        enabled: false
+      quorum: 1
+
+    hardAntiAffinity: false
+
     redis:
       config:
         min-replicas-to-write: 0
         save: ""
         appendonly: "no"
-      hardAntiAffinity: false
-      # Copied from oauth2-proxy/ci/redis-standalone-values.yaml
-      # this is optional but advised to use
+
       terminationGracePeriodSeconds: 10
       livenessProbe:
         initialDelaySeconds: 5
@@ -75,19 +85,10 @@ oauth2-proxy:
         periodSeconds: 2
         timeoutSeconds: 3
         failureThreshold: 10
-    # Copied from oauth2-proxy/ci/redis-standalone-values.yaml
-    # Remove sentinel overhead, speed up startup and redis itself
-    sentinel:
-      livenessProbe:
-        enabled: false
-      readinessProbe:
-        enabled: false
-      startupProbe:
-        enabled: false
-      quorum: 1
-    # Based on oauth2-proxy/ci/redis-standalone-values.yaml
     splitBrainDetection:
       interval: 0
+    persistentVolume:
+      enabled: false
     emptyDir: {}
     haproxy:
       enabled: false
@@ -97,3 +98,7 @@ oauth2-proxy:
       enabled: false
     hostPath:
       chown: false
+
+  initContainers:
+    waitForRedis:
+      enabled: true
