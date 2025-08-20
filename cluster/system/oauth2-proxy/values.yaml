@@ -56,6 +56,7 @@ oauth2-proxy:
         min-replicas-to-write: 0
         save: ""
         appendonly: "no"
+      hardAntiAffinity: false
       # Copied from oauth2-proxy/ci/redis-standalone-values.yaml
       # this is optional but advised to use
       terminationGracePeriodSeconds: 10
@@ -84,7 +85,6 @@ oauth2-proxy:
       startupProbe:
         enabled: false
       quorum: 1
-
     # Based on oauth2-proxy/ci/redis-standalone-values.yaml
     splitBrainDetection:
       interval: 0
