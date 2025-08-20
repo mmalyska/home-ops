@@ -41,9 +41,10 @@ oauth2-proxy:
     redis:
       clientType: standalone
       existingSecret: oauth-secret
+      passwordKey: redis-password
   redis:
     enabled: true
-    architecture: standalone
-    auth:
-      existingSecret: oauth-secret
-      existingSecretPasswordKey: redis-password
+    replicas: 1
+    auth: true
+    existingSecret: oauth-secret
+    authKey: redis-password
