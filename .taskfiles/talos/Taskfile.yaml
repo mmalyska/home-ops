@@ -6,7 +6,7 @@ vars:
   NODE_LIST:
     sh: yq '.nodes | keys | join(",")' < {{.TALOS_DIR}}/talconfig.yaml
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: "v1.10.7"
+  TALOS_VERSION: "v1.11.1"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.32.9"
   # renovate: datasource=github-releases depName=budimanjojo/talhelper
