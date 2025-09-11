@@ -17,7 +17,7 @@ litellm-helm:
   resources:
     limits:
       cpu: 500m
-      memory: 1024Mi
+      memory: 2024Mi
     requests:
       cpu: 100m
       memory: 128Mi
