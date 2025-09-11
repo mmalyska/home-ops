@@ -1,4 +1,6 @@
 litellm-helm:
+  image:
+    tag: v1.77.1
   masterkey: <secret:masterkey>
   ingress:
     enabled: true
