@@ -16,7 +16,7 @@ litellm-helm:
             pathType: ImplementationSpecific
   resources:
     limits:
-      cpu: 500m
+      cpu: 1500m
       memory: 2024Mi
     requests:
       cpu: 100m
