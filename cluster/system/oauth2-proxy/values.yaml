@@ -86,7 +86,7 @@ oauth2-proxy:
         timeoutSeconds: 3
         failureThreshold: 10
     splitBrainDetection:
-      interval: 0
+      interval: 120
     persistentVolume:
       enabled: false
     emptyDir: {}
