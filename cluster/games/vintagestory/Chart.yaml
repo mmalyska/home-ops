@@ -8,5 +8,5 @@ appVersion: 1.0.0
 kubeVersion: ">=1.16.0-0"
 dependencies:
   - name: common
-    version: 4.2.0
+    version: 4.3.0
     repository: https://bjw-s-labs.github.io/helm-charts
