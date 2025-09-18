@@ -15,13 +15,13 @@ spec:
     cacheCapacity: {{ .Values.pvc.capacity }}
     volumeSnapshotClassName: {{ .Values.pvc.volumeSnapshotClass }}
     repository: {{ include "volsync.restic.secret" $ }}
+    {{- if not .Values.volsync.restore.bootstrap }}
     destinationPVC: {{ include "volsync.name" $ }}
+    {{- end }}
     copyMethod: Snapshot
     cleanupCachePVC: true
     cleanupTempPVC: true
     enableFileDeletion: true
-    sourceIdentity:
-      sourceName: {{ include "volsync.name" $ }}
     moverSecurityContext:
       runAsUser: {{ .Values.volsync.moverSecurityContext.runAsUser }}
       runAsGroup: {{ .Values.volsync.moverSecurityContext.runAsGroup }}
