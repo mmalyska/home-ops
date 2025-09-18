@@ -8,6 +8,12 @@ spec:
   trigger:
     manual: restore-once
   restic:
+    accessModes:
+      - {{ .Values.pvc.accessMode }}
+    capacity: {{ .Values.pvc.capacity }}
+    storageClassName: {{ .Values.pvc.storageClass }}
+    cacheCapacity: {{ .Values.pvc.capacity }}
+    volumeSnapshotClassName: {{ .Values.pvc.volumeSnapshotClass }}
     repository: {{ include "volsync.restic.secret" $ }}
     destinationPVC: {{ include "volsync.name" $ }}
     copyMethod: Snapshot

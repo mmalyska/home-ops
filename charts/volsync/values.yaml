@@ -3,6 +3,7 @@ pvc:
   accessMode: ReadWriteOnce
   capacity: 5Gi
   storageClass: ceph-block
+  volumeSnapshotClass: csi-ceph-blockpool
 volsync:
   moverSecurityContext:
     runAsUser: 1000
