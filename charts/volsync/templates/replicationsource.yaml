@@ -9,6 +9,12 @@ spec:
   trigger:
     schedule: {{ .Values.volsync.backup.schedule }}
   restic:
+    accessModes:
+      - {{ .Values.pvc.accessMode }}
+    capacity: {{ .Values.pvc.capacity }}
+    storageClassName: {{ .Values.pvc.storageClass }}
+    cacheCapacity: {{ .Values.pvc.capacity }}
+    volumeSnapshotClassName: {{ .Values.pvc.volumeSnapshotClass }}
     copyMethod: Snapshot
     pruneIntervalDays: {{ .Values.volsync.backup.pruneIntervalDays }}
     repository: {{ include "volsync.restic.secret" $ }}
