@@ -117,3 +117,13 @@ app-of-apps:
         env:
           - name: SOPS_SECRET_FILE
             value: secret.sec.yaml
+    - name: n8n
+      enabled: true
+      namespace: n8n
+      path: n8n
+      selfHeal: true
+      prune: false
+      plugin:
+        env:
+          - name: SOPS_SECRET_FILE
+            value: secret.sec.yaml

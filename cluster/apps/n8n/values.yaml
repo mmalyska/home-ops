@@ -1,0 +1,76 @@
+---
+volsync:
+  moverSecurityContext:
+    runAsUser: &runAsUser 1000
+    runAsGroup: &runAsGroup 1000
+    fsGroup: &fsGroup 1000
+  backup:
+    schedule: "0 */6 * * *"
+
+app-template:
+  controllers:
+    n8n:
+      pod:
+        securityContext:
+          runAsUser: *runAsUser
+          runAsGroup: *runAsGroup
+          fsGroup: *fsGroup
+          fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+        app:
+          image:
+            repository: ghcr.io/n8n-io/n8n
+            tag: 1.112.1
+          env:
+            DB_SQLITE_VACUUM_ON_STARTUP: true
+            EXECUTIONS_DATA_PRUNE: true
+            EXECUTIONS_DATA_MAX_AGE: 7
+            EXECUTIONS_DATA_PRUNE_MAX_COUNT: 50000
+            GENERIC_TIMEZONE: "Europe/Warsaw"
+            N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: false
+            N8N_PROTOCOL: "http"
+            N8N_PORT: &port 8080
+            N8N_HOST: localhost
+            N8N_LOG_LEVEL: info
+            N8N_LOG_OUTPUT: console
+            N8N_ENCRYPTION_KEY: <secret:encryption-key>
+          resources:
+            requests:
+              cpu: 5m
+              memory: 128Mi
+            limits:
+              memory: 2Gi
+
+  persistence:
+    data:
+      existingClaim: n8n
+      advancedMounts:
+        n8n:
+          app:
+            - path: /home/node/.n8n
+
+  service:
+    app:
+      ports:
+        http:
+          port: *port
+
+  ingress:
+    n8n:
+      hosts:
+        - host: &webhookHostName n8n-webhook.<secret:private-domain>
+          paths:
+            - path: /webhook
+              service:
+                identifier: app
+                port: http
+        - host: &hostName n8n.<secret:private-domain>
+          paths:
+            - path: /
+              service:
+                identifier: app
+                port: http
+      tls:
+        - hosts:
+            - *hostName
+            - *webhookHostName
