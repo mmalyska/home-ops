@@ -20,6 +20,8 @@ spec:
     cleanupCachePVC: true
     cleanupTempPVC: true
     enableFileDeletion: true
+    sourceIdentity:
+      sourceName: {{ include "volsync.name" $ }}
     moverSecurityContext:
       runAsUser: {{ .Values.volsync.moverSecurityContext.runAsUser }}
       runAsGroup: {{ .Values.volsync.moverSecurityContext.runAsGroup }}
