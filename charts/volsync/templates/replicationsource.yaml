@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/volsync.backube/replicationsource_v1alpha1.json
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: {{ include "volsync.name" $}}
+spec:
+  sourcePVC: {{ include "volsync.name" $ }}
+  trigger:
+    schedule: {{ .Values.volsync.backup.schedule }}
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: {{ .Values.volsync.backup.pruneIntervalDays }}
+    repository: {{ include "volsync.restic.secret" $ }}
+    retain:
+      hourly: {{ .Values.volsync.backup.retain.hourly }}
+      daily: {{ .Values.volsync.backup.retain.daily }}
+      weekly: {{ .Values.volsync.backup.retain.weekly }}
+      monthly: {{ .Values.volsync.backup.retain.monthly }}
+    moverSecurityContext:
+      runAsUser: {{ .Values.volsync.moverSecurityContext.runAsUser }}
+      runAsGroup: {{ .Values.volsync.moverSecurityContext.runAsGroup }}
+      fsGroup: {{ .Values.volsync.moverSecurityContext.fsGroup }}

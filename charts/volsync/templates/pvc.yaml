@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "volsync.name" $ }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.accessMode }}
+  dataSourceRef:
+    kind: ReplicationDestination
+    apiGroup: volsync.backube
+    name: {{ include "volsync.bootstrap" $ }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.capacity }}
+  storageClassName: {{ .Values.pvc.storageClass }}

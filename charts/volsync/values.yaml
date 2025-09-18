@@ -1,0 +1,18 @@
+nameOverride:
+pvc:
+  accessMode: ReadWriteOnce
+  capacity: 5Gi
+  storageClass: ceph-block
+volsync:
+  moverSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  backup:
+    schedule: "30 */12 * * *"
+    pruneIntervalDays: 14
+    retain:
+      hourly: 24
+      daily: 7
+      weekly: 4
+      monthly: 2
