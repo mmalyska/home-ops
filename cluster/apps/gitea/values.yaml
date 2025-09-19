@@ -68,57 +68,10 @@ gitea:
             pathType: Prefix
   postgresql:
     enabled: false
-  redis-cluster:
+  valkey-cluster:
+    enabled: false
+  valkey:
     enabled: true
-    replicas: 1
-
-    # Remove sentinel overhead, speed up startup and redis itself
-    sentinel:
-      livenessProbe:
-        enabled: false
-      readinessProbe:
-        enabled: false
-      startupProbe:
-        enabled: false
-      quorum: 1
-
-    hardAntiAffinity: false
-
-    redis:
-      config:
-        min-replicas-to-write: 0
-        save: ""
-        appendonly: "no"
-
-      terminationGracePeriodSeconds: 10
-      livenessProbe:
-        initialDelaySeconds: 5
-        periodSeconds: 5
-        timeoutSeconds: 3
-        failureThreshold: 2
-      readinessProbe:
-        initialDelaySeconds: 5
-        periodSeconds: 5
-        timeoutSeconds: 3
-        failureThreshold: 2
-      startupProbe:
-        initialDelaySeconds: 5
-        periodSeconds: 2
-        timeoutSeconds: 3
-        failureThreshold: 10
-    splitBrainDetection:
-      interval: 120
-    persistentVolume:
-      enabled: false
-    emptyDir: {}
-    haproxy:
-      enabled: false
-    exporter:
-      enabled: false
-    sysctlImage:
-      enabled: false
-    hostPath:
-      chown: false
   postgresql-ha:
     enabled: false
   persistence:

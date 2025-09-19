@@ -6,14 +6,14 @@
       "matchPackagePatterns": ["^rook.ceph"],
       "groupName": "rook-ceph-suite",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
+      "separateMinorPatch": true
     },
     {
       "matchDatasources": ["github-tags", "docker"],
       "matchPackagePatterns": ["rancher/system-upgrade-controller"],
       "groupName": "system-upgrade-controller-suite",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
+      "separateMinorPatch": true
     },
     {
       "description": "Prometheus stack",
@@ -21,7 +21,7 @@
       "matchPackagePatterns": [".*kube-prometheus-stack.*"],
       "groupName": "kube-prometheus-stack",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
+      "separateMinorPatch": true
     },
     {
       "description": "Metallb image and chart",
@@ -29,7 +29,7 @@
       "matchPackagePatterns": [".*metallb.*"],
       "groupName": "metallb",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
+      "separateMinorPatch": true
     },
     {
       "description": "Kubernetes stack",
@@ -38,11 +38,11 @@
         "alpine/k8s",
         "kubernetes/kubernetes",
         "siderolabs/kubelet",
-        "ghcr.io/siderolabs/kubelet",
+        "ghcr.io/siderolabs/kubelet"
       ],
       "groupName": "kubernetes",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
+      "separateMinorPatch": true
     },
     {
       "description": "Talos stack",
@@ -51,21 +51,21 @@
         "budimanjojo/talhelper",
         "ghcr.io/mmalyska/talos-installer",
         "mmalyska/talos-images",
-        "ghcr.io/siderolabs/installer",
+        "ghcr.io/siderolabs/installer"
       ],
       "groupName": "talos",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
+      "separateMinorPatch": true
     },
     {
       "description": "Helm",
       "matchDatasources": ["github-releases"],
       "matchPackageNames": [
-        "helm/helm",
+        "helm/helm"
       ],
       "groupName": "helm",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true,
-    },
-  ],
+      "separateMinorPatch": true
+    }
+  ]
 }
