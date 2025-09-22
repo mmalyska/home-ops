@@ -4,7 +4,7 @@ app-of-apps:
     server: https://kubernetes.default.svc
   source:
     repoURL: https://github.com/mmalyska/home-ops
-    path: cluster/games
+    path: cluster/apps/games
   apps:
     - name: vintagestory
       enabled: true

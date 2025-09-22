@@ -13,7 +13,7 @@ spec:
     server: https://kubernetes.default.svc
   project: apps
   source:
-    path: cluster/projects/apps
+    path: cluster/projects/default
     repoURL: https://github.com/mmalyska/home-ops
     targetRevision: main
   syncPolicy:
