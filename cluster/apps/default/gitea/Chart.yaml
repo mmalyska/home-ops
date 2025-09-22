@@ -10,4 +10,4 @@ dependencies:
     repository: https://dl.gitea.io/charts/
   - name: pgsql-cnpg
     version: 1.0.0
-    repository: file://../../../charts/pgsql-cnpg/
+    repository: file://../../../../charts/pgsql-cnpg/
