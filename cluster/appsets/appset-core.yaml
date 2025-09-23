@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-core
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/mmalyska/home-ops
+        revision: v2
+        directories:
+          - path: cluster/apps/core/*/app-config.yaml
+        values:
+          appName: '{{.path.basename}}'
+  template:
+    metadata:
+      name: '{{.values.appName}}'
+    spec:
+      # The project the application belongs to.
+      project: core
+
+      # Source of the application manifests
+      source:
+        repoURL: https://github.com/mmalyska/home-ops
+        targetRevision: v2
+        path: '{{.path.path}}'
+
+      # Destination cluster and namespace to deploy the application
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+
+      # Sync policy
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+        automated: # automated sync by default retries failed attempts 5 times with following delays between attempts ( 5s, 10s, 20s, 40s, 80s ); retry controlled using `retry` field.
+          prune: false # Specifies if resources should be pruned during auto-syncing ( false by default ).
+          selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).

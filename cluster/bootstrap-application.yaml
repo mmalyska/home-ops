@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/mmalyska/home-ops
+      targetRevision: v2
+      path: cluster/projects
+    - repoURL: https://github.com/mmalyska/home-ops
+      targetRevision: v2
+      path: cluster/appsets
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    automated:
+      prune: false
+      selfHeal: true

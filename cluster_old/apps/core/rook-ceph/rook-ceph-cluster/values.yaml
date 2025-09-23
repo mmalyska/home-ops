@@ -1,0 +1,179 @@
+dashboard:
+  host: rook.<secret:private-domain>
+
+rook-ceph-cluster:
+  operatorNamespace: rook-ceph
+  configOverride: |
+    [mon]
+    mon_data_avail_warn = 10
+  monitoring:
+    enabled: false
+    createPrometheusRules: false
+    rulesNamespaceOverride: monitoring
+  toolbox:
+    enabled: true
+  ingress:
+    dashboard:
+      annotations:
+        kubernetes.io/ingress.class: traefik
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/ingressEndpoint.hostname: &host rook.<secret:private-domain>
+      host:
+        name: *host
+        path: "/"
+  cephClusterSpec:
+    resources:
+      mgr:
+        requests:
+          cpu: "125m"
+          memory: "549M"
+        limits:
+          memory: "1219M"
+      mon:
+        requests:
+          cpu: "49m"
+          memory: "477M"
+        limits:
+          memory: "1059M"
+      osd:
+        requests:
+          cpu: "442m"
+          memory: "2678M"
+        limits:
+          memory: "5944M"
+      mgr-sidecar:
+        requests:
+          cpu: "49m"
+          memory: "94M"
+        limits:
+          memory: "208M"
+      crashcollector:
+        requests:
+          cpu: "15m"
+          memory: "64M"
+        limits:
+          memory: "64M"
+      logcollector:
+        requests:
+          cpu: "100m"
+          memory: "100M"
+        limits:
+          memory: "1G"
+      cleanup:
+        requests:
+          cpu: "250m"
+          memory: "100M"
+        limits:
+          memory: "1G"
+    storage:
+      useAllNodes: true
+      useAllDevices: false
+      config:
+        osdsPerDevice: "1"
+      devicePathFilter: /dev/disk/by-id/ata-CT500MX500SSD1_.*
+    dashboard:
+      enabled: true
+      ssl: false
+      urlPrefix: /
+      prometheusEndpoint: http://prometheus-stack-kube-prom-prometheus.monitoring:9090
+  cephBlockPools:
+    - name: ceph-blockpool
+      spec:
+        failureDomain: host
+        replicated:
+          size: 3
+      storageClass:
+        enabled: true
+        name: ceph-block
+        isDefault: true
+        reclaimPolicy: Delete
+        allowVolumeExpansion: true
+        volumeBindingMode: Immediate
+        parameters:
+          imageFormat: "2"
+          imageFeatures: layering,fast-diff,object-map,deep-flatten,exclusive-lock
+          csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+          csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+          csi.storage.k8s.io/fstype: ext4
+  cephBlockPoolsVolumeSnapshotClass:
+    enabled: true
+    name: csi-ceph-blockpool
+    isDefault: false
+    deletionPolicy: Delete
+  cephFileSystems:
+    - name: ceph-filesystem
+      spec:
+        metadataPool:
+          replicated:
+            size: 3
+        dataPools:
+          - failureDomain: host
+            replicated:
+              size: 3
+            name: data0
+        metadataServer:
+          activeCount: 1
+          activeStandby: true
+          resources:
+            requests:
+              cpu: "35m"
+              memory: "64M"
+            limits:
+              memory: "2G"
+          priorityClassName: system-cluster-critical
+      storageClass:
+        enabled: true
+        isDefault: false
+        name: ceph-filesystem
+        pool: data0
+        reclaimPolicy: Delete
+        allowVolumeExpansion: true
+        volumeBindingMode: Immediate
+        mountOptions: []
+        parameters:
+          csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+          csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
+          csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+          csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+          csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
+          csi.storage.k8s.io/fstype: ext4
+  cephFileSystemVolumeSnapshotClass:
+    enabled: true
+    name: csi-ceph-filesystem
+    isDefault: false
+    deletionPolicy: Delete
+  cephObjectStores:
+    - name: ceph-objectstore
+      spec:
+        metadataPool:
+          failureDomain: host
+          replicated:
+            size: 3
+        dataPool:
+          failureDomain: host
+          erasureCoded:
+            dataChunks: 2
+            codingChunks: 1
+        preservePoolsOnDelete: true
+        gateway:
+          port: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128M
+            limits:
+              memory: 4Gi
+          instances: 1
+          priorityClassName: system-cluster-critical
+      storageClass:
+        enabled: true
+        name: ceph-bucket
+        reclaimPolicy: Delete
+        parameters:
+          region: us-east-1

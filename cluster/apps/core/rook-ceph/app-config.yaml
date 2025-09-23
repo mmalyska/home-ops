@@ -1,0 +1,7 @@
+namespace: rook-ceph
+syncPolicy:
+  enabled: true
+  selfHeal: true
+  prune: false
+managedNamespaceMetadata:
+ignoreDifferences:

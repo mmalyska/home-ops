@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: core
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+  project: core
+  source:
+    path: cluster/projects/core
+    repoURL: https://github.com/mmalyska/home-ops
+    targetRevision: main
+  syncPolicy:
+    # automated:
+    #   selfHeal: false
+    #   prune: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true

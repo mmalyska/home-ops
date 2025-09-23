@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+spec:
+  template:
+    spec:
+      # 1. Define an emptyDir volume which will hold the custom binaries
+      volumes:
+        - configMap:
+            name: sops-replacer-plugin
+          name: sops-replacer-plugin
+        - name: tmp-sops-replacer-plugin
+          emptyDir: {}
+        - name: sops-age
+          secret:
+            secretName: sops-age
+      # 3. Volume mount the custom binary to the bin directory (overriding the existing version)
+      containers:
+        - name: sops-replacer-plugin-kustomize
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:b6e3037de1d886118b929953417e4cab6665597dbff0ffaa51641a10630192b8
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          resources:
+            limits:
+              cpu: 250m
+              memory: 512Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /sops-age/key
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /tmp
+              name: tmp-sops-replacer-plugin
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              name: sops-replacer-plugin
+              subPath: sops-replacer-plugin-kustomize.yaml
+            - mountPath: /sops-age/key
+              name: sops-age
+              subPath: age.agekey
+        - name: sops-replacer-plugin-helm
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:b6e3037de1d886118b929953417e4cab6665597dbff0ffaa51641a10630192b8
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /sops-age/key
+            - name: HELM_CACHE_HOME
+              value: /helm-working-dir
+            - name: HELM_CONFIG_HOME
+              value: /helm-working-dir
+            - name: HELM_DATA_HOME
+              value: /helm-working-dir
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /tmp
+              name: tmp-sops-replacer-plugin
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              name: sops-replacer-plugin
+              subPath: sops-replacer-plugin-helm.yaml
+            - mountPath: /sops-age/key
+              name: sops-age
+              subPath: age.agekey
+            - name: helm-working-dir
+              mountPath: /helm-working-dir

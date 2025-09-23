@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: private-repo-creds
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds
+type: Opaque
+data:
+  password: <secret:private-repo-password|base64>
+  type: <secret:private-repo-type|base64>
+  url: <secret:private-repo-url|base64>
+  username: <secret:private-repo-username|base64>
