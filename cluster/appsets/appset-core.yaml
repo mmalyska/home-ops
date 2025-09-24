@@ -45,7 +45,7 @@ spec:
   templatePatch: |
     spec:
       syncPolicy:
-      {{- if .managedNamespaceMetadata }}
+      {{- if hasKey . "managedNamespaceMetadata" }}
         managedNamespaceMetadata:
           {{- .managedNamespaceMetadata | toYaml | nindent 10 }}
       {{- end }}
@@ -54,7 +54,7 @@ spec:
           prune: {{ .syncPolicy.prune }}
           selfHeal: {{.syncPolicy.selfHeal}}
       {{- end }}
-      {{- if .ignoreDifferences }}
+      {{- if hasKey . "ignoreDifferences" }}
       ignoreDifferences:
         {{- .ignoreDifferences | toYaml | nindent 12 }}
       {{- end }}
