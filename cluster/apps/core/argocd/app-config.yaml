@@ -3,5 +3,3 @@ syncPolicy:
   enabled: true
   selfHeal: true
   prune: false
-managedNamespaceMetadata:
-ignoreDifferences:

@@ -3,6 +3,8 @@ kind: ApplicationSet
 metadata:
   name: appset-core
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
@@ -10,7 +12,7 @@ spec:
     - git:
         repoURL: https://github.com/mmalyska/home-ops
         revision: v2
-        directories:
+        files:
           - path: cluster/apps/core/*/app-config.yaml
         values:
           appName: '{{.path.basename}}'
@@ -34,8 +36,25 @@ spec:
 
       # Sync policy
       syncPolicy:
+        preserveResourcesOnDeletion: true # Specifies if resources should be preserved when an application is deleted ( false by default ).
         syncOptions:
           - CreateNamespace=true
         automated: # automated sync by default retries failed attempts 5 times with following delays between attempts ( 5s, 10s, 20s, 40s, 80s ); retry controlled using `retry` field.
           prune: false # Specifies if resources should be pruned during auto-syncing ( false by default ).
           selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).
+  templatePatch: |
+    spec:
+      syncPolicy:
+      {{- if .managedNamespaceMetadata }}
+        managedNamespaceMetadata:
+          {{- .managedNamespaceMetadata | toYaml | nindent 10 }}
+      {{- end }}
+      {{- if .syncPolicy.enabled }}
+        automated:
+          prune: {{ .syncPolicy.prune }}
+          selfHeal: {{.syncPolicy.selfHeal}}
+      {{- end }}
+      {{- if .ignoreDifferences }}
+      ignoreDifferences:
+        {{- .ignoreDifferences | toYaml | nindent 12 }}
+      {{- end }}
