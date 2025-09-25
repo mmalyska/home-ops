@@ -1,5 +1,5 @@
 - enabled: "true"
-  prefix: rook-ceph
+  appSubfolder: operator
   namespace: rook-ceph
   syncPolicy:
     enabled: true
@@ -9,7 +9,7 @@
     labels:
       pod-security.kubernetes.io/enforce: privileged
 - enabled: "true"
-  prefix: rook-ceph
+  appSubfolder: cluster
   namespace: rook-ceph
   syncPolicy:
     enabled: true
