@@ -1,10 +1,10 @@
-enabled: "true"
-namespace: argocd
-syncPolicy:
-  enabled: true
-  selfHeal: true
-  prune: false
-plugin:
-  env:
-    - name: SOPS_SECRET_FILE
-      value: secret.sec.yaml
+- enabled: "true"
+  namespace: argocd
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SOPS_SECRET_FILE
+        value: secret.sec.yaml

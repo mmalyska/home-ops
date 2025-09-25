@@ -1,9 +1,0 @@
-enabled: "true"
-namespace: rook-ceph
-syncPolicy:
-  enabled: true
-  selfHeal: true
-  prune: false
-managedNamespaceMetadata:
-  labels:
-    pod-security.kubernetes.io/enforce: privileged
