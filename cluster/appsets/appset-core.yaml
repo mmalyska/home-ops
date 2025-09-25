@@ -66,12 +66,12 @@ spec:
       source:
         path: '{{.path.path}}/{{.appSubfolder}}'
       {{- end }}
-      {{- if .syncPolicy.enabled }}
       syncPolicy:
       {{- if hasKey . "managedNamespaceMetadata" }}
         managedNamespaceMetadata:
           {{- .managedNamespaceMetadata | toYaml | nindent 10 }}
       {{- end }}
+      {{- if .syncPolicy.enabled }}
         automated:
           prune: {{ .syncPolicy.prune }}
           selfHeal: {{.syncPolicy.selfHeal}}
