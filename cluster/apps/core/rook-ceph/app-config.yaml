@@ -12,7 +12,7 @@
   appSubfolder: cluster
   namespace: rook-ceph
   syncPolicy:
-    enabled: true
+    enabled: false
     selfHeal: true
     prune: false
   plugin:
