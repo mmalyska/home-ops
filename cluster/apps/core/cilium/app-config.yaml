@@ -1,5 +1,5 @@
 - enabled: "true"
-  namespace: argocd
+  namespace: kube-system
   syncPolicy:
     enabled: true
     selfHeal: true

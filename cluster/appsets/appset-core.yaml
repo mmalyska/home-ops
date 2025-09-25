@@ -26,6 +26,9 @@ spec:
     metadata:
       name: '{{.values.appName}}'
       namespace: argocd
+      annotations:
+        argocd.argoproj.io/compare-options: ServerSideDiff=true
+        argocd.argoproj.io/manifest-generate-paths: .
     spec:
       # The project the application belongs to.
       project: core
@@ -63,12 +66,12 @@ spec:
       source:
         path: '{{.path.path}}/{{.appSubfolder}}'
       {{- end }}
+      {{- if .syncPolicy.enabled }}
       syncPolicy:
       {{- if hasKey . "managedNamespaceMetadata" }}
         managedNamespaceMetadata:
           {{- .managedNamespaceMetadata | toYaml | nindent 10 }}
       {{- end }}
-      {{- if .syncPolicy.enabled }}
         automated:
           prune: {{ .syncPolicy.prune }}
           selfHeal: {{.syncPolicy.selfHeal}}
