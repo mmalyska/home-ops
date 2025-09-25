@@ -19,7 +19,7 @@ spec:
       selector:
         matchExpressions:
           - key: enabled
-            operator: In
+            operator: NotIn
             values:
               - "true"
   template:
@@ -54,6 +54,10 @@ spec:
           prune: false # Specifies if resources should be pruned during auto-syncing ( false by default ).
           selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).
   templatePatch: |
+    {{- if hasKey . "prefix" }}
+    metadata:
+      name: '{{.prefix}}-{{.values.appName}}'
+    {{- end }}
     spec:
       syncPolicy:
       {{- if hasKey . "managedNamespaceMetadata" }}

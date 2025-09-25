@@ -1,4 +1,5 @@
 - enabled: "true"
+  prefix: rook-ceph
   namespace: rook-ceph
   syncPolicy:
     enabled: true
@@ -8,6 +9,7 @@
     labels:
       pod-security.kubernetes.io/enforce: privileged
 - enabled: "true"
+  prefix: rook-ceph
   namespace: rook-ceph
   syncPolicy:
     enabled: true
