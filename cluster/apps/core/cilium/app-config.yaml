@@ -1,7 +1,7 @@
 - enabled: "true"
   namespace: kube-system
   syncPolicy:
-    enabled: true
+    enabled: false
     selfHeal: true
     prune: false
   managedNamespaceMetadata:
