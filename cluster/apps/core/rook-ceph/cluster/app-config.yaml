@@ -1,3 +1,4 @@
+enabled: true
 namespace: rook-ceph
 syncPolicy:
   enabled: true

@@ -1,3 +1,4 @@
+enabled: true
 namespace: argocd
 syncPolicy:
   enabled: true

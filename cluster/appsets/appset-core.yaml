@@ -16,9 +16,16 @@ spec:
           - path: cluster/apps/core/*/app-config.yaml
         values:
           appName: '{{.path.basename}}'
+      selector:
+        matchExpressions:
+          - key: enabled
+            operator: In
+            values:
+              - "true"
   template:
     metadata:
       name: '{{.values.appName}}'
+      namespace: argocd
     spec:
       # The project the application belongs to.
       project: core
@@ -39,6 +46,10 @@ spec:
         preserveResourcesOnDeletion: true # Specifies if resources should be preserved when an application is deleted ( false by default ).
         syncOptions:
           - CreateNamespace=true
+          - PruneLast=true
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - ApplyOutOfSyncOnly=true
         automated: # automated sync by default retries failed attempts 5 times with following delays between attempts ( 5s, 10s, 20s, 40s, 80s ); retry controlled using `retry` field.
           prune: false # Specifies if resources should be pruned during auto-syncing ( false by default ).
           selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).
