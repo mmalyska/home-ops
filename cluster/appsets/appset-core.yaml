@@ -17,11 +17,8 @@ spec:
         values:
           appName: '{{.path.basename}}'
       selector:
-        matchExpressions:
-          - key: enabled
-            operator: In
-            values:
-              - "true"
+        matchLabels:
+          enabled: "true"
   template:
     metadata:
       name: '{{.values.appName}}'
