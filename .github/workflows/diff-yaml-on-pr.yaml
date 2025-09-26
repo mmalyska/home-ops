@@ -142,7 +142,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: steps.diff.outputs.diff-filename
         with:
-          name: helm_diff_files
+          name: ${{ steps.diff.outputs.diff-filename }}.diff
           path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
           retention-days: 14
       - name: Find Comment
@@ -223,7 +223,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: steps.diff.outputs.diff-filename
         with:
-          name: kustomize_diff_files
+          name: ${{ steps.diff.outputs.diff-filename }}.diff
           path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
           retention-days: 14
       - name: Find Comment
