@@ -39,7 +39,7 @@ spec:
       # Source of the application manifests
       source:
         repoURL: https://github.com/mmalyska/home-ops
-        targetRevision: v2
+        targetRevision: main
         path: '{{.path.path}}'
 
       # Destination cluster and namespace to deploy the application

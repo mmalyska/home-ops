@@ -7,13 +7,13 @@ spec:
   project: default
   sources:
     - repoURL: https://github.com/mmalyska/home-ops
-      targetRevision: v2
+      targetRevision: main
       path: cluster/projects
     - repoURL: https://github.com/mmalyska/home-ops
-      targetRevision: v2
+      targetRevision: main
       path: cluster/appsets
     - repoURL: https://github.com/mmalyska/home-ops # bootstrap application self management
-      targetRevision: v2
+      targetRevision: main
       path: cluster
   destination:
     server: https://kubernetes.default.svc
