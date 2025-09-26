@@ -1,4 +1,4 @@
-- enabled: "true"
+- enabled: "false"
   namespace: homepage
   syncPolicy:
     enabled: false

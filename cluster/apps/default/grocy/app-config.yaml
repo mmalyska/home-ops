@@ -1,4 +1,4 @@
-- enabled: "true"
+- enabled: "false"
   namespace: grocy
   syncPolicy:
     enabled: false
