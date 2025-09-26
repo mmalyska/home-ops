@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: ha-openwakeword
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
