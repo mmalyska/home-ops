@@ -36,12 +36,6 @@ spec:
       # The project the application belongs to.
       project: core
 
-      # Source of the application manifests
-      source:
-        repoURL: https://github.com/mmalyska/home-ops
-        targetRevision: main
-        path: '{{.path.path}}'
-
       # Destination cluster and namespace to deploy the application
       destination:
         server: https://kubernetes.default.svc
@@ -64,9 +58,18 @@ spec:
       name: '{{.values.appName}}-{{.appSubfolder}}'
     {{- end }}
     spec:
-      {{- if hasKey . "appSubfolder" }}
+      # Source of the application manifests
       source:
+        repoURL: https://github.com/mmalyska/home-ops
+        targetRevision: main
+      {{- if hasKey . "appSubfolder" }}
         path: '{{.path.path}}/{{.appSubfolder}}'
+      {{- else }}
+        path: '{{.path.path}}'
+      {{- end }}
+      {{- if hasKey . "plugin" }}
+        plugin:
+          {{- .plugin | toYaml | nindent 12 }}
       {{- end }}
       syncPolicy:
       {{- if hasKey . "managedNamespaceMetadata" }}
