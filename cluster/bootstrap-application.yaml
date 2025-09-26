@@ -12,6 +12,9 @@ spec:
     - repoURL: https://github.com/mmalyska/home-ops
       targetRevision: v2
       path: cluster/appsets
+    - repoURL: https://github.com/mmalyska/home-ops # bootstrap application self management
+      targetRevision: v2
+      path: cluster
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -21,5 +24,6 @@ spec:
       - ServerSideApply=true
       - ApplyOutOfSyncOnly=true
     automated:
+      enabled: false
       prune: false
       selfHeal: true
