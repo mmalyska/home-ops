@@ -1,0 +1,11 @@
+- enabled: "true"
+  namespace: snapshot-controller
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+  ignoreDifferences:
+    - kind: Secret
+      name: snapshot-validation-webhook-tls
+      jsonPointers:
+        - /data

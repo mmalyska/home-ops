@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: volsync
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
