@@ -14,7 +14,7 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/mmalyska/home-ops
-        revision: v2
+        revision: main
         files:
           - path: cluster/apps/core/*/app-config.yaml
         values:
