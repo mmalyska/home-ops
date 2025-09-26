@@ -49,7 +49,6 @@ spec:
 
       # Sync policy
       syncPolicy:
-        preserveResourcesOnDeletion: true # Specifies if resources should be preserved when an application is deleted ( false by default ).
         syncOptions:
           - CreateNamespace=true
           - PruneLast=true
