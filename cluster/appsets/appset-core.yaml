@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-core
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: false # To prevent an Application's child resources from being deleted when the parent Application is deleted set this to true
+  generators:
+    - git:
+        repoURL: https://github.com/mmalyska/home-ops
+        revision: v2
+        files:
+          - path: cluster/apps/core/*/app-config.yaml
+        values:
+          appName: '{{.path.basename}}'
+      selector:
+        matchExpressions:
+          - key: enabled
+            operator: In
+            values:
+              - "true"
+  template:
+    metadata:
+      name: '{{.values.appName}}'
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/compare-options: ServerSideDiff=true
+        argocd.argoproj.io/manifest-generate-paths: .
+    spec:
+      # The project the application belongs to.
+      project: core
+
+      # Source of the application manifests
+      source:
+        repoURL: https://github.com/mmalyska/home-ops
+        targetRevision: main
+        path: '{{.path.path}}'
+
+      # Destination cluster and namespace to deploy the application
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+
+      # Sync policy
+      syncPolicy:
+        preserveResourcesOnDeletion: true # Specifies if resources should be preserved when an application is deleted ( false by default ).
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - ApplyOutOfSyncOnly=true
+        automated: # automated sync by default retries failed attempts 5 times with following delays between attempts ( 5s, 10s, 20s, 40s, 80s ); retry controlled using `retry` field.
+          prune: false # Specifies if resources should be pruned during auto-syncing ( false by default ).
+          selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).
+  templatePatch: |
+    {{- if hasKey . "appSubfolder" }}
+    metadata:
+      name: '{{.values.appName}}-{{.appSubfolder}}'
+    {{- end }}
+    spec:
+      {{- if hasKey . "appSubfolder" }}
+      source:
+        path: '{{.path.path}}/{{.appSubfolder}}'
+      {{- end }}
+      syncPolicy:
+      {{- if hasKey . "managedNamespaceMetadata" }}
+        managedNamespaceMetadata:
+          {{- .managedNamespaceMetadata | toYaml | nindent 10 }}
+      {{- end }}
+        automated:
+          enabled: {{ .syncPolicy.enabled }}
+          prune: {{ .syncPolicy.prune }}
+          selfHeal: {{.syncPolicy.selfHeal}}
+      {{- if hasKey . "ignoreDifferences" }}
+      ignoreDifferences:
+        {{- .ignoreDifferences | toYaml | nindent 12 }}
+      {{- end }}

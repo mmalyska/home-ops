@@ -1,0 +1,14 @@
+- enabled: "true"
+  namespace: node-feature-discovery
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+  ignoreDifferences:
+    - group: apps
+      kind: DaemonSet
+      jsonPointers:
+        - /spec/template/metadata/annotations
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: privileged

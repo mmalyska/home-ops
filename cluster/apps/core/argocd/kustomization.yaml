@@ -10,7 +10,6 @@ namespace: argocd
 resources:
   - resources/ingress.yaml
   - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v3.1.7
-  - resources/app-of-apps.yaml
   - resources/repository.yaml
   - resources/sops-replacer-plugin.yaml
   - resources/metrics.yaml

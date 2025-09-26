@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: metrics-server
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false

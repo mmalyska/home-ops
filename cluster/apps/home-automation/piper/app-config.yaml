@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: ha-piper
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false

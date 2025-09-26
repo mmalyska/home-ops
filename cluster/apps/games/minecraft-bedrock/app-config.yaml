@@ -1,0 +1,10 @@
+- enabled: "true"
+  namespace: minecraft-bedrock
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SOPS_SECRET_FILE
+        value: secret.sec.yaml

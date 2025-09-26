@@ -1,0 +1,25 @@
+- enabled: "true"
+  appSubfolder: device-plugins-operator
+  namespace: intel-device-plugins-operator
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: privileged
+- enabled: "true"
+  appSubfolder: gpu-plugin
+  namespace: intel-gpu-plugin
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+  ignoreDifferences:
+    - group: deviceplugin.intel.com
+      kind: GpuDevicePlugin
+      jsonPointers:
+        - /spec/resourceManager
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: privileged

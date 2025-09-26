@@ -1,0 +1,54 @@
+# project: games
+# destination:
+#   server: https://kubernetes.default.svc
+# source:
+#   repoURL: https://github.com/mmalyska/home-ops
+#   path: cluster/apps/games
+# apps:
+#   - name: vintagestory
+#     enabled: true
+#     namespace: vintagestory
+#     path: vintagestory
+#     selfHeal: true
+#     prune: false
+#     plugin:
+#       env:
+#         - name: SOPS_SECRET_FILE
+#           value: secret.sec.yaml
+#   - name: cilium
+#     namespace: kube-system
+#     path: cilium
+#     enabled: true
+#     selfHeal: false
+#     prune: false
+#     managedNamespaceMetadata:
+#       labels:
+#         pod-security.kubernetes.io/enforce: privileged
+#         pod-security.kubernetes.io/audit: privileged
+#         pod-security.kubernetes.io/warn: privileged
+#     ignoreDifferences:
+#       - group: ""
+#         kind: ConfigMap
+#         name: hubble-ca-cert
+#         jsonPointers:
+#           - /data/ca.crt
+#       - group: ""
+#         kind: Secret
+#         name: hubble-relay-client-certs
+#         jsonPointers:
+#           - /data/ca.crt
+#           - /data/tls.crt
+#           - /data/tls.key
+#       - group: ""
+#         kind: Secret
+#         name: hubble-server-certs
+#         jsonPointers:
+#           - /data/ca.crt
+#           - /data/tls.crt
+#           - /data/tls.key
+#       - group: ""
+#         kind: Secret
+#         name: cilium-ca
+#         jsonPointers:
+#           - /data/ca.crt
+#           - /data/ca.key

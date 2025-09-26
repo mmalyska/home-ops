@@ -1,0 +1,33 @@
+- enabled: "true"
+  namespace: monitoring
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      namespace: monitoring
+      name: prometheus-stack-kube-state-metrics
+      jqPathExpressions:
+        - .spec.template.spec.containers[]?.resources
+    - group: apps
+      kind: Deployment
+      namespace: monitoring
+      name: prometheus-stack-grafana
+      jqPathExpressions:
+        - .spec.template.spec.containers[]?.resources
+        - .spec.template.spec.initContainers[]?.resources
+    - group: apps
+      kind: DaemonSet
+      namespace: monitoring
+      name: prometheus-stack-prometheus-node-exporter
+      jqPathExpressions:
+        - .spec.template.spec.containers[]?.resources
+  plugin:
+    env:
+      - name: SOPS_SECRET_FILE
+        value: secret.sec.yaml
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: privileged
