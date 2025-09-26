@@ -8,6 +8,9 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: false # To prevent an Application's child resources from being deleted when the parent Application is deleted set this to true
   generators:
     - git:
         repoURL: https://github.com/mmalyska/home-ops
@@ -71,11 +74,10 @@ spec:
         managedNamespaceMetadata:
           {{- .managedNamespaceMetadata | toYaml | nindent 10 }}
       {{- end }}
-      {{- if .syncPolicy.enabled }}
         automated:
+          enabled: {{ .syncPolicy.enabled }}
           prune: {{ .syncPolicy.prune }}
           selfHeal: {{.syncPolicy.selfHeal}}
-      {{- end }}
       {{- if hasKey . "ignoreDifferences" }}
       ignoreDifferences:
         {{- .ignoreDifferences | toYaml | nindent 12 }}
