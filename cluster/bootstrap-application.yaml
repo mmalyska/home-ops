@@ -25,5 +25,4 @@ spec:
       - ApplyOutOfSyncOnly=true
     automated:
       enabled: false
-      prune: false
       selfHeal: true
