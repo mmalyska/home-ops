@@ -4,7 +4,7 @@
     {
       "customType": "regex",
       "description": "Apply an explicit gitea digest field match",
-      "fileMatch": ["values\\.ya?ml"],
+      "fileMatch": ["cluster/apps/default/gitea/values\\.yaml"],
       "matchStrings": ["(?<depName>gitea\\/gitea)\\n(?<indentation>\\s+)tag: (?<currentValue>[^@].*?)\\n\\s+digest: (?<currentDigest>sha256:[a-f0-9]+)"],
       "datasourceTemplate": "docker",
       "autoReplaceStringTemplate": "{{depName}}\n{{indentation}}tag: {{newValue}}\n{{indentation}}digest: {{#if newDigest}}{{{newDigest}}}{{else}}{{{currentDigest}}}{{/if}}"
