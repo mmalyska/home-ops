@@ -146,7 +146,7 @@ jobs:
           path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
           retention-days: 14
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -227,7 +227,7 @@ jobs:
           path: ${{ runner.temp }}/diff_items/${{ steps.diff.outputs.diff-filename }}.diff
           retention-days: 14
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
