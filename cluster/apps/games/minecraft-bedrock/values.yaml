@@ -6,6 +6,10 @@ persistance:
     requests:
       storage: 10Gi
 minecraft-bedrock:
+  image:
+    repository: itzg/minecraft-bedrock-server
+    tag: 2025.9.0
+    pullPolicy: IfNotPresent
   persistence:
     dataDir:
       enabled: true
@@ -19,7 +23,7 @@ minecraft-bedrock:
       memory: 1Gi
   minecraftServer:
     eula: "TRUE"
-    version: "LATEST"
+    version: 1.21.111
     difficulty: normal
     gameMode: survival
     levelName: jaskinia
