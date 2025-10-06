@@ -23,7 +23,7 @@ minecraft-bedrock:
       memory: 1Gi
   minecraftServer:
     eula: "TRUE"
-    version: 1.21.111
+    version: 1.21.111.1
     difficulty: normal
     gameMode: survival
     levelName: jaskinia
