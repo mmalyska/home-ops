@@ -25,7 +25,7 @@ controllers:
       vintagestory:
         image:
           repository: ghcr.io/mmalyska/vintagestory
-          tag: 1.21.4@sha256:78323b072e5764fb2907b386e961a9fc83e8be0e0560acb016b153262ca203b2
+          tag: 1.21.4@sha256:60b34689ca7501da640b3646536158edaf13f000dc7be52acf207b58b371d391
         env:
           DATA_PATH: /config
         args:
