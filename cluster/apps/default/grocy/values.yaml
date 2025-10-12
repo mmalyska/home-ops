@@ -32,7 +32,7 @@ server:
   image:
     imagePullPolicy: IfNotPresent
     repository: lscr.io/linuxserver/grocy
-    tag: 4.5.0@sha256:f1b2cdbaa30ea48fd6eba880ea428191a15378fb4076ccb1937463e970dd385b
+    tag: 4.5.0@sha256:1ed12d75468d137c24c4ecf9ef239e26e9cc48f0e2c0bcb25a9be4b941e7f770
   service:
     type: ClusterIP
     servicePortHttpName: http
