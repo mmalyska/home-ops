@@ -2,7 +2,7 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
   "name": "home-ops",
-  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:8df09f356aeb65f730903feb75c696436af54eb059a3000725e4fc4dc5fb4918",
+  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:dcbf6cdfb6ce529faa395726cbfc7c656f5959e85a4a35d17db9cf31796beee6",
   "secrets": {
     "SOPS_AGE_KEY": {
       "description": "SOPS AGE key for decrypting secrets."
