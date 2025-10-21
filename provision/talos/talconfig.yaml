@@ -96,7 +96,6 @@ nodes:
           sysctls:
             net.core.bpf_jit_harden: 1    # Nvidia CLI
 
-
 controlPlane:
   nodeLabels: &nodeLabels
     topology.kubernetes.io/region: *clusterName
@@ -129,24 +128,21 @@ controlPlane:
           - siderolabs/i915
           - siderolabs/intel-ucode
           - siderolabs/nut-client
-
-  patches:
+  machineFiles:
     # Configure containerd
-    - &patchContainerd |-
-      machine:
-        files:
-          - op: create
-            path: /etc/cri/conf.d/20-customization.part
-            content: |
-              [plugins]
-                [plugins."io.containerd.grpc.v1.cri"]
-                  enable_unprivileged_ports = true
-                  enable_unprivileged_icmp = true
-              [plugins."io.containerd.grpc.v1.cri".containerd]
-                discard_unpacked_layers = false
-              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-                discard_unpacked_layers = false
-
+    - &patchContainerd
+      op: create
+      path: /etc/cri/conf.d/20-customization.part
+      content: |
+        [plugins]
+          [plugins."io.containerd.grpc.v1.cri"]
+            enable_unprivileged_ports = true
+            enable_unprivileged_icmp = true
+        [plugins."io.containerd.grpc.v1.cri".containerd]
+          discard_unpacked_layers = false
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          discard_unpacked_layers = false
+  patches:
     # Disable Host DNS
     - &patchHostDNS |-
       machine:
@@ -234,18 +230,16 @@ controlPlane:
 
     # Configure bind-address
     - &patchBindAddress |-
-      - op: add
-        path: /cluster/controllerManager/extraArgs
-        value:
-          bind-address: 0.0.0.0
-      - op: add
-        path: /cluster/scheduler/extraArgs
-        value:
-          bind-address: 0.0.0.0
-      - op: add
-        path: /cluster/proxy/extraArgs
-        value:
-          bind-address: 0.0.0.0
+      cluster:
+        controllerManager:
+          extraArgs:
+            bind-address: 0.0.0.0
+        scheduler:
+          extraArgs:
+            bind-address: 0.0.0.0
+        proxy:
+          extraArgs:
+            bind-address: 0.0.0.0
 
 worker:
   nodeLabels: *nodeLabels
@@ -255,8 +249,9 @@ worker:
       systemExtensions:
         officialExtensions:
           - nut-client
-  patches:
+  machineFiles:
     - *patchContainerd
+  patches:
     - *patchHostDNS
     - *patchTimeServer
     - *patchDNS
