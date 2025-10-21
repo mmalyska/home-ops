@@ -28,7 +28,7 @@ persistence:
   config:
     enabled: true
     accessMode: ReadWriteOnce
-    size: 1Gi
+    size: 2Gi
     storageClass: ceph-block
   extraNfsMounts:
     - name: tv-shows
