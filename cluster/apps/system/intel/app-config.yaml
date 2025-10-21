@@ -2,7 +2,7 @@
   appSubfolder: device-plugins-operator
   namespace: intel-device-plugins-operator
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   managedNamespaceMetadata:
@@ -12,7 +12,7 @@
   appSubfolder: gpu-plugin
   namespace: intel-gpu-plugin
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   ignoreDifferences:

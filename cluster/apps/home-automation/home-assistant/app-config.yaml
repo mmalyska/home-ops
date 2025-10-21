@@ -1,7 +1,7 @@
 - enabled: "false"
   namespace: ha-home-assistant
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   plugin:

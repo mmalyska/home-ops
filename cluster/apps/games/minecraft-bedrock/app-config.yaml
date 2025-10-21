@@ -1,7 +1,7 @@
 - enabled: "true"
   namespace: minecraft-bedrock
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   plugin:

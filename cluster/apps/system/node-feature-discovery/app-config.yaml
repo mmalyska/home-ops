@@ -1,7 +1,7 @@
 - enabled: "true"
   namespace: node-feature-discovery
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   ignoreDifferences:

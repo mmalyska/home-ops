@@ -1,7 +1,7 @@
 - enabled: "true"
   namespace: nfs-mounts
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   plugin:

@@ -1,6 +1,6 @@
 - enabled: "true"
   namespace: cloudflared
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false

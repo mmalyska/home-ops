@@ -1,6 +1,6 @@
 - enabled: "true"
   namespace: cnpg
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false

@@ -1,7 +1,7 @@
 - enabled: "true"
   namespace: n8n
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   plugin:

@@ -1,6 +1,6 @@
 - enabled: "true"
   namespace: talos-backup
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false

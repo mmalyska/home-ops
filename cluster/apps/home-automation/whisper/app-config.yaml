@@ -1,6 +1,6 @@
 - enabled: "true"
   namespace: ha-whisper
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
