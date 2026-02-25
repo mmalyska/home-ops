@@ -64,37 +64,37 @@ nodes:
             gateway: 192.168.50.1
         vip:
           ip: *talosControlplaneVip
-  - hostname: nv1
-    ipAddress: 192.168.48.5
-    installDisk: /dev/nvme0n1
-    controlPlane: false
-    schematic:
-      customization:
-        extraKernelArgs:
-          - -selinux
-          - console=tty0
-          - console=ttyS0,115200
-          - sysctl.kernel.kexec_load_disabled=1
-          - talos.dashboard.disabled=1
-          - talos.auditd.disabled=1
-        # systemExtensions:
-        #   officialExtensions:
-        #     - siderolabs/nvidia-container-toolkit-production
-    networkInterfaces:
-      - interface: enP8p1s0
-        addresses:
-          - 192.168.48.5/22
-        mtu: 1500
-        routes:
-          - network: 0.0.0.0/0
-            gateway: 192.168.50.1
-    nodeTaints:
-      nv: :NoSchedule
-    patches:
-      - |-
-        machine:
-          sysctls:
-            net.core.bpf_jit_harden: 1    # Nvidia CLI
+  # - hostname: nv1
+  #   ipAddress: 192.168.48.5
+  #   installDisk: /dev/nvme0n1
+  #   controlPlane: false
+  #   schematic:
+  #     customization:
+  #       extraKernelArgs:
+  #         - -selinux
+  #         - console=tty0
+  #         - console=ttyS0,115200
+  #         - sysctl.kernel.kexec_load_disabled=1
+  #         - talos.dashboard.disabled=1
+  #         - talos.auditd.disabled=1
+  #       # systemExtensions:
+  #       #   officialExtensions:
+  #       #     - siderolabs/nvidia-container-toolkit-production
+  #   networkInterfaces:
+  #     - interface: enP8p1s0
+  #       addresses:
+  #         - 192.168.48.5/22
+  #       mtu: 1500
+  #       routes:
+  #         - network: 0.0.0.0/0
+  #           gateway: 192.168.50.1
+  #   nodeTaints:
+  #     nv: :NoSchedule
+  #   patches:
+  #     - |-
+  #       machine:
+  #         sysctls:
+  #           net.core.bpf_jit_harden: 1    # Nvidia CLI
 
 controlPlane:
   nodeLabels: &nodeLabels
