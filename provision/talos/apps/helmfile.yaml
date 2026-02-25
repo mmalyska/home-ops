@@ -16,7 +16,7 @@ releases:
   - name: prometheus-operator-crds
     namespace: monitoring
     chart: oci://ghcr.io/prometheus-community/charts/prometheus-operator-crds
-    version: 24.0.1
+    version: 24.0.2
 
   - name: cilium
     namespace: kube-system
@@ -30,7 +30,7 @@ releases:
   - name: kubelet-csr-approver
     namespace: kube-system
     chart: postfinance/kubelet-csr-approver
-    version: 1.2.11
+    version: 1.2.13
     values:
       - '{{ requiredEnv "CLUSTER_DIR" }}/system/kubelet-csr-approver/values.yaml'
     needs:

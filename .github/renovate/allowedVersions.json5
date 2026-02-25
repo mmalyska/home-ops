@@ -15,7 +15,7 @@
     {
       "description": "Lock version to cluster version",
       "matchDatasources": ["docker", "github-releases"],
-      "allowedVersions": "<=1.32",
+      "allowedVersions": "<=1.34",
       "matchPackageNames": [
         "alpine/k8s",
         "kubernetes/kubernetes",
