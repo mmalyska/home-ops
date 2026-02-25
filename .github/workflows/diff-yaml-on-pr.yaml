@@ -139,7 +139,7 @@ jobs:
             echo "$message" > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: steps.diff.outputs.diff-filename
         with:
           name: ${{ steps.diff.outputs.diff-filename }}.diff
@@ -220,7 +220,7 @@ jobs:
             echo "$message" > ${{ runner.temp }}/diff_items/message.txt
           fi
       - name: Add diff item
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: steps.diff.outputs.diff-filename
         with:
           name: ${{ steps.diff.outputs.diff-filename }}.diff
