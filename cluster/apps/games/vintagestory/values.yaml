@@ -19,13 +19,13 @@ controllers:
         env:
           download-path: /mods
           # renovate: datasource=docker depName=ghcr.io/mmalyska/vintagestory
-          vs-version: 1.21.5
+          vs-version: 1.21.6
           config-file: mods.json
     containers:
       vintagestory:
         image:
           repository: ghcr.io/mmalyska/vintagestory
-          tag: 1.21.5@sha256:3d85305170ebf8003287edc8b28cd0fdfa90bf73ac40d713147baf6077bee28e
+          tag: 1.21.6@sha256:58e4c7e4686d3a746401a14a6bc97cee983be78efd29b312831dfc46cf0ce03a
         env:
           DATA_PATH: /config
         args:
