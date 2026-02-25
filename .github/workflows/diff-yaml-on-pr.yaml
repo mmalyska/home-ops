@@ -63,7 +63,7 @@ jobs:
       helm_files: ${{ steps.unified.outputs.helm_files }}
       kustomize_files: ${{ steps.unified.outputs.kustomize_files }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -92,11 +92,11 @@ jobs:
             yq
           # renovate: datasource=github-releases depName=helm/helm
           helm: "3.19.5"
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           path: pr
       - id: diff
@@ -177,11 +177,11 @@ jobs:
           setup-tools: |
             kubectl
             yq
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           path: pr
       - id: diff
