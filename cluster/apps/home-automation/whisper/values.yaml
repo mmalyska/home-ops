@@ -13,6 +13,8 @@ app-template:
             - pl
             - --model
             - base-int8
+            - --data-dir
+            - /data
           env:
             HF_HUB_CACHE: "/model-cache"
           resources:
