@@ -8,7 +8,7 @@ persistance:
 minecraft-bedrock:
   image:
     repository: itzg/minecraft-bedrock-server
-    tag: 2025.12.2@sha256:70370705432e9f6fe0d75754d4b3830acbe64cf4c9afe0ec9c9cb3b598a18be1
+    tag: 2026.2.1@sha256:f081b6f19dc576518e71764fd80c8a4504ecb0381013e8ed7043c5a5a5fb3095
     pullPolicy: IfNotPresent
   persistence:
     dataDir:
