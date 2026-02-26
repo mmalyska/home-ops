@@ -6,7 +6,7 @@ app-template:
         pl:
           image:
             repository: rhasspy/wyoming-whisper
-            tag: 3.0.1@sha256:08031ae19b68f286bbc99daf65e90c526bd99a7812e2e64ea3c0f23624538b97
+            tag: 3.1.0@sha256:9501d2659eee83b6eead98d53842193e5fed011eda6c5b1c3ad36f3146b28fed
             pullPolicy: IfNotPresent
           args:
             - --language
