@@ -42,7 +42,7 @@ oauth2-proxy:
       clientType: standalone
       existingSecret: oauth-secret
       passwordKey: redis-password
-  redis:
+  redis-ha:
     enabled: true
 
     auth: true
