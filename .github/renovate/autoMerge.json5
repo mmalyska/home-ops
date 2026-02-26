@@ -35,6 +35,7 @@
         "sigstore/cosign"
       ],
       "matchFileNames": [".github/**"],
+      "minimumReleaseAge": "3 days",
       "ignoreTests": true
     },
     {
@@ -48,15 +49,17 @@
         "docker.io/cloudflare/cloudflared",
         "ghcr.io/coder/code-server"
       ],
-      "matchFileNames": ["cluster/**"]
+      "matchFileNames": ["cluster/**"],
+      "ignoreTests": true
     },
     {
       "description": "Auto cluster apps",
       "matchDatasources": ["github-releases", "github-tags", "helm", "docker"],
       "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["major", "minor", "patch"],
-      "matchFileNames": ["cluster/**", "!cluster/core/**"]
+      "automergeType": "pr",
+      "matchUpdateTypes": ["patch", "digest"],
+      "matchFileNames": ["cluster/**", "!cluster/core/**"],
+      "ignoreTests": false
     }
   ]
 }
