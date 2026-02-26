@@ -6,7 +6,7 @@ app-template:
         pl:
           image:
             repository: rhasspy/wyoming-piper
-            tag: 1.6.3@sha256:2f5de2c89bfb87e7b625265315a9d9f6deb5db44cec3a3e9aa0087d002eac459
+            tag: 2.2.2@sha256:c874e4a04657ae3381332ee5d0c8c70a310dae6722892840f530ac0890b44eb3
             pullPolicy: IfNotPresent
           args:
             - --voice
