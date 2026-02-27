@@ -1,0 +1,10 @@
+{
+  "name": "Bitwarden CLI",
+  "id": "bws-cli",
+  "version": "1.0.0",
+  "description": "Installs Bitwarden CLI",
+  "options": {},
+  "containerEnv": {
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}
