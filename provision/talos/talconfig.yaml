@@ -8,13 +8,13 @@ talosVersion: v1.11.3
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
 kubernetesVersion: v1.34.5
 
-endpoint: https://${clusterDomain}:6443
+endpoint: https://${TALHELPER_CLUSTERDOMAIN}:6443
 cniConfig:
   name: none
 
 additionalMachineCertSans: &sans
-  - &talosControlplaneVip ${clusterEndpointIP}
-  - ${clusterDomain}
+  - &talosControlplaneVip ${TALHELPER_CLUSTERENDPOINTIP}
+  - ${TALHELPER_CLUSTERDOMAIN}
   - 127.0.0.1 # KubePrism
 additionalApiServerCertSans: *sans
 
@@ -106,7 +106,7 @@ controlPlane:
       configFiles:
         - mountPath: /usr/local/etc/nut/upsmon.conf
           content: |
-            MONITOR ${upsmonHost} 1 ${upsmonUser} ${upsmonPasswd} secondary
+            MONITOR ${TALHELPER_UPSMONHOST} 1 ${TALHELPER_UPSMONUSER} ${TALHELPER_UPSMONPASSWD} secondary
             SHUTDOWNCMD "/sbin/poweroff"
 
   schematic:
@@ -153,14 +153,14 @@ controlPlane:
             forwardKubeDNSToHost: false
 
     # Configure kubelet
-    - &patchKubelet |-
+    - |-
       machine:
         kubelet:
           extraArgs:
             rotate-server-certificates: "true"
 
     # Enable KubePrism
-    - &patchKubePrism |-
+    - |-
       machine:
         features:
           kubePrism:
@@ -178,7 +178,7 @@ controlPlane:
           vm.nr_hugepages: 1024                  # Postgres
 
     # Enable K8s Talos API Access
-    - &patchTalosAPIAccess |-
+    - |-
       machine:
         features:
           kubernetesTalosAPIAccess:
@@ -221,15 +221,15 @@ controlPlane:
           disabled: true
         apiServer:
           extraArgs:
-            oidc-client-id: ${oidcClientId}
+            oidc-client-id: ${TALHELPER_OIDCCLIENTID}
             oidc-groups-claim: groups
             oidc-groups-prefix: 'oidc:'
-            oidc-issuer-url: ${oidcIssuerURL}
+            oidc-issuer-url: ${TALHELPER_OIDCISSUERURL}
             oidc-username-claim: email
             oidc-username-prefix: 'oidc:'
 
     # Configure bind-address
-    - &patchBindAddress |-
+    - |-
       cluster:
         controllerManager:
           extraArgs:
