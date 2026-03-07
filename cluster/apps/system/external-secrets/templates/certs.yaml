@@ -14,7 +14,7 @@ spec:
   # this is discouraged but required by ios
   commonName: cert-manager-bitwarden-tls
   isCA: true
-  secretName: bitwarden-tls-certs
+  secretName: bitwarden-ca-tls-certs
   subject:
     organizations:
       - external-secrets.io
@@ -40,7 +40,7 @@ metadata:
   name: bitwarden-certificate-issuer
 spec:
   ca:
-    secretName: bitwarden-tls-certs
+    secretName: bitwarden-ca-tls-certs
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
