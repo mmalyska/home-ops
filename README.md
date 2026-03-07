@@ -22,12 +22,16 @@ For provisioning the following tools are used:
 ### 📦 Kubernetes
 
 - [cert-manager](https://cert-manager.io/) - SSL certificates - with Cloudflare DNS challenge
-- [flannel](https://github.com/flannel-io/flannel) - CNI (container network interface)
+- [Cilium](https://cilium.io/) - CNI (container network interface), kube-proxy replacement, L2 load balancer announcements
 - [ArgoCD](https://argo-cd.readthedocs.io/) - GitOps tool for deploying manifests from the `cluster` directory
 - [rook.io](https://rook.io/) - ceph storage for k8s
 - [nfs](https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/) - used for cold storage on QNAP
-- [metallb](https://metallb.universe.tf/) - bare metal load balancer
 - [traefik](https://traefik.io) - ingress controller
+- [Keycloak](https://www.keycloak.org/) - identity provider (OIDC)
+- [External Secrets Operator](https://external-secrets.io/) - secret synchronization from Bitwarden Secrets Manager
+- [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) - monitoring (Prometheus + Grafana)
+- [CloudNative-PG](https://cloudnative-pg.io/) - PostgreSQL operator
+- [VolSync](https://volsync.readthedocs.io/) - persistent volume backup and restore
 
 ## 📝 Setup
 
@@ -107,12 +111,16 @@ The Git repository contains the following directories under `cluster` and are or
 
 ```text
 📁 cluster
-├──📁 projects - main folder for ArgoCD to sync deployed apps
-├──📁 apps - folder for apps manifests
-├──📁 core - folder for a core apps of cluster
-│   └──📁 argocd
-│       └──📁 projects - folder containing manifests to initialize app-of-apps for ArgoCD
-└──📁 system - app counted as extensions of cluster (certs, ingress, gpu, etc.)
+├──📄 bootstrap-application.yaml - root app-of-apps entry point
+├──📁 projects   - ArgoCD AppProject definitions (core/system/default/games/home-automation)
+├──📁 appsets    - ArgoCD ApplicationSet definitions (auto-discover app-config.yaml files)
+├──📁 apps       - application manifests organized by category
+│   ├──📁 core   - cluster core (cilium, argocd, rook-ceph)
+│   ├──📁 system - platform services (traefik, cert-manager, monitoring, keycloak, external-secrets...)
+│   ├──📁 default - workload apps (jellyfin, gitea, n8n, open-webui, gethomepage...)
+│   ├──📁 games  - game servers (minecraft-bedrock, vintagestory)
+│   └──📁 home-automation - home automation (vernemq, ollama, whisper, piper, openwakeword)
+└──📁 .tools     - utility manifests (rook wipe jobs, etc.)
 ```
 
 ## 🚀 Deployment
