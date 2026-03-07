@@ -1,0 +1,6 @@
+- enabled: "false"
+  namespace: envoy-gateway
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

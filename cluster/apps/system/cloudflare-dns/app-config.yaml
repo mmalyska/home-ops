@@ -1,0 +1,6 @@
+- enabled: "false"
+  namespace: cloudflare-dns
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
