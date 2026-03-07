@@ -8,3 +8,8 @@
     env:
       - name: SOPS_SECRET_FILE
         value: secret.sec.yaml
+  ignoreDifferences:
+    - kind: Secret
+      name: bitwarden-access-token
+      jsonPointers:
+        - /data
