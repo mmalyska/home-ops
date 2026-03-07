@@ -11,8 +11,3 @@ external-secrets:
       enabled: true
   bitwarden-sdk-server:
     enabled: true
-    image:
-      tls:
-        # This is required so I don't need to worry about certs for the bitwarden-sdk-server
-        # The bitwarden-sdk-server is only accessible within the cluster, so this should be fine
-        enabled: false
