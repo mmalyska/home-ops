@@ -23044,7 +23044,7 @@
       {
         "hide": 2,
         "name": "node",
-        "query": "router.asus.com:9101",
+        "query": "192.168.50.1:9101",
         "skipUrlSync": false,
         "type": "constant"
       },

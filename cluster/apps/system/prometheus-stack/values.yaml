@@ -99,11 +99,11 @@ kube-prometheus-stack:
         - job_name: "asusrouter"
           scrape_interval: 5s
           static_configs:
-            - targets: ["router.asus.com:9101"]
+            - targets: ["192.168.50.1:9101"]
         - job_name: "qnap"
           scrape_interval: 10s
           static_configs:
-            - targets: ["qnap.mmalyska.cloud:9094"]
+            - targets: ["192.168.50.8:9094"]
   prometheus-node-exporter:
     extraArgs:
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
