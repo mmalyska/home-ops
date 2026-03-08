@@ -85,3 +85,10 @@ app-template:
           path: /metrics
           interval: 1m
           scrapeTimeout: 30s
+  persistence:
+    config-file:
+      type: secret
+      identifier: cloudflare-tunnel-secret
+      globalMounts:
+        - path: /etc/cloudflared/config.yaml
+          subPath: CF_TUNNEL_INGRESS
