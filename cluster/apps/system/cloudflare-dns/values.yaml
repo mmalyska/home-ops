@@ -2,16 +2,21 @@ external-dns:
   fullnameOverride: cloudflare-dns
   provider: cloudflare
   env:
-    - name: CF_API_TOKEN
+    - name: &name CF_API_TOKEN
       valueFrom:
         secretKeyRef:
-          name: cloudflare-dns-secret
-          key: CF_API_TOKEN
-    - name: CF_ZONE_ID
+          name: &secret cloudflare-dns-secret
+          key: *name
+    - name: &name CF_ZONE_ID
       valueFrom:
         secretKeyRef:
-          name: cloudflare-dns-secret
-          key: CF_ZONE_ID
+          name: *secret
+          key: *name
+    - name: &name CF_DOMAIN_FILTER
+      valueFrom:
+        secretKeyRef:
+          name: *secret
+          key: *name
   extraArgs:
     - --cloudflare-dns-records-per-page=1000
     - --cloudflare-proxied
@@ -19,11 +24,11 @@ external-dns:
     - --crd-source-kind=DNSEndpoint
     - --gateway-name=envoy-external
     - --zone-id-filter=$(CF_ZONE_ID)
+    - --domain-filter=$(CF_DOMAIN_FILTER)
   triggerLoopOnEvent: true
   policy: sync
   sources: ["crd", "gateway-httproute"]
   txtPrefix: k8s.
   txtOwnerId: default
-  domainFilters: ["${SECRET_DOMAIN}"]
   serviceMonitor:
     enabled: true
