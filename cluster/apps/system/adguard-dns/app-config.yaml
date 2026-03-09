@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: adguard-dns
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
