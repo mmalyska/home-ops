@@ -12,3 +12,5 @@
     cloudflared tunnel login
     cloudflared tunnel create --credentials-file cloudflare-tunnel.json kubernetes
     ```
+
+3. Put contents of cloudflare-tunnel.json into bitwarden secret management as separate keys.
