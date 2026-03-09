@@ -12,7 +12,7 @@ traefik:
   # Options for the main traefik service, where the entrypoints traffic comes
   # from.
   service:
-    annotations: {io.cilium/lb-ipam-ips: "192.168.48.21"}
+    annotations: {io.cilium/lb-ipam-ips: "192.168.48.50"}
     single: false
 
   tlsStore:
