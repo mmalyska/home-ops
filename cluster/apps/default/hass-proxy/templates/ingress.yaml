@@ -20,10 +20,25 @@ spec:
               name: hass-proxy
               port:
                 name: hass-proxy
-        - path: /_agh
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/ingressEndpoint.hostname: {{ .Values.ingress.agh }}
+    kubernetes.io/ingress.class: traefik
+  name: agh-proxy
+spec:
+  rules:
+  - host: {{ .Values.ingress.agh }}
+    http:
+      paths:
+        - path: /
           pathType: Prefix
           backend:
             service:
-              name: hass-proxy
+              name: agh-proxy
               port:
                 name: agh-proxy

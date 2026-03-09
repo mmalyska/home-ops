@@ -17,3 +17,20 @@ spec:
   selector:
     app.kubernetes.io/instance: traefik
     app.kubernetes.io/name: traefik
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: agh-proxy
+  name: agh-proxy
+spec:
+  type: ExternalName
+  ports:
+    - name: agh-proxy
+      port: 8812
+      targetPort: 80
+  externalName: 192.168.50.9
+  selector:
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/name: traefik
