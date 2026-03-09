@@ -20,3 +20,10 @@ spec:
               name: hass-proxy
               port:
                 name: hass-proxy
+        - path: /_agh
+          pathType: Prefix
+          backend:
+            service:
+              name: hass-proxy
+              port:
+                name: agh-proxy
