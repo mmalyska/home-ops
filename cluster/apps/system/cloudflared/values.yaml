@@ -25,7 +25,7 @@ app-template:
               valueFrom:
                 secretKeyRef:
                   name: cloudflare-tunnel-secret
-                  key: CF_TUNNEL_TOKEN
+                  key: CF_TUNNEL_SECRET
           args:
             - tunnel
             - run
