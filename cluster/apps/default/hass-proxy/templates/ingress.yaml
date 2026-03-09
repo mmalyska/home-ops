@@ -24,6 +24,6 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: agh-proxy
+              name: hass-proxy
               port:
                 name: agh-proxy
