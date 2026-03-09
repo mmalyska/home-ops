@@ -10,6 +10,9 @@ spec:
     - name: hass-proxy
       port: 8123
       targetPort: 80
+    - name: agh-proxy
+      port: 8812
+      targetPort: 80
   externalName: 192.168.50.9
   selector:
     app.kubernetes.io/instance: traefik
