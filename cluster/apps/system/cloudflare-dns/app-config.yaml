@@ -1,4 +1,4 @@
-- enabled: "false"
+- enabled: "true"
   namespace: cloudflare-dns
   syncPolicy:
     enabled: true
