@@ -39,6 +39,20 @@ Categories: core, system, default, games, home-automation
 - Do NOT edit: `provision/talos/clusterconfig/`, renovate comment lines, `.terraform.lock.hcl`
 - Branch: main, feat/fix/chore prefixes, MegaLinter CI on PRs, labels required
 
+## ExternalSecret Template Gotcha (ESO inside Helm templates/)
+
+When `ExternalSecret` lives in `templates/`, Helm processes it first — so ESO template expressions like `{{ .MY_KEY }}` get consumed by Helm and resolve to empty strings before ESO ever runs.
+
+**Fix**: wrap ESO expressions in Go raw string literals so Helm passes them through untouched:
+```yaml
+CF_TUNNEL_INGRESS: |
+  {{ `{{ .CLOUDFLARE_TUNNEL_INGRESS }}` }}
+CF_TUNNEL_SECRET: |-
+  {{ `{{ toJson (dict "a" .ACCOUNT "t" .TUNNEL_ID "s" .SECRET) | b64enc }}` }}
+```
+
+**Symptom**: ESO status shows `secret synced / True` but all rendered secret values are empty/null.
+
 ## README/Docs Status (as of 2026-03-07)
 - README.md updated: removed flannel/metallb, added Cilium, Keycloak, ESO, prometheus-stack, CloudNative-PG, VolSync; updated repo structure section
 - docs/src/index.md updated: replaced broken image tech stack with proper tables
