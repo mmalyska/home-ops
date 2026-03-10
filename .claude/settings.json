@@ -1,3 +1,55 @@
 {
-  "includeCoAuthoredBy": false
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(kubectl get *)",
+      "Bash(kubectl describe *)",
+      "Bash(kubectl logs *)",
+      "Bash(kubectl top *)",
+      "Bash(kubectl diff *)",
+      "Bash(kubectl config *)",
+      "Bash(kubectl version*)",
+      "Bash(talosctl get *)",
+      "Bash(talosctl health*)",
+      "Bash(talosctl logs *)",
+      "Bash(talosctl version*)",
+      "Bash(talosctl dmesg*)",
+      "Bash(talosctl ps*)",
+      "Bash(talosctl services*)",
+      "Bash(talosctl disks*)",
+      "Bash(talosctl memory*)",
+      "Bash(talosctl cpu*)",
+      "Bash(terraform show*)",
+      "Bash(terraform plan*)",
+      "Bash(terraform state list*)",
+      "Bash(terraform state show*)",
+      "Bash(argocd app list*)",
+      "Bash(argocd app get *)",
+      "Bash(argocd app diff *)",
+      "Bash(argocd proj list*)",
+      "Bash(helm list*)",
+      "Bash(helm status *)",
+      "Bash(helm get *)",
+      "Bash(task --list*)",
+      "Bash(git status*)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git branch*)"
+    ],
+    "deny": [
+      "Bash(kubectl get secret*)",
+      "Bash(kubectl describe secret*)",
+      "Bash(kubectl get serviceaccount*)",
+      "Bash(talosctl get secret*)",
+      "Bash(sops -d *)",
+      "Bash(sops --decrypt *)",
+      "Bash(helm get values*)",
+      "Bash(talosctl reset*)",
+      "Bash(talosctl reboot*)",
+      "Bash(talosctl shutdown*)",
+      "Bash(terraform destroy*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)"
+    ]
+  }
 }

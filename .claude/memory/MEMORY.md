@@ -3,6 +3,7 @@
 ## Standing Rules
 - NEVER write secrets, tokens, passwords, API keys, IPs of external services, or any sensitive data to this file or any other repo file
 - Secret values belong in SOPS-encrypted `*.sec.yaml` files or Bitwarden Secrets Manager only
+- The private domain is a SECRET — never write it in any file committed to git (use `<secret:private-domain>` placeholder instead)
 
 ## Project Type
 GitOps home-lab: Talos Linux + ArgoCD + SOPS. See CLAUDE.md at repo root for full guide.
@@ -83,3 +84,38 @@ CF_TUNNEL_SECRET: |-
 - README.md: reflects two-gateway setup (envoy-external/internal), cloudflare-dns, adguard-dns
 - docs/src/index.md: tech stack table updated with Envoy Gateway, Cloudflared, both external-dns controllers; Traefik removed
 - docs/src/general/network.md: fully rewritten with gateway architecture, DNS split, IP table
+
+## Local Resource Access (devcontainer)
+
+### Permission Rules
+- **Read-only operations**: run freely without asking user
+- **Mutating operations** (apply/delete/create/update/destroy/taint/upgrade): ALWAYS ask user for confirmation first
+
+### Kubernetes (kubectl)
+- kubeconfig at `~/.kube/config` (default location, no env var needed)
+- kubectl v1.35.2 available at `/home/linuxbrew/.linuxbrew/bin/kubectl`
+- Safe reads: `kubectl get`, `kubectl describe`, `kubectl logs`, `kubectl top`, `kubectl diff`
+- Mutating (confirm first): `kubectl apply`, `kubectl delete`, `kubectl patch`, `kubectl rollout restart`, `kubectl exec`
+
+### Talos (talosctl)
+- talosctl v1.11.3 at `/usr/local/bin/talosctl`
+- TALOSCONFIG is set in `.envrc` via `${PWD}/provision/talos/clusterconfig/talosconfig` (works with and without direnv)
+- Nodes: mc1=192.168.48.2, mc2=192.168.48.3, mc3=192.168.48.4
+- Safe reads: `talosctl get`, `talosctl health`, `talosctl logs`, `talosctl version`, `talosctl dmesg`, `talosctl ps`, `talosctl services`, `talosctl disks`, `talosctl memory`, `talosctl cpu`
+- Mutating (confirm first): `talosctl apply-config`, `talosctl upgrade`, `talosctl reset`, `talosctl reboot`, `talosctl shutdown`
+
+### Terraform (Cloudflare)
+- terraform v1.5.7 at `/home/linuxbrew/.linuxbrew/bin/terraform`
+- Working dir: `provision/terraform/cloudflare/`
+- Requires Terraform Cloud token (TERRAFORM_TOKEN env var is set; use `task terraform:init:cloudflare` first)
+- Safe reads: `terraform show`, `terraform plan`, `terraform state list`, `terraform state show`
+- Mutating (confirm first): `terraform apply`, `terraform destroy`, `terraform taint`, `terraform import`
+
+### ArgoCD (argocd)
+- argocd CLI at `/home/linuxbrew/.linuxbrew/bin/argocd`
+- Login first: `task argocd:login`
+- Safe reads: `argocd app list`, `argocd app get`, `argocd app diff`, `argocd proj list`
+- Mutating (confirm first): `argocd app sync`, `argocd app delete`, `argocd app set`
+
+### Available namespaces (as of 2026-03-10)
+adguard-dns, argocd, botkube, cert-manager, cilium-secrets, cloudflared, cloudflare-dns, cnpg, default, dyndns, external-secrets, gitea, ha-ollama, ha-openwakeword, ha-piper, hass-proxy, ha-vernemq, ha-whisper, homepage, identity, intel-device-plugins-operator, intel-gpu-plugin, jellyfin, keda, kube-system, litellm, metrics-server, minecraft-bedrock, monitoring, n8n, nfs-mounts, nfs-subdir-provisioner, node-feature-discovery, oauth2-proxy, open-webui, qnap-proxy, rook-ceph, snapshot-controller, talos-backup, traefik, vintagestory, volsync
