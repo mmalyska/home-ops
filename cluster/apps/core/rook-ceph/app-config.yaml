@@ -17,8 +17,8 @@
     prune: false
   plugin:
     env:
-      - name: SOPS_SECRET_FILE
-        value: secret.sec.yaml
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
   ignoreDifferences:
     - group: ceph.rook.io
       kind: CephCluster

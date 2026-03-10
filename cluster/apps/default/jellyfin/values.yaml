@@ -16,14 +16,14 @@ jellyfin:
     - name: PGID
       value: "1001"
     - name: JELLYFIN_PublishedServerUrl
-      value: <secret:jellyfin-service-ip>
+      value: 192.168.48.22
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
     type: RollingUpdate
   service:
-    ip: <secret:jellyfin-service-ip>
+    ip: 192.168.48.22
 persistence:
   config:
     enabled: true
