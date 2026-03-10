@@ -20,36 +20,69 @@ Replace all per-app SOPS-encrypted `secret.sec.yaml` files with two mechanisms:
 > Plugin IS needed.
 
 This means:
-- `cluster-secrets` contains **only** keys that appear in non-injectable fields:
-  `private-domain`, `s3_endpoint` (used in `values.yaml` barmanObjectStore URL strings)
-- `s3_access_key` and `s3_secret_key` appear **only** in `Secret` `data` fields
-  (`<secret:s3_access_key|base64>`) → these go to **per-app ExternalSecrets**, NOT
-  `cluster-secrets`
+- `cluster-secrets` contains only keys that appear in non-injectable fields
+- `s3_access_key` and `s3_secret_key` appear **only** in `Secret` `data` fields → per-app
+  ExternalSecrets, NOT `cluster-secrets`
 - App-specific credentials (API keys, passwords, tokens) always go to per-app ExternalSecrets
+
+## Migration Strategy: Gradual, Non-Destructive
+
+The migration runs in three tracks that can be executed independently and in any order after
+Phase 0:
+
+**Track A — Plugin infrastructure update** (Phase 0): Add a *second* plugin (`SECRET_PROVIDER`
+trigger) alongside the existing SOPS plugin. Both run in parallel. Apps migrate one by one by
+switching their trigger env var. The old SOPS plugin is only removed in the final cleanup phase
+once all apps have migrated.
+
+**Track B — Per-app migration**: Each app is migrated independently. An app is not touched until
+its Bitwarden secrets are ready. Rolling back a single app is as simple as reverting its
+`app-config.yaml`.
+
+**Track C — SOPS cleanup** (final): Remove the old plugin and SOPS infrastructure only after
+every app has switched to `SECRET_PROVIDER`.
+
+At no point are all apps broken simultaneously. The cluster remains fully functional throughout.
+
+---
 
 ## Prerequisites
 
 - The `argocd-secret-replacer` plugin must already have the new `secret --mount` verb implemented
   and released. See `.plans/argocd-secret-replacer-k8s-provider.md`.
-- All secrets listed in the "Bitwarden secrets to add" section below must exist in Bitwarden
-  Secrets Manager before any app migration is attempted. The agent doing this work does NOT add
-  secrets to Bitwarden — that must be done manually by the operator.
 - The `bitwarden` ClusterSecretStore is already working (cloudflare-dns, adguard-dns, cloudflared
   all use it successfully).
+- Bitwarden secrets for a specific app must be added **before** migrating that app — not all
+  upfront. See per-app sections for which secrets each app needs.
 
-## Bitwarden Secrets to Add (manual — operator action before starting)
+---
+
+## Bitwarden Secrets Reference
 
 Secrets must be added to Bitwarden Secrets Manager in project
 `422f340a-6eb8-4a4f-90d1-b3fe00d00d76`. Note the UUID of each for use in ExternalSecret
 `remoteRef.key` fields. Mark UUIDs with `#gitleaks:allow #KEY_NAME` comments in YAML.
 
 ### Global — go into `cluster-secrets` (used in non-injectable fields only)
+
+Add these to Bitwarden before starting Phase 0, as they are needed by the very first migrated app:
+
 | Key name in Secret | Bitwarden key name | Used in |
 |--------------------|--------------------|---------|
 | `private-domain` | `PRIVATE_DOMAIN` | hostnames, cert dnsNames, ConfigMap, Middleware, values.yaml |
 | `s3_endpoint` | `S3_ENDPOINT` | `values.yaml` barmanObjectStore.endpointURL strings |
+| `email` | `CERT_MANAGER_EMAIL` | cert-manager ClusterIssuer |
+| `masterkey` | `LITELLM_MASTER_KEY` | litellm values.yaml |
+| `encryption-key` | `N8N_ENCRYPTION_KEY` | n8n values.yaml |
+| `discord_botid` | `BOTKUBE_DISCORD_BOTID` | botkube values.yaml |
+| `discord_token` | `BOTKUBE_DISCORD_TOKEN` | botkube values.yaml |
+| `discord_channel` | `BOTKUBE_DISCORD_CHANNEL` | botkube values.yaml |
+| `ops` | `MINECRAFT_OPS` | minecraft-bedrock values.yaml |
+| `whitelistUsers` | `MINECRAFT_WHITELIST_USERS` | minecraft-bedrock values.yaml |
+| `world-password` | `VINTAGESTORY_WORLD_PASSWORD` | vintagestory values.yaml (verify field) |
 
-### Per-app — go into individual ExternalSecrets (used only in Secret data fields)
+### Per-app — add to Bitwarden just before migrating each app
+
 | Bitwarden key name | App | Target Secret key | Description |
 |--------------------|-----|-------------------|-------------|
 | `ARGOCD_PRIVATE_REPO_TYPE` | argocd | `type` | git repo type |
@@ -70,7 +103,6 @@ Secrets must be added to Bitwarden Secrets Manager in project
 | `MINECRAFT_OPS` | minecraft-bedrock | `ops` | Ops users JSON |
 | `VINTAGESTORY_WORLD_PASSWORD` | vintagestory | `world-password` | World password |
 | `CERT_MANAGER_API_TOKEN` | cert-manager | `api-token` | Cloudflare API token |
-| `CERT_MANAGER_EMAIL` | cert-manager | `email` | ACME email |
 | `DYNDNS_TOKEN` | dyndns | `token` | DynDNS token |
 | `DYNDNS_DOMAIN_COM_ZONE` | dyndns | `domain-com-zone` | .com zone ID |
 | `DYNDNS_DOMAIN_COM_NAME` | dyndns | `domain-com-name` | .com domain name |
@@ -90,7 +122,8 @@ Secrets must be added to Bitwarden Secrets Manager in project
 Bitwarden Secrets Manager
   │
   ├─► ExternalSecret: cluster-secrets (namespace: argocd)
-  │     Keys: private-domain, s3_endpoint
+  │     Keys: private-domain, s3_endpoint, email, masterkey, encryption-key,
+  │           discord_*, ops, whitelistUsers, world-password
   │     → K8s Secret: cluster-secrets (argocd ns)
   │           mounted at /cluster-secrets/ in repo-server sidecars
   │           → argocd-secret-replacer secret --mount /cluster-secrets
@@ -104,73 +137,152 @@ Bitwarden Secrets Manager
 
 ---
 
-## Step-by-Step Implementation
+## Phase 0 — Extend ArgoCD infrastructure (non-breaking, must land first)
 
-### Phase 0 — Update ArgoCD infrastructure (must land first, before any app migration)
+This phase **adds** new plugin definitions alongside the existing ones. No existing app is changed.
+Both `SOPS_SECRET_FILE` (old) and `SECRET_PROVIDER` (new) plugins run simultaneously. Apps continue
+to use SOPS until they are individually migrated.
 
-#### 0.1 — Update `sops-replacer-plugin.yaml`
+### 0.1 — Add new plugin definitions to `sops-replacer-plugin.yaml`
 
 **File:** `cluster/apps/core/argocd/resources/sops-replacer-plugin.yaml`
 
-**Discover** — change trigger env var from `SOPS_SECRET_FILE` to `SECRET_PROVIDER`,
-and remove the `find . -name '$ARGOCD_ENV_SOPS_SECRET_FILE'` check (no per-app file needed):
+**ADD** two new ConfigMap entries alongside the existing ones (do not modify or remove the existing
+`sops-replacer-plugin-kustomize.yaml` and `sops-replacer-plugin-helm.yaml` entries):
 
 ```yaml
-# kustomize plugin discover:
-- sh
-- "-c"
-- "[[ ! -z $ARGOCD_ENV_SECRET_PROVIDER ]] && find . -name 'kustomization.yaml'"
-
-# helm plugin discover:
-- sh
-- "-c"
-- "[[ ! -z $ARGOCD_ENV_SECRET_PROVIDER ]] && find . -name 'Chart.yaml'"
+# ADD these two new entries to the ConfigMap data:
+  secret-replacer-plugin-kustomize.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: secret-replacer-plugin-kustomize
+    spec:
+      version: v1.0
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "[[ ! -z $ARGOCD_ENV_SECRET_PROVIDER ]] && find . -name 'kustomization.yaml'"
+      generate:
+        command:
+          - bash
+          - "-c"
+          - |-
+            kustomize build --enable-alpha-plugins . | argocd-secret-replacer secret --mount /cluster-secrets
+      lockRepo: false
+  secret-replacer-plugin-helm.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: secret-replacer-plugin-helm
+    spec:
+      version: v1.0
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "[[ ! -z $ARGOCD_ENV_SECRET_PROVIDER ]] && find . -name 'Chart.yaml'"
+      init:
+        command:
+          - bash
+          - "-c"
+          - helm dependency update
+      generate:
+        command:
+          - bash
+          - "-c"
+          - |-
+            helm template --include-crds --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . | argocd-secret-replacer secret --mount /cluster-secrets
+      lockRepo: false
 ```
 
-**Generate** — change both from `argocd-secret-replacer sops -f "$ARGOCD_ENV_SOPS_SECRET_FILE"` to:
-
-```yaml
-# kustomize:
-kustomize build --enable-alpha-plugins . | argocd-secret-replacer secret --mount /cluster-secrets
-
-# helm:
-helm template --include-crds --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" \
-  --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . \
-  | argocd-secret-replacer secret --mount /cluster-secrets
-```
-
-#### 0.2 — Update `argo-cd-repo-server-ksops-patch.yaml`
+### 0.2 — Add new sidecar containers to `argo-cd-repo-server-ksops-patch.yaml`
 
 **File:** `cluster/apps/core/argocd/patches/argo-cd-repo-server-ksops-patch.yaml`
 
-Changes:
-1. **Add** volume `cluster-secrets` from the `cluster-secrets` K8s Secret
-2. **Add** volumeMount `mountPath: /cluster-secrets` (readOnly: true) to both sidecar containers
-3. **Remove** volume `sops-age`
-4. **Remove** `SOPS_AGE_KEY_FILE` env var from both sidecar containers
+**ADD** two new sidecar containers (alongside the existing `sops-replacer-plugin-kustomize` and
+`sops-replacer-plugin-helm` — do not modify or remove those):
 
 ```yaml
-# ADD under spec.template.spec.volumes:
+# ADD to spec.template.spec.containers:
+- name: secret-replacer-plugin-kustomize
+  command: [/var/run/argocd/argocd-cmp-server]
+  image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:<NEW_DIGEST>
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+    requests:
+      cpu: 10m
+      memory: 16Mi
+  volumeMounts:
+    - mountPath: /var/run/argocd
+      name: var-files
+    - mountPath: /home/argocd/cmp-server/plugins
+      name: plugins
+    - mountPath: /tmp
+      name: tmp-sops-replacer-plugin
+    - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+      name: sops-replacer-plugin
+      subPath: secret-replacer-plugin-kustomize.yaml
+    - mountPath: /cluster-secrets
+      name: cluster-secrets
+      readOnly: true
+- name: secret-replacer-plugin-helm
+  command: [/var/run/argocd/argocd-cmp-server]
+  image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:<NEW_DIGEST>
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 10m
+      memory: 16Mi
+  env:
+    - name: HELM_CACHE_HOME
+      value: /helm-working-dir
+    - name: HELM_CONFIG_HOME
+      value: /helm-working-dir
+    - name: HELM_DATA_HOME
+      value: /helm-working-dir
+  volumeMounts:
+    - mountPath: /var/run/argocd
+      name: var-files
+    - mountPath: /home/argocd/cmp-server/plugins
+      name: plugins
+    - mountPath: /tmp
+      name: tmp-sops-replacer-plugin
+    - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+      name: sops-replacer-plugin
+      subPath: secret-replacer-plugin-helm.yaml
+    - mountPath: /cluster-secrets
+      name: cluster-secrets
+      readOnly: true
+    - name: helm-working-dir
+      mountPath: /helm-working-dir
+
+# ADD to spec.template.spec.volumes (alongside existing sops-age volume):
 - name: cluster-secrets
   secret:
     secretName: cluster-secrets
-
-# ADD to volumeMounts in BOTH sidecar containers:
-- mountPath: /cluster-secrets
-  name: cluster-secrets
-  readOnly: true
-
-# REMOVE from volumes:
-- name: sops-age
-  secret:
-    secretName: sops-age
-
-# REMOVE from BOTH sidecar containers env:
-- name: SOPS_AGE_KEY_FILE
-  value: /sops-age/key
 ```
 
-#### 0.3 — Create `cluster-secrets` ExternalSecret
+Note: The image digest `<NEW_DIGEST>` must be the digest of the new plugin release that includes
+the `secret --mount` verb. Update the existing SOPS sidecar digests to the same release at the
+same time so all four sidecars run the same image version.
+
+### 0.3 — Create `cluster-secrets` ExternalSecret
 
 **New file:** `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
 
@@ -195,38 +307,93 @@ spec:
     - secretKey: s3_endpoint
       remoteRef:
         key: "<BITWARDEN_UUID_S3_ENDPOINT>" #gitleaks:allow #S3_ENDPOINT
+    - secretKey: email
+      remoteRef:
+        key: "<BITWARDEN_UUID_CERT_MANAGER_EMAIL>" #gitleaks:allow #CERT_MANAGER_EMAIL
+    - secretKey: masterkey
+      remoteRef:
+        key: "<BITWARDEN_UUID_LITELLM_MASTER_KEY>" #gitleaks:allow #LITELLM_MASTER_KEY
+    - secretKey: encryption-key
+      remoteRef:
+        key: "<BITWARDEN_UUID_N8N_ENCRYPTION_KEY>" #gitleaks:allow #N8N_ENCRYPTION_KEY
+    - secretKey: discord_botid
+      remoteRef:
+        key: "<BITWARDEN_UUID_BOTKUBE_DISCORD_BOTID>" #gitleaks:allow #BOTKUBE_DISCORD_BOTID
+    - secretKey: discord_token
+      remoteRef:
+        key: "<BITWARDEN_UUID_BOTKUBE_DISCORD_TOKEN>" #gitleaks:allow #BOTKUBE_DISCORD_TOKEN
+    - secretKey: discord_channel
+      remoteRef:
+        key: "<BITWARDEN_UUID_BOTKUBE_DISCORD_CHANNEL>" #gitleaks:allow #BOTKUBE_DISCORD_CHANNEL
+    - secretKey: ops
+      remoteRef:
+        key: "<BITWARDEN_UUID_MINECRAFT_OPS>" #gitleaks:allow #MINECRAFT_OPS
+    - secretKey: whitelistUsers
+      remoteRef:
+        key: "<BITWARDEN_UUID_MINECRAFT_WHITELIST_USERS>" #gitleaks:allow #MINECRAFT_WHITELIST_USERS
+    - secretKey: world-password
+      remoteRef:
+        key: "<BITWARDEN_UUID_VINTAGESTORY_WORLD_PASSWORD>" #gitleaks:allow #VINTAGESTORY_WORLD_PASSWORD
 ```
 
-Note: `s3_access_key` and `s3_secret_key` are NOT here — they appear only in Secret `data` fields
-and go to per-app ExternalSecrets instead.
-
-#### 0.4 — Add new resources to argocd kustomization
+### 0.4 — Add new resources to argocd kustomization
 
 **File:** `cluster/apps/core/argocd/kustomization.yaml`
 
-Add to `resources:`:
+Add to `resources:` only:
 ```yaml
 - resources/cluster-secrets-externalsecret.yaml
-- resources/repository-externalsecret.yaml
-- resources/argocd-oidc-externalsecret.yaml
 ```
 
-Remove from `resources:`:
+All existing resources and patches remain unchanged.
+
+### ✓ Verification after Phase 0
+
+After ArgoCD syncs the `argocd` app:
+- `kubectl get secret cluster-secrets -n argocd` should show all keys populated by ESO
+- `kubectl get pods -n argocd` repo-server pod should have 4 CMP sidecar containers (2 old + 2 new)
+- All existing apps continue working unchanged via the old SOPS plugin
+
+---
+
+## Per-App Migration
+
+Each app below is fully self-contained and can be done in any order. For each app:
+1. Add the required Bitwarden secrets (listed per app)
+2. Make the file changes
+3. Commit and let ArgoCD sync — verify the app works
+4. Only then proceed to the next app
+
+The trigger for the new plugin is `SECRET_PROVIDER: cluster-secrets` instead of
+`SOPS_SECRET_FILE: secret.sec.yaml`. When an app has both a `secret.sec.yaml` and the new env var,
+ArgoCD will use the new plugin (discover picks `SECRET_PROVIDER` first). The old `secret.sec.yaml`
+file can be deleted in the same commit.
+
+---
+
+### App: `argocd` (core)
+
+**Bitwarden secrets needed first:**
+- `ARGOCD_PRIVATE_REPO_TYPE`, `ARGOCD_PRIVATE_REPO_URL`, `ARGOCD_PRIVATE_REPO_USERNAME`,
+  `ARGOCD_PRIVATE_REPO_PASSWORD`, `ARGOCD_OIDC_KEYCLOAK_CLIENT_SECRET`
+- `PRIVATE_DOMAIN` (already added in Phase 0)
+
+**Changes:**
+
+`cluster/apps/core/argocd/app-config.yaml`:
 ```yaml
-- resources/repository.yaml   # replaced by repository-externalsecret.yaml
+# Change env var:
+- name: SECRET_PROVIDER    # was: SOPS_SECRET_FILE
+  value: cluster-secrets   # was: secret.sec.yaml
 ```
 
-Remove from `patches:`:
-```yaml
-- path: patches/argocd-secret.yaml   # replaced by argocd-oidc-externalsecret.yaml
-```
+`cluster/apps/core/argocd/kustomization.yaml`:
+- Add to `resources:`: `resources/repository-externalsecret.yaml`
+- Add to `resources:`: `resources/argocd-oidc-externalsecret.yaml`
+- Remove from `resources:`: `resources/repository.yaml`
+- Remove from `patches:`: `path: patches/argocd-secret.yaml`
 
-#### 0.5 — Replace `repository.yaml` with ExternalSecret
-
-**Delete:** `cluster/apps/core/argocd/resources/repository.yaml`
-
-**Create:** `cluster/apps/core/argocd/resources/repository-externalsecret.yaml`
-
+**Create** `cluster/apps/core/argocd/resources/repository-externalsecret.yaml`:
 ```yaml
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
@@ -265,12 +432,7 @@ spec:
         key: "<UUID>" #gitleaks:allow #ARGOCD_PRIVATE_REPO_PASSWORD
 ```
 
-#### 0.6 — Replace `argocd-secret.yaml` patch with ExternalSecret
-
-**Delete:** `cluster/apps/core/argocd/patches/argocd-secret.yaml`
-
-**Create:** `cluster/apps/core/argocd/resources/argocd-oidc-externalsecret.yaml`
-
+**Create** `cluster/apps/core/argocd/resources/argocd-oidc-externalsecret.yaml`:
 ```yaml
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
@@ -291,85 +453,114 @@ spec:
         key: "<UUID>" #gitleaks:allow #ARGOCD_OIDC_KEYCLOAK_CLIENT_SECRET
 ```
 
-Note: `creationPolicy: Merge` — ArgoCD manages `argocd-secret` itself; this only patches in the
-OIDC key without taking ownership of the whole Secret.
+**Delete:** `resources/repository.yaml`, `patches/argocd-secret.yaml`, `secret.sec.yaml`
 
-#### 0.7 — Update argocd `app-config.yaml`
-
-**File:** `cluster/apps/core/argocd/app-config.yaml`
-
-```yaml
-# Before:
-plugin:
-  env:
-    - name: SOPS_SECRET_FILE
-      value: secret.sec.yaml
-
-# After:
-plugin:
-  env:
-    - name: SECRET_PROVIDER
-      value: cluster-secrets
-```
-
-The remaining tokens in argocd templates (`<secret:private-domain>` in `argocd-cm.yaml` and
-`ingress.yaml`) are non-injectable fields — they continue to be resolved by the plugin from
-`/cluster-secrets`. No changes needed to those template files.
-
-**Delete:** `cluster/apps/core/argocd/secret.sec.yaml`
+Templates `patches/argocd-cm.yaml` and `resources/ingress.yaml` keep their `<secret:private-domain>`
+tokens unchanged — resolved by the new plugin from `/cluster-secrets`.
 
 ---
 
-### Phase 1 — Apps using ONLY `private-domain` in non-injectable fields
+### App: `rook-ceph/cluster` (core)
 
-These apps have `secret.sec.yaml` with only `private-domain`, used in `values.yaml` hostname
-strings or template files. Pure env var rename + delete.
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets` from Phase 0)
 
-For each: change `app-config.yaml`, delete `secret.sec.yaml`. No template changes.
+**Changes:**
 
+`cluster/apps/core/rook-ceph/cluster/app-config.yaml`:
 ```yaml
-# app-config.yaml change (identical for all):
-plugin:
-  env:
-    - name: SECRET_PROVIDER   # was: SOPS_SECRET_FILE
-      value: cluster-secrets  # was: secret.sec.yaml
+- name: SECRET_PROVIDER
+  value: cluster-secrets
 ```
 
-**Apps:**
-- `cluster/apps/core/rook-ceph/cluster/` (note: `appSubfolder: cluster` stays — only env var changes)
-- `cluster/apps/default/gethomepage/`
-- `cluster/apps/default/grocy/`
-- `cluster/apps/default/hass-proxy/`
-- `cluster/apps/default/open-webui/`
-- `cluster/apps/default/qnap-proxy/`
-- `cluster/apps/home-automation/ollama/`
-- `cluster/apps/system/nfs-subdir-external-provisioner/`
-- `cluster/apps/system/prometheus-stack/`
-- `cluster/apps/system/traefik/`
+**Delete:** `cluster/apps/core/rook-ceph/cluster/secret.sec.yaml`
 
 ---
 
-### Phase 2 — Apps using `private-domain` + `s3_endpoint` in non-injectable fields,
-###           AND `s3_access_key`/`s3_secret_key` in Secret data fields
+### App: `gethomepage` (default)
 
-The S3 access/secret keys appear only in `Secret` `data` fields (as `|base64` tokens) — they must
-move to a per-app ExternalSecret. The `s3_endpoint` token appears in `values.yaml`
-barmanObjectStore URL strings — it stays in the plugin via `cluster-secrets`.
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
 
-For each app in this phase:
-1. Change `app-config.yaml` env var
-2. Replace `templates/secrets.yaml` (which used `<secret:s3_access_key|base64>` etc.) with an
-   ExternalSecret
-3. Remove `checksum/secrets` annotation from any Deployment/StatefulSet that referenced
-   `secret.sec.yaml`
-4. Delete `secret.sec.yaml`
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
 
-#### `cluster/apps/default/gitea/`
+---
+
+### App: `grocy` (default)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `hass-proxy` (default)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `open-webui` (default)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `qnap-proxy` (default)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `nfs-mounts` (default)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `jellyfin` (default)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+**Changes:**
+
+`values.yaml`:
+- Replace `<secret:jellyfin-service-ip>` with the hardcoded IP value (`192.168.48.XX`) —
+  this is a LoadBalancer IP, not a secret. Read the current SOPS-decrypted value first to confirm
+  the IP, then hardcode it.
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `botkube` (default)
+
+**Bitwarden secrets needed first:** `BOTKUBE_DISCORD_BOTID`, `BOTKUBE_DISCORD_TOKEN`,
+`BOTKUBE_DISCORD_CHANNEL` (all already in `cluster-secrets` from Phase 0)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+No template changes — discord tokens in `values.yaml` are non-injectable Helm values, resolved
+by the plugin from `cluster-secrets`.
+
+---
+
+### App: `gitea` (default)
+
+**Bitwarden secrets needed first:** `S3_ACCESS_KEY`, `S3_SECRET_KEY` (per-app);
+`PRIVATE_DOMAIN`, `S3_ENDPOINT` (already in `cluster-secrets`)
+
+**Changes:**
 
 **Delete:** `cluster/apps/default/gitea/templates/secrets.yaml`
 
-**Create:** `cluster/apps/default/gitea/templates/s3-externalsecret.yaml`
-
+**Create:** `cluster/apps/default/gitea/templates/s3-externalsecret.yaml`:
 ```yaml
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
@@ -392,261 +583,46 @@ spec:
         key: "<UUID>" #gitleaks:allow #S3_SECRET_KEY
 ```
 
-Remove `checksum/secrets` annotation from the gitea Deployment (if present).
+Remove `checksum/secrets: {{ .Files.Get "secret.sec.yaml" | sha256sum }}` annotation from any
+Deployment/StatefulSet template that has it.
+
 `values.yaml` keeps `<secret:private-domain>` and `<secret:s3_endpoint>` tokens — resolved by
-plugin. `app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-
-#### `cluster/apps/system/keycloak/`
-
-**Delete:** `cluster/apps/system/keycloak/templates/secrets.yaml`
-
-**Create:** `cluster/apps/system/keycloak/templates/s3-externalsecret.yaml`
-
-```yaml
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: keycloak-s3-secret
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: bitwarden
-  refreshInterval: 1h
-  target:
-    name: keycloak-secrets
-    creationPolicy: Owner
-  data:
-    - secretKey: S3_ACCESS_KEY_ID
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #S3_ACCESS_KEY
-    - secretKey: S3_ACCESS_SECRET_KEY
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #S3_SECRET_KEY
-```
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-
-#### `cluster/apps/home-automation/home-assistant/`
-
-`templates/secrets.yaml` is actually an ExternalSecret (ESO resource) that mixes
-`<secret:s3_access_key|base64>` sops-replacer tokens inside ESO template expressions — an
-anti-pattern. Fix by pulling S3 keys directly from Bitwarden in the ExternalSecret `data[]`
-alongside existing Doppler-sourced keys.
-
-**Modify:** `cluster/apps/home-automation/home-assistant/templates/secrets.yaml`
-
-- Remove `<secret:s3_access_key|base64>` and `<secret:s3_secret_key|base64>` tokens from the
-  ESO template `data` section
-- Add direct Bitwarden `remoteRef` entries for S3 keys to the ExternalSecret `data[]`
-- Remove `<secret:private-domain>` from `SECRET_EXTERNAL_URL` ESO template value; add
-  `PRIVATE_DOMAIN` as a Bitwarden data entry and use `{{ .PRIVATE_DOMAIN }}` ESO expression
-
-Result: this ExternalSecret is fully self-contained — no sops-replacer tokens remain in it.
-
-Since all tokens are removed from templates, **the plugin is no longer needed for home-assistant**.
-Remove the `plugin` block from `app-config.yaml` entirely.
-Delete `secret.sec.yaml`.
+plugin. `app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
 
 ---
 
-### Phase 3 — Apps with ONLY app-specific Secret data fields (no non-injectable tokens)
+### App: `n8n` (default)
 
-These apps need per-app ExternalSecrets. After migration, no `<secret:>` tokens remain in any
-template — the plugin block is removed entirely from `app-config.yaml`.
+**Bitwarden secrets needed first:** `N8N_ENCRYPTION_KEY` (already in `cluster-secrets`);
+`S3_ACCESS_KEY`, `S3_SECRET_KEY` (per-app, if S3 templates exist — verify)
 
-#### `cluster/apps/system/cert-manager/`
+**Changes:**
 
-The `<secret:email>` token appears in `ClusterIssuer` `spec.acme.email` — a non-injectable field.
-The `<secret:api-token|base64>` token appears in a `Secret` `data` field.
+`encryption-key` is already in `cluster-secrets` — plugin resolves it from `values.yaml`.
 
-**Two separate resources needed:**
+If `templates/secrets.yaml` exists with `<secret:s3_access_key|base64>`:
+- **Delete** it
+- **Create** `templates/s3-externalsecret.yaml` (same pattern as gitea above)
 
-**Create:** `cluster/apps/system/cert-manager/templates/api-token-externalsecret.yaml`
-```yaml
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: cert-manager-api-token
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: bitwarden
-  refreshInterval: 1h
-  target:
-    name: cert-manager-secret
-    creationPolicy: Owner
-  data:
-    - secretKey: api-token
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #CERT_MANAGER_API_TOKEN
-```
+Remove any `checksum/secrets` annotation referencing `secret.sec.yaml`.
 
-The `<secret:email>` token in `ClusterIssuer` is non-injectable — it must stay as a plugin token.
-Add `CERT_MANAGER_EMAIL` to `cluster-secrets` ExternalSecret (add to 0.3):
-
-```yaml
-# Add to cluster-secrets ExternalSecret data[]:
-- secretKey: email
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #CERT_MANAGER_EMAIL
-```
-
-Keep `plugin` block in `app-config.yaml` (plugin still needed for `<secret:email>` in
-ClusterIssuer).
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/system/external-secrets/`
-
-`dopplerToken` appears in a `Secret` `data` field — pure ESO replacement.
-The existing `bitwarden-access-token` secret is manually bootstrapped. Do the same for
-`doppler-token-auth-api`: bootstrap manually once, then keep refreshed via ExternalSecret.
-
-**Modify:** `cluster/apps/system/external-secrets/templates/secret.yaml`
-
-Replace the `doppler-token-auth-api` Secret (which uses `<secret:dopplerToken|base64>`) with an
-ExternalSecret:
-
-```yaml
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: doppler-token
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: bitwarden
-  refreshInterval: 1h
-  target:
-    name: doppler-token-auth-api
-    creationPolicy: Owner
-  data:
-    - secretKey: dopplerToken
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DOPPLER_TOKEN
-```
-
-Remove `plugin` block from `app-config.yaml`. Delete `secret.sec.yaml`.
-
-#### `cluster/apps/system/oauth2-proxy/`
-
-`<secret:client-id|base64>` etc. are in `templates/secret.yaml` (Secret data fields) →
-ExternalSecret. But `<secret:private-domain>` appears in `templates/forward-auth-middleware.yaml`
-(Middleware `spec.forwardAuth.address`) and in `values.yaml` hostname strings → non-injectable,
-plugin still needed.
-
-**Delete:** `cluster/apps/system/oauth2-proxy/templates/secret.yaml`
-
-**Create:** `cluster/apps/system/oauth2-proxy/templates/credentials-externalsecret.yaml`
-
-```yaml
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: oauth-secret
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: bitwarden
-  refreshInterval: 1h
-  target:
-    name: oauth-secret
-    creationPolicy: Owner
-  data:
-    - secretKey: client-id
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_CLIENT_ID
-    - secretKey: client-secret
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_CLIENT_SECRET
-    - secretKey: cookie-secret
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_COOKIE_SECRET
-    - secretKey: redis-password
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_REDIS_PASSWORD
-```
-
-Keep `plugin` block in `app-config.yaml` (plugin still needed for `private-domain` in
-Middleware and `values.yaml`). Change env var to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/system/dyndns/`
-
-All dyndns tokens appear in a `Secret` `stringData` field (embedded YAML config). ExternalSecret
-with ESO template to render the embedded YAML.
-
-**Delete:** existing `resources/secret.yaml`
-
-**Create:** `cluster/apps/system/dyndns/templates/externalsecret.yaml`
-
-```yaml
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: dyndns-secret
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: bitwarden
-  refreshInterval: 1h
-  target:
-    name: dyndns-secret
-    creationPolicy: Owner
-    template:
-      data:
-        config.yaml: |
-          {{ `{{ .CONFIG }}` }}
-  data:
-    - secretKey: TOKEN
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_TOKEN
-    - secretKey: DOMAIN_COM_ZONE
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_COM_ZONE
-    - secretKey: DOMAIN_COM_NAME
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_COM_NAME
-    - secretKey: DOMAIN_CLOUD_ZONE
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_CLOUD_ZONE
-    - secretKey: DOMAIN_CLOUD_NAME
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_CLOUD_NAME
-```
-
-Note: The `config.yaml` embedded YAML must be constructed via ESO template using the individual
-keys. Inspect the existing `resources/secret.yaml` `stringData.config.yaml` content to determine
-the exact YAML structure needed in the template.
-
-Remove `plugin` block from `app-config.yaml`. Delete `secret.sec.yaml`.
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
 
 ---
 
-### Phase 4 — Apps with mixed non-injectable tokens + app-specific Secret data tokens
+### App: `litellm` (default)
 
-#### `cluster/apps/default/litellm/`
+**Bitwarden secrets needed first:** `LITELLM_MASTER_KEY` (already in `cluster-secrets`);
+`S3_ACCESS_KEY`, `S3_SECRET_KEY`, `LITELLM_ANTHROPIC_API_KEY`, `LITELLM_OPENAI_API_KEY` (per-app)
 
-Token analysis:
-- `<secret:masterkey>` in `values.yaml` (`litellm-helm.masterkey`) — Helm value string,
-  non-injectable → stays in plugin via `cluster-secrets`
-- `<secret:s3_endpoint>` in `values.yaml` — non-injectable → stays in plugin via `cluster-secrets`
-- `<secret:s3_access_key|base64>` in `templates/secrets.yaml` — Secret data → ExternalSecret
-- `<secret:s3_secret_key|base64>` in `templates/secrets.yaml` — Secret data → ExternalSecret
-- `<secret:anthropic_api_key|base64>` in `templates/secrets.yaml` — Secret data → ExternalSecret
-- `<secret:openai_api_key|base64>` in `templates/secrets.yaml` — Secret data → ExternalSecret
-- `<secret:private-domain>` in `values.yaml` — non-injectable → stays in plugin
+**Changes:**
 
-Add `masterkey` to `cluster-secrets` ExternalSecret (update 0.3):
-```yaml
-- secretKey: masterkey
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #LITELLM_MASTER_KEY
-```
+`<secret:masterkey>` in `values.yaml` → resolved from `cluster-secrets` by plugin. No change to
+`values.yaml` needed.
 
 **Delete:** `cluster/apps/default/litellm/templates/secrets.yaml`
 
-**Create:** `cluster/apps/default/litellm/templates/api-externalsecret.yaml`
-
+**Create:** `cluster/apps/default/litellm/templates/api-externalsecret.yaml`:
 ```yaml
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
@@ -678,104 +654,319 @@ spec:
         key: "<UUID>" #gitleaks:allow #LITELLM_MASTER_KEY
 ```
 
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets` (plugin still needed for
-`private-domain`, `s3_endpoint`, `masterkey` in `values.yaml`).
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/default/n8n/`
-
-- `<secret:encryption-key>` in `values.yaml` env value — non-injectable → add to `cluster-secrets`
-- `<secret:private-domain>` in `values.yaml` hostnames — non-injectable → plugin
-- S3 keys: check if present in a Secret data template → ExternalSecret if so
-
-Add `encryption-key` to `cluster-secrets` ExternalSecret (update 0.3):
-```yaml
-- secretKey: encryption-key
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #N8N_ENCRYPTION_KEY
-```
-
-If `templates/secrets.yaml` exists and uses `s3_access_key|base64`:
-Delete it and create `templates/s3-externalsecret.yaml` (same pattern as gitea).
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/default/jellyfin/`
-
-- `<secret:jellyfin-service-ip>` in `values.yaml` — this is a LoadBalancer IP, not a secret.
-  **Hardcode** the actual IP value directly in `values.yaml`. Remove from `secret.sec.yaml`.
-- `<secret:private-domain>` in `values.yaml` — non-injectable → plugin
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/default/botkube/`
-
-- `<secret:discord_botid>`, `<secret:discord_token>`, `<secret:discord_channel>` appear in
-  `values.yaml` as Helm values — non-injectable → add to `cluster-secrets`
-
-Add discord keys to `cluster-secrets` ExternalSecret (update 0.3):
-```yaml
-- secretKey: discord_botid
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #BOTKUBE_DISCORD_BOTID
-- secretKey: discord_token
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #BOTKUBE_DISCORD_TOKEN
-- secretKey: discord_channel
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #BOTKUBE_DISCORD_CHANNEL
-```
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/default/nfs-mounts/`
-
-- `<secret:private-domain>` in PersistentVolume `spec.nfs.server` — non-injectable → plugin
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/games/minecraft-bedrock/`
-
-- `<secret:ops>` and `<secret:whitelistUsers>` in `values.yaml` — Helm values, non-injectable
-  → add to `cluster-secrets`
-- `<secret:private-domain>` in `values.yaml` — non-injectable → plugin
-
-Add minecraft keys to `cluster-secrets` ExternalSecret (update 0.3):
-```yaml
-- secretKey: ops
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #MINECRAFT_OPS
-- secretKey: whitelistUsers
-  remoteRef:
-    key: "<UUID>" #gitleaks:allow #MINECRAFT_WHITELIST_USERS
-```
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
-
-#### `cluster/apps/games/vintagestory/`
-
-- `<secret:world-password>` — check where it appears:
-  - If in `values.yaml` or template non-Secret field → add to `cluster-secrets`
-  - If in a Secret `data` field → ExternalSecret
-- `<secret:private-domain>` in `values.yaml` — plugin
-
-`app-config.yaml`: change to `SECRET_PROVIDER: cluster-secrets`.
-Delete `secret.sec.yaml`.
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
 
 ---
 
-### Phase 5 — New app: `envoy-gateweay`
+### App: `ollama` (home-automation)
 
-This app uses `<secret:private-domain>` in `templates/cert.yaml` (Certificate `spec.commonName`,
-`spec.dnsNames[]`) — non-injectable fields. Plugin required.
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
 
-**Create/update:** `cluster/apps/system/envoy-gateweay/app-config.yaml`
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
 
+---
+
+### App: `home-assistant` (home-automation)
+
+**Bitwarden secrets needed first:** `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `PRIVATE_DOMAIN`
+(note: `PRIVATE_DOMAIN` comes from Bitwarden directly into the ESO, not from `cluster-secrets`)
+
+**Special case:** `templates/secrets.yaml` is already an ESO `ExternalSecret` resource (not a plain
+K8s Secret) that currently mixes sops-replacer tokens inside ESO template expressions. Modify it
+in-place — do not wrap it in another ExternalSecret.
+
+**Modify** `cluster/apps/home-automation/home-assistant/templates/secrets.yaml`:
+- Remove `<secret:s3_access_key|base64>` and `<secret:s3_secret_key|base64>` from the ESO
+  `spec.target.template.data` section
+- Add direct Bitwarden `remoteRef` entries for `S3_ACCESS_KEY_ID` and `S3_ACCESS_SECRET_KEY`
+  to the ExternalSecret `spec.data[]`
+- Remove `<secret:private-domain>` from the `SECRET_EXTERNAL_URL` template value; add
+  `PRIVATE_DOMAIN` as a Bitwarden data entry and reference it as `{{ .PRIVATE_DOMAIN }}` in
+  the ESO template expression
+
+After this change, no sops-replacer tokens remain in any home-assistant template.
+
+**Remove** the `plugin` block entirely from `app-config.yaml` (no tokens remain).
+**Delete** `secret.sec.yaml`.
+
+---
+
+### App: `minecraft-bedrock` (games)
+
+**Bitwarden secrets needed first:** `MINECRAFT_OPS`, `MINECRAFT_WHITELIST_USERS` (already in
+`cluster-secrets`); `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `vintagestory` (games)
+
+**Bitwarden secrets needed first:** `VINTAGESTORY_WORLD_PASSWORD` (already in `cluster-secrets`
+if non-injectable; otherwise per-app ExternalSecret if in Secret data — verify first);
+`PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+Before making changes, read `templates/` files to confirm where `world-password` is used:
+- If used in a `values.yaml` string or non-Secret template field → already in `cluster-secrets`,
+  just change env var
+- If used in a `Secret` `data` field → create a per-app ExternalSecret for it instead
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `nfs-subdir-external-provisioner` (system)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `prometheus-stack` (system)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `traefik` (system)
+
+**Bitwarden secrets needed first:** `PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `keycloak` (system)
+
+**Bitwarden secrets needed first:** `S3_ACCESS_KEY`, `S3_SECRET_KEY` (per-app);
+`PRIVATE_DOMAIN`, `S3_ENDPOINT` (already in `cluster-secrets`)
+
+**Changes:**
+
+**Delete:** `cluster/apps/system/keycloak/templates/secrets.yaml`
+
+**Create:** `cluster/apps/system/keycloak/templates/s3-externalsecret.yaml`:
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: keycloak-s3-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: keycloak-secrets
+    creationPolicy: Owner
+  data:
+    - secretKey: S3_ACCESS_KEY_ID
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #S3_ACCESS_KEY
+    - secretKey: S3_ACCESS_SECRET_KEY
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #S3_SECRET_KEY
+```
+
+Remove any `checksum/secrets` annotation referencing `secret.sec.yaml`.
+`app-config.yaml`: change env var. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `cert-manager` (system)
+
+**Bitwarden secrets needed first:** `CERT_MANAGER_API_TOKEN` (per-app);
+`CERT_MANAGER_EMAIL` (already in `cluster-secrets` as key `email`)
+
+**Changes:**
+
+`<secret:email>` in `ClusterIssuer` `spec.acme.email` is non-injectable — resolved by plugin
+from `cluster-secrets`. No change to the ClusterIssuer file.
+
+**Create:** `cluster/apps/system/cert-manager/templates/api-token-externalsecret.yaml`:
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: cert-manager-api-token
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: cert-manager-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: api-token
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #CERT_MANAGER_API_TOKEN
+```
+
+Keep `plugin` block in `app-config.yaml` (plugin still needed for `<secret:email>` in ClusterIssuer).
+Change env var to `SECRET_PROVIDER: cluster-secrets`. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `oauth2-proxy` (system)
+
+**Bitwarden secrets needed first:** `OAUTH2_PROXY_CLIENT_ID`, `OAUTH2_PROXY_CLIENT_SECRET`,
+`OAUTH2_PROXY_COOKIE_SECRET`, `OAUTH2_PROXY_REDIS_PASSWORD` (per-app);
+`PRIVATE_DOMAIN` (already in `cluster-secrets`)
+
+**Changes:**
+
+`<secret:private-domain>` in `templates/forward-auth-middleware.yaml` and `values.yaml` →
+non-injectable, plugin still needed.
+
+**Delete:** `cluster/apps/system/oauth2-proxy/templates/secret.yaml`
+
+**Create:** `cluster/apps/system/oauth2-proxy/templates/credentials-externalsecret.yaml`:
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: oauth-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: oauth-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: client-id
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_CLIENT_ID
+    - secretKey: client-secret
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_CLIENT_SECRET
+    - secretKey: cookie-secret
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_COOKIE_SECRET
+    - secretKey: redis-password
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #OAUTH2_PROXY_REDIS_PASSWORD
+```
+
+`app-config.yaml`: change env var to `SECRET_PROVIDER: cluster-secrets` (plugin still needed).
+**Delete** `secret.sec.yaml`.
+
+---
+
+### App: `dyndns` (system)
+
+**Bitwarden secrets needed first:** all 5 dyndns keys (per-app)
+
+**Changes:**
+
+All dyndns tokens appear in a `Secret` `stringData.config.yaml` (embedded YAML) — pure ESO.
+
+Before implementing: read the existing `resources/secret.yaml` (after SOPS decryption) to confirm
+the exact YAML structure of `stringData.config.yaml`. The ESO template must reproduce it exactly.
+
+**Delete:** existing `resources/secret.yaml` (the SOPS-based Secret)
+
+**Create:** `cluster/apps/system/dyndns/templates/externalsecret.yaml`:
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dyndns-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: dyndns-secret
+    creationPolicy: Owner
+    template:
+      data:
+        config.yaml: |
+          {{ `{{ .CONFIG_YAML }}` }}
+  data:
+    - secretKey: TOKEN
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #DYNDNS_TOKEN
+    - secretKey: DOMAIN_COM_ZONE
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_COM_ZONE
+    - secretKey: DOMAIN_COM_NAME
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_COM_NAME
+    - secretKey: DOMAIN_CLOUD_ZONE
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_CLOUD_ZONE
+    - secretKey: DOMAIN_CLOUD_NAME
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_CLOUD_NAME
+```
+
+Note: The embedded `config.yaml` content structure must be reconstructed in the ESO template.
+Either store the full rendered config as a single Bitwarden secret (`CONFIG_YAML`), or build
+it from individual keys using ESO template expressions. Choose based on the actual config format.
+
+**Remove** `plugin` block from `app-config.yaml`. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `external-secrets` (system)
+
+**Bitwarden secrets needed first:** `DOPPLER_TOKEN` (per-app)
+
+**Changes:**
+
+`dopplerToken` appears in a `Secret` `data` field — replace with ESO ExternalSecret. Bootstrap
+order: the `bitwarden-access-token` secret is manually provisioned at cluster bootstrap (already
+done — it's in `ignoreDifferences`). The `doppler-token-auth-api` secret must also be manually
+provisioned once on bootstrap, then kept fresh by ESO.
+
+**Modify** `cluster/apps/system/external-secrets/templates/secret.yaml`:
+Replace the plain K8s Secret manifest that uses `<secret:dopplerToken|base64>` with:
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: doppler-token
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: doppler-token-auth-api
+    creationPolicy: Owner
+  data:
+    - secretKey: dopplerToken
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #DOPPLER_TOKEN
+```
+
+Add to `app-config.yaml` `ignoreDifferences` (same pattern as `bitwarden-access-token`):
+```yaml
+ignoreDifferences:
+  - kind: Secret
+    name: doppler-token-auth-api
+    jsonPointers:
+      - /data
+```
+
+**Remove** `plugin` block from `app-config.yaml`. **Delete** `secret.sec.yaml`.
+
+---
+
+### App: `envoy-gateweay` (system) — new app, never had SOPS
+
+This app uses `<secret:private-domain>` in `templates/cert.yaml` — non-injectable. Plugin needed.
+`PRIVATE_DOMAIN` is already in `cluster-secrets` from Phase 0.
+
+**Create/ensure** `cluster/apps/system/envoy-gateweay/app-config.yaml` contains:
 ```yaml
 plugin:
   env:
@@ -783,41 +974,62 @@ plugin:
       value: cluster-secrets
 ```
 
-No `secret.sec.yaml` ever needed — it never existed for this app.
+No `secret.sec.yaml` ever needed.
 
 ---
 
-### Phase 6 — Remove SOPS infrastructure (after ALL apps migrated)
+## Phase Final — Remove SOPS infrastructure
 
-1. **Cluster**: `kubectl delete secret sops-age -n argocd`
-2. **Devcontainer secret**: remove `SOPS_AGE_KEY` from devcontainer secrets
-3. **`.sops.yaml`**: delete or archive — no longer used
-4. **`.pre-commit-config.yaml`**: remove `sops-check` hook
-5. **`CLAUDE.md`**: update secrets management section
+**Only after every single app above has been migrated and verified working.**
+
+### F.1 — Remove old SOPS plugin from `sops-replacer-plugin.yaml`
+
+**File:** `cluster/apps/core/argocd/resources/sops-replacer-plugin.yaml`
+
+Remove the two old entries from the ConfigMap:
+- `sops-replacer-plugin-kustomize.yaml`
+- `sops-replacer-plugin-helm.yaml`
+
+Only the new `secret-replacer-plugin-*` entries remain.
+
+Optionally rename the ConfigMap itself from `sops-replacer-plugin` to `secret-replacer-plugin`
+and update all references (volumeMount `subPath` fields in the patch).
+
+### F.2 — Remove old SOPS sidecars from `argo-cd-repo-server-ksops-patch.yaml`
+
+Remove the two old sidecar containers:
+- `sops-replacer-plugin-kustomize`
+- `sops-replacer-plugin-helm`
+
+Remove the `sops-age` volume from `spec.template.spec.volumes`.
+
+### F.3 — Cluster cleanup (manual)
+
+```bash
+kubectl delete secret sops-age -n argocd
+```
+
+### F.4 — Repo cleanup
+
+- **`.sops.yaml`**: delete (no longer used)
+- **`.pre-commit-config.yaml`**: remove `sops-check` hook entry
+- **Devcontainer secret**: remove `SOPS_AGE_KEY` from devcontainer secrets configuration
+
+### F.5 — Documentation
+
+Update `CLAUDE.md` secrets management section to reflect the new ESO + mounted secret approach.
 
 ---
 
-## Final `cluster-secrets` key list
+## Rollback Procedure (per app)
 
-After applying all per-app decisions above, the complete set of keys in `cluster-secrets` is:
+If an app migration fails after ArgoCD syncs:
+1. Revert `app-config.yaml` to restore `SOPS_SECRET_FILE: secret.sec.yaml`
+2. Restore `secret.sec.yaml` from git history
+3. ArgoCD will re-discover the app via the old SOPS plugin on next sync
 
-| Key | Used by |
-|-----|---------|
-| `private-domain` | all apps with hostname/cert/ConfigMap/Middleware/values.yaml tokens |
-| `s3_endpoint` | gitea, keycloak, home-assistant, litellm (barmanObjectStore URL) |
-| `email` | cert-manager ClusterIssuer |
-| `masterkey` | litellm values.yaml |
-| `encryption-key` | n8n values.yaml |
-| `discord_botid` | botkube values.yaml |
-| `discord_token` | botkube values.yaml |
-| `discord_channel` | botkube values.yaml |
-| `ops` | minecraft-bedrock values.yaml |
-| `whitelistUsers` | minecraft-bedrock values.yaml |
-| `world-password` | vintagestory (if in non-injectable field — verify) |
-
-Keys that are NOT in `cluster-secrets` (go to per-app ExternalSecrets instead):
-- `s3_access_key`, `s3_secret_key` — only ever in Secret `data` fields
-- All other credentials (API keys, passwords, client secrets)
+The old SOPS plugin and Age key remain available until Phase Final, making every per-app migration
+fully reversible.
 
 ---
 
@@ -828,23 +1040,27 @@ Keys that are NOT in `cluster-secrets` (go to per-app ExternalSecrets instead):
 
 2. **Verify token field location before deciding**: for every `<secret:key>` token, check whether
    the surrounding YAML is a `Secret` `data`/`stringData` field (→ ExternalSecret) or any other
-   field (→ `cluster-secrets` + plugin). Do not assume — read the file.
+   field (→ `cluster-secrets` + plugin). Do not assume — read the file first.
 
 3. **checksum annotation**: any file with
    `checksum/secrets: {{ .Files.Get "secret.sec.yaml" | sha256sum }}` must have that annotation
-   removed. Helm errors if the referenced file doesn't exist.
+   removed when `secret.sec.yaml` is deleted. Helm errors if the referenced file doesn't exist.
 
-4. **Phase 0 must be committed and ArgoCD synced before phases 1–5**. The new plugin command
-   must be live before any app switches its `app-config.yaml`.
+4. **Phase 0 must be committed and ArgoCD synced before any per-app migration begins.** The
+   new plugin sidecars and `cluster-secrets` Secret must exist in the cluster first.
 
-5. **ExternalSecret `creationPolicy: Merge`** only for targeting existing system-managed Secrets
+5. **ExternalSecret `creationPolicy: Merge`** only when targeting existing system-managed Secrets
    (like `argocd-secret`). Use `creationPolicy: Owner` for all new secrets.
 
 6. **`bitwarden` ClusterSecretStore** is cluster-scoped — ExternalSecrets in any namespace can
    reference it with `kind: ClusterSecretStore`.
 
-7. **home-assistant `templates/secrets.yaml`** is already an ExternalSecret resource (ESO), not
-   a plain K8s Secret — be careful not to wrap it in another ExternalSecret. Modify it in-place.
+7. **home-assistant `templates/secrets.yaml`** is already an ESO ExternalSecret — modify in-place,
+   do not create a new file wrapping it.
 
-8. **dyndns** uses embedded YAML in `stringData.config.yaml`. The ESO template must reconstruct
-   the exact same YAML structure. Read the original decrypted config carefully before templating.
+8. **dyndns `stringData.config.yaml`**: must inspect the decrypted content structure before
+   writing the ESO template. The exact YAML inside the config must be preserved.
+
+9. **New plugin sidecar names** are `secret-replacer-plugin-kustomize` and
+   `secret-replacer-plugin-helm` — distinct from the old `sops-replacer-*` names to allow both
+   to coexist in the same Deployment spec.
