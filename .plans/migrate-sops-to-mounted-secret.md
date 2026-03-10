@@ -103,11 +103,9 @@ Add these to Bitwarden before starting Phase 0, as they are needed by the very f
 | `MINECRAFT_OPS` | minecraft-bedrock | `ops` | Ops users JSON |
 | `VINTAGESTORY_WORLD_PASSWORD` | vintagestory | `world-password` | World password |
 | `CERT_MANAGER_API_TOKEN` | cert-manager | `api-token` | Cloudflare API token |
-| `DYNDNS_TOKEN` | dyndns | `token` | DynDNS token |
-| `DYNDNS_DOMAIN_COM_ZONE` | dyndns | `domain-com-zone` | .com zone ID |
-| `DYNDNS_DOMAIN_COM_NAME` | dyndns | `domain-com-name` | .com domain name |
-| `DYNDNS_DOMAIN_CLOUD_ZONE` | dyndns | `domain-cloud-zone` | .cloud zone ID |
-| `DYNDNS_DOMAIN_CLOUD_NAME` | dyndns | `domain-cloud-name` | .cloud domain name |
+| `DYNDNS_CONFIG_YAML` | dyndns | `config.yaml` | Full rendered dyndns config.yaml content |
+| `HOME_ASSISTANT_USERNAME` | home-assistant | `SECRET_MQTT_USERNAME` | MQTT username |
+| `HOME_ASSISTANT_PASSWORD` | home-assistant | `SECRET_MQTT_PASSWORD` | MQTT password |
 | `OAUTH2_PROXY_CLIENT_ID` | oauth2-proxy | `client-id` | OIDC client ID |
 | `OAUTH2_PROXY_CLIENT_SECRET` | oauth2-proxy | `client-secret` | OIDC client secret |
 | `OAUTH2_PROXY_COOKIE_SECRET` | oauth2-proxy | `cookie-secret` | Cookie encryption secret |
@@ -229,7 +227,7 @@ to use SOPS until they are individually migrated.
     - mountPath: /home/argocd/cmp-server/plugins
       name: plugins
     - mountPath: /tmp
-      name: tmp-sops-replacer-plugin
+      name: tmp-secret-replacer-plugin
     - mountPath: /home/argocd/cmp-server/config/plugin.yaml
       name: sops-replacer-plugin
       subPath: secret-replacer-plugin-kustomize.yaml
@@ -262,20 +260,22 @@ to use SOPS until they are individually migrated.
     - mountPath: /home/argocd/cmp-server/plugins
       name: plugins
     - mountPath: /tmp
-      name: tmp-sops-replacer-plugin
+      name: tmp-secret-replacer-plugin
     - mountPath: /home/argocd/cmp-server/config/plugin.yaml
       name: sops-replacer-plugin
       subPath: secret-replacer-plugin-helm.yaml
     - mountPath: /cluster-secrets
       name: cluster-secrets
       readOnly: true
-    - name: helm-working-dir
-      mountPath: /helm-working-dir
+    - mountPath: /helm-working-dir
+      name: helm-working-dir
 
 # ADD to spec.template.spec.volumes (alongside existing sops-age volume):
 - name: cluster-secrets
   secret:
     secretName: cluster-secrets
+- name: tmp-secret-replacer-plugin
+  emptyDir: {}
 ```
 
 Note: The image digest `<NEW_DIGEST>` must be the digest of the new plugin release that includes
@@ -668,21 +668,65 @@ spec:
 
 ### App: `home-assistant` (home-automation)
 
-**Bitwarden secrets needed first:** `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `PRIVATE_DOMAIN`
-(note: `PRIVATE_DOMAIN` comes from Bitwarden directly into the ESO, not from `cluster-secrets`)
+**Note:** This app is currently `enabled: "false"`. Migrate anyway so it's ready when re-enabled —
+it will not appear in ArgoCD during migration.
 
-**Special case:** `templates/secrets.yaml` is already an ESO `ExternalSecret` resource (not a plain
-K8s Secret) that currently mixes sops-replacer tokens inside ESO template expressions. Modify it
-in-place — do not wrap it in another ExternalSecret.
+**Bitwarden secrets needed first:** `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `HOME_ASSISTANT_USERNAME`,
+`HOME_ASSISTANT_PASSWORD`, `PRIVATE_DOMAIN` (per-app, all fetched directly via Bitwarden `data[]`)
 
-**Modify** `cluster/apps/home-automation/home-assistant/templates/secrets.yaml`:
-- Remove `<secret:s3_access_key|base64>` and `<secret:s3_secret_key|base64>` from the ESO
-  `spec.target.template.data` section
-- Add direct Bitwarden `remoteRef` entries for `S3_ACCESS_KEY_ID` and `S3_ACCESS_SECRET_KEY`
-  to the ExternalSecret `spec.data[]`
-- Remove `<secret:private-domain>` from the `SECRET_EXTERNAL_URL` template value; add
-  `PRIVATE_DOMAIN` as a Bitwarden data entry and reference it as `{{ .PRIVATE_DOMAIN }}` in
-  the ESO template expression
+**Special case:** `templates/secrets.yaml` is already an ESO `ExternalSecret` resource that
+currently uses `secretStoreRef.name: doppler` with a `dataFrom.extract: key: HOME_ASSISTANT`
+bulk pull, and mixes sops-replacer tokens inside ESO template expressions. Modify it in-place.
+
+The result after modification:
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: home-assistant-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  target:
+    name: home-assistant-secret
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        SECRET_EXTERNAL_URL: "https://dom.{{ `{{ .PRIVATE_DOMAIN }}` }}"
+        SECRET_MQTT_USERNAME: "{{ `{{ .HOME_ASSISTANT_USERNAME }}` }}"
+        SECRET_MQTT_PASSWORD: "{{ `{{ .HOME_ASSISTANT_PASSWORD }}` }}"
+        SECRET_MQTT_HOST: "mqtt://vernemq.ha-vernemq.svc.cluster.local"
+        S3_ACCESS_KEY_ID: "{{ `{{ .S3_ACCESS_KEY }}` }}"
+        S3_ACCESS_SECRET_KEY: "{{ `{{ .S3_SECRET_KEY }}` }}"
+  data:
+    - secretKey: PRIVATE_DOMAIN
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #PRIVATE_DOMAIN
+    - secretKey: HOME_ASSISTANT_USERNAME
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #HOME_ASSISTANT_USERNAME
+    - secretKey: HOME_ASSISTANT_PASSWORD
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #HOME_ASSISTANT_PASSWORD
+    - secretKey: S3_ACCESS_KEY
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #S3_ACCESS_KEY
+    - secretKey: S3_SECRET_KEY
+      remoteRef:
+        key: "<UUID>" #gitleaks:allow #S3_SECRET_KEY
+```
+
+Key changes from current file:
+- `secretStoreRef.name`: `doppler` → `bitwarden`
+- Remove `dataFrom` block (Bitwarden has no bulk extract; all keys fetched individually)
+- Replace all `<secret:*>` tokens with ESO `{{ .KEY }}` template expressions
+- Replace `<secret:private-domain>` in `SECRET_EXTERNAL_URL` with `{{ .PRIVATE_DOMAIN }}`
+- Replace `<secret:s3_access_key|base64>` / `<secret:s3_secret_key|base64>` with ESO refs
+  (ESO handles encoding automatically — do not add `|base64`)
+- MQTT credentials previously came from Doppler's `HOME_ASSISTANT` extract; now fetched as
+  individual Bitwarden secrets
 
 After this change, no sops-replacer tokens remain in any home-assistant template.
 
@@ -860,14 +904,16 @@ spec:
 
 ### App: `dyndns` (system)
 
-**Bitwarden secrets needed first:** all 5 dyndns keys (per-app)
+**Bitwarden secrets needed first:** `DYNDNS_CONFIG_YAML` (per-app) — a single secret containing
+the full rendered `config.yaml` content.
+
+Before adding to Bitwarden: decrypt `resources/secret.yaml` with `sops -d` to get the exact
+`stringData.config.yaml` content. Store that verbatim as the `DYNDNS_CONFIG_YAML` Bitwarden secret.
 
 **Changes:**
 
 All dyndns tokens appear in a `Secret` `stringData.config.yaml` (embedded YAML) — pure ESO.
-
-Before implementing: read the existing `resources/secret.yaml` (after SOPS decryption) to confirm
-the exact YAML structure of `stringData.config.yaml`. The ESO template must reproduce it exactly.
+Store the entire rendered config as one Bitwarden secret to avoid reconstructing its YAML structure.
 
 **Delete:** existing `resources/secret.yaml` (the SOPS-based Secret)
 
@@ -887,29 +933,12 @@ spec:
     creationPolicy: Owner
     template:
       data:
-        config.yaml: |
-          {{ `{{ .CONFIG_YAML }}` }}
+        config.yaml: "{{ `{{ .CONFIG_YAML }}` }}"
   data:
-    - secretKey: TOKEN
+    - secretKey: CONFIG_YAML
       remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_TOKEN
-    - secretKey: DOMAIN_COM_ZONE
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_COM_ZONE
-    - secretKey: DOMAIN_COM_NAME
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_COM_NAME
-    - secretKey: DOMAIN_CLOUD_ZONE
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_CLOUD_ZONE
-    - secretKey: DOMAIN_CLOUD_NAME
-      remoteRef:
-        key: "<UUID>" #gitleaks:allow #DYNDNS_DOMAIN_CLOUD_NAME
+        key: "<UUID>" #gitleaks:allow #DYNDNS_CONFIG_YAML
 ```
-
-Note: The embedded `config.yaml` content structure must be reconstructed in the ESO template.
-Either store the full rendered config as a single Bitwarden secret (`CONFIG_YAML`), or build
-it from individual keys using ESO template expressions. Choose based on the actual config format.
 
 **Remove** `plugin` block from `app-config.yaml`. **Delete** `secret.sec.yaml`.
 
@@ -926,8 +955,10 @@ order: the `bitwarden-access-token` secret is manually provisioned at cluster bo
 done — it's in `ignoreDifferences`). The `doppler-token-auth-api` secret must also be manually
 provisioned once on bootstrap, then kept fresh by ESO.
 
-**Modify** `cluster/apps/system/external-secrets/templates/secret.yaml`:
-Replace the plain K8s Secret manifest that uses `<secret:dopplerToken|base64>` with:
+**Modify** `cluster/apps/system/external-secrets/templates/secret.yaml` in-place:
+The file currently contains two `---`-separated documents: `doppler-token-auth-api` Secret and
+`bitwarden-access-token` Secret. Replace only the `doppler-token-auth-api` Secret document with
+the ExternalSecret below. Keep the `bitwarden-access-token` Secret document unchanged.
 
 ```yaml
 apiVersion: external-secrets.io/v1
@@ -946,6 +977,14 @@ spec:
     - secretKey: dopplerToken
       remoteRef:
         key: "<UUID>" #gitleaks:allow #DOPPLER_TOKEN
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bitwarden-access-token
+type: Opaque
+data:
+  bw-token: ""
 ```
 
 Add to `app-config.yaml` `ignoreDifferences` (same pattern as `bitwarden-access-token`):
@@ -1017,7 +1056,17 @@ kubectl delete secret sops-age -n argocd
 
 ### F.5 — Documentation
 
-Update `CLAUDE.md` secrets management section to reflect the new ESO + mounted secret approach.
+Update `CLAUDE.md` — rewrite the following sections:
+- **"Secrets Management"**: replace the `sops -e -i` / `sops -d` workflow with the new approach:
+  - Global non-injectable tokens → add key to `cluster-secrets` ExternalSecret in `argocd` ns,
+    use `<secret:key>` token in files, set `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml`
+  - App credentials in Secret data fields → create per-app ExternalSecret pointing to Bitwarden
+- **"Editing Encrypted Secrets"**: remove entirely (no more SOPS-encrypted files)
+- **"Creating a new secret file"**: replace with new workflow using ESO ExternalSecret + Bitwarden
+- **"Common Template Patterns — Secret injection via KSOPS replacer"**: update to reflect that
+  `<secret:key>` tokens are now resolved from the mounted `cluster-secrets` K8s Secret (not SOPS)
+- Remove all references to `SOPS_AGE_KEY`, `sops-age` secret, Age encryption
+- Update `app-config.yaml` plugin env var name from `SOPS_SECRET_FILE` to `SECRET_PROVIDER`
 
 ---
 
