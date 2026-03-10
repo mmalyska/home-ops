@@ -1,7 +1,6 @@
 litellm-helm:
   image:
     tag: main-latest
-  masterkey: <secret:masterkey>
   ingress:
     enabled: true
     className: "traefik"
@@ -21,6 +20,8 @@ litellm-helm:
     requests:
       cpu: 100m
       memory: 128Mi
+  masterkeySecretName: litellm-secrets
+  masterkeySecretKey: LITELLM_MASTER_KEY
   environmentSecrets:
     - litellm-secrets
   proxy_config:
