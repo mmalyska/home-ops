@@ -51,3 +51,50 @@ data:
           - |-
             helm template --include-crds --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . | argocd-secret-replacer sops -f "$ARGOCD_ENV_SOPS_SECRET_FILE"
       lockRepo: false
+  secret-replacer-plugin-kustomize.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: secret-replacer-plugin-kustomize
+    spec:
+      version: v1.0
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "[[ ! -z $ARGOCD_ENV_SECRET_PROVIDER ]] && find . -name 'kustomization.yaml'"
+      generate:
+        command:
+          - bash
+          - "-c"
+          - |-
+            kustomize build --enable-alpha-plugins . | argocd-secret-replacer secret --mount /cluster-secrets
+      lockRepo: false
+  secret-replacer-plugin-helm.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: secret-replacer-plugin-helm
+    spec:
+      version: v1.0
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "[[ ! -z $ARGOCD_ENV_SECRET_PROVIDER ]] && find . -name 'Chart.yaml'"
+      init:
+        command:
+          - bash
+          - "-c"
+          - helm dependency update
+      generate:
+        command:
+          - bash
+          - "-c"
+          - |-
+            helm template --include-crds --release-name "$ARGOCD_APP_NAME" --namespace "$ARGOCD_APP_NAMESPACE" --kube-version $KUBE_VERSION --api-versions $KUBE_API_VERSIONS . | argocd-secret-replacer secret --mount /cluster-secrets
+      lockRepo: false

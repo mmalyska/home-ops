@@ -16,6 +16,11 @@ spec:
         - name: sops-age
           secret:
             secretName: sops-age
+        - name: cluster-secrets
+          secret:
+            secretName: cluster-secrets
+        - name: tmp-secret-replacer-plugin
+          emptyDir: {}
       # 3. Volume mount the custom binary to the bin directory (overriding the existing version)
       containers:
         - name: sops-replacer-plugin-kustomize
@@ -84,3 +89,64 @@ spec:
               subPath: age.agekey
             - name: helm-working-dir
               mountPath: /helm-working-dir
+        - name: secret-replacer-plugin-kustomize
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:707c4bc4c7b8d72e7bbbd9ec1ab0321b6078994acea95fabf94d032d8e156788
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          resources:
+            limits:
+              cpu: 250m
+              memory: 512Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /tmp
+              name: tmp-secret-replacer-plugin
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              name: sops-replacer-plugin
+              subPath: secret-replacer-plugin-kustomize.yaml
+            - mountPath: /cluster-secrets
+              name: cluster-secrets
+              readOnly: true
+        - name: secret-replacer-plugin-helm
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:707c4bc4c7b8d72e7bbbd9ec1ab0321b6078994acea95fabf94d032d8e156788
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          env:
+            - name: HELM_CACHE_HOME
+              value: /helm-working-dir
+            - name: HELM_CONFIG_HOME
+              value: /helm-working-dir
+            - name: HELM_DATA_HOME
+              value: /helm-working-dir
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /tmp
+              name: tmp-secret-replacer-plugin
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              name: sops-replacer-plugin
+              subPath: secret-replacer-plugin-helm.yaml
+            - mountPath: /cluster-secrets
+              name: cluster-secrets
+              readOnly: true
+            - mountPath: /helm-working-dir
+              name: helm-working-dir
