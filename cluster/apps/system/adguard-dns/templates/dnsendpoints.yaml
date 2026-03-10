@@ -1,0 +1,52 @@
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: cluster-endpoint
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: internal
+spec:
+  endpoints:
+    - dnsName: k8s.<secret:private-domain>
+      recordType: A
+      targets:
+        - 192.168.48.1
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: internal-gateway-endpoint
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: internal
+spec:
+  endpoints:
+    - dnsName: "*.<secret:private-domain>"
+      recordType: A
+      targets:
+        - 192.168.48.50
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: qnap-endpoint
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: internal
+spec:
+  endpoints:
+    - dnsName: qnap.<secret:private-domain>
+      recordType: A
+      targets:
+        - 192.168.50.8
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: haas-endpoint
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: external
+spec:
+  endpoints:
+    - dnsName: haas.<secret:private-domain>
+      recordType: CNAME
+      targets:
+        - external.<secret:private-domain>

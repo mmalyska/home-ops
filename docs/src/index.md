@@ -24,8 +24,11 @@ In this repo I'm focusing on:
 | --------- | ------- |
 | [ArgoCD](https://argo-cd.readthedocs.io) | GitOps continuous delivery with ApplicationSets |
 | [Cilium](https://cilium.io) | CNI, kube-proxy replacement, L2 load balancer announcements |
-| [Traefik](https://traefik.io) | Ingress controller |
+| [Envoy Gateway](https://gateway.envoyproxy.io) | Kubernetes Gateway API — external (192.168.48.20) and internal (192.168.48.21) gateways |
+| [Cloudflared](https://github.com/cloudflare/cloudflared) | Cloudflare Tunnel client for external gateway access |
 | [cert-manager](https://cert-manager.io) | Automated TLS certificates (Cloudflare DNS01) |
+| [external-dns (cloudflare)](https://github.com/kubernetes-sigs/external-dns) | Publishes external routes/endpoints to Cloudflare DNS |
+| [external-dns (adguard)](https://github.com/kubernetes-sigs/external-dns) | Publishes internal routes/endpoints to AdGuard Home DNS |
 | [Rook-Ceph](https://rook.io) | Distributed block and file storage |
 | [NFS subdir provisioner](https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/) | Cold storage on QNAP NAS |
 | [Keycloak](https://www.keycloak.org) | Identity provider (OIDC) |
@@ -33,7 +36,6 @@ In this repo I'm focusing on:
 | [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts) | Prometheus + Grafana monitoring |
 | [CloudNative-PG](https://cloudnative-pg.io) | PostgreSQL operator |
 | [VolSync](https://volsync.readthedocs.io) | PVC backup and restore |
-| [Cloudflared](https://github.com/cloudflare/cloudflared) | Cloudflare Tunnel client |
 
 ### Secrets Management
 

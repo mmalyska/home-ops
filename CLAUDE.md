@@ -80,8 +80,11 @@ Multi-component apps (e.g., `rook-ceph`, `intel`) use `appSubfolder` in `app-con
 | Component | Purpose |
 |-----------|---------|
 | **Cilium** | CNI, kube-proxy replacement, L2 announcements for LoadBalancer IPs |
-| **Traefik** | Ingress controller |
-| **cert-manager** | TLS certificates via Cloudflare DNS01 |
+| **Envoy Gateway** | Kubernetes Gateway API — `envoy-external` (.20, internet via Cloudflare Tunnel) and `envoy-internal` (.21, home network only) |
+| **Cloudflared** | Cloudflare Tunnel client — routes internet traffic into `envoy-external` |
+| **external-dns (cloudflare)** | Publishes `controller: external` HTTPRoutes/DNSEndpoints to Cloudflare DNS |
+| **external-dns (adguard)** | Publishes `controller: internal` HTTPRoutes/DNSEndpoints to AdGuard Home |
+| **cert-manager** | TLS certificates via Cloudflare DNS01; wildcard `cert-production` used by both gateways |
 | **Rook-Ceph** | Primary persistent storage |
 | **NFS subdir provisioner** | Cold storage on QNAP NAS |
 | **Keycloak** | OIDC identity provider (configured in Talos kube-apiserver) |
@@ -89,7 +92,6 @@ Multi-component apps (e.g., `rook-ceph`, `intel`) use `appSubfolder` in `app-con
 | **kube-prometheus-stack** | Prometheus + Grafana monitoring |
 | **CloudNative-PG** | PostgreSQL operator |
 | **VolSync** | PVC backup/restore |
-| **Cloudflared** | Cloudflare Tunnel client |
 
 ## Talos Configuration
 
@@ -170,20 +172,21 @@ Required secrets for devcontainer: `SOPS_AGE_KEY`, `TERRAFORM_TOKEN`
 | `192.168.50.8` | QNAP NAS (NFS + S3 storage) |
 | `192.168.50.9` | RPI — AdGuard Home DNS + Home Assistant proxy target |
 
-**Known assigned LoadBalancer IPs** (set via `io.cilium/lb-ipam-ips` annotation):
+**Known assigned LoadBalancer IPs** (set via `lbipam.cilium.io/ips` annotation):
 
 | IP | Service |
 |----|---------|
-| `192.168.48.20` | Envoy Gateway |
-| `192.168.48.21` | Traefik ingress |
+| `192.168.48.20` | `envoy-external` — internet-facing gateway (via Cloudflare Tunnel) |
+| `192.168.48.21` | `envoy-internal` — internal network gateway (AdGuard DNS) |
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.27` | Home automation services (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
+| `192.168.48.50` | Traefik (legacy ingress, kept for existing apps not yet migrated) |
 
 When adding a new `LoadBalancer` service, pick an unused IP from the `192.168.48.20–50` pool and annotate with:
 ```yaml
 annotations:
-  io.cilium/lb-ipam-ips: "192.168.48.XX"
+  lbipam.cilium.io/ips: "192.168.48.XX"
 ```
 
 ## Editing Encrypted Secrets
@@ -253,52 +256,87 @@ spec:
 
 The ClusterIssuer `lets-encrypt-dns01-production-cf` is created by cert-manager in the `system` category.
 
-### Standard Ingress
+### HTTPRoute — Internal (AdGuard DNS, home network only)
+
+Attach to `envoy-internal` (192.168.48.21). AdGuard Home resolves the hostname internally.
 
 ```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
   name: myapp
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    external-dns.alpha.kubernetes.io/controller: internal
 spec:
-  tls:
-    - hosts:
-        - myapp.<secret:private-domain>
-      secretName: myapp-cert
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - myapp.<secret:private-domain>
   rules:
-    - host: myapp.<secret:private-domain>
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: myapp
-                port:
-                  name: http
-```
-
-### Traefik IngressRoute (alternative to Ingress)
-
-```yaml
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: myapp
-spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`myapp.<secret:private-domain>`)
-      kind: Rule
-      services:
+    - backendRefs:
         - name: myapp
           port: 80
-  tls:
-    secretName: myapp-cert
 ```
+
+### HTTPRoute — External (Cloudflare DNS + Tunnel, internet-facing)
+
+Attach to `envoy-external` (192.168.48.20). Traffic enters via Cloudflare Tunnel; Cloudflare DNS is updated automatically.
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: myapp
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: external
+spec:
+  parentRefs:
+    - name: envoy-external
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - myapp.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: myapp
+          port: 80
+```
+
+### HTTPRoute — Both internal and external
+
+Attach to both gateways. Use the `external` annotation so external-dns publishes it to Cloudflare; AdGuard picks it up via the `envoy-internal` gateway-httproute source automatically.
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: myapp
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: external
+spec:
+  parentRefs:
+    - name: envoy-external
+      namespace: envoy-gateway
+      sectionName: https
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - myapp.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: myapp
+          port: 80
+```
+
+> **DNS routing summary**
+> - `controller: internal` → record written to AdGuard Home only (internal)
+> - `controller: external` → record written to Cloudflare only (external)
+> - Attaching a route to both gateways exposes it on both networks; annotate for whichever DNS backend should publish the name
+
+TLS is terminated at the gateway using the wildcard `cert-production` secret — no per-app Certificate resource needed.
 
 ## Do Not Edit (Generated/Auto-managed Files)
 

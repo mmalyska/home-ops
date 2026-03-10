@@ -26,7 +26,12 @@ For provisioning the following tools are used:
 - [ArgoCD](https://argo-cd.readthedocs.io/) - GitOps tool for deploying manifests from the `cluster` directory
 - [rook.io](https://rook.io/) - ceph storage for k8s
 - [nfs](https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/) - used for cold storage on QNAP
-- [traefik](https://traefik.io) - ingress controller
+- [Envoy Gateway](https://gateway.envoyproxy.io/) - Kubernetes Gateway API implementation with two gateways:
+  - **envoy-external** (192.168.48.20) - internet-facing via Cloudflare Tunnel
+  - **envoy-internal** (192.168.48.21) - internal network only
+- [Cloudflared](https://github.com/cloudflare/cloudflared) - Cloudflare Tunnel client for external access
+- [external-dns (cloudflare)](https://github.com/kubernetes-sigs/external-dns) - publishes external HTTPRoutes and DNSEndpoints to Cloudflare DNS
+- [external-dns (adguard)](https://github.com/kubernetes-sigs/external-dns) - publishes internal HTTPRoutes and DNSEndpoints to AdGuard Home DNS
 - [Keycloak](https://www.keycloak.org/) - identity provider (OIDC)
 - [External Secrets Operator](https://external-secrets.io/) - secret synchronization from Bitwarden Secrets Manager
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) - monitoring (Prometheus + Grafana)
