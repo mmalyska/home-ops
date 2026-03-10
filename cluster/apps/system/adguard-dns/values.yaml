@@ -1,15 +1,22 @@
 external-dns:
   fullnameOverride: adguard-dns
+  env:
+    - name: DOMAIN_FILTER
+      valueFrom:
+        secretKeyRef:
+          name: adguard-dns-secret
+          key: ADGUARD_DOMAIN_FILTER
   extraArgs:
     - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
     - --crd-source-kind=DNSEndpoint
     - --gateway-name=envoy-internal
-    - --domain-filter=$(ADGUARD_DOMAIN_FILTER)
+    - --domain-filter=$(DOMAIN_FILTER)
+    - --annotation-filter=external-dns.alpha.kubernetes.io/controller=internal
   triggerLoopOnEvent: true
   policy: sync
   sources: ["crd", "gateway-httproute"]
-  txtPrefix: k8s.
-  txtOwnerId: default
+  txtPrefix: k8s.main.
+  txtOwnerId: main
   serviceMonitor:
     enabled: true
   provider:
@@ -48,12 +55,7 @@ external-dns:
             secretKeyRef:
               name: adguard-dns-secret
               key: ADGUARD_PASSWORD
-        - name: ADGUARD_DOMAIN_FILTER
-          valueFrom:
-            secretKeyRef:
-              name: adguard-dns-secret
-              key: ADGUARD_DOMAIN_FILTER
         - name: LOG_LEVEL
           value: debug
         - name: DRY_RUN
-          value: "true"
+          value: "false"

@@ -35,9 +35,35 @@ Categories: core, system, default, games, home-automation
 - Secret injection: `<secret:key>` (plain) and `<secret:key|base64>` (K8s Secret data fields)
 - ClusterIssuer name: `lets-encrypt-dns01-production-cf`
 - Cluster VIP: 192.168.48.1 (kube-apiserver endpoint, TALHELPER_CLUSTERENDPOINTIP)
-- Cilium LB pool: 192.168.48.20-50. Known IPs: Traefik=.21, Minecraft=.23, Home-auto=.27, VintageStory=.28
+- Cilium LB pool: 192.168.48.20-50. Known IPs: envoy-external=.20, envoy-internal=.21, Minecraft=.23, Home-auto=.27, VintageStory=.28, Traefik(legacy)=.50
 - Do NOT edit: `provision/talos/clusterconfig/`, renovate comment lines, `.terraform.lock.hcl`
 - Branch: main, feat/fix/chore prefixes, MegaLinter CI on PRs, labels required
+
+## Gateway & DNS Architecture (as of 2026-03-09)
+
+Single domain  split across two Envoy Gateway instances:
+- **envoy-external** (192.168.48.20): internet-facing via Cloudflare Tunnel (`cloudflared`), currently DISABLED (app-config.yaml enabled: "false")
+- **envoy-internal** (192.168.48.21): internal network only, resolved by AdGuard Home on RPI (192.168.50.9)
+
+**DNS controllers** split by annotation filter `external-dns.alpha.kubernetes.io/controller`:
+- `cloudflare-dns` — filter value `external`, sources: `crd` + `gateway-httproute` from `envoy-external`
+- `adguard-dns` — filter value `internal`, sources: `crd` + `gateway-httproute` from `envoy-internal`
+
+**Annotating resources** to control which DNS controller picks them up:
+```yaml
+annotations:
+  external-dns.alpha.kubernetes.io/controller: internal   # or: external
+```
+For `gateway-httproute` source, the annotation on the Gateway itself is sufficient — routes inherit it.
+
+**Static DNSEndpoints** live in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`:
+- Internal: `*.PRIVATE_DOMAIN` → 192.168.48.50 (Traefik legacy), `k8s.` → .48.1, `qnap.` → 192.168.50.8
+- External (cloudflare): `haas.PRIVATE_DOMAIN` CNAME → `external.PRIVATE_DOMAIN`
+
+**Key files:**
+- `cluster/apps/system/envoy-gateweay/` (note typo in dir name) — GatewayClass, Gateways, policies, HTTPS redirect
+- `cluster/apps/system/cloudflare-dns/` — external-dns for Cloudflare
+- `cluster/apps/system/adguard-dns/` — external-dns for AdGuard Home webhook provider
 
 ## ExternalSecret Template Gotcha (ESO inside Helm templates/)
 
@@ -53,6 +79,7 @@ CF_TUNNEL_SECRET: |-
 
 **Symptom**: ESO status shows `secret synced / True` but all rendered secret values are empty/null.
 
-## README/Docs Status (as of 2026-03-07)
-- README.md updated: removed flannel/metallb, added Cilium, Keycloak, ESO, prometheus-stack, CloudNative-PG, VolSync; updated repo structure section
-- docs/src/index.md updated: replaced broken image tech stack with proper tables
+## README/Docs Status (as of 2026-03-09)
+- README.md: reflects two-gateway setup (envoy-external/internal), cloudflare-dns, adguard-dns
+- docs/src/index.md: tech stack table updated with Envoy Gateway, Cloudflared, both external-dns controllers; Traefik removed
+- docs/src/general/network.md: fully rewritten with gateway architecture, DNS split, IP table

@@ -25,6 +25,7 @@ external-dns:
     - --gateway-name=envoy-external
     - --zone-id-filter=$(CF_ZONE_ID)
     - --domain-filter=$(CF_DOMAIN_FILTER)
+    - --annotation-filter=external-dns.alpha.kubernetes.io/controller=external
   triggerLoopOnEvent: true
   policy: sync
   sources: ["crd", "gateway-httproute"]
