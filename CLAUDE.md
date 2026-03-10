@@ -383,3 +383,11 @@ task format:markdown  # prettier (Markdown)
 ```
 
 Linter configs: `.github/linters/` (`.yamllint.yaml`, `.markdownlint.yaml`, `.prettierrc.yaml`)
+
+## Security
+
+**Never store secrets, credentials, tokens, API keys, or other sensitive data in:**
+- This file (`CLAUDE.md`)
+- Memory files (`.claude/MEMORY.md`)
+- Any committed file in this repository
+- GitHub Actions workflow files (use GitHub Secrets instead)
