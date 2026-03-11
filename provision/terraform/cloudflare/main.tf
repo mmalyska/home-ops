@@ -16,8 +16,8 @@ terraform {
       source  = "hashicorp/http"
       version = "3.5.0"
     }
-    doppler = {
-      source = "DopplerHQ/doppler"
+    bitwarden-secrets = {
+      source = "registry.terraform.io/bitwarden/bitwarden-secrets"
     }
   }
 }

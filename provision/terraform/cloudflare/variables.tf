@@ -1,7 +1,8 @@
-variable "doppler_terraform_key" {
-  type = string
+variable "bw_access_token" {
+  type      = string
+  sensitive = true
 }
 
-variable "doppler_homeops_key" {
+variable "bw_organization_id" {
   type = string
 }

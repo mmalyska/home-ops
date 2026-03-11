@@ -3,11 +3,7 @@ provider "cloudflare" {
   api_key = local.cloudflare_apikey
 }
 
-provider "doppler" {
-  doppler_token = var.doppler_terraform_key
-}
-
-provider "doppler" {
-  alias = "home-ops"
-  doppler_token = var.doppler_homeops_key
+provider "bitwarden-secrets" {
+  access_token    = var.bw_access_token
+  organization_id = var.bw_organization_id
 }
