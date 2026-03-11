@@ -10,10 +10,11 @@ namespace: argocd
 resources:
   - resources/ingress.yaml
   - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v3.3.3
-  - resources/repository.yaml
   - resources/sops-replacer-plugin.yaml
   - resources/metrics.yaml
   - resources/cluster-secrets-externalsecret.yaml
+  - resources/repository-externalsecret.yaml
+  - resources/argocd-oidc-externalsecret.yaml
 
 # changes to config maps
 patches:
@@ -21,4 +22,3 @@ patches:
   - path: patches/argocd-rbac-cm.yaml
   - path: patches/argocd-cmd-params-cm.yaml
   - path: patches/argo-cd-repo-server-ksops-patch.yaml
-  - path: patches/argocd-secret.yaml
