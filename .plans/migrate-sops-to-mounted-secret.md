@@ -166,14 +166,19 @@ Bitwarden Secrets Manager
 - **keycloak** — created `templates/s3-externalsecret.yaml` (→ `keycloakdb-secrets`), deleted `templates/secrets.yaml` + `secret.sec.yaml`, removed checksum annotation, env var → `SECRET_PROVIDER`
 - **cert-manager** — created `resources/api-token-externalsecret.yaml` (→ `cloudflare-api-token-secret`), updated `kustomization.yaml`, env var → `SECRET_PROVIDER`; plugin kept (`<secret:email>` in ClusterIssuer)
 - **oauth2-proxy** — created `templates/credentials-externalsecret.yaml` (→ `oauth-secret`), deleted `templates/secret.yaml` + `secret.sec.yaml`, env var → `SECRET_PROVIDER`; plugin kept (`<secret:private-domain>` in values.yaml + forward-auth-middleware.yaml)
+- **dyndns** — created `resources/externalsecret.yaml` with `CONFIG_YAML`, updated kustomization.yaml, removed plugin block, deleted `resources/secret.yaml` + `secret.sec.yaml`
+- **external-secrets** — rewrote `templates/secret.yaml` in-place (doppler → bitwarden ExternalSecret), removed plugin block; `bitwarden-access-token` kept with `ignoreDifferences`
+- **envoy-gateweay** — added plugin block with `SECRET_PROVIDER: cluster-secrets` (needed for `<secret:private-domain>` in cert.yaml)
+- **argocd** (core) — created `repository-externalsecret.yaml` + `argocd-oidc-externalsecret.yaml`, removed `repository.yaml` + `patches/argocd-secret.yaml`, env var → `SECRET_PROVIDER`
+- **home-assistant** — rewrote `templates/secrets.yaml` in-place (doppler → bitwarden, individual data[] entries); plugin kept (`<secret:private-domain>` + `<secret:s3_endpoint>` in values.yaml); deleted `secret.sec.yaml`
 
-### ⏳ Remaining
-- `dyndns` — create `templates/externalsecret.yaml` with `CONFIG_YAML`; remove plugin block
-- `external-secrets` — rewrite `templates/secret.yaml` in-place (doppler → bitwarden); add `ignoreDifferences`; remove plugin
-- `envoy-gateweay` — ADD plugin block with `SECRET_PROVIDER` (no SOPS, needs plugin for `<secret:private-domain>` in cert.yaml)
-- `argocd` (core) — create `repository-externalsecret.yaml` + `argocd-oidc-externalsecret.yaml`; remove `repository.yaml` + `patches/argocd-secret.yaml`; update `kustomization.yaml` + `app-config.yaml`
-- `home-assistant` — rewrite `templates/secrets.yaml` in-place (doppler → bitwarden ESO template expressions); remove plugin
-- **Phase Final** — remove SOPS plugin entries, sidecars, sops-age volume/secret, `.sops.yaml`, sops-check pre-commit hook; update CLAUDE.md
+### ✅ Phase Final — DONE
+- `sops-replacer-plugin.yaml` — removed old `sops-replacer-plugin-kustomize` + `sops-replacer-plugin-helm` ConfigMap entries
+- `argo-cd-repo-server-ksops-patch.yaml` — removed old sidecar containers + `sops-age` + `tmp-sops-replacer-plugin` volumes
+- `.sops.yaml` — deleted
+- No `sops-check` hook existed in `.pre-commit-config.yaml`
+- ⚠️ Manual cluster step still needed: `kubectl delete secret sops-age -n argocd`
+- ⚠️ CLAUDE.md — still needs update (Secrets Management section)
 
 ---
 
