@@ -135,6 +135,48 @@ Bitwarden Secrets Manager
 
 ---
 
+## Progress Tracking
+
+### ✅ Phase 0 — DONE (verified in cluster)
+- `sops-replacer-plugin.yaml` — 2 new plugin entries added
+- `argo-cd-repo-server-ksops-patch.yaml` — 2 new sidecars + `cluster-secrets` + `tmp-secret-replacer-plugin` volumes added
+- `cluster-secrets-externalsecret.yaml` — created, all Bitwarden UUIDs filled in
+- `kustomization.yaml` — new ExternalSecret added
+- Cluster state: `cluster-secrets` ESO `SecretSynced/Ready=True`, repo-server `5/5` containers
+
+### ✅ Per-App Migrations — DONE
+- **rook-ceph/cluster** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **gethomepage** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **grocy** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **hass-proxy** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **open-webui** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **qnap-proxy** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **nfs-mounts** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **botkube** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **ollama** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **nfs-subdir-provisioner** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **prometheus-stack** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **traefik** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **minecraft-bedrock** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **jellyfin** — hardcoded LB IP `192.168.48.22` (replaced `<secret:jellyfin-service-ip>`), env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml`
+- **vintagestory** — plugin block removed entirely (secret.sec.yaml was unused — no `<secret:*>` tokens in any file)
+- **gitea** — created `templates/s3-externalsecret.yaml`, deleted `templates/secrets.yaml` + `secret.sec.yaml`, removed checksum annotation, env var → `SECRET_PROVIDER`
+- **n8n** — env var → `SECRET_PROVIDER`, deleted `secret.sec.yaml` (no templates/secrets.yaml existed)
+- **litellm** — created `templates/api-externalsecret.yaml` (S3 + API keys + LITELLM_MASTER_KEY), deleted `templates/secrets.yaml` + `secret.sec.yaml`, added `masterkeySecretName`/`masterkeySecretKey` Helm values, env var → `SECRET_PROVIDER`
+- **keycloak** — created `templates/s3-externalsecret.yaml` (→ `keycloakdb-secrets`), deleted `templates/secrets.yaml` + `secret.sec.yaml`, removed checksum annotation, env var → `SECRET_PROVIDER`
+- **cert-manager** — created `resources/api-token-externalsecret.yaml` (→ `cloudflare-api-token-secret`), updated `kustomization.yaml`, env var → `SECRET_PROVIDER`; plugin kept (`<secret:email>` in ClusterIssuer)
+- **oauth2-proxy** — created `templates/credentials-externalsecret.yaml` (→ `oauth-secret`), deleted `templates/secret.yaml` + `secret.sec.yaml`, env var → `SECRET_PROVIDER`; plugin kept (`<secret:private-domain>` in values.yaml + forward-auth-middleware.yaml)
+
+### ⏳ Remaining
+- `dyndns` — create `templates/externalsecret.yaml` with `CONFIG_YAML`; remove plugin block
+- `external-secrets` — rewrite `templates/secret.yaml` in-place (doppler → bitwarden); add `ignoreDifferences`; remove plugin
+- `envoy-gateweay` — ADD plugin block with `SECRET_PROVIDER` (no SOPS, needs plugin for `<secret:private-domain>` in cert.yaml)
+- `argocd` (core) — create `repository-externalsecret.yaml` + `argocd-oidc-externalsecret.yaml`; remove `repository.yaml` + `patches/argocd-secret.yaml`; update `kustomization.yaml` + `app-config.yaml`
+- `home-assistant` — rewrite `templates/secrets.yaml` in-place (doppler → bitwarden ESO template expressions); remove plugin
+- **Phase Final** — remove SOPS plugin entries, sidecars, sops-age volume/secret, `.sops.yaml`, sops-check pre-commit hook; update CLAUDE.md
+
+---
+
 ## Phase 0 — Extend ArgoCD infrastructure (non-breaking, must land first)
 
 This phase **adds** new plugin definitions alongside the existing ones. No existing app is changed.

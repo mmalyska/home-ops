@@ -1,5 +1,22 @@
 # home-ops Repository Memory
 
+## Active Migration: migrate-sops-to-mounted-secret
+Plan file: `/workspaces/home-ops/.plans/migrate-sops-to-mounted-secret.md` (in repo, persists across rebuilds)
+
+Two-mechanism replacement for per-app SOPS `secret.sec.yaml` files:
+1. `cluster-secrets` mounted K8s Secret (Bitwarden via ESO) — for `<secret:key>` tokens in non-injectable fields, resolved by `argocd-secret-replacer secret --mount /cluster-secrets`
+2. Per-app `ExternalSecret` — for K8s Secret `data`/`stringData` fields
+
+**Completed:** Phase 0 infra, 21 apps total (rook-ceph/cluster, gethomepage, grocy, hass-proxy, open-webui, qnap-proxy, nfs-mounts, botkube, ollama, nfs-subdir-provisioner, prometheus-stack, traefik, minecraft-bedrock, jellyfin, vintagestory, gitea, n8n, litellm, keycloak, cert-manager, oauth2-proxy)
+
+**Remaining:** dyndns, external-secrets, envoy-gateweay, argocd (core), home-assistant → then Phase Final (remove SOPS infra)
+
+**Key patterns used:**
+- `app-config.yaml`: `SOPS_SECRET_FILE: secret.sec.yaml` → `SECRET_PROVIDER: cluster-secrets`
+- ExternalSecret `secretStoreRef.name: bitwarden`, `creationPolicy: Owner`
+- Shared S3 UUIDs reused across gitea/litellm/keycloak (same Bitwarden entries)
+- `#gitleaks:allow` comment on UUID lines
+
 ## Standing Rules
 - NEVER write secrets, tokens, passwords, API keys, IPs of external services, or any sensitive data to this file or any other repo file
 - Secret values belong in SOPS-encrypted `*.sec.yaml` files or Bitwarden Secrets Manager only
