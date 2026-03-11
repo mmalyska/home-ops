@@ -2,15 +2,17 @@
 
 ## Secrets Architecture (post-migration, completed 2026-03-11)
 
-SOPS migration is complete. No more `secret.sec.yaml` files. Two mechanisms now in use:
+SOPS and Doppler are fully removed. **Bitwarden Secrets Manager is the single secret provider.** Three mechanisms now in use:
 
 1. **`cluster-secrets`** K8s Secret (namespace: `argocd`, sourced from Bitwarden via ESO) — mounted into ArgoCD repo-server sidecars at `/cluster-secrets`. Resolves `<secret:key>` tokens in non-injectable fields (hostnames, cert dnsNames, values.yaml strings, ConfigMap data, etc.) via `argocd-secret-replacer secret --mount /cluster-secrets`.
    - Plugin trigger: `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml`
    - ExternalSecret: `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
 
-2. **Per-app `ExternalSecret`** (Bitwarden `ClusterSecretStore` named `bitwarden`) — for credentials in K8s Secret `data`/`stringData` fields, consumed via `secretKeyRef` or ESO template rendering.
+2. **Per-app `ExternalSecret`** (Bitwarden `ClusterSecretStore` named `bitwarden`) — for credentials in K8s Secret `data`/`stringData` fields, consumed via `secretKeyRef` or ESO template rendering. Always use individual `data[]` entries with Bitwarden UUIDs — `dataFrom.extract` is NOT supported by the Bitwarden ESO provider.
 
-**The rule**: Token in `Secret data/stringData` → ExternalSecret. Token in any other field → `cluster-secrets` + plugin.
+3. **Terraform `bitwarden-secrets` provider** — Cloudflare credentials read directly from Bitwarden in `provision/terraform/cloudflare/doppler_secrets.tf` using `data "bitwarden-secrets_secret"` resources.
+
+**The rule**: Token in `Secret data/stringData` → ExternalSecret. Token in any other field → `cluster-secrets` + plugin. Terraform secrets → `bitwarden-secrets` provider.
 
 **Key pattern for ESO inside Helm `templates/`**: wrap `{{ }}` in Go raw string literals so Helm passes them through:
 ```yaml
@@ -19,7 +21,7 @@ VALUE: "{{ `{{ .MY_KEY }}` }}"
 
 ## Standing Rules
 - NEVER write secrets, tokens, passwords, API keys, IPs of external services, or any sensitive data to this file or any other repo file
-- Secret values belong in Bitwarden Secrets Manager only (SOPS is fully removed)
+- Secret values belong in Bitwarden Secrets Manager only (SOPS and Doppler are fully removed)
 - The private domain is a SECRET — never write it in any file committed to git (use `<secret:private-domain>` placeholder instead)
 
 ## Project Type
@@ -82,9 +84,9 @@ For `gateway-httproute` source, the annotation on the Gateway itself is sufficie
 - `cluster/apps/system/cloudflare-dns/` — external-dns for Cloudflare
 - `cluster/apps/system/adguard-dns/` — external-dns for AdGuard Home webhook provider
 
-## README/Docs Status (as of 2026-03-09)
-- README.md: reflects two-gateway setup (envoy-external/internal), cloudflare-dns, adguard-dns
-- docs/src/index.md: tech stack table updated with Envoy Gateway, Cloudflared, both external-dns controllers; Traefik removed
+## README/Docs Status (as of 2026-03-11)
+- README.md: reflects two-gateway setup, Bitwarden-only secrets, Cloudflare token stored in Bitwarden
+- docs/src/index.md: Secrets Management table updated — SOPS removed, Bitwarden ESO as single secret store
 - docs/src/general/network.md: fully rewritten with gateway architecture, DNS split, IP table
 
 ## Local Resource Access (devcontainer)

@@ -17,7 +17,8 @@ terraform {
       version = "3.5.0"
     }
     bitwarden-secrets = {
-      source = "registry.terraform.io/bitwarden/bitwarden-secrets"
+      source  = "bitwarden/bitwarden-secrets"
+      version = "0.5.4-pre"
     }
   }
 }

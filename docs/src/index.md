@@ -41,5 +41,5 @@ In this repo I'm focusing on:
 
 | Tool | Purpose |
 | ---- | ------- |
-| [SOPS](https://github.com/mozilla/sops) | Encrypts secret files in Git using Age |
-| [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/) | Environment secrets via BWS CLI |
+| [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/) | Single secret store — cluster credentials via ESO ExternalSecrets + environment secrets via BWS CLI |
+| [External Secrets Operator](https://external-secrets.io) | Syncs Bitwarden secrets into Kubernetes Secrets (`ClusterSecretStore: bitwarden`) |

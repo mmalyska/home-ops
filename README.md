@@ -130,13 +130,15 @@ The Git repository contains the following directories under `cluster` and are or
 
 ### ☁️ Global Cloudflare API Token
 
-In order to use Terraform and `cert-manager` with the Cloudflare DNS challenge you will need to create a API Token.
+In order to use Terraform and `cert-manager` with the Cloudflare DNS challenge you will need to create an API Token.
 
-1. Head over to Cloudflare and create a API Token by going [here](https://dash.cloudflare.com/profile/api-tokens).
+1. Head over to Cloudflare and create an API Token by going [here](https://dash.cloudflare.com/profile/api-tokens).
 
 2. Under the `API Tokens` section, create a scoped API Token.
 
-3. Use the API Token in **provision/terraform/cloudflare** and **cluster/system/cert-manager**.
+3. Store the API Token in **Bitwarden Secrets Manager** and reference it by UUID in:
+   - `provision/terraform/cloudflare/doppler_secrets.tf` (via `bitwarden-secrets` Terraform provider)
+   - `cluster/apps/system/cert-manager/resources/api-token-externalsecret.yaml` (via ESO ExternalSecret)
 
 ### ⚡ Preparing Talos nodes
 
@@ -191,7 +193,7 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
 
    ```sh
    git add -A
-   git commit -m "encrypting secrets"
+   git commit -m "chore: initial cluster configuration"
    git push
    ```
 
