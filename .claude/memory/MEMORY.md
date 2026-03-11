@@ -1,36 +1,36 @@
 # home-ops Repository Memory
 
-## Active Migration: migrate-sops-to-mounted-secret
-Plan file: `/workspaces/home-ops/.plans/migrate-sops-to-mounted-secret.md` (in repo, persists across rebuilds)
+## Secrets Architecture (post-migration, completed 2026-03-11)
 
-Two-mechanism replacement for per-app SOPS `secret.sec.yaml` files:
-1. `cluster-secrets` mounted K8s Secret (Bitwarden via ESO) — for `<secret:key>` tokens in non-injectable fields, resolved by `argocd-secret-replacer secret --mount /cluster-secrets`
-2. Per-app `ExternalSecret` — for K8s Secret `data`/`stringData` fields
+SOPS migration is complete. No more `secret.sec.yaml` files. Two mechanisms now in use:
 
-**Completed:** Phase 0 infra, 21 apps total (rook-ceph/cluster, gethomepage, grocy, hass-proxy, open-webui, qnap-proxy, nfs-mounts, botkube, ollama, nfs-subdir-provisioner, prometheus-stack, traefik, minecraft-bedrock, jellyfin, vintagestory, gitea, n8n, litellm, keycloak, cert-manager, oauth2-proxy)
+1. **`cluster-secrets`** K8s Secret (namespace: `argocd`, sourced from Bitwarden via ESO) — mounted into ArgoCD repo-server sidecars at `/cluster-secrets`. Resolves `<secret:key>` tokens in non-injectable fields (hostnames, cert dnsNames, values.yaml strings, ConfigMap data, etc.) via `argocd-secret-replacer secret --mount /cluster-secrets`.
+   - Plugin trigger: `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml`
+   - ExternalSecret: `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
 
-**Remaining:** dyndns, external-secrets, envoy-gateweay, argocd (core), home-assistant → then Phase Final (remove SOPS infra)
+2. **Per-app `ExternalSecret`** (Bitwarden `ClusterSecretStore` named `bitwarden`) — for credentials in K8s Secret `data`/`stringData` fields, consumed via `secretKeyRef` or ESO template rendering.
 
-**Key patterns used:**
-- `app-config.yaml`: `SOPS_SECRET_FILE: secret.sec.yaml` → `SECRET_PROVIDER: cluster-secrets`
-- ExternalSecret `secretStoreRef.name: bitwarden`, `creationPolicy: Owner`
-- Shared S3 UUIDs reused across gitea/litellm/keycloak (same Bitwarden entries)
-- `#gitleaks:allow` comment on UUID lines
+**The rule**: Token in `Secret data/stringData` → ExternalSecret. Token in any other field → `cluster-secrets` + plugin.
+
+**Key pattern for ESO inside Helm `templates/`**: wrap `{{ }}` in Go raw string literals so Helm passes them through:
+```yaml
+VALUE: "{{ `{{ .MY_KEY }}` }}"
+```
 
 ## Standing Rules
 - NEVER write secrets, tokens, passwords, API keys, IPs of external services, or any sensitive data to this file or any other repo file
-- Secret values belong in SOPS-encrypted `*.sec.yaml` files or Bitwarden Secrets Manager only
+- Secret values belong in Bitwarden Secrets Manager only (SOPS is fully removed)
 - The private domain is a SECRET — never write it in any file committed to git (use `<secret:private-domain>` placeholder instead)
 
 ## Project Type
-GitOps home-lab: Talos Linux + ArgoCD + SOPS. See CLAUDE.md at repo root for full guide.
+GitOps home-lab: Talos Linux + ArgoCD. See CLAUDE.md at repo root for full guide.
 
 ## Key Facts
 - 3 Lenovo M720q nodes (mc1/mc2/mc3) as control plane at 192.168.48.2-4
 - Talos v1.11.3, Kubernetes v1.34.5 (in provision/talos/talconfig.yaml, updated by Renovate)
 - CNI: Cilium (NOT flannel). L2 announcements for LoadBalancer IPs (no metallb)
-- Secrets: SOPS Age encryption + Bitwarden Secrets Manager (BWS) via .envrc
-- ArgoCD uses KSOPS plugin for decryption at sync time
+- Secrets: Bitwarden Secrets Manager (BWS) via .envrc + ESO ClusterSecretStore `bitwarden`
+- ArgoCD uses `secret-replacer-plugin` CMP sidecar for `<secret:key>` token substitution
 
 ## App Pattern
 `cluster/apps/{category}/{app-name}/app-config.yaml` — toggle with `enabled: "true|false"`
@@ -38,7 +38,6 @@ Categories: core, system, default, games, home-automation
 
 ## Important Files
 - CLAUDE.md — full developer guide (created 2026-03-07)
-- .sops.yaml — SOPS age key config
 - .envrc — sets KUBECONFIG, TALOSCONFIG, BWS secrets
 - provision/talos/talconfig.yaml — Talos cluster config
 - cluster/bootstrap-application.yaml — root app-of-apps
@@ -50,7 +49,7 @@ Categories: core, system, default, games, home-automation
 - Pre-commit: yamllint, helmlint, gitleaks, prettier
 
 ## CLAUDE.md Key Patterns (as of 2026-03-07)
-- Secret injection: `<secret:key>` (plain) and `<secret:key|base64>` (K8s Secret data fields)
+- Secret injection: `<secret:key>` (plain) resolved from `cluster-secrets` mount by plugin
 - ClusterIssuer name: `lets-encrypt-dns01-production-cf`
 - Cluster VIP: 192.168.48.1 (kube-apiserver endpoint, TALHELPER_CLUSTERENDPOINTIP)
 - Cilium LB pool: 192.168.48.20-50. Known IPs: envoy-external=.20, envoy-internal=.21, Minecraft=.23, Home-auto=.27, VintageStory=.28, Traefik(legacy)=.50
@@ -59,7 +58,7 @@ Categories: core, system, default, games, home-automation
 
 ## Gateway & DNS Architecture (as of 2026-03-09)
 
-Single domain  split across two Envoy Gateway instances:
+Single domain split across two Envoy Gateway instances:
 - **envoy-external** (192.168.48.20): internet-facing via Cloudflare Tunnel (`cloudflared`), currently DISABLED (app-config.yaml enabled: "false")
 - **envoy-internal** (192.168.48.21): internal network only, resolved by AdGuard Home on RPI (192.168.50.9)
 
@@ -82,20 +81,6 @@ For `gateway-httproute` source, the annotation on the Gateway itself is sufficie
 - `cluster/apps/system/envoy-gateweay/` (note typo in dir name) — GatewayClass, Gateways, policies, HTTPS redirect
 - `cluster/apps/system/cloudflare-dns/` — external-dns for Cloudflare
 - `cluster/apps/system/adguard-dns/` — external-dns for AdGuard Home webhook provider
-
-## ExternalSecret Template Gotcha (ESO inside Helm templates/)
-
-When `ExternalSecret` lives in `templates/`, Helm processes it first — so ESO template expressions like `{{ .MY_KEY }}` get consumed by Helm and resolve to empty strings before ESO ever runs.
-
-**Fix**: wrap ESO expressions in Go raw string literals so Helm passes them through untouched:
-```yaml
-CF_TUNNEL_INGRESS: |
-  {{ `{{ .CLOUDFLARE_TUNNEL_INGRESS }}` }}
-CF_TUNNEL_SECRET: |-
-  {{ `{{ toJson (dict "a" .ACCOUNT "t" .TUNNEL_ID "s" .SECRET) | b64enc }}` }}
-```
-
-**Symptom**: ESO status shows `secret synced / True` but all rendered secret values are empty/null.
 
 ## README/Docs Status (as of 2026-03-09)
 - README.md: reflects two-gateway setup (envoy-external/internal), cloudflare-dns, adguard-dns

@@ -1,6 +1,6 @@
 # Home k8s infrastructure
 
-Deploying a cluster with [Talos](https://www.talos.dev) and [Terraform](https://www.terraform.io) backed by [ArgoCD](https://argo-cd.readthedocs.io/) and [SOPS](https://github.com/mozilla/sops).
+Deploying a cluster with [Talos](https://www.talos.dev) and [Terraform](https://www.terraform.io) backed by [ArgoCD](https://argo-cd.readthedocs.io/) and [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/).
 
 ## Overview
 
@@ -55,13 +55,11 @@ For fast setup I use devcontainer to have same environment across different devi
 1. Install the **most recent versions** of the following command-line tools on your workstation, if you are using [Homebrew](https://brew.sh/) on macOS or Linux skip to steps 3 and 4.
 
    - Required:
-     [age](https://github.com/FiloSottile/age),
      [go-task](https://github.com/go-task/task),
      [ipcalc](http://jodies.de/ipcalc),
      [jq](https://stedolan.github.io/jq/),
      [kubectl](https://kubernetes.io/docs/tasks/tools/),
      [pre-commit](https://github.com/pre-commit/pre-commit),
-     [sops](https://github.com/mozilla/sops),
      [terraform](https://www.terraform.io),
      [yq](https://github.com/mikefarah/yq),
      [argocd CLI](https://github.com/argoproj/argo-cd),
@@ -96,7 +94,7 @@ For fast setup I use devcontainer to have same environment across different devi
 ### ⚠️ pre-commit
 
 It is advisable to install [pre-commit](https://pre-commit.com/) and the pre-commit hooks that come with this repository.
-[sops-pre-commit](https://github.com/k8s-at-home/sops-pre-commit) will check to make sure you are not by accident committing un-encrypted secrets.
+[gitleaks](https://github.com/gitleaks/gitleaks) will check to make sure you are not accidentally committing secrets.
 
 1. Enable Pre-Commit
 
@@ -129,16 +127,6 @@ The Git repository contains the following directories under `cluster` and are or
 ```
 
 ## 🚀 Deployment
-
-### 🔐 Setting up Age
-
-I assume you already have generated age key pair to be used otherwise you need to generate one.
-Export the `SOPS_AGE_KEY_FILE` variable in your `bashrc`, `zshrc` or `config.fish` and source it, e.g.
-
-```sh
-export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
-source ~/.bashrc
-```
 
 ### ☁️ Global Cloudflare API Token
 
@@ -192,17 +180,14 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
    kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
    ```
 
-3. Add the Age key in-order for ArgoCD to decrypt SOPS secrets
+3. Bootstrap the `bitwarden-access-token` secret required by External Secrets Operator
 
    ```sh
-   cat $SOPS_AGE_KEY_FILE |
-       kubectl -n argocd create secret generic sops-age \
-       --from-file=age.agekey=/dev/stdin
+   kubectl -n external-secrets create secret generic bitwarden-access-token \
+       --from-literal=bw-token=<your-bitwarden-machine-account-token>
    ```
 
-4. **Verify** all files ending with `*.sops.yaml` or `*.sec.yaml` are **encrypted** with SOPS
-
-5. Push you changes to git
+4. Push your changes to git
 
    ```sh
    git add -A
@@ -210,13 +195,13 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
    git push
    ```
 
-6. Install Argo CD
+5. Install Argo CD
 
    ```sh
    kubectl apply -k ./cluster/core/argocd/base
    ```
 
-7. Verify Argo CD components are running in the cluster
+6. Verify Argo CD components are running in the cluster
 
    ```sh
    kubectl get pods -n argocd

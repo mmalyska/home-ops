@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-GitOps home-lab repository managing a Talos Linux Kubernetes cluster with ArgoCD and SOPS encryption.
+GitOps home-lab repository managing a Talos Linux Kubernetes cluster with ArgoCD and Bitwarden-based secret management.
 
 - **Hardware**: 3x Lenovo M720q (mc1/mc2/mc3) as control plane nodes at 192.168.48.2-4
 - **OS**: Talos Linux (managed via `talhelper` + `talconfig.yaml`)
-- **GitOps**: ArgoCD with ApplicationSet pattern + KSOPS plugin for secret decryption
-- **Secrets**: SOPS (Age encryption) + Bitwarden Secrets Manager (BWS) for env vars
+- **GitOps**: ArgoCD with ApplicationSet pattern + `argocd-secret-replacer` CMP plugin for token substitution
+- **Secrets**: Bitwarden Secrets Manager (via ESO `ClusterSecretStore`) + BWS env vars via `.envrc`
 - **DNS/Tunnel**: Cloudflare managed via Terraform
 
 ## Repository Structure
@@ -42,8 +42,7 @@ app-name/
 ├── app-config.yaml      # ArgoCD ApplicationSet config (enabled: "true|false")
 ├── Chart.yaml           # Helm chart + external dependencies
 ├── values.yaml          # Helm values customization
-├── secret.sec.yaml      # SOPS-encrypted secrets (optional)
-└── templates/           # Additional K8s manifests (ingress, certificates...)
+└── templates/           # Additional K8s manifests (ingress, certificates, ExternalSecrets...)
 ```
 
 Alternatively, Kustomize-based apps use `kustomization.yaml` instead of `Chart.yaml`.
@@ -60,20 +59,53 @@ Multi-component apps (e.g., `rook-ceph`, `intel`) use `appSubfolder` in `app-con
     enabled: true
     selfHeal: true
     prune: false
-  plugin:                                  # Optional: SOPS decryption
+  plugin:                                  # Optional: token substitution from cluster-secrets
     env:
-      - name: SOPS_SECRET_FILE
-        value: secret.sec.yaml
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
 ```
 
 ## Secrets Management
 
-- **SOPS** with Age encryption. Config in `.sops.yaml`.
-- `*.sec.yaml` files: encrypts only `data`/`stringData` fields (used for Kubernetes Secrets)
-- `*.sops.yaml` files: fully encrypted
-- ArgoCD decrypts via KSOPS plugin (`cluster/apps/core/argocd/resources/sops-replacer-plugin.yaml`)
-- **Never commit unencrypted secret files** — pre-commit hook (gitleaks) checks for this
+Two mechanisms, choose based on where the secret value is used:
+
+1. **`cluster-secrets` mount** — for `<secret:key>` tokens in non-injectable fields (hostnames,
+   cert dnsNames, ConfigMap values, `values.yaml` strings, etc.). The `cluster-secrets` K8s Secret
+   lives in the `argocd` namespace (sourced from Bitwarden via ESO) and is mounted into ArgoCD
+   repo-server sidecars. Set `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml` to enable.
+   - ExternalSecret: `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
+
+2. **Per-app `ExternalSecret`** — for credentials that end up in K8s `Secret` `data`/`stringData`
+   fields, consumed via `secretKeyRef` or ESO template rendering. Use `ClusterSecretStore` named
+   `bitwarden`. Create in `templates/` (Helm) or `resources/` (Kustomize).
+
+**The rule**: token in `Secret data/stringData` → ExternalSecret. Token in any other field →
+`cluster-secrets` + plugin.
+
+- **Never commit secret values** to any file — gitleaks pre-commit hook checks for this
 - Environment secrets (BWS): loaded via `.envrc` using `bws secret list`
+
+### Working with Bitwarden Secrets Manager
+
+```sh
+# View secrets in the devcontainer
+bws secret list
+
+# Add a new secret via Bitwarden web UI or CLI, note the UUID for ExternalSecret remoteRef.key
+```
+
+### Adding a new global token (non-injectable field)
+
+1. Add the secret to Bitwarden Secrets Manager, note its UUID
+2. Add an entry to `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
+3. Use `<secret:key>` token in the template/values file
+4. Set `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml`
+
+### Adding a per-app credential (K8s Secret data field)
+
+1. Add the secret to Bitwarden Secrets Manager, note its UUID
+2. Create `templates/credentials-externalsecret.yaml` (or similar) with the ExternalSecret
+3. Reference the created Secret via `secretKeyRef` or ESO template expressions
 
 ## Core Infrastructure
 
@@ -138,13 +170,13 @@ Uses a devcontainer (`ghcr.io/mmalyska/home-ops-devcontainer:main`). On containe
 2. Pre-commit hooks are initialized
 3. Task subtasks are initialized
 
-Required secrets for devcontainer: `SOPS_AGE_KEY`, `TERRAFORM_TOKEN`
+Required secrets for devcontainer: `TERRAFORM_TOKEN`
 
 ## CI/CD
 
 - **Renovate**: Automated dependency updates (Helm charts, container images, Talos/K8s versions)
 - **GitHub Actions**: lint, YAML diff on PR, devcontainer publish, GitHub Pages publish
-- **Pre-commit**: yamllint, helmlint, gitleaks, prettier, sops-check
+- **Pre-commit**: yamllint, helmlint, gitleaks, prettier
 
 ## Adding a New Application
 
@@ -152,7 +184,7 @@ Required secrets for devcontainer: `SOPS_AGE_KEY`, `TERRAFORM_TOKEN`
 2. Create `app-config.yaml` with `enabled: "true"`, namespace, and sync policy
 3. Add `Chart.yaml` with Helm chart dependency (or `kustomization.yaml`)
 4. Add `values.yaml` with customizations
-5. If secrets needed: create `secret.sec.yaml`, encrypt with `sops -e -i secret.sec.yaml`, add plugin config to `app-config.yaml`
+5. If secrets needed: create `templates/credentials-externalsecret.yaml` for K8s Secret data fields (Bitwarden ExternalSecret), or add `SECRET_PROVIDER: cluster-secrets` plugin block for `<secret:key>` tokens in non-injectable fields
 6. Add any extra manifests in `templates/`
 7. Commit — ArgoCD ApplicationSet will auto-discover the new app
 
@@ -189,51 +221,52 @@ annotations:
   lbipam.cilium.io/ips: "192.168.48.XX"
 ```
 
-## Editing Encrypted Secrets
+## ExternalSecret Pattern (Bitwarden)
 
-The `SOPS_AGE_KEY` environment variable must be set (loaded automatically in the devcontainer from the `SOPS_AGE_KEY` devcontainer secret).
-
-```sh
-# Edit a secret interactively (decrypts → opens $EDITOR → re-encrypts on save)
-sops cluster/apps/system/traefik/secret.sec.yaml
-
-# Decrypt to stdout (for inspection only — do not commit decrypted output)
-sops -d cluster/apps/system/traefik/secret.sec.yaml
-
-# Encrypt a newly created plaintext file in-place
-sops -e -i cluster/apps/my-app/secret.sec.yaml
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: my-app-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: my-app-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: MY_KEY
+      remoteRef:
+        key: "<bitwarden-uuid>" #gitleaks:allow #MY_KEY_NAME
 ```
 
-**Creating a new secret file:**
-1. Write a standard Kubernetes Secret manifest to `secret.sec.yaml` (plaintext)
-2. Run `sops -e -i secret.sec.yaml` — encrypts only `data`/`stringData` fields per `.sops.yaml`
-3. Add the plugin block to `app-config.yaml` so ArgoCD decrypts it at sync time
-4. Verify the file is encrypted before committing (`sops -d` should show decrypted content)
+Mark UUID lines with `#gitleaks:allow #KEY_NAME` to suppress secret scanning false positives.
 
-**Never** leave a plaintext secret file on disk — gitleaks pre-commit hook will catch it, but encryption is the real protection.
+**ESO template expressions inside Helm `templates/`** — Helm processes the file first, so wrap
+`{{ }}` in Go raw string literals to pass them through untouched:
+
+```yaml
+MY_VALUE: "{{ `{{ .MY_KEY }}` }}"
+```
 
 ## Common Template Patterns
 
 Templates in `templates/` are plain Kubernetes YAML (when using Helm chart wrappers they may use Go templating).
 
-### Secret injection via KSOPS replacer
+### Secret injection via argocd-secret-replacer
 
-The ArgoCD KSOPS plugin replaces `<secret:key>` tokens at sync time using values from the app's `secret.sec.yaml`:
+The `secret-replacer` CMP plugin replaces `<secret:key>` tokens at sync time using values from the
+mounted `cluster-secrets` K8s Secret. Requires `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml`.
 
 ```yaml
 # Plain string (e.g. in values.yaml or an Ingress host)
 host: myapp.<secret:private-domain>
-
-# Base64-encoded value (required for Kubernetes Secret `data` fields)
-data:
-  MY_KEY: <secret:my_key|base64>
 ```
 
-**Checksum annotation** — add this to a Deployment/StatefulSet to force pod restart when secrets change:
-```yaml
-annotations:
-  checksum/secrets: {{ .Files.Get "secret.sec.yaml" | sha256sum }}
-```
+Note: `<secret:key|base64>` tokens are no longer used — K8s Secret data fields are handled by
+per-app ExternalSecrets instead.
 
 ### TLS Certificate (cert-manager)
 
