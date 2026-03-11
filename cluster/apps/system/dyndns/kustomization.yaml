@@ -6,4 +6,4 @@ namespace: dyndns
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
   - resources/deployment.yaml
-  - resources/secret.yaml
+  - resources/externalsecret.yaml
