@@ -137,7 +137,7 @@ In order to use Terraform and `cert-manager` with the Cloudflare DNS challenge y
 2. Under the `API Tokens` section, create a scoped API Token.
 
 3. Store the API Token in **Bitwarden Secrets Manager** and reference it by UUID in:
-   - `provision/terraform/cloudflare/doppler_secrets.tf` (via `bitwarden-secrets` Terraform provider)
+   - `provision/terraform/cloudflare/bitwarden_secrets.tf` (via `bitwarden-secrets` Terraform provider)
    - `cluster/apps/system/cert-manager/resources/api-token-externalsecret.yaml` (via ESO ExternalSecret)
 
 ### ⚡ Preparing Talos nodes

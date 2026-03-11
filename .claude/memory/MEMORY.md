@@ -10,7 +10,7 @@ SOPS and Doppler are fully removed. **Bitwarden Secrets Manager is the single se
 
 2. **Per-app `ExternalSecret`** (Bitwarden `ClusterSecretStore` named `bitwarden`) — for credentials in K8s Secret `data`/`stringData` fields, consumed via `secretKeyRef` or ESO template rendering. Always use individual `data[]` entries with Bitwarden UUIDs — `dataFrom.extract` is NOT supported by the Bitwarden ESO provider.
 
-3. **Terraform `bitwarden-secrets` provider** — Cloudflare credentials read directly from Bitwarden in `provision/terraform/cloudflare/doppler_secrets.tf` using `data "bitwarden-secrets_secret"` resources.
+3. **Terraform `bitwarden-secrets` provider** — Cloudflare credentials read directly from Bitwarden in `provision/terraform/cloudflare/bitwarden_secrets.tf` using `data "bitwarden-secrets_secret"` resources.
 
 **The rule**: Token in `Secret data/stringData` → ExternalSecret. Token in any other field → `cluster-secrets` + plugin. Terraform secrets → `bitwarden-secrets` provider.
 

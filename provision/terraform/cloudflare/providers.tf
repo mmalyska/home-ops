@@ -6,4 +6,6 @@ provider "cloudflare" {
 provider "bitwarden-secrets" {
   access_token    = var.bw_access_token
   organization_id = var.bw_organization_id
+  api_url         = "https://api.bitwarden.com"
+  identity_url    = "https://identity.bitwarden.com"
 }
