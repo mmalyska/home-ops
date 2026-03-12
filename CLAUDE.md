@@ -130,6 +130,34 @@ bws secret list
 | **CloudNative-PG** | PostgreSQL operator |
 | **VolSync** | PVC backup/restore |
 
+## Debugging Envoy Gateway with egctl
+
+`egctl` is the Envoy Gateway CLI (`brew install egctl`). Use it to inspect live gateway state.
+
+```sh
+# Gateway and route status
+egctl x status gateway -A
+egctl x status httproute -A
+egctl x status httproute -A --verbose   # full condition history
+egctl x status httproute -A --quiet     # latest condition only
+
+# xDS config (what Envoy actually has programmed)
+egctl config envoy-proxy route -A       # all routes
+egctl config envoy-proxy cluster -A     # all backends
+egctl config envoy-proxy listener -A    # all listeners
+
+# Open Envoy admin dashboard (port-forwards to localhost:19000)
+egctl x dashboard envoy-proxy -n envoy-gateway <pod-name>
+
+# Debug: translate a Gateway API manifest to xDS or IR
+egctl x translate --from gateway-api --to xds -f my-httproute.yaml
+egctl x translate --from gateway-api --to ir  -f my-httproute.yaml
+```
+
+The two gateway instances in this cluster:
+- `envoy-external` (namespace: `envoy-gateway`) — internet-facing via Cloudflare Tunnel
+- `envoy-internal` (namespace: `envoy-gateway`) — internal network only
+
 ## Talos Configuration
 
 - Managed with `talhelper` from `provision/talos/talconfig.yaml`

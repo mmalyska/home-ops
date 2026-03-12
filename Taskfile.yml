@@ -40,6 +40,7 @@ tasks:
       DEPS: >-
         age
         direnv
+        egctl
         gitleaks
         go-task/tap/go-task
         helm
