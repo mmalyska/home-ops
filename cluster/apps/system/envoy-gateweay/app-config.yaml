@@ -1,4 +1,4 @@
-- enabled: "false"
+- enabled: "true"
   namespace: envoy-gateway
   syncPolicy:
     enabled: true
