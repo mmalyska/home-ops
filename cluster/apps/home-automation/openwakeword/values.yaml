@@ -35,14 +35,14 @@ app-template:
             - "/bin/sh"
             - -c
           args:
-            - cd /custom && apk --no-cache add curl && curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/home-automation/openwakeword/hey_maniek.tflite
+            - cd /custom && apk --no-cache add curl && curl -sLO https://raw.githubusercontent.com/mmalyska/home-ops/main/cluster/apps/home-automation/openwakeword/hey_maniek.tflite
   service:
     maniek:
       annotations:
-        io.cilium/lb-ipam-sharing-key: "voice-pipeline"
+        lbipam.cilium.io/sharing-key: "voice-pipeline"
         lbipam.cilium.io/sharing-cross-namespace: "*"
+        lbipam.cilium.io/ips: "192.168.48.27"
       type: LoadBalancer
-      loadBalancerIP: 192.168.48.27
       controller: openwakeword
       ports:
         tcp:

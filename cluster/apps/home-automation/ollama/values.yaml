@@ -9,9 +9,9 @@ ollama:
       value: "2"
   service:
     annotations:
-      io.cilium/lb-ipam-sharing-key: "voice-pipeline"
+      lbipam.cilium.io/sharing-key: "voice-pipeline"
       lbipam.cilium.io/sharing-cross-namespace: "*"
-      loadBalancerIP: 192.168.48.27
+      lbipam.cilium.io/ips: "192.168.48.27"
     type: LoadBalancer
   ingress:
     enabled: true
