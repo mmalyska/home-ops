@@ -55,6 +55,7 @@ Multi-component apps (e.g., `rook-ceph`, `intel`) use `appSubfolder` in `app-con
 - enabled: "true"                          # Toggle deployment
   namespace: my-namespace
   appSubfolder: subfolder-name             # Optional: for multi-component apps
+  syncWave: "-5"                           # Optional: ArgoCD sync-wave (string). Lower = deploys first.
   syncPolicy:
     enabled: true
     selfHeal: true
@@ -64,6 +65,10 @@ Multi-component apps (e.g., `rook-ceph`, `intel`) use `appSubfolder` in `app-con
       - name: SECRET_PROVIDER
         value: cluster-secrets
 ```
+
+The `syncWave` field controls the `argocd.argoproj.io/sync-wave` annotation on the generated
+Application. Use it when an app must deploy before others (e.g. External Secrets Operator at
+`"-5"` so it is ready before any ExternalSecret resources are processed).
 
 ## Secrets Management
 
@@ -146,11 +151,15 @@ task talos:apply                      # Apply config to nodes (NODE= env var)
 task talos:upgrade:all                # Upgrade Talos OS on all nodes
 task talos:upgrade:k8s                # Upgrade Kubernetes version
 
-# Cluster bootstrap
-task bootstrap:kubernetes             # Full cluster bootstrap
+# Cluster bootstrap (run in order on a fresh cluster)
+task bootstrap:kubernetes             # Full automated bootstrap: etcd → kubeconfig → Cilium →
+                                      #   ESO secret injection → Rook wipe → ArgoCD install
+task bootstrap:rook-sync              # Post-bootstrap: sync Rook Ceph operator then cluster
+                                      #   (manual gate — run after 'task argocd:login')
 
 # ArgoCD
-task argocd:login                     # Login to ArgoCD with SSO
+task argocd:login                     # Login to ArgoCD (uses --sso; requires Keycloak to be running)
+                                      # On first bootstrap use local admin credentials instead
 task argocd:sync                      # Sync ArgoCD applications
 
 # Terraform
@@ -162,6 +171,37 @@ task kubernetes:delete-failed-pods    # Clean up failed/evicted pods
 task lint:all                         # Run all linters
 task format:all                       # Format YAML and markdown files
 ```
+
+## Bootstrap Process
+
+`task bootstrap:kubernetes` automates a fresh cluster from etcd to ArgoCD in one command.
+It handles the chicken-and-egg problems in the right order:
+
+| Phase | Task | What it does |
+|-------|------|--------------|
+| 1 | `etcd` | Bootstraps the etcd leader; retries until the node accepts |
+| 2 | `kubeconfig` | Fetches kubeconfig from Talos |
+| 3 | `apps` | Helmfile: Cilium CNI + `kubelet-csr-approver`; waits for all nodes `Ready` |
+| 4 | `eso-bootstrap` | Creates `external-secrets` namespace + `bitwarden-access-token` Secret from `$BWS_TOKEN` |
+| 5 | `rook` | Wipes `/var/lib/rook` and raw disk partition tables on each node (destructive) |
+| 6 | `argocd` | Pre-creates empty `cluster-secrets` Secret; applies ArgoCD kustomize + `bootstrap-application.yaml`; waits for server Available |
+
+**Post-bootstrap manual steps** (must be done after the task completes):
+1. `task argocd:login` — use local admin (SSO not available until Keycloak deploys)
+2. `task bootstrap:rook-sync` — syncs Rook operator → waits ready → syncs Rook cluster
+3. Once Keycloak is running and configured, re-run `task argocd:login` for SSO
+
+**Key design decisions:**
+- Empty `cluster-secrets` Secret is pre-created so ArgoCD repo-server CMP sidecar can mount
+  it and start. ESO (sync-wave `"-5"`) populates it with real Bitwarden values once it deploys.
+  Kubernetes automatically updates running volume mounts — no restart needed.
+- `bitwarden-access-token` is injected from `$BWS_TOKEN` (already in `.envrc`) — no manual
+  `kubectl create secret` step required.
+- Rook Ceph operator and cluster keep `syncPolicy.enabled: false` — storage is never auto-synced
+  to prevent accidental disk claims on unexpected re-syncs. `task bootstrap:rook-sync` is the
+  intentional gate.
+
+See `docs/src/k8s/bootstrap.md` for the full reference including re-bootstrap instructions.
 
 ## Development Environment
 

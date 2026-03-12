@@ -22,6 +22,11 @@
         "type": "string",
         "description": "Optional subdirectory within the app path. Used for multi-component apps (e.g. rook-ceph/operator, rook-ceph/cluster) where each entry deploys from a different subfolder."
       },
+      "syncWave": {
+        "type": "string",
+        "description": "ArgoCD sync-wave for this Application. Lower numbers deploy first. Use negative values to deploy before default-wave (0) apps. Example: \"-5\" deploys this app before all wave-0 apps.",
+        "examples": ["-5", "-1", "0", "5"]
+      },
       "syncPolicy": {
         "type": "object",
         "description": "Controls ArgoCD automated sync behaviour for this application.",

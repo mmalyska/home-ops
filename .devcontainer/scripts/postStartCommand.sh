@@ -2,9 +2,13 @@
 eval "$(direnv export bash)"
 task talos:init
 
-# Symlink Claude Code memory file from repo into the expected location
+# Symlink all Claude Code memory files from repo into the expected location.
+# New memory files should be created in .claude/memory/ in the repo (not in the ephemeral dir)
+# and they will be automatically linked on next container start.
 MEMORY_DIR="${HOME}/.claude/projects/-workspaces-home-ops/memory"
 mkdir -p "${MEMORY_DIR}"
-ln -sf "/workspaces/home-ops/.claude/memory/MEMORY.md" "${MEMORY_DIR}/MEMORY.md"
+for f in /workspaces/home-ops/.claude/memory/*.md; do
+  ln -sf "${f}" "${MEMORY_DIR}/$(basename "${f}")"
+done
 
 echo "Done!"

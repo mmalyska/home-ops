@@ -164,32 +164,19 @@ Ideally you can update the terraform script to manage DNS for all records if you
 
 If Terraform was ran successfully you can log into Cloudflare and validate the DNS records are present.
 
-### 🐙 GitOps with ArgoCD
+### 🐙 Bootstrapping the cluster
 
-📍 Here we will be installing [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) after some quick bootstrap steps.
+📍 Before running bootstrap, make sure your `.envrc` is sourced (via `direnv`) so that `BWS_TOKEN`, `KUBECONFIG`, and `TALOSCONFIG` are all set in your environment.
 
-1. Verify ArgoCD can be installed
-
-   ```sh
-   argocd version
-   # argocd: vX.X.X
-   # ...
-   ```
-
-2. Pre-create the `argocd` namespace
+1. Apply Talos config to each node (first boot, use `--insecure` before the PKI is established):
 
    ```sh
-   kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+   talosctl apply-config --nodes 192.168.48.2 --insecure -f provision/talos/clusterconfig/home-mc1.yaml
+   talosctl apply-config --nodes 192.168.48.3 --insecure -f provision/talos/clusterconfig/home-mc2.yaml
+   talosctl apply-config --nodes 192.168.48.4 --insecure -f provision/talos/clusterconfig/home-mc3.yaml
    ```
 
-3. Bootstrap the `bitwarden-access-token` secret required by External Secrets Operator
-
-   ```sh
-   kubectl -n external-secrets create secret generic bitwarden-access-token \
-       --from-literal=bw-token=<your-bitwarden-machine-account-token>
-   ```
-
-4. Push your changes to git
+2. Push your configuration to git so ArgoCD can read it:
 
    ```sh
    git add -A
@@ -197,21 +184,46 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
    git push
    ```
 
-5. Install Argo CD
+3. Run the full bootstrap (etcd → kubeconfig → Cilium → ESO secret injection → Rook wipe → ArgoCD):
 
    ```sh
-   kubectl apply -k ./cluster/core/argocd/base
+   task bootstrap:kubernetes
    ```
 
-6. Verify Argo CD components are running in the cluster
+   This single command automates the following phases in order:
+
+   | Phase | What happens |
+   | ----- | ------------ |
+   | **etcd** | Bootstraps the etcd leader on the first control-plane node |
+   | **kubeconfig** | Fetches kubeconfig from Talos into `$KUBECONFIG` |
+   | **apps** (helmfile) | Installs Cilium CNI and `kubelet-csr-approver`; waits for all nodes `Ready` |
+   | **eso-bootstrap** | Creates the `external-secrets` namespace and injects the `bitwarden-access-token` K8s Secret from `$BWS_TOKEN` |
+   | **rook** | Wipes Rook data directories and raw disks on every node (destructive — disks must be clean for Ceph) |
+   | **argocd** | Creates an empty `cluster-secrets` placeholder so the repo-server CMP sidecar can start, applies the ArgoCD kustomize, applies the root `bootstrap-application.yaml`, and waits for `argocd-server` to be ready |
+
+   > After `task bootstrap:kubernetes` completes, ArgoCD is running and the root app-of-apps is applied.
+   > ApplicationSets auto-discover all `enabled: "true"` apps and begin syncing them. External Secrets
+   > Operator deploys first (sync-wave `-5`), authenticates with Bitwarden using the injected token,
+   > and populates the `cluster-secrets` K8s Secret — at which point ArgoCD can fully resolve
+   > `<secret:key>` tokens in all app manifests.
+
+4. Log in to ArgoCD with the local admin account (OIDC is unavailable until Keycloak finishes deploying):
 
    ```sh
-   kubectl get pods -n argocd
+   task argocd:login
+   # When prompted, use local credentials — SSO will not work yet
    ```
 
-   If all goes well and you have port forwarded `80` and `443` in your router to the `METALLB_TRAEFIK_ADDR` IP, in a few moments head over to your browser and you _should_ be able to access `https://hajimari.CLOUDFLARE_DOMAIN`
+5. Sync the Rook Ceph operator and cluster (manual gate — storage is not auto-synced to prevent accidental disk claims):
 
-🎉 **Congratulations** you have a Kubernetes cluster managed by Argo CD, your Git repository is driving the state of your cluster.
+   ```sh
+   task bootstrap:rook-sync
+   ```
+
+6. Once Keycloak has deployed and its realm/client are configured, SSO login works automatically.
+   You can re-run `task argocd:login` to switch to SSO.
+
+🎉 **Congratulations** you have a Kubernetes cluster managed by ArgoCD, your Git repository is driving the state of your cluster.
 
 ## 📣 Post installation
 
