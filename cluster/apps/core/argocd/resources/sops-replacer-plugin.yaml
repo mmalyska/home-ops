@@ -22,7 +22,6 @@ data:
           - bash
           - "-c"
           - |-
-            kustomize build --enable-alpha-plugins --stack-trace . 2>&1 | grep -E "^(Loading|Fetching|Building)" >&2
             kustomize build --enable-alpha-plugins . | argocd-secret-replacer secret --mount /cluster-secrets
       lockRepo: false
   secret-replacer-plugin-helm.yaml: |
