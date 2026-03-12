@@ -22,11 +22,8 @@ data:
           - bash
           - "-c"
           - |-
-            echo "kustomize start: $(date +%s%3N)" >&2
-            kustomize build --enable-alpha-plugins . > /tmp/kustomize-out.yaml
-            echo "kustomize end, replacer start: $(date +%s%3N)" >&2
-            cat /tmp/kustomize-out.yaml | argocd-secret-replacer secret --mount /cluster-secrets
-            echo "replacer end: $(date +%s%3N)" >&2
+            kustomize build --enable-alpha-plugins --stack-trace . 2>&1 | grep -E "^(Loading|Fetching|Building)" >&2
+            kustomize build --enable-alpha-plugins . | argocd-secret-replacer secret --mount /cluster-secrets
       lockRepo: false
   secret-replacer-plugin-helm.yaml: |
     apiVersion: argoproj.io/v1alpha1
