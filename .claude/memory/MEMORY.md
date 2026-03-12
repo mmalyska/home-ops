@@ -23,6 +23,7 @@ VALUE: "{{ `{{ .MY_KEY }}` }}"
 - NEVER write secrets, tokens, passwords, API keys, IPs of external services, or any sensitive data to this file or any other repo file
 - Secret values belong in Bitwarden Secrets Manager only (SOPS and Doppler are fully removed)
 - The private domain is a SECRET — never write it in any file committed to git (use `<secret:private-domain>` placeholder instead)
+- **Always update docs proactively** after any change — see [feedback_docs_updates.md](feedback_docs_updates.md)
 
 ## Project Type
 GitOps home-lab: Talos Linux + ArgoCD. See CLAUDE.md at repo root for full guide.

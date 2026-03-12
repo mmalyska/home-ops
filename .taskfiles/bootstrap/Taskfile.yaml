@@ -7,14 +7,15 @@ vars:
 tasks:
 
   kubernetes:
-    desc: Bootstrap a Talos Kubernetes cluster backed by argocd, sops, and rook
+    desc: Bootstrap a Talos Kubernetes cluster backed by ArgoCD and Rook
     prompt: Bootstrap a Talos Kubernetes cluster ... continue?
     cmds:
       - task: etcd
       - task: kubeconfig
       - task: apps
+      - task: eso-bootstrap
       - task: rook
-      # - task: argocd
+      - task: argocd
     preconditions:
       - talosctl config info >/dev/null 2>&1
       - test -f {{.TALOS_DIR}}/clusterconfig/talosconfig
@@ -37,6 +38,21 @@ tasks:
       KUBERNETES_DIR: '{{.KUBERNETES_DIR}}'
     preconditions:
       - test -f {{.TALOS_DIR}}/apps/helmfile.yaml
+
+  eso-bootstrap:
+    internal: true
+    cmds:
+      # Create external-secrets namespace idempotently
+      - kubectl create namespace external-secrets --dry-run=client -o yaml | kubectl apply -f -
+      # Inject Bitwarden machine account token so ESO ClusterSecretStore can authenticate.
+      # Uses BWS_TOKEN from .envrc. Applied idempotently - re-running bootstrap is safe.
+      - >-
+        kubectl -n external-secrets create secret generic bitwarden-access-token
+        --from-literal=bw-token=$BWS_TOKEN
+        --dry-run=client -o yaml | kubectl apply -f -
+    preconditions:
+      - sh: test -n "$BWS_TOKEN"
+        msg: BWS_TOKEN env var must be set (check .envrc)
 
   rook:
     internal: true
@@ -97,7 +113,29 @@ tasks:
   argocd:
     internal: true
     cmds:
-      - cat {{.ROOT_DIR}}/age.key | kubectl --context {{.cluster}} -n flux-system create secret generic sops-age --from-file=age.agekey=/dev/stdin
-      - kubectl apply --server-side --kustomize {{.KUBERNETES_DIR}}/core/argocd
+      # Create argocd namespace explicitly so we can pre-create the cluster-secrets
+      # placeholder before applying the kustomize (which contains a volume mount for it).
+      - kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+      # Create an empty cluster-secrets K8s Secret so the ArgoCD repo-server CMP sidecar
+      # can mount it and start. ESO will populate it with real Bitwarden values once deployed.
+      - kubectl -n argocd create secret generic cluster-secrets --dry-run=client -o yaml | kubectl apply -f -
+      # Apply all ArgoCD manifests: operator, CMP plugins, repo-server patches, and
+      # ExternalSecrets for ArgoCD's own credentials (OIDC, private repo, cluster-secrets).
+      - kubectl apply --server-side --kustomize {{.CLUSTER_DIR}}/apps/core/argocd
+      # Apply the root app-of-apps that drives the full GitOps stack via ApplicationSets.
+      - kubectl -n argocd apply -f {{.CLUSTER_DIR}}/bootstrap-application.yaml
+      # Wait for ArgoCD server to become available before returning.
+      - kubectl -n argocd wait --for=condition=Available deployment/argocd-server --timeout=5m
     preconditions:
-      - test -f {{.ROOT_DIR}}/age.key
+      - test -f {{.CLUSTER_DIR}}/apps/core/argocd/kustomization.yaml
+      - test -f {{.CLUSTER_DIR}}/bootstrap-application.yaml
+
+  rook-sync:
+    desc: Sync Rook Ceph operator then cluster via ArgoCD (run after bootstrap completes)
+    cmds:
+      - argocd app sync rook-ceph-operator --timeout 300
+      - kubectl -n rook-ceph wait --for=condition=Available deployment/rook-ceph-operator --timeout=5m
+      - argocd app sync rook-ceph-cluster --timeout 300
+    preconditions:
+      - sh: argocd app list >/dev/null 2>&1
+        msg: ArgoCD must be accessible (run 'task argocd:login' first)

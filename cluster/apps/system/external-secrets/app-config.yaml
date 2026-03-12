@@ -1,5 +1,6 @@
 - enabled: "true"
   namespace: external-secrets
+  syncWave: "-5"
   syncPolicy:
     enabled: true
     selfHeal: true
