@@ -20,7 +20,7 @@ spec:
       containers:
         - name: secret-replacer-plugin-kustomize
           command: [/var/run/argocd/argocd-cmp-server]
-          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:707c4bc4c7b8d72e7bbbd9ec1ab0321b6078994acea95fabf94d032d8e156788
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:db44e6479bf6776441f5744a94674dc56861d1af5f3fa0b6a479ec220ba50a3a
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -46,7 +46,7 @@ spec:
               readOnly: true
         - name: secret-replacer-plugin-helm
           command: [/var/run/argocd/argocd-cmp-server]
-          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:707c4bc4c7b8d72e7bbbd9ec1ab0321b6078994acea95fabf94d032d8e156788
+          image: ghcr.io/mmalyska/argocd-secret-replacer:rolling@sha256:db44e6479bf6776441f5744a94674dc56861d1af5f3fa0b6a479ec220ba50a3a
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
