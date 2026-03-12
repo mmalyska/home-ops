@@ -8,3 +8,9 @@
     env:
       - name: SECRET_PROVIDER
         value: cluster-secrets
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: argocd-secret
+      jsonPointers:
+        - /data/oidc.keycloak.clientSecret
