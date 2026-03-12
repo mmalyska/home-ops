@@ -206,8 +206,8 @@ tasks:
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
-      - task: apply-config
-        vars: {N: "{{ .N }}", CLI_ARGS: "-m staged"}
+      # - task: apply-config
+      #   vars: {N: "{{ .N }}", CLI_ARGS: "-m staged"}
       - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
