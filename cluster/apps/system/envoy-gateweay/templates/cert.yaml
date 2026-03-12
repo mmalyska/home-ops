@@ -3,7 +3,7 @@ kind: Certificate
 metadata:
   name: cert-production
 spec:
-  secretName: cert-production-tls
+  secretName: cert-production
   issuerRef:
     name: lets-encrypt-dns01-production-cf
     kind: ClusterIssuer
