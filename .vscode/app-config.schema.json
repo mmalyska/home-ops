@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ArgoCD ApplicationSet app-config",
+  "description": "Configuration file consumed by ArgoCD ApplicationSets to generate ArgoCD Application resources.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "description": "A single ArgoCD Application entry.",
+    "required": ["enabled", "namespace", "syncPolicy"],
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "string",
+        "enum": ["true", "false"],
+        "description": "Whether this application should be deployed. The ApplicationSet selector only processes entries with \"true\"."
+      },
+      "namespace": {
+        "type": "string",
+        "description": "The Kubernetes namespace where the application will be deployed. The namespace is created automatically if it does not exist."
+      },
+      "appSubfolder": {
+        "type": "string",
+        "description": "Optional subdirectory within the app path. Used for multi-component apps (e.g. rook-ceph/operator, rook-ceph/cluster) where each entry deploys from a different subfolder."
+      },
+      "syncPolicy": {
+        "type": "object",
+        "description": "Controls ArgoCD automated sync behaviour for this application.",
+        "required": ["enabled", "selfHeal", "prune"],
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable ArgoCD automated sync. When false, syncs must be triggered manually."
+          },
+          "selfHeal": {
+            "type": "boolean",
+            "description": "When true, ArgoCD will automatically revert manual changes made directly to the cluster (drift correction)."
+          },
+          "prune": {
+            "type": "boolean",
+            "description": "When true, ArgoCD will delete Kubernetes resources that are no longer present in Git during a sync."
+          }
+        }
+      },
+      "managedNamespaceMetadata": {
+        "type": "object",
+        "description": "Labels and/or annotations to apply to the managed namespace. Requires CreateNamespace=true in syncOptions (already set globally).",
+        "additionalProperties": false,
+        "properties": {
+          "labels": {
+            "type": "object",
+            "description": "Key/value labels to add to the namespace. Common use: pod-security.kubernetes.io/enforce: privileged.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "annotations": {
+            "type": "object",
+            "description": "Key/value annotations to add to the namespace.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "plugin": {
+        "type": "object",
+        "description": "ArgoCD Config Management Plugin (CMP) configuration. Used to enable the argocd-secret-replacer plugin which substitutes <secret:key> tokens at sync time.",
+        "additionalProperties": false,
+        "properties": {
+          "env": {
+            "type": "array",
+            "description": "Environment variables passed to the CMP plugin.",
+            "items": {
+              "type": "object",
+              "required": ["name", "value"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Environment variable name. Use SECRET_PROVIDER to activate the secret-replacer plugin.",
+                  "examples": ["SECRET_PROVIDER"]
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Environment variable value. Set to \"cluster-secrets\" to enable <secret:key> token substitution from the cluster-secrets K8s Secret.",
+                  "examples": ["cluster-secrets"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "ignoreDifferences": {
+        "type": "array",
+        "description": "List of resource fields that ArgoCD should ignore when comparing live cluster state with Git. Useful for fields mutated by controllers (e.g. Ceph, Prometheus operators).",
+        "items": {
+          "type": "object",
+          "description": "A single ignore-differences rule targeting a specific resource or field path.",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": {
+            "group": {
+              "type": "string",
+              "description": "API group of the resource (e.g. \"apps\", \"ceph.rook.io\"). Leave empty for core API group resources like ConfigMap and Secret.",
+              "examples": ["", "apps", "ceph.rook.io", "monitoring.coreos.com"]
+            },
+            "kind": {
+              "type": "string",
+              "description": "Kubernetes resource kind to match (e.g. \"Deployment\", \"Secret\", \"ConfigMap\").",
+              "examples": ["Deployment", "Secret", "ConfigMap", "CephCluster"]
+            },
+            "name": {
+              "type": "string",
+              "description": "Optional: only apply this rule to a resource with this specific name. Omit to match all resources of this kind."
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Optional: only apply this rule to resources in this namespace."
+            },
+            "jsonPointers": {
+              "type": "array",
+              "description": "JSON Pointer paths (RFC 6901) to ignore. Mutually exclusive with jqPathExpressions in practice, but both can be present.",
+              "items": {
+                "type": "string",
+                "description": "A JSON Pointer path, e.g. \"/data/ca.crt\" or \"/spec/replicas\".",
+                "examples": ["/data/ca.crt", "/spec/replicas", "/status"]
+              }
+            },
+            "jqPathExpressions": {
+              "type": "array",
+              "description": "jq path expressions to ignore. More flexible than jsonPointers — supports wildcards and filters.",
+              "items": {
+                "type": "string",
+                "description": "A jq expression, e.g. \".spec.template.spec.containers[]?.resources\".",
+                "examples": [
+                  ".spec.template.spec.containers[]?.resources",
+                  ".spec.template.spec.initContainers[]?.resources"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
