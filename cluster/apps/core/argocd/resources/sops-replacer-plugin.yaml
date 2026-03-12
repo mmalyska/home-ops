@@ -27,7 +27,7 @@ data:
             echo "kustomize end, replacer start: $(date +%s%3N)" >&2
             cat /tmp/kustomize-out.yaml | argocd-secret-replacer secret --mount /cluster-secrets
             echo "replacer end: $(date +%s%3N)" >&2
-            lockRepo: false
+      lockRepo: false
   secret-replacer-plugin-helm.yaml: |
     apiVersion: argoproj.io/v1alpha1
     kind: ConfigManagementPlugin
