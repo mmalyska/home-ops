@@ -134,7 +134,7 @@ spec:
   clientIPDetection:
     xForwardedFor:
       trustedCIDRs:
-        - "#{ cluster_pod_cidr }#"
+        - "10.244.0.0/16"
   http2:
     onInvalidMessage: TerminateStream
   http3: {}
