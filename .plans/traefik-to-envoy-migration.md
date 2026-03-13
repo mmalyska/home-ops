@@ -86,8 +86,10 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 ### Phase 4 — DNS Cutover
 
-- [ ] Update `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`: change the `internal-gateway-endpoint` wildcard target from `192.168.48.50` to `192.168.48.21`
-- [ ] Verify all apps respond via `192.168.48.21`
+> **Strategy changed (2026-03-13):** The wildcard `*.<domain>` → `192.168.48.50` has been removed from `internal-gateway-endpoint`. DNS is now managed per-app: external-dns picks up each HTTPRoute (annotated `controller: internal`) and creates an A record → `192.168.48.21` automatically. The only remaining Traefik-specific static record is `argocd.<domain>` → `192.168.48.50` (kept until ArgoCD is migrated in Phase 2).
+
+- [x] ~~Change wildcard target from `.48.50` to `.48.21`~~ — **replaced by per-app external-dns via HTTPRoute source**
+- [ ] After ArgoCD is migrated (Phase 2): remove the `argocd.<domain>` → `192.168.48.50` static record from `internal-gateway-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`
 
 ### Phase 5 — Re-enable disabled apps with HTTPRoutes
 
@@ -320,29 +322,18 @@ HTTP migration is straightforward. SSH server is `START_SSH_SERVER: false` so no
 
 ## DNS Cutover Strategy
 
-**Do NOT** change the wildcard DNS until all apps have HTTPRoutes and are verified working.
+**Actual approach (changed 2026-03-13):** Per-app DNS via external-dns, not a single wildcard flip.
 
-**Testing during migration (before wildcard update):**
-- Add specific per-app `DNSEndpoint` resources pointing to `192.168.48.21` (they override the wildcard in AdGuard Home)
-- Or test by adding a manual hosts entry locally: `192.168.48.21 myapp.<private-domain>`
-- Or use `curl -H "Host: myapp.<private-domain>" https://192.168.48.21` (needs `--insecure` if cert doesn't match)
+- The `internal-gateway-endpoint` wildcard `*.<domain>` → `192.168.48.50` has been **removed**
+- external-dns (adguard controller) automatically creates A records → `192.168.48.21` for each HTTPRoute annotated with `controller: internal`
+- The only remaining static Traefik record is `argocd.<domain>` → `192.168.48.50` in `internal-gateway-endpoint`, which stays until ArgoCD is migrated
 
-**The cutover:**
-File: `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`
+**Testing migrated apps:**
+- DNS resolves automatically once the HTTPRoute is deployed and accepted
+- Or use `curl -sk -H "Host: myapp.<private-domain>" https://192.168.48.21/` to test before DNS propagates
 
-Change:
-```yaml
-# internal-gateway-endpoint
-targets:
-  - 192.168.48.50   # Traefik
-```
-To:
-```yaml
-targets:
-  - 192.168.48.21   # envoy-internal
-```
-
-This is the final step before removing Traefik.
+**Final cleanup (after ArgoCD migration):**
+Remove the `argocd.<domain>` entry from `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml` `internal-gateway-endpoint`.
 
 ---
 
