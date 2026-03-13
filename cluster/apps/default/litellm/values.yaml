@@ -2,17 +2,7 @@ litellm-helm:
   image:
     tag: main-latest
   ingress:
-    enabled: true
-    className: "traefik"
-    annotations:
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      traefik.ingress.kubernetes.io/router.tls: "true"
-      traefik.ingress.kubernetes.io/ingressEndpoint.hostname: &host litellm.<secret:private-domain>
-    hosts:
-      - host: *host
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
+    enabled: false
   resources:
     limits:
       cpu: 1500m

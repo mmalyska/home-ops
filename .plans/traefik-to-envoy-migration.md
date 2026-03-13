@@ -1,14 +1,14 @@
 # Plan: Migrate from Traefik to Envoy Gateway
 
 **Created:** 2026-03-13
-**Status:** Not started
+**Status:** Phase 1 complete (2026-03-13)
 **Goal:** Migrate all apps from Traefik (ingress controller) to Envoy Gateway (Gateway API), then remove Traefik entirely.
 
 ---
 
 ## Context for New Claude Sessions
 
-This is a GitOps home-lab repo (Talos Linux + ArgoCD). Read `CLAUDE.md` at the repo root before starting — it explains the app pattern, secret management, and HTTPRoute templates.
+This is a GitOps home-lab repo (Talos Linux + ArgoCD). Read `CLAUDE.md` at the repo root before starting — it explains the app pattern, secret management, and HTTPRoute templates. Remember to update plan after each finished step so it is up to date with progress.
 
 **Key facts for this migration:**
 - Traefik is currently at `192.168.48.50` and handles ALL internal traffic via AdGuard wildcard DNS `*.<private-domain>` → `.48.50`
@@ -35,18 +35,18 @@ This is a GitOps home-lab repo (Talos Linux + ArgoCD). Read `CLAUDE.md` at the r
 | App | Path | Kind | Gateway Target | Status |
 |-----|------|------|---------------|--------|
 | ArgoCD | `cluster/apps/core/argocd/resources/ingress.yaml` | `IngressRoute` | internal | enabled |
-| Grafana | `cluster/apps/system/prometheus-stack/templates/ingress.yaml` | `IngressRoute` | internal | enabled |
+| Grafana | `cluster/apps/system/prometheus-stack/templates/httproute.yaml` | `HTTPRoute` | internal | **MIGRATED** |
 | Keycloak | `cluster/apps/system/keycloak/templates/ingress.yaml` | `IngressRoute` | **both** (OIDC issuer) | enabled |
 | oauth2-proxy | `cluster/apps/system/oauth2-proxy/values.yaml` | `Ingress` (chart) | external | enabled |
-| Jellyfin | `cluster/apps/default/jellyfin/templates/ingress.yaml` | `Ingress` | internal or external | enabled |
-| qnap-proxy | `cluster/apps/default/qnap-proxy/templates/ingress.yaml` | `Ingress` | internal | enabled |
+| Jellyfin | `cluster/apps/default/jellyfin/templates/httproute.yaml` | `HTTPRoute` | internal | **MIGRATED** |
+| qnap-proxy | `cluster/apps/default/qnap-proxy/templates/httproute.yaml` | `HTTPRoute` | internal | **MIGRATED** |
 | hass-proxy | `cluster/apps/default/hass-proxy/templates/ingress.yaml` | `Ingress` (x2) | internal | enabled |
-| Gitea | `cluster/apps/default/gitea/values.yaml` | `Ingress` (chart) | internal or external | enabled |
-| open-webui | `cluster/apps/default/open-webui/values.yaml` | `Ingress` (chart) | internal | enabled |
-| litellm | `cluster/apps/default/litellm/values.yaml` | `Ingress` (chart) | internal | enabled |
+| Gitea | `cluster/apps/default/gitea/values.yaml` | `Ingress` (chart) | internal | enabled |
+| open-webui | `cluster/apps/default/open-webui/templates/httproute.yaml` | `HTTPRoute` | internal | **MIGRATED** |
+| litellm | `cluster/apps/default/litellm/templates/httproute.yaml` | `HTTPRoute` | internal | **MIGRATED** |
 | n8n | `cluster/apps/default/n8n/values.yaml` | `Ingress` (chart) | UI=internal, webhooks=external | enabled |
 | rook-ceph | `cluster/apps/core/rook-ceph/cluster/values.yaml` | `Ingress` (chart) | internal | enabled |
-| ollama | `cluster/apps/home-automation/ollama/values.yaml` | `Ingress` (chart) | internal | enabled |
+| ollama | `cluster/apps/home-automation/ollama/templates/httproute.yaml` | `HTTPRoute` | internal | **MIGRATED** |
 | home-assistant | `cluster/apps/home-automation/home-assistant/values.yaml` | `Ingress` (chart) | internal | **disabled** |
 | grocy | `cluster/apps/default/grocy/templates/ingress.yaml` | `Ingress` | internal | **disabled** |
 | gethomepage | `cluster/apps/default/gethomepage/values.yaml` | `Ingress` (chart) | internal | **disabled** |
@@ -64,12 +64,12 @@ Work tier by tier. After each app, verify via `kubectl` or browser before moving
 
 Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + delete cert" operation.
 
-- [ ] **open-webui** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` (internal)
-- [ ] **litellm** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` (internal)
-- [ ] **ollama** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` (internal)
-- [ ] **Grafana** — replace `templates/ingress.yaml` (IngressRoute) with `templates/httproute.yaml` (internal); delete the `Certificate` resource in the same file
-- [ ] **Jellyfin** — replace `templates/ingress.yaml` with `templates/httproute.yaml`; delete `templates/certificate.yaml`
-- [ ] **qnap-proxy** — replace `templates/ingress.yaml` with `templates/httproute.yaml` (internal); delete cert resource
+- [x] **open-webui** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` (internal)
+- [x] **litellm** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` (internal)
+- [x] **ollama** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` (internal)
+- [x] **Grafana** — replaced `templates/ingress.yaml` (IngressRoute) + `templates/cert.yaml` with `templates/httproute.yaml` (internal); hostname renamed `grafana.internal.` → `grafana.` to fit `cert-production` wildcard
+- [x] **Jellyfin** — replaced `templates/ingress.yaml` + `templates/certificate.yaml` with `templates/httproute.yaml` (internal); cleaned up `values.yaml` ingress block
+- [x] **qnap-proxy** — replaced `templates/ingress.yaml` + `templates/cert.yaml` with `templates/httproute.yaml` (internal)
 
 ### Phase 2 — Tier 2: Moderate apps (multi-route or special backend)
 
@@ -386,12 +386,12 @@ Also update `CLAUDE.md` LoadBalancer IP table to remove `192.168.48.50` (Traefik
 
 ## Open Questions / Decisions Needed
 
-1. **Keycloak Warp block** — Is the `!HeaderRegexp(Cf-Warp-Tag-Id, .*)` rule still needed? Ask the repo owner. If yes, need to investigate `EnvoyPatchPolicy` or restructure the routing logic.
+1. **Keycloak Warp block** — ~~Is the `!HeaderRegexp(Cf-Warp-Tag-Id, .*)` rule still needed?~~ **DECIDED: Remove it — no longer needed.** Use plain HTTPRoute on both gateways.
 
 2. **oauth2-proxy extAuth** — Confirm which ext_authz protocol Envoy Gateway uses (HTTP vs gRPC). Review oauth2-proxy docs for `--reverse-proxy` mode compatibility.
 
-3. **Jellyfin** — Internal or external gateway? (Media server — personal preference)
+3. **Jellyfin** — ~~Internal or external gateway?~~ **DECIDED: internal only (`envoy-internal`)**
 
-4. **Gitea** — Internal or external gateway? (Git hosting — depends on whether remote access is needed)
+4. **Gitea** — ~~Internal or external gateway?~~ **DECIDED: internal only (`envoy-internal`)**
 
 5. **hass-proxy ExternalName** — Test whether ExternalName services work with Envoy Gateway or if manual EndpointSlice is needed.

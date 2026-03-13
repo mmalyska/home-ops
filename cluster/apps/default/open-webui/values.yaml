@@ -2,10 +2,17 @@ open-webui:
   ollama:
     enabled: false
   ingress:
+    enabled: false
+  route:
     enabled: true
-    class: "traefik"
-    host: chat.<secret:private-domain>
-    tls: false
+    annotations:
+      external-dns.alpha.kubernetes.io/controller: internal
+    parentRefs:
+      - name: envoy-internal
+        namespace: envoy-gateway
+        sectionName: https
+    hostnames:
+      - chat.<secret:private-domain>
   image:
     repository: ghcr.io/open-webui/open-webui
     tag: "v0.8.10@sha256:ee057955040ce91e3e787e4b7978c9c23e828972c68d01d787ed40f9a307df9f"

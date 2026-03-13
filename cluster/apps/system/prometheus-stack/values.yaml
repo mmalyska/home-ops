@@ -8,6 +8,17 @@ kube-prometheus-stack:
   kubeScheduler:
     enabled: true
   grafana:
+    route:
+      main:
+        enabled: true
+        annotations:
+          external-dns.alpha.kubernetes.io/controller: internal
+        parentRefs:
+          - name: envoy-internal
+            namespace: envoy-gateway
+            sectionName: https
+        hostnames:
+          - grafana.<secret:private-domain>
     deploymentStrategy:
       type: Recreate
     persistence:

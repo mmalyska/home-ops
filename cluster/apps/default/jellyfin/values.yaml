@@ -52,11 +52,3 @@ resources:
 nodeSelector: {}
 tolerations: []
 affinity: {}
-ingress:
-  host: jellyfin.<secret:private-domain>
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/ingressEndpoint.hostname: jellyfin.<secret:private-domain>
-    kubernetes.io/ingress.class: traefik
-  labels: {}
