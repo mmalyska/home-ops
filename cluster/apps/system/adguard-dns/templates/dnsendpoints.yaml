@@ -43,20 +43,7 @@ kind: DNSEndpoint
 metadata:
   name: haas-endpoint
   annotations:
-    external-dns.alpha.kubernetes.io/controller: external
-spec:
-  endpoints:
-    - dnsName: haas.<secret:private-domain>
-      recordType: CNAME
-      targets:
-        - external.<secret:private-domain>
----
-apiVersion: externaldns.k8s.io/v1alpha1
-kind: DNSEndpoint
-metadata:
-  name: haas-endpoint
-  annotations:
-    external-dns.alpha.kubernetes.io/controller: external
+    external-dns.alpha.kubernetes.io/controller: internal
 spec:
   endpoints:
     - dnsName: test222.<secret:private-domain>
