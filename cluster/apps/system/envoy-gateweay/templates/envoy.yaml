@@ -52,6 +52,7 @@ spec:
   gatewayClassName: envoy
   infrastructure:
     annotations:
+      external-dns.alpha.kubernetes.io/controller: external
       external-dns.alpha.kubernetes.io/hostname: external.<secret:private-domain>
       lbipam.cilium.io/ips: "192.168.48.20"
   listeners:

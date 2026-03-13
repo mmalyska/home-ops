@@ -37,16 +37,3 @@ spec:
       recordType: A
       targets:
         - 192.168.50.8
----
-apiVersion: externaldns.k8s.io/v1alpha1
-kind: DNSEndpoint
-metadata:
-  name: test232-endpoint
-  annotations:
-    external-dns.alpha.kubernetes.io/controller: internal
-spec:
-  endpoints:
-    - dnsName: test222.<secret:private-domain>
-      recordType: CNAME
-      targets:
-        - external.<secret:private-domain>
