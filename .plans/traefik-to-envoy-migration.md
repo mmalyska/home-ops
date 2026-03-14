@@ -81,7 +81,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 ### Phase 3 — Tier 3: Complex apps (auth, header filtering)
 
-- [ ] **oauth2-proxy** — disable chart ingress, add HTTPRoute; delete `templates/forward-auth-middleware.yaml`; research SecurityPolicy extAuth as replacement
+- [x] **oauth2-proxy** — disabled chart ingress (`ingress.enabled: false`); deleted `templates/cert.yaml` + `templates/forward-auth-middleware.yaml`; added `templates/httproute.yaml` (internal, `oauth2-proxy:4180`); added `templates/referencegrant.yaml` (allows SecurityPolicy from `grocy` namespace to reference oauth2-proxy Service)
 - [x] **Keycloak** — replaced IngressRoute with HTTPRoute on both gateways (`envoy-external` + `envoy-internal`); removed Warp block (no longer needed); removed static `l.<domain>` → `.48.50` DNSEndpoint from adguard-dns (external-dns now manages via HTTPRoute)
 
 ### Phase 4 — DNS Cutover
@@ -94,7 +94,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 ### Phase 5 — Re-enable disabled apps with HTTPRoutes
 
-- [ ] **grocy** — replace `templates/ingress.yaml` with HTTPRoute; implement extAuth SecurityPolicy (depends on oauth2-proxy Phase 3)
+- [x] **grocy** — set `server.ingresses: []` (disables Ingress + Certificate templates); added `templates/httproute.yaml` (two routes: `grocy.` with auth, `grocy-api.` strips username header); added `templates/securitypolicy.yaml` (extAuth → `oauth2-proxy:4180/oauth2/auth`, forwards X-Auth-Request-* headers to grocy)
 - [x] **gethomepage** — disabled chart ingress (`ingress.main.enabled: false`), added `templates/httproute.yaml` (internal, bare domain); app stays disabled until ready to enable
 - [x] **home-assistant** — replaced chart ingress blocks with native `route:` key (app-template v4.6.2); two routes: `dom.` and `dom-code.` on `envoy-internal`; app stays disabled until ready to enable
 

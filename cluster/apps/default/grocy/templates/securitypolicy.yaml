@@ -1,0 +1,22 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: grocy-auth
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: grocy
+  extAuth:
+    http:
+      backendRef:
+        name: oauth2-proxy
+        namespace: oauth2-proxy
+        port: 4180
+      path: "/oauth2/auth"
+      headersToBackend:
+        - X-Auth-Request-User
+        - X-Auth-Request-Email
+        - X-Auth-Request-Groups
+        - X-Auth-Request-Preferred-Username
+        - Authorization

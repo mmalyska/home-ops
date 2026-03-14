@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: oauth2-proxy
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - oauth.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: oauth2-proxy
+          port: 4180

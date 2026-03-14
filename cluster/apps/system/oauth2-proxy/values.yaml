@@ -25,17 +25,7 @@ oauth2-proxy:
       enabled: true
       namespace: monitoring
   ingress:
-    enabled: true
-    annotations:
-      kubernetes.io/ingress.class: traefik
-      traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      traefik.ingress.kubernetes.io/router.tls: "true"
-    hosts:
-      - "oauth.<secret:private-domain>"
-    tls:
-      - secretName: oauth-domain
-        hosts:
-          - oauth.<secret:private-domain>
+    enabled: false
   sessionStorage:
     type: redis
     redis:

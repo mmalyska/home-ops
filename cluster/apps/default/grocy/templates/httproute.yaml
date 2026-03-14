@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grocy
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - grocy.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: grocy-server
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grocy-api
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - grocy-api.<secret:private-domain>
+  rules:
+    - filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            remove:
+              - X-Auth-Request-Preferred-Username
+      backendRefs:
+        - name: grocy-server
+          port: 80

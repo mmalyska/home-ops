@@ -139,3 +139,4 @@ nav:
       - "Kubernetes":
           - "Bootstrap": k8s/bootstrap.md
           - "OIDC": k8s/oidc/Readme.md
+          - "OAuth2 Proxy": k8s/oauth2-proxy.md
