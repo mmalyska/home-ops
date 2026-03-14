@@ -259,7 +259,7 @@ After migration, grocy will need a `SecurityPolicy` attached to its HTTPRoute in
 
 **Note:** `agh.<private-domain>` proxies to AdGuard Home's management UI. This is different from the AdGuard DNS server itself — routing is fine, just be aware.
 
-**UNKNOWN:** ExternalName services with Envoy Gateway — may need manual `EndpointSlice` instead. Test after creating HTTPRoute. If ExternalName doesn't work, create a `Service` with `spec.type: ExternalName` pointing to the IP and a manual `EndpointSlice` with the target IP.
+**RESOLVED:** ExternalName services do NOT work with Envoy Gateway — Envoy reports `no ready endpoints` and returns 503. Use a ClusterIP `Service` with no selector + a matching `Endpoints` resource with the target IP instead.
 
 ---
 

@@ -1,27 +1,42 @@
-kind: Service
-apiVersion: v1
-metadata:
-  labels:
-    k8s-app: hass-proxy
-  name: hass-proxy
-spec:
-  type: ExternalName
-  ports:
-    - name: hass-proxy
-      port: 8123
-      targetPort: 8123
-  externalName: 192.168.50.9
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  labels:
-    k8s-app: agh-proxy
+  name: hass-proxy
+spec:
+  ports:
+    - name: hass-proxy
+      port: 8123
+      targetPort: 8123
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: hass-proxy
+subsets:
+  - addresses:
+      - ip: 192.168.50.9
+    ports:
+      - name: hass-proxy
+        port: 8123
+---
+kind: Service
+apiVersion: v1
+metadata:
   name: agh-proxy
 spec:
-  type: ExternalName
   ports:
     - name: agh-proxy
       port: 8812
       targetPort: 8812
-  externalName: 192.168.50.9
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: agh-proxy
+subsets:
+  - addresses:
+      - ip: 192.168.50.9
+    ports:
+      - name: agh-proxy
+        port: 8812
