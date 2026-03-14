@@ -16,6 +16,10 @@ Before running bootstrap:
 - All secrets stored in Bitwarden Secrets Manager with their UUIDs referenced in
   `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
 - Configuration committed and pushed to the `main` branch (ArgoCD reads from git)
+- AdGuard Home has a manual DNS rewrite: `k8s.<private-domain> → 192.168.48.1`
+  (the cluster VIP). This is required before phase 3 (`apps`) where `kubectl` first
+  connects to `https://k8s.<private-domain>:6443`. External-dns will take over
+  maintaining this entry once deployed, but it does not exist yet during bootstrap.
 
 ## Bootstrap sequence
 
@@ -101,6 +105,16 @@ it won't start without it. This is resolved in two steps:
 ArgoCD is configured to use Keycloak for OIDC, but Keycloak itself is deployed by ArgoCD as
 a system app. On first bootstrap, ArgoCD starts with OIDC failing (Keycloak not reachable).
 The local `mmalyska` admin account works as a fallback until Keycloak is ready.
+
+### k8s endpoint DNS before external-dns
+
+`kubectl` connects to `https://k8s.<private-domain>:6443` (the cluster VIP at `192.168.48.1`)
+starting at phase 3. The `DNSEndpoint` that registers this name in AdGuard lives in the
+`adguard-dns` app, which is deployed by ArgoCD — which itself isn't running yet.
+This is resolved by adding a **manual static rewrite** in AdGuard Home
+(`k8s.<private-domain> → 192.168.48.1`) before bootstrap. Once external-dns deploys and
+reconciles the `DNSEndpoint`, it takes ownership of the entry and the manual rewrite becomes
+redundant.
 
 ### Rook Ceph disk initialization
 
