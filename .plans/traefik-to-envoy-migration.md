@@ -75,7 +75,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 - [x] **hass-proxy** — replaced `templates/ingress.yaml` with two HTTPRoutes (`hass.` and `agh.` hostnames); fixed services: ExternalName → ClusterIP + Endpoints pointing to `192.168.50.9`
 - [ ] **rook-ceph** — disable chart ingress in `cluster/apps/core/rook-ceph/cluster/values.yaml`, add `cluster/apps/core/rook-ceph/cluster/templates/httproute.yaml` (internal)
-- [x] **n8n** — removed chart ingress; uses **native `route` key** in `values.yaml` (app-template v4.6.2 supports Gateway API natively); two routes: `n8n.` on `envoy-internal`, `n8n-webhook.` on `envoy-external` (path `/webhook` only); updated `N8N_HOST`, `N8N_PROTOCOL`, `WEBHOOK_URL` env vars
+- [x] **n8n** — removed chart ingress; uses **native `route` key** in `values.yaml` (app-template v4.6.2 supports Gateway API natively); two routes: `n8n.` on `envoy-internal`, `n8n-webhook.` on `envoy-external` (paths `/webhook` + `/webhook-test` — test trigger button uses `/webhook-test`); updated `N8N_HOST`, `N8N_PROTOCOL`, `WEBHOOK_URL` env vars
 - [ ] **Gitea** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml`; decide internal vs external
 - [x] **ArgoCD** — replaced `resources/ingress.yaml` (IngressRoute) with `resources/httproute.yaml`; no `appProtocol` needed — ArgoCD in `--insecure` mode serves HTTP/1.1, gRPC-Web works over HTTP/1.1
 
