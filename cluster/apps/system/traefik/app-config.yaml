@@ -2,7 +2,7 @@
   namespace: traefik
   syncPolicy:
     enabled: true
-    selfHeal: true
+    selfHeal: false
     prune: false
   plugin:
     env:
