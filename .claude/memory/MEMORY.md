@@ -83,8 +83,8 @@ causes them to be silently skipped with "controller value does not match, found:
 
 **Static DNSEndpoints** live in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`:
 - `k8s.PRIVATE_DOMAIN` → 192.168.48.1, `qnap.` → 192.168.50.8
-- `argocd.PRIVATE_DOMAIN` → 192.168.48.50 (Traefik, temporary until ArgoCD migrated to envoy)
-- `l.PRIVATE_DOMAIN` → 192.168.48.50 (Keycloak, temporary)
+- `argocd.PRIVATE_DOMAIN` → 192.168.48.50 (Traefik, temporary — remove after ArgoCD migrated to envoy)
+- `l.PRIVATE_DOMAIN` → 192.168.48.50 (Keycloak, temporary — remove after Keycloak migrated to envoy, added 2026-03-14)
 
 **Key files:**
 - `cluster/apps/system/envoy-gateweay/` (note typo in dir name) — GatewayClass, Gateways, policies, HTTPS redirect

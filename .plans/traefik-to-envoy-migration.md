@@ -86,10 +86,11 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 ### Phase 4 — DNS Cutover
 
-> **Strategy changed (2026-03-13):** The wildcard `*.<domain>` → `192.168.48.50` has been removed from `internal-gateway-endpoint`. DNS is now managed per-app: external-dns picks up each HTTPRoute (annotated `controller: internal`) and creates an A record → `192.168.48.21` automatically. The only remaining Traefik-specific static record is `argocd.<domain>` → `192.168.48.50` (kept until ArgoCD is migrated in Phase 2).
+> **Strategy changed (2026-03-13):** The wildcard `*.<domain>` → `192.168.48.50` has been removed from `internal-gateway-endpoint`. DNS is now managed per-app: external-dns picks up each HTTPRoute (annotated `controller: dns-controller`) and creates an A record → `192.168.48.21` automatically. Remaining Traefik-specific static records are kept until those apps are migrated.
 
 - [x] ~~Change wildcard target from `.48.50` to `.48.21`~~ — **replaced by per-app external-dns via HTTPRoute source**
 - [ ] After ArgoCD is migrated (Phase 2): remove the `argocd.<domain>` → `192.168.48.50` static record from `internal-gateway-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`
+- [ ] After Keycloak is migrated: remove the `l.<domain>` → `192.168.48.50` static record from `keycloak-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml` (added 2026-03-14)
 
 ### Phase 5 — Re-enable disabled apps with HTTPRoutes
 
