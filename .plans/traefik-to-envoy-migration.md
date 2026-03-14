@@ -1,7 +1,7 @@
 # Plan: Migrate from Traefik to Envoy Gateway
 
 **Created:** 2026-03-13
-**Status:** Phase 1 complete (2026-03-13)
+**Status:** COMPLETE — all phases done (2026-03-14). Manual cleanup remaining: `kubectl delete namespace traefik`
 **Goal:** Migrate all apps from Traefik (ingress controller) to Envoy Gateway (Gateway API), then remove Traefik entirely.
 
 ---
@@ -100,10 +100,10 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 ### Phase 6 — Remove Traefik
 
-- [ ] Set `enabled: "false"` in `cluster/apps/system/traefik/app-config.yaml`
-- [ ] Delete the Traefik Middleware CRDs file: `cluster/apps/system/oauth2-proxy/templates/forward-auth-middleware.yaml`
-- [ ] Delete the entire `cluster/apps/system/traefik/` directory
-- [ ] Release IP `192.168.48.50` from known IPs table in `CLAUDE.md`
+- [x] Deleted `cluster/apps/system/traefik/` directory (ArgoCD ApplicationSet will stop managing the app; `prune: false` means K8s resources remain — manually run `kubectl delete namespace traefik` to finish cleanup)
+- [x] Deleted `cluster/apps/system/oauth2-proxy/templates/forward-auth-middleware.yaml` (done in Phase 3)
+- [x] Removed `192.168.48.50` from known IPs table in `CLAUDE.md`
+- [x] Removed `traefik` from repository structure comment in `CLAUDE.md`
 
 ---
 

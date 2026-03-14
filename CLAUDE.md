@@ -19,7 +19,7 @@ cluster/                        # All Kubernetes manifests (ArgoCD managed)
   appsets/                     # ArgoCD ApplicationSets (scan app-config.yaml files)
   apps/                        # Applications organized by category
     core/                      #   cilium, argocd, rook-ceph
-    system/                    #   traefik, cert-manager, monitoring, keycloak, external-secrets...
+    system/                    #   cert-manager, monitoring, keycloak, external-secrets...
     default/                   #   jellyfin, gitea, n8n, open-webui, gethomepage...
     games/                     #   minecraft-bedrock, vintagestory
     home-automation/           #   vernemq, ollama, whisper, piper, openwakeword
@@ -281,7 +281,6 @@ Required secrets for devcontainer: `TERRAFORM_TOKEN`
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.27` | Home automation services (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
-| `192.168.48.50` | Traefik (legacy ingress, kept for existing apps not yet migrated) |
 
 When adding a new `LoadBalancer` service, pick an unused IP from the `192.168.48.20–50` pool and annotate with:
 ```yaml

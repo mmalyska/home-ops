@@ -88,8 +88,6 @@ plugins:
   # https://squidfunk.github.io/mkdocs-material/setup/adding-a-git-repository/#revision-date-localized
   - git-revision-date-localized
   - autolinks
-  - diagrams
-  - drawio_file
 
 # https://squidfunk.github.io/mkdocs-material/setup/setting-up-site-analytics/#google-analytics
 # google_analytics:

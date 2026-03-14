@@ -24,9 +24,11 @@ Static records are defined as `DNSEndpoint` CRDs in `cluster/apps/system/adguard
 
 | Record | Type | Target | Purpose |
 |---|---|---|---|
-| `*.PRIVATE_DOMAIN` | A | 192.168.48.50 | Wildcard → internal gateway |
 | `k8s.PRIVATE_DOMAIN` | A | 192.168.48.1 | Cluster VIP (kube-apiserver) |
 | `qnap.PRIVATE_DOMAIN` | A | 192.168.50.8 | QNAP NAS |
+
+Per-app A records pointing to `192.168.48.21` are created automatically by adguard-dns external-dns
+from each `HTTPRoute` annotated with `controller: dns-controller` attached to `envoy-internal`.
 
 ### External DNS records (Cloudflare)
 
@@ -52,6 +54,5 @@ HTTPRoutes attached to `envoy-external` are automatically published to Cloudflar
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.27` | Home automation (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
-| `192.168.48.50` | Traefik (legacy ingress) |
 | `192.168.50.8` | QNAP NAS |
 | `192.168.50.9` | RPI — AdGuard Home + Home Assistant proxy |
