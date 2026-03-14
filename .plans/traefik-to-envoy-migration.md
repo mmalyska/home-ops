@@ -77,7 +77,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 - [ ] **rook-ceph** — disable chart ingress in `cluster/apps/core/rook-ceph/cluster/values.yaml`, add `cluster/apps/core/rook-ceph/cluster/templates/httproute.yaml` (internal)
 - [ ] **n8n** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` with two routes: `n8n-webhook.` on `envoy-external`, `n8n.` on `envoy-internal`
 - [ ] **Gitea** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml`; decide internal vs external
-- [x] **ArgoCD** — replaced `resources/ingress.yaml` (IngressRoute) with `resources/httproute.yaml`; added `patches/argocd-server-service-patch.yaml` setting `appProtocol: kubernetes.io/h2c` on port 80 for gRPC support
+- [x] **ArgoCD** — replaced `resources/ingress.yaml` (IngressRoute) with `resources/httproute.yaml`; no `appProtocol` needed — ArgoCD in `--insecure` mode serves HTTP/1.1, gRPC-Web works over HTTP/1.1
 
 ### Phase 3 — Tier 3: Complex apps (auth, header filtering)
 
@@ -191,18 +191,10 @@ spec:
 **Current:** `cluster/apps/core/argocd/resources/ingress.yaml`
 - Has two rules: one normal HTTP (priority 10), one for gRPC where `Content-Type: application/grpc` routes with `scheme: h2c`
 
-**Solution:** HTTPRoute rules are evaluated in order (first-match wins). Set `appProtocol: kubernetes.io/h2c` on the `argocd-server` service port so Envoy knows to use h2c upstream. A single HTTPRoute with one rule is sufficient — Envoy handles gRPC transparently over h2c.
+**Solution:** Plain HTTPRoute on `envoy-internal` is sufficient. ArgoCD in `--insecure` mode serves HTTP/1.1 on port 8080. The web UI uses gRPC-Web which works over HTTP/1.1. No `appProtocol: kubernetes.io/h2c` needed — setting it causes connection termination because Envoy then uses HTTP/2 prior knowledge but ArgoCD expects HTTP/1.1.
 
-Check if argocd chart already sets `appProtocol`:
-```sh
-kubectl get svc argocd-server -n argocd -o yaml | grep appProtocol
-```
-
-If not, patch it or add to values. Then a plain HTTPRoute on `envoy-internal` is enough.
-
-**Files to change:**
-- Replace `cluster/apps/core/argocd/resources/ingress.yaml` with HTTPRoute
-- May need to add `appProtocol: kubernetes.io/h2c` to argocd-server service via ArgoCD values
+**Files changed:**
+- Replaced `cluster/apps/core/argocd/resources/ingress.yaml` with `resources/httproute.yaml`
 
 ---
 
