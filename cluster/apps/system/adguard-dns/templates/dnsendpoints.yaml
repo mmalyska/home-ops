@@ -15,19 +15,6 @@ spec:
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
-  name: internal-gateway-endpoint
-  annotations:
-    external-dns.alpha.kubernetes.io/controller: internal
-spec:
-  endpoints:
-    - dnsName: "argocd.<secret:private-domain>"
-      recordType: A
-      targets:
-        - 192.168.48.50
----
-apiVersion: externaldns.k8s.io/v1alpha1
-kind: DNSEndpoint
-metadata:
   name: keycloak-endpoint
   annotations:
     external-dns.alpha.kubernetes.io/controller: internal

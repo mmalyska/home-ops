@@ -73,11 +73,11 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 ### Phase 2 — Tier 2: Moderate apps (multi-route or special backend)
 
-- [ ] **hass-proxy** — replace `templates/ingress.yaml` with two HTTPRoutes (`hass.` and `agh.` hostnames); fix broken service selector (see notes)
+- [x] **hass-proxy** — replaced `templates/ingress.yaml` with two HTTPRoutes (`hass.` and `agh.` hostnames); fixed services: ExternalName → ClusterIP + Endpoints pointing to `192.168.50.9`
 - [ ] **rook-ceph** — disable chart ingress in `cluster/apps/core/rook-ceph/cluster/values.yaml`, add `cluster/apps/core/rook-ceph/cluster/templates/httproute.yaml` (internal)
 - [ ] **n8n** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` with two routes: `n8n-webhook.` on `envoy-external`, `n8n.` on `envoy-internal`
 - [ ] **Gitea** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml`; decide internal vs external
-- [ ] **ArgoCD** — replace `cluster/apps/core/argocd/resources/ingress.yaml` (IngressRoute) with HTTPRoute (see gRPC note below)
+- [x] **ArgoCD** — replaced `resources/ingress.yaml` (IngressRoute) with `resources/httproute.yaml`; added `patches/argocd-server-service-patch.yaml` setting `appProtocol: kubernetes.io/h2c` on port 80 for gRPC support
 
 ### Phase 3 — Tier 3: Complex apps (auth, header filtering)
 
@@ -89,7 +89,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 > **Strategy changed (2026-03-13):** The wildcard `*.<domain>` → `192.168.48.50` has been removed from `internal-gateway-endpoint`. DNS is now managed per-app: external-dns picks up each HTTPRoute (annotated `controller: dns-controller`) and creates an A record → `192.168.48.21` automatically. Remaining Traefik-specific static records are kept until those apps are migrated.
 
 - [x] ~~Change wildcard target from `.48.50` to `.48.21`~~ — **replaced by per-app external-dns via HTTPRoute source**
-- [ ] After ArgoCD is migrated (Phase 2): remove the `argocd.<domain>` → `192.168.48.50` static record from `internal-gateway-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`
+- [x] Removed `argocd.<domain>` → `192.168.48.50` static record (`internal-gateway-endpoint`) — external-dns now manages it via HTTPRoute
 - [ ] After Keycloak is migrated: remove the `l.<domain>` → `192.168.48.50` static record from `keycloak-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml` (added 2026-03-14)
 
 ### Phase 5 — Re-enable disabled apps with HTTPRoutes

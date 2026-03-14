@@ -8,7 +8,7 @@ namespace: argocd
 
 # additional resources like ingress rules, cluster and repository secrets.
 resources:
-  - resources/ingress.yaml
+  - resources/httproute.yaml
   - https://github.com/argoproj/argo-cd/manifests/cluster-install?ref=v3.3.3
   - resources/sops-replacer-plugin.yaml
   - resources/metrics.yaml
@@ -22,3 +22,4 @@ patches:
   - path: patches/argocd-rbac-cm.yaml
   - path: patches/argocd-cmd-params-cm.yaml
   - path: patches/argo-cd-repo-server-ksops-patch.yaml
+  - path: patches/argocd-server-service-patch.yaml
