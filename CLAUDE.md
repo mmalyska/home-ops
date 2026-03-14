@@ -119,8 +119,8 @@ bws secret list
 | **Cilium** | CNI, kube-proxy replacement, L2 announcements for LoadBalancer IPs |
 | **Envoy Gateway** | Kubernetes Gateway API — `envoy-external` (.20, internet via Cloudflare Tunnel) and `envoy-internal` (.21, home network only) |
 | **Cloudflared** | Cloudflare Tunnel client — routes internet traffic into `envoy-external` |
-| **external-dns (cloudflare)** | Publishes `controller: external` HTTPRoutes/DNSEndpoints to Cloudflare DNS |
-| **external-dns (adguard)** | Publishes `controller: internal` HTTPRoutes/DNSEndpoints to AdGuard Home |
+| **external-dns (cloudflare)** | Publishes `controller: external` DNSEndpoints and `controller: dns-controller` HTTPRoutes on `envoy-external` to Cloudflare DNS |
+| **external-dns (adguard)** | Publishes `controller: internal` DNSEndpoints and `controller: dns-controller` HTTPRoutes on `envoy-internal` to AdGuard Home |
 | **cert-manager** | TLS certificates via Cloudflare DNS01; wildcard `cert-production` used by both gateways |
 | **Rook-Ceph** | Primary persistent storage |
 | **NFS subdir provisioner** | Cold storage on QNAP NAS |
@@ -367,7 +367,7 @@ kind: HTTPRoute
 metadata:
   name: myapp
   annotations:
-    external-dns.alpha.kubernetes.io/controller: internal
+    external-dns.alpha.kubernetes.io/controller: dns-controller
 spec:
   parentRefs:
     - name: envoy-internal
@@ -391,7 +391,7 @@ kind: HTTPRoute
 metadata:
   name: myapp
   annotations:
-    external-dns.alpha.kubernetes.io/controller: external
+    external-dns.alpha.kubernetes.io/controller: dns-controller
 spec:
   parentRefs:
     - name: envoy-external
@@ -407,7 +407,8 @@ spec:
 
 ### HTTPRoute — Both internal and external
 
-Attach to both gateways. Use the `external` annotation so external-dns publishes it to Cloudflare; AdGuard picks it up via the `envoy-internal` gateway-httproute source automatically.
+Attach to both gateways. Each external-dns instance only processes routes for its own gateway
+(`--gateway-name` filter), so `dns-controller` is the correct annotation for both.
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -415,7 +416,7 @@ kind: HTTPRoute
 metadata:
   name: myapp
   annotations:
-    external-dns.alpha.kubernetes.io/controller: external
+    external-dns.alpha.kubernetes.io/controller: dns-controller
 spec:
   parentRefs:
     - name: envoy-external
@@ -432,10 +433,20 @@ spec:
           port: 80
 ```
 
-> **DNS routing summary**
-> - `controller: internal` → record written to AdGuard Home only (internal)
-> - `controller: external` → record written to Cloudflare only (external)
-> - Attaching a route to both gateways exposes it on both networks; annotate for whichever DNS backend should publish the name
+> **DNS routing summary — two-tier annotation system**
+>
+> **HTTPRoutes** always use `controller: dns-controller` (required by the external-dns
+> `gateway-httproute` source internally). Which DNS backend processes the route is determined
+> by which gateway it attaches to — `envoy-internal` → AdGuard, `envoy-external` → Cloudflare.
+>
+> **DNSEndpoints** (static records) use `controller: internal` or `controller: external` to
+> target a specific external-dns instance directly.
+>
+> | Annotation value | Processed by | Used on |
+> |-----------------|-------------|---------|
+> | `dns-controller` | adguard-dns (envoy-internal routes) or cloudflare-dns (envoy-external routes) | HTTPRoutes |
+> | `internal` | adguard-dns only | DNSEndpoints |
+> | `external` | cloudflare-dns only | DNSEndpoints |
 
 TLS is terminated at the gateway using the wildcard `cert-production` secret — no per-app Certificate resource needed.
 

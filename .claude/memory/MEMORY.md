@@ -59,26 +59,32 @@ Categories: core, system, default, games, home-automation
 - Do NOT edit: `provision/talos/clusterconfig/`, renovate comment lines, `.terraform.lock.hcl`
 - Branch: main, feat/fix/chore prefixes, MegaLinter CI on PRs, labels required
 
-## Gateway & DNS Architecture (as of 2026-03-09)
+## Gateway & DNS Architecture (as of 2026-03-14)
 
 Single domain split across two Envoy Gateway instances:
-- **envoy-external** (192.168.48.20): internet-facing via Cloudflare Tunnel (`cloudflared`), currently DISABLED (app-config.yaml enabled: "false")
+- **envoy-external** (192.168.48.20): internet-facing via Cloudflare Tunnel (`cloudflared`)
 - **envoy-internal** (192.168.48.21): internal network only, resolved by AdGuard Home on RPI (192.168.50.9)
 
-**DNS controllers** split by annotation filter `external-dns.alpha.kubernetes.io/controller`:
-- `cloudflare-dns` — filter value `external`, sources: `crd` + `gateway-httproute` from `envoy-external`
-- `adguard-dns` — filter value `internal`, sources: `crd` + `gateway-httproute` from `envoy-internal`
+**Two-tier annotation system** for `external-dns.alpha.kubernetes.io/controller`:
 
-**Annotating resources** to control which DNS controller picks them up:
-```yaml
-annotations:
-  external-dns.alpha.kubernetes.io/controller: internal   # or: external
-```
-For `gateway-httproute` source, the annotation on the Gateway itself is sufficient — routes inherit it.
+| Value | Used on | Processed by |
+|-------|---------|-------------|
+| `dns-controller` | HTTPRoutes | adguard-dns (envoy-internal routes) or cloudflare-dns (envoy-external routes) — separated by `--gateway-name` filter |
+| `internal` | DNSEndpoints only | adguard-dns |
+| `external` | DNSEndpoints only | cloudflare-dns |
+
+**Critical**: The external-dns `gateway-httproute` source (v0.20.0) has a hardcoded internal check
+requiring `controller: dns-controller` on HTTPRoutes. Using `internal` or `external` on HTTPRoutes
+causes them to be silently skipped with "controller value does not match, found: X, required: dns-controller".
+
+**Annotation filters** (updated 2026-03-14):
+- `adguard-dns`: `external-dns.alpha.kubernetes.io/controller in (internal,dns-controller)` — matches DNSEndpoints (`internal`) + HTTPRoutes (`dns-controller`)
+- `cloudflare-dns`: `external-dns.alpha.kubernetes.io/controller in (external,dns-controller)` — same pattern
 
 **Static DNSEndpoints** live in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml`:
-- Internal: `*.PRIVATE_DOMAIN` → 192.168.48.50 (Traefik legacy), `k8s.` → .48.1, `qnap.` → 192.168.50.8
-- External (cloudflare): `haas.PRIVATE_DOMAIN` CNAME → `external.PRIVATE_DOMAIN`
+- `k8s.PRIVATE_DOMAIN` → 192.168.48.1, `qnap.` → 192.168.50.8
+- `argocd.PRIVATE_DOMAIN` → 192.168.48.50 (Traefik, temporary until ArgoCD migrated to envoy)
+- `l.PRIVATE_DOMAIN` → 192.168.48.50 (Keycloak, temporary)
 
 **Key files:**
 - `cluster/apps/system/envoy-gateweay/` (note typo in dir name) — GatewayClass, Gateways, policies, HTTPS redirect
