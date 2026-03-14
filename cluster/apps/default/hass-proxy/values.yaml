@@ -1,3 +1,1 @@
-ingress:
-  host: hass.<secret:private-domain>
-  agh: agh.<secret:private-domain>
+{}
