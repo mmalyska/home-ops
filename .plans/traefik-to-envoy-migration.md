@@ -74,7 +74,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 ### Phase 2 — Tier 2: Moderate apps (multi-route or special backend)
 
 - [x] **hass-proxy** — replaced `templates/ingress.yaml` with two HTTPRoutes (`hass.` and `agh.` hostnames); fixed services: ExternalName → ClusterIP + Endpoints pointing to `192.168.50.9`
-- [ ] **rook-ceph** — disable chart ingress in `cluster/apps/core/rook-ceph/cluster/values.yaml`, add `cluster/apps/core/rook-ceph/cluster/templates/httproute.yaml` (internal)
+- [x] **rook-ceph** — disabled chart ingress (`ingress.dashboard: {}`), uses native `route.dashboard` key in `values.yaml` (rook-ceph-cluster v1.19.2 supports Gateway API natively)
 - [x] **n8n** — removed chart ingress; uses **native `route` key** in `values.yaml` (app-template v4.6.2 supports Gateway API natively); two routes: `n8n.` on `envoy-internal`, `n8n-webhook.` on `envoy-external` (paths `/webhook` + `/webhook-test` — test trigger button uses `/webhook-test`); updated `N8N_HOST`, `N8N_PROTOCOL`, `WEBHOOK_URL` env vars
 - [x] **Gitea** — disabled chart ingress (`ingress.enabled: false`), added `templates/httproute.yaml` (internal, `gitea-http:3000`)
 - [x] **ArgoCD** — replaced `resources/ingress.yaml` (IngressRoute) with `resources/httproute.yaml`; no `appProtocol` needed — ArgoCD in `--insecure` mode serves HTTP/1.1, gRPC-Web works over HTTP/1.1
@@ -95,8 +95,8 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 ### Phase 5 — Re-enable disabled apps with HTTPRoutes
 
 - [ ] **grocy** — replace `templates/ingress.yaml` with HTTPRoute; implement extAuth SecurityPolicy (depends on oauth2-proxy Phase 3)
-- [ ] **gethomepage** — disable chart ingress, add HTTPRoute (internal, bare domain)
-- [ ] **home-assistant** — disable chart ingress, add HTTPRoute (internal, two hostnames)
+- [x] **gethomepage** — disabled chart ingress (`ingress.main.enabled: false`), added `templates/httproute.yaml` (internal, bare domain); app stays disabled until ready to enable
+- [x] **home-assistant** — replaced chart ingress blocks with native `route:` key (app-template v4.6.2); two routes: `dom.` and `dom-code.` on `envoy-internal`; app stays disabled until ready to enable
 
 ### Phase 6 — Remove Traefik
 

@@ -73,29 +73,31 @@ app-template:
       ports:
         http:
           port: 8080
-  ingress:
+  route:
     main:
-      className: "traefik"
-      hosts:
-        - host: &host "dom.<secret:private-domain>"
-          paths:
-            - path: /
-              service:
-                identifier: main
-                port: http
-      tls:
-        - hosts:
-            - *host
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - dom.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: main
     addons:
-      className: "traefik"
-      hosts:
-        - host: "dom-code.<secret:private-domain>"
-          paths:
-            - path: /
-              pathType: Prefix
-              service:
-                identifier: codeserver
-                port: http
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - dom-code.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: codeserver
   persistence:
     config:
       existingClaim: home-assistant-config
