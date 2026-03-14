@@ -76,7 +76,7 @@ spec:
       backendRef:
         name: oauth2-proxy
         namespace: oauth2-proxy
-        port: 4180
+        port: 80
       path: "/oauth2/auth"
       headersToBackend:
         - X-Auth-Request-User

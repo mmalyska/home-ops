@@ -14,4 +14,4 @@ spec:
   rules:
     - backendRefs:
         - name: oauth2-proxy
-          port: 4180
+          port: 80
