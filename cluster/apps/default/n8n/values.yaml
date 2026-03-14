@@ -86,6 +86,9 @@ app-template:
             - path:
                 type: PathPrefix
                 value: /webhook
+            - path:
+                type: PathPrefix
+                value: /webhook-test
           backendRefs:
             - identifier: app
               port: 8080
