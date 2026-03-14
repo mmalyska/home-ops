@@ -11,7 +11,7 @@ external-dns:
     - --crd-source-kind=DNSEndpoint
     - --gateway-name=envoy-internal
     - --domain-filter=$(DOMAIN_FILTER)
-    - --annotation-filter=external-dns.alpha.kubernetes.io/controller=internal
+    - --annotation-filter=external-dns.alpha.kubernetes.io/controller in (internal,dns-controller)
   logLevel: debug
   triggerLoopOnEvent: true
   policy: sync

@@ -12,7 +12,7 @@ kube-prometheus-stack:
       main:
         enabled: true
         annotations:
-          external-dns.alpha.kubernetes.io/controller: internal
+          external-dns.alpha.kubernetes.io/controller: dns-controller
         parentRefs:
           - name: envoy-internal
             namespace: envoy-gateway
