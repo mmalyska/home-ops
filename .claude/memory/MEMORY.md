@@ -20,6 +20,9 @@ VALUE: "{{ `{{ .MY_KEY }}` }}"
 ```
 
 ## Standing Rules
+- **Always verify rendered output after changes** — see [feedback_render_verification.md](feedback_render_verification.md)
+- **Memory location**: always write to `/workspaces/home-ops/.claude/memory/` (persisted) — see [feedback_memory_location.md](feedback_memory_location.md)
+
 - NEVER write secrets, tokens, passwords, API keys, IPs of external services, or any sensitive data to this file or any other repo file
 - Secret values belong in Bitwarden Secrets Manager only (SOPS and Doppler are fully removed)
 - The private domain is a SECRET — never write it in any file committed to git (use `<secret:private-domain>` placeholder instead)

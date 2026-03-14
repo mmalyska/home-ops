@@ -6,6 +6,8 @@ global:
     imagePullPolicy: IfNotPresent
 name: gitea
 gitea:
+  strategy:
+    type: Recreate
   image:
     registry: docker.gitea.com
     repository: gitea
@@ -76,8 +78,6 @@ gitea:
     storageClass: ceph-block
   replicaCount: 1
   deployment:
-    strategy:
-      type: Recreate
     env:
       - name: GITEA__database__DB_TYPE
         value: postgres
