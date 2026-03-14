@@ -82,7 +82,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 ### Phase 3 — Tier 3: Complex apps (auth, header filtering)
 
 - [ ] **oauth2-proxy** — disable chart ingress, add HTTPRoute; delete `templates/forward-auth-middleware.yaml`; research SecurityPolicy extAuth as replacement
-- [ ] **Keycloak** — replace IngressRoute with HTTPRoute on both gateways; resolve the Cloudflare Warp header block (see unknowns)
+- [x] **Keycloak** — replaced IngressRoute with HTTPRoute on both gateways (`envoy-external` + `envoy-internal`); removed Warp block (no longer needed); removed static `l.<domain>` → `.48.50` DNSEndpoint from adguard-dns (external-dns now manages via HTTPRoute)
 
 ### Phase 4 — DNS Cutover
 
@@ -90,7 +90,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 - [x] ~~Change wildcard target from `.48.50` to `.48.21`~~ — **replaced by per-app external-dns via HTTPRoute source**
 - [x] Removed `argocd.<domain>` → `192.168.48.50` static record (`internal-gateway-endpoint`) — external-dns now manages it via HTTPRoute
-- [ ] After Keycloak is migrated: remove the `l.<domain>` → `192.168.48.50` static record from `keycloak-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml` (added 2026-03-14)
+- [x] After Keycloak is migrated: remove the `l.<domain>` → `192.168.48.50` static record from `keycloak-endpoint` in `cluster/apps/system/adguard-dns/templates/dnsendpoints.yaml` — **done**
 
 ### Phase 5 — Re-enable disabled apps with HTTPRoutes
 
