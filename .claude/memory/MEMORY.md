@@ -6,6 +6,7 @@
 ## Standing Rules
 - **Always verify rendered output after Helm/Kustomize changes** — [feedback_render_verification.md](feedback_render_verification.md)
 - **Always update docs proactively after changes** — [feedback_docs_updates.md](feedback_docs_updates.md)
+- **Always check for native Gateway API support before writing manual HTTPRoute templates** — [feedback_check_native_gateway_support.md](feedback_check_native_gateway_support.md)
 - NEVER write secrets, tokens, passwords, or sensitive data to any repo file
 - The private domain is a secret — use `<secret:private-domain>` placeholder only
 - Secret values belong in Bitwarden Secrets Manager only
@@ -19,3 +20,4 @@
 | [reference_local_access.md](reference_local_access.md) | reference | kubectl/talosctl/terraform/argocd permission rules and CLI details |
 | [feedback_render_verification.md](feedback_render_verification.md) | feedback | Run helm template / kustomize build after every values change |
 | [feedback_docs_updates.md](feedback_docs_updates.md) | feedback | Proactively update README/CLAUDE.md/docs after changes; memory file location |
+| [feedback_check_native_gateway_support.md](feedback_check_native_gateway_support.md) | feedback | Check upstream chart for native HTTPRoute support BEFORE writing manual templates/httproute.yaml |
