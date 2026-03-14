@@ -22,4 +22,10 @@ patches:
   - path: patches/argocd-rbac-cm.yaml
   - path: patches/argocd-cmd-params-cm.yaml
   - path: patches/argo-cd-repo-server-ksops-patch.yaml
-  - path: patches/argocd-server-service-patch.yaml
+  - target:
+      kind: Service
+      name: argocd-server
+    patch: |-
+      - op: add
+        path: /spec/ports/0/appProtocol
+        value: kubernetes.io/h2c
