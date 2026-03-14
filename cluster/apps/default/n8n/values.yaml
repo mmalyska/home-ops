@@ -28,9 +28,10 @@ app-template:
             EXECUTIONS_DATA_PRUNE_MAX_COUNT: 50000
             GENERIC_TIMEZONE: "Europe/Warsaw"
             N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: false
-            N8N_PROTOCOL: "http"
+            N8N_PROTOCOL: "https"
             N8N_PORT: &port 8080
-            N8N_HOST: localhost
+            N8N_HOST: n8n.<secret:private-domain>
+            WEBHOOK_URL: https://n8n-webhook.<secret:private-domain>/
             N8N_LOG_LEVEL: info
             N8N_LOG_OUTPUT: console
             N8N_ENCRYPTION_KEY: <secret:encryption-key>
@@ -55,22 +56,36 @@ app-template:
         http:
           port: *port
 
-  ingress:
+  route:
     n8n:
-      hosts:
-        - host: &webhookHostName n8n-webhook.<secret:private-domain>
-          paths:
-            - path: /webhook
-              service:
-                identifier: app
-                port: http
-        - host: &hostName n8n.<secret:private-domain>
-          paths:
-            - path: /
-              service:
-                identifier: app
-                port: http
-      tls:
-        - hosts:
-            - *hostName
-            - *webhookHostName
+      kind: HTTPRoute
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - n8n.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: app
+              port: 8080
+    n8n-webhook:
+      kind: HTTPRoute
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-external
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - n8n-webhook.<secret:private-domain>
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /webhook
+          backendRefs:
+            - identifier: app
+              port: 8080

@@ -21,10 +21,10 @@ This is a GitOps home-lab repo (Talos Linux + ArgoCD). Read `CLAUDE.md` at the r
 - See `CLAUDE.md` section "HTTPRoute — Internal" and "HTTPRoute — External" for the exact YAML patterns to use
 
 **What "migrating an app" means:**
-1. Add a new `templates/httproute.yaml` (or equivalent) with a `kind: HTTPRoute`
-2. Disable or delete the old `Ingress`/`IngressRoute` resource (or turn off the chart-native ingress in `values.yaml`)
-3. Delete any per-app `Certificate` resources (no longer needed — gateway uses `cert-production` wildcard)
-4. For apps configured via chart `values.yaml` ingress blocks: set `ingress.enabled: false` (or equivalent) and add a separate `templates/httproute.yaml`
+1. **Check if the chart natively supports Gateway API** — bjw-s `app-template` v4+ has a `route:` key; some other charts (e.g. open-webui) have native HTTPRoute support in values. Use native support when available — no separate `templates/httproute.yaml` needed.
+2. If no native support: add `templates/httproute.yaml` with `kind: HTTPRoute`
+3. Disable or delete the old `Ingress`/`IngressRoute` resource (or turn off the chart-native ingress in `values.yaml`)
+4. Delete any per-app `Certificate` resources (no longer needed — gateway uses `cert-production` wildcard)
 
 ---
 
@@ -75,7 +75,7 @@ Do these in any order. Each is a simple "add HTTPRoute + remove old Ingress + de
 
 - [x] **hass-proxy** — replaced `templates/ingress.yaml` with two HTTPRoutes (`hass.` and `agh.` hostnames); fixed services: ExternalName → ClusterIP + Endpoints pointing to `192.168.50.9`
 - [ ] **rook-ceph** — disable chart ingress in `cluster/apps/core/rook-ceph/cluster/values.yaml`, add `cluster/apps/core/rook-ceph/cluster/templates/httproute.yaml` (internal)
-- [ ] **n8n** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml` with two routes: `n8n-webhook.` on `envoy-external`, `n8n.` on `envoy-internal`
+- [x] **n8n** — removed chart ingress; uses **native `route` key** in `values.yaml` (app-template v4.6.2 supports Gateway API natively); two routes: `n8n.` on `envoy-internal`, `n8n-webhook.` on `envoy-external` (path `/webhook` only); updated `N8N_HOST`, `N8N_PROTOCOL`, `WEBHOOK_URL` env vars
 - [ ] **Gitea** — disable chart ingress in `values.yaml`, add `templates/httproute.yaml`; decide internal vs external
 - [x] **ArgoCD** — replaced `resources/ingress.yaml` (IngressRoute) with `resources/httproute.yaml`; no `appProtocol` needed — ArgoCD in `--insecure` mode serves HTTP/1.1, gRPC-Web works over HTTP/1.1
 
