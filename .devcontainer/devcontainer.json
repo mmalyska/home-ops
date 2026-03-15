@@ -4,9 +4,6 @@
   "name": "home-ops",
   "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:0f1cad81cc4520b592a050bbed1b672054467706f5496fdfd7578ca9be0acf78",
   "secrets": {
-    "SOPS_AGE_KEY": {
-      "description": "SOPS AGE key for decrypting secrets."
-    },
     "TERRAFORM_TOKEN": {
       "description": "Token to access terraform cloud."
     }
@@ -32,7 +29,6 @@
         "mitchdenny.ecdc",
         "ms-kubernetes-tools.vscode-kubernetes-tools",
         "oderwat.indent-rainbow",
-        "signageos.signageos-vscode-sops",
         "usernamehw.errorlens",
         "fcrespo82.markdown-table-formatter",
         "ms-azuretools.vscode-docker",

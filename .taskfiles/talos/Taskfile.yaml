@@ -162,9 +162,8 @@ tasks:
       - talhelper genconfig
     sources:
       - talconfig.yaml
-      - talenv.sops.yaml
       - talenv.yaml
-      - talsecret.sops.yaml
+      - talsecret.yaml
     generates:
       - clusterconfig/*.yaml
       - clusterconfig/talosconfig

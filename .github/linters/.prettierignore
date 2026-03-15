@@ -5,7 +5,6 @@
 **/.task
 **/.vscode
 **/.archive
-**/*.sops.*
 **/*.sec.*
 **/gotk-components.yaml
 **/templates/*.y*ml

@@ -49,7 +49,6 @@ tasks:
         kubectl
         kustomize
         prettier
-        sops
         stern
         terraform
         yamllint

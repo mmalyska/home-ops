@@ -39,11 +39,7 @@ kind: ReplicationSource
 metadata:
   name: vintagestory
 spec:
-  {{- if .Values.persistence.config.existingClaim }}
-  sourcePVC: {{ .Values.persistence.config.existingClaim }}
-  {{- else }}
-  sourcePVC: vintagestory-config
-  {{- end }}
+  sourcePVC: vintagestory
   trigger:
     schedule: "20 */12 * * *"
   restic:

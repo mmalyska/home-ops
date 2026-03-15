@@ -7,7 +7,6 @@ ignore: |
   .terraform/
   .vscode/
   **/*.sec.*
-  **/*.sops.*
   gotk-components.yaml
   **/templates/*.y*ml
   cluster/system/postgres-operator/
