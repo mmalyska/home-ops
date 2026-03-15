@@ -53,14 +53,14 @@ server:
     host: l.<secret:private-domain>
   readinessProbe:
     enabled: true
-    failureThreshold: 10
+    failureThreshold: 30
     initialDelaySeconds: 20
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 5
   livenessProbe:
     enabled: true
-    failureThreshold: 10
+    failureThreshold: 30
     initialDelaySeconds: 20
     periodSeconds: 10
     successThreshold: 1
@@ -71,7 +71,7 @@ server:
       cpu: 50m
     limits:
       memory: 2Gi
-      cpu: 500m
+      cpu: "2"
 postgres:
   - name: keycloakdb
     imageName: ghcr.io/cloudnative-pg/postgresql:16.6
