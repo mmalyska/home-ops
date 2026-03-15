@@ -278,6 +278,7 @@ Required secrets for devcontainer: `TERRAFORM_TOKEN`
 |----|---------|
 | `192.168.48.20` | `envoy-external` — internet-facing gateway (via Cloudflare Tunnel) |
 | `192.168.48.21` | `envoy-internal` — internal network gateway (AdGuard DNS) |
+| `192.168.48.22` | Jellyfin |
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.27` | Home automation services (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |

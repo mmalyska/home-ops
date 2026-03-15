@@ -17,5 +17,12 @@ open-webui:
     repository: ghcr.io/open-webui/open-webui
     tag: "v0.8.10@sha256:ee057955040ce91e3e787e4b7978c9c23e828972c68d01d787ed40f9a307df9f"
     pullPolicy: "IfNotPresent"
+  resources:
+    requests:
+      memory: 1100Mi
+      cpu: 300m
+    limits:
+      memory: 2Gi
+      cpu: "1"
   websocket:
     enabled: false

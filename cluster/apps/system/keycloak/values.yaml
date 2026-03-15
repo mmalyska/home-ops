@@ -65,13 +65,26 @@ server:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 5
-  resources: {}
+  resources:
+    requests:
+      memory: 1300Mi
+      cpu: 50m
+    limits:
+      memory: 2Gi
+      cpu: 500m
 postgres:
   - name: keycloakdb
     imageName: ghcr.io/cloudnative-pg/postgresql:16.6
     instances: 2
     storage:
       size: 2Gi
+    resources:
+      requests:
+        memory: 200Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
     # bootstrap:
     #   recovery:
     #     source: crunchy-cluster

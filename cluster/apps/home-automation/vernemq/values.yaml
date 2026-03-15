@@ -19,6 +19,13 @@ vernemq:
       - ReadWriteMany
     size: 5Gi
     storageClass: ceph-filesystem
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 150m
+    limits:
+      memory: 1500Mi
+      cpu: 500m
   additionalEnv:
     - name: DOCKER_VERNEMQ_ACCEPT_EULA
       value: "yes"

@@ -62,6 +62,13 @@ pgsql-cnpg:
   instances: 2
   storage:
     size: 15Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
   # bootstrap:
   #   recovery:
   #     source: crunchy-cluster

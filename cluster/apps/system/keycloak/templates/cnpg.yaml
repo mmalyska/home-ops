@@ -12,6 +12,10 @@ spec:
   primaryUpdateStrategy: unsupervised
   storage:
     size: {{ $v.storage.size }}
+  {{- with $v.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   postgresql:
     parameters:
       pgaudit.log: "all, -misc"
