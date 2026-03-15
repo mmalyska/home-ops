@@ -1,12 +1,15 @@
 external-secrets:
   installCRDs: true
   replicaCount: 1
+  revisionHistoryLimit: 3
   serviceMonitor:
     enabled: true
   webhook:
+    revisionHistoryLimit: 3
     serviceMonitor:
       enabled: true
   certController:
+    revisionHistoryLimit: 3
     serviceMonitor:
       enabled: true
   bitwarden-sdk-server:

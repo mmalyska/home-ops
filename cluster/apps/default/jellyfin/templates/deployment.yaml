@@ -10,6 +10,7 @@ metadata:
 spec:
   strategy: {{ toYaml .Values.jellyfin.strategy | nindent 4 }}
   replicas: {{ .Values.jellyfin.replicaCount }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "jellyfin.selectorLabels" . | nindent 6 }}

@@ -9,3 +9,11 @@ resources:
   - https://github.com/cert-manager/cert-manager/releases/download/v1.20.0/cert-manager.yaml
   - resources/api-token-externalsecret.yaml
   - resources/lets-encrypt-dns01-cf.yaml
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/revisionHistoryLimit
+        value: 3

@@ -1,5 +1,6 @@
 host: oauth.<secret:private-domain>
 oauth2-proxy:
+  revisionHistoryLimit: 3
   extraArgs:
     exclude-logging-path: "/ping"
   config:

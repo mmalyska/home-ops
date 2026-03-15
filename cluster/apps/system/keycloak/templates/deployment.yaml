@@ -6,6 +6,7 @@ metadata:
   labels: {{- include "keycloak.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 4 }} # yamllint disable-line
 spec:
   replicas: {{ .Values.server.replicas }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "keycloak.selectorLabels" (dict "context" . "name" .Values.server.name) | nindent 6 }}

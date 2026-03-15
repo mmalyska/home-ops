@@ -8,6 +8,7 @@ kube-prometheus-stack:
   kubeScheduler:
     enabled: true
   grafana:
+    revisionHistoryLimit: 3
     route:
       main:
         enabled: true
@@ -93,6 +94,10 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 25Gi
+  prometheusOperator:
+    revisionHistoryLimit: 3
+  kube-state-metrics:
+    revisionHistoryLimit: 3
   prometheus:
     prometheusSpec:
       storageSpec:
