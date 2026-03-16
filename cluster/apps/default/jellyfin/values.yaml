@@ -43,6 +43,10 @@ jellyfin:
     env:
       - name: TZ
         value: CET
+      - name: JELLYFIN_CONFIG_DIR
+        value: /config
+      - name: JELLYFIN_DATA_DIR
+        value: /config/data
       - name: JELLYFIN_PublishedServerUrl
         value: 192.168.48.22
 
