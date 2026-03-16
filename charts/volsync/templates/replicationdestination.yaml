@@ -4,6 +4,8 @@ apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
 metadata:
   name: {{ include "volsync.bootstrap" $}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave }}"
 spec:
   trigger:
     manual: restore-once
@@ -15,8 +17,8 @@ spec:
     cacheCapacity: {{ .Values.pvc.capacity }}
     volumeSnapshotClassName: {{ .Values.pvc.volumeSnapshotClass }}
     repository: {{ include "volsync.restic.secret" $ }}
-    {{- if not .Values.volsync.restore.bootstrap }}
-    destinationPVC: {{ include "volsync.name" $ }}
+    {{- if or (not .Values.volsync.restore.bootstrap) .Values.pvc.existingClaim }}
+    destinationPVC: {{ default (include "volsync.name" $) .Values.pvc.existingClaim }}
     {{- end }}
     copyMethod: Snapshot
     cleanupCachePVC: true

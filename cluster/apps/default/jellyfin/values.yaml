@@ -1,54 +1,114 @@
-global:
-  additionalLabels: {}
-  imageRegistry: ""
-image:
-  pullPolicy: IfNotPresent
-  repository: ghcr.io/linuxserver/jellyfin
-  tag: 10.11.6@sha256:aae645d1ff11c42b1d2d3b80694e34e0e1ea4a51879900843c8ab6e8b127a32a
 jellyfin:
-  annotations: {}
-  replicaCount: 1
-  env:
-    - name: TZ
-      value: CET
-    - name: PUID
-      value: "1001"
-    - name: PGID
-      value: "1001"
-    - name: JELLYFIN_PublishedServerUrl
-      value: 192.168.48.22
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
-    type: RollingUpdate
+  image:
+    repository: docker.io/jellyfin/jellyfin
+    # renovate: datasource=docker depName=docker.io/jellyfin/jellyfin
+    tag: "10.11.5"
+    pullPolicy: IfNotPresent
+
+  podSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+
   service:
-    ip: 192.168.48.22
-persistence:
-  config:
+    type: LoadBalancer
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.22"
+    port: 8096
+
+  httpRoute:
     enabled: true
-    accessMode: ReadWriteOnce
-    size: 5Gi
-    storageClass: ceph-block
-  extraNfsMounts:
+    annotations:
+      external-dns.alpha.kubernetes.io/controller: dns-controller
+    parentRefs:
+      - name: envoy-internal
+        namespace: envoy-gateway
+        sectionName: https
+    hostnames:
+      - jellyfin.<secret:private-domain>
+
+  persistence:
+    config:
+      enabled: true
+      existingClaim: jellyfin  # PVC created and managed by the volsync dependency below
+      storageClass: ceph-block
+      size: 5Gi
+      accessMode: ReadWriteOnce
+    media:
+      enabled: false
+    cache:
+      enabled: false
+
+  jellyfin:
+    env:
+      - name: TZ
+        value: CET
+      - name: JELLYFIN_PublishedServerUrl
+        value: 192.168.48.22
+
+  resources:
+    requests:
+      gpu.intel.com/i915: 1
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      gpu.intel.com/i915: 1
+      memory: 6000Mi
+
+  volumes:
+    - name: tv-shows
+      persistentVolumeClaim:
+        claimName: jellyfin-tv-shows
+    - name: movies
+      persistentVolumeClaim:
+        claimName: jellyfin-movies
+    - name: transcoding
+      emptyDir: {}
+
+  volumeMounts:
     - name: tv-shows
       mountPath: /data/tvshows
-      nfsPath: /tv-series
-      nfsServer: qnap.<secret:private-domain>
-      readOnly: false
     - name: movies
       mountPath: /data/movies
-      nfsPath: /movies
-      nfsServer: qnap.<secret:private-domain>
-      readOnly: false
-resources:
-  requests:
-    gpu.intel.com/i915: 1
-    cpu: 100m
-    memory: 1000Mi
-  limits:
-    gpu.intel.com/i915: 1
-    memory: 6000Mi
-nodeSelector: {}
-tolerations: []
-affinity: {}
+    - name: transcoding
+      mountPath: /transcoding
+
+  deploymentStrategy:
+    type: RollingUpdate
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Local volsync chart — backup/restore for jellyfin-config PVC
+# nameOverride: jellyfin preserves the Restic repo path {TEMPLATE}/jellyfin (matches existing backups)
+volsync:
+  nameOverride: jellyfin  # PVC named "jellyfin"; backup repo path: {TEMPLATE}/jellyfin (matches existing backups)
+  pvc:
+    capacity: 5Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
+    backup:
+      schedule: "35 */12 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 24
+        daily: 6
+        weekly: 4
+        monthly: 2
+    restore:
+      bootstrap: true  # volsync creates and owns the PVC via dataSourceRef → ReplicationDestination
+
+# NFS PV+PVC pairs — processed by templates/pvc-extra.yaml
+nfsMounts:
+  - name: tv-shows
+    nfsPath: /tv-series
+    nfsServer: qnap.<secret:private-domain>
+  - name: movies
+    nfsPath: /movies
+    nfsServer: qnap.<secret:private-domain>

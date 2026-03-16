@@ -1,14 +1,13 @@
-{{- range .Values.persistence.extraNfsMounts }}
+{{- range .Values.nfsMounts }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
-  labels: {{- include "jellyfin.labels" $ | nindent 4 }}
+  name: jellyfin-{{ .name }}
 spec:
   claimRef:
-    name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
-    namespace: {{ $.Release.Namespace }}
+    name: jellyfin-{{ .name }}
+    namespace: jellyfin
   capacity:
     storage: 50Gi
   accessModes:
@@ -28,10 +27,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ template "jellyfin.fullname" $ }}-{{ .name }}
-  labels: {{- include "jellyfin.labels" $ | nindent 4 }}
+  name: jellyfin-{{ .name }}
+  namespace: jellyfin
 spec:
-  volumeName: {{ template "jellyfin.fullname" $ }}-{{ .name }}
+  volumeName: jellyfin-{{ .name }}
   accessModes:
     - ReadWriteMany
   resources:

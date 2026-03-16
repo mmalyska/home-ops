@@ -1,8 +1,11 @@
+{{- if not .Values.pvc.existingClaim }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "volsync.name" $ }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave }}"
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode }}
@@ -14,3 +17,4 @@ spec:
     requests:
       storage: {{ .Values.pvc.capacity }}
   storageClassName: {{ .Values.pvc.storageClass }}
+{{- end }}

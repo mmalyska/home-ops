@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jellyfin.fullname" . }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "jellyfin.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
+  replicas: {{ .Values.replicaCount }}
+  {{- with .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "jellyfin.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jellyfin.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jellyfin.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if or .Values.jellyfin.enableDLNA .Values.podPrivileges.hostNetwork }}
+      hostNetwork: true
+      {{- end }}
+      {{- if .Values.podPrivileges.hostIPC }}
+      hostIPC: true
+      {{- end }}
+      {{- if .Values.podPrivileges.hostPID }}
+      hostPID: true
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.jellyfin.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.jellyfin.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.jellyfin.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.jellyfin.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.metrics.enabled }}
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    echo "Waiting for system.xml to enable metrics..."
+                    timeout=300 # 5 minutes timeout
+                    interval=5  # Check every 5 seconds
+                    elapsed=0
+                    while [ ! -f /config/config/system.xml ]; do
+                      if [ $elapsed -ge $timeout ]; then
+                        echo "ERROR: Timed out waiting for /config/config/system.xml" >&2
+                        exit 1
+                      fi
+                      sleep $interval
+                      elapsed=$((elapsed + interval))
+                    done
+                    echo "Found /config/config/system.xml, enabling metrics..."
+                    # Check if metrics are already enabled before running sed
+                    if ! grep -q '<EnableMetrics>true</EnableMetrics>' /config/config/system.xml; then
+                      sed 's,<EnableMetrics>false</EnableMetrics>,<EnableMetrics>true</EnableMetrics>,' -i /config/config/system.xml
+                      if [ $? -eq 0 ]; then
+                        echo "Metrics enabled successfully."
+                      else
+                        echo "ERROR: Failed to enable metrics in /config/config/system.xml" >&2
+                        exit 1
+                      fi
+                    else
+                      echo "Metrics already enabled."
+                    fi
+                    exit 0
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8096
+              protocol: TCP
+            {{- if .Values.jellyfin.enableDLNA }}
+            - name: dlna
+              containerPort: 1900
+              hostPort: 1900
+              protocol: UDP
+            {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /media
+              name: media
+            - mountPath: /cache
+              name: cache
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if or .Values.initContainers .Values.extraInitContainers }}
+      # Support both initContainers (deprecated) and extraInitContainers for backward compatibility.
+      # TODO: Remove initContainers support after 2030
+      initContainers:
+        {{- if .Values.initContainers }}
+        {{- toYaml .Values.initContainers | nindent 6 }}
+        {{- end }}
+        {{- if .Values.extraInitContainers }}
+        {{- toYaml .Values.extraInitContainers | nindent 6 }}
+        {{- end }}
+      {{- end }}
+      volumes:
+        - name: config
+          {{- if .Values.persistence.config.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.config.existingClaim }}{{ .Values.persistence.config.existingClaim }}{{- else }}{{ template "jellyfin.fullname" . }}-config{{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: media
+          {{- if .Values.persistence.media.enabled }}
+            {{- if eq .Values.persistence.media.type "pvc" }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.media.existingClaim }}{{ .Values.persistence.media.existingClaim }}{{- else }}{{ template "jellyfin.fullname" . }}-media{{- end }}
+            {{- else if eq .Values.persistence.media.type "hostPath" }}
+          hostPath:
+            path: {{ .Values.persistence.media.hostPath }}
+            type: Directory
+            {{- else }}
+          emptyDir: {}
+            {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: cache
+          {{- if .Values.persistence.cache.enabled }}
+            {{- if eq .Values.persistence.cache.type "pvc" }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.cache.existingClaim }}{{ .Values.persistence.cache.existingClaim }}{{- else }}{{ template "jellyfin.fullname" . }}-cache{{- end }}
+            {{- else if eq .Values.persistence.cache.type "hostPath" }}
+          hostPath:
+            path: {{ .Values.persistence.cache.hostPath }}
+            type: Directory
+            {{- else }}
+          emptyDir: {}
+            {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.runtimeClassName }}
+      runtimeClassName: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8}}
+      {{- end }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . | quote }}
+      {{- end }}

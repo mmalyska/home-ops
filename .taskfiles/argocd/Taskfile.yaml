@@ -5,7 +5,7 @@ tasks:
   login:
     desc: Login into argocd
     cmds:
-      - argocd login argocd.$PRIVATE_DOMAIN --sso
+      - argocd login argocd.$PRIVATE_DOMAIN --sso --sso-launch-browser=false
     silent: true
   sync:
     desc: Sync argocd with the Git Repository

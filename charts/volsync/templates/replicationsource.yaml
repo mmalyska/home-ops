@@ -4,8 +4,10 @@ apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
   name: {{ include "volsync.name" $}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{ .Values.syncWave }}"
 spec:
-  sourcePVC: {{ include "volsync.name" $ }}
+  sourcePVC: {{ default (include "volsync.name" $) .Values.pvc.existingClaim }}
   trigger:
     schedule: {{ .Values.volsync.backup.schedule }}
   restic:

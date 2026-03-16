@@ -1,5 +1,8 @@
 nameOverride:
+secretSyncWave: "-2"
+syncWave: "-1"
 pvc:
+  existingClaim: "" # If set, skip PVC creation and use this PVC name for source/destination
   accessMode: ReadWriteOnce
   capacity: 5Gi
   storageClass: ceph-block
