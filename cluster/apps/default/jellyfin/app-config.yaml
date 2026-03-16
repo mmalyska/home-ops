@@ -2,7 +2,7 @@
   namespace: jellyfin
   syncPolicy:
     enabled: true
-    selfHeal: false
+    selfHeal: true
     prune: false
   plugin:
     env:
