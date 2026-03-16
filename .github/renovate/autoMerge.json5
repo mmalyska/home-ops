@@ -57,7 +57,7 @@
       "matchDatasources": ["github-releases", "github-tags", "helm", "docker"],
       "automerge": true,
       "automergeType": "pr",
-      "matchUpdateTypes": ["patch", "digest"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
       "matchFileNames": ["cluster/**", "!cluster/core/**"],
       "ignoreTests": false
     }
