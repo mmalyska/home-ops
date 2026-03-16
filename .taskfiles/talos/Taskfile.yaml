@@ -42,8 +42,14 @@ tasks:
   install:talhelper:
     internal: true
     desc: Install talos and talhelper (task talos:install)
+    vars:
+      ARCH:
+        sh: uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'
     cmds:
-      - curl https://i.jpillora.com/budimanjojo/talhelper@{{ .TALHELPER }}\! | sudo bash
+      - gh release download {{ .TALHELPER }} --repo budimanjojo/talhelper --pattern "talhelper_linux_{{ .ARCH }}.tar.gz" --dir /tmp/talhelper-install --clobber
+      - tar -xzf /tmp/talhelper-install/talhelper_linux_{{ .ARCH }}.tar.gz -C /tmp/talhelper-install talhelper
+      - sudo install /tmp/talhelper-install/talhelper /usr/local/bin/talhelper
+      - rm -rf /tmp/talhelper-install
     generates:
       - /usr/local/bin/talhelper
     status:
