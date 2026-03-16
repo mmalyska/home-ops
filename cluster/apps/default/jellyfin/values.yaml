@@ -2,7 +2,7 @@ jellyfin:
   image:
     repository: docker.io/jellyfin/jellyfin
     # renovate: datasource=docker depName=docker.io/jellyfin/jellyfin
-    tag: "10.11.5"
+    tag: "10.11.6"
     pullPolicy: IfNotPresent
 
   podSecurityContext:
