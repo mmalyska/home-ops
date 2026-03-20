@@ -1,4 +1,9 @@
 {
+  "model": "sonnet",
+  "env": {
+    "MAX_THINKING_TOKENS": "10000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
+  },
   "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
