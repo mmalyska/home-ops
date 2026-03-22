@@ -56,5 +56,13 @@
       "Bash(git push --force*)",
       "Bash(git push -f *)"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y ccstatusline@latest --config ./.claude/statusline/settings.json",
+    "padding": 0
+  },
+  "enabledPlugins": {
+    "everything-claude-code@everything-claude-code": true
   }
 }
