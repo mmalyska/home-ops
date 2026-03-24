@@ -2,6 +2,40 @@
 
 The cluster uses a single domain (PRIVATE_DOMAIN) split across two gateways — one for external access via Cloudflare, one for internal access via AdGuard Home DNS.
 
+## Physical Topology
+
+```mermaid
+flowchart TB
+    ISP([ISP - fiber])
+    ONT[ONT\n1 GbE WAN]
+    Router[ASUS RT-AX58U\nAsuswrt-Merlin\n192.168.50.1]
+
+    subgraph LAN[Home Network]
+        Switch[Unmanaged Switch]
+        QNAP[QNAP TS-251D\n192.168.50.8]
+        RPi[Raspberry Pi 4B\nHAOS + AdGuard Home addon\n192.168.50.9]
+        Other[Other devices]
+        WiFi[WiFi devices]
+
+        subgraph K8S[Home Cluster - 192.168.48.x]
+            mc1[mc1\n192.168.48.2]
+            mc2[mc2\n192.168.48.3]
+            mc3[mc3\n192.168.48.4]
+        end
+    end
+
+    ISP --> ONT
+    ONT -->|1 GbE| Router
+    Router --> Switch
+    Router --> QNAP
+    Router --> RPi
+    Router --> Other
+    Router -. WiFi .- WiFi
+    Switch --> mc1
+    Switch --> mc2
+    Switch --> mc3
+```
+
 ## Gateway Architecture
 
 | Gateway | IP | Access | DNS | Entry point |
@@ -36,7 +70,7 @@ Static records defined as `DNSEndpoint` CRDs:
 
 | Record | Type | Target | Purpose |
 |---|---|---|---|
-| `haas.PRIVATE_DOMAIN` | CNAME | `external.PRIVATE_DOMAIN` | Home Assistant proxy |
+| `haas.PRIVATE_DOMAIN` | CNAME | `external.PRIVATE_DOMAIN` | Home Assistant (HAOS on RPi) |
 
 HTTPRoutes attached to `envoy-external` are automatically published to Cloudflare by external-dns.
 
@@ -55,4 +89,4 @@ HTTPRoutes attached to `envoy-external` are automatically published to Cloudflar
 | `192.168.48.27` | Home automation (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
 | `192.168.50.8` | QNAP NAS |
-| `192.168.50.9` | RPI — AdGuard Home + Home Assistant proxy |
+| `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon |

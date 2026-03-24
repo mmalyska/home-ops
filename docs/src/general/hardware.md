@@ -15,5 +15,5 @@ There is list of devices that are used in my home
 | Huawei ONT (Orange)        | 1     | ISP                               |
 | ASUS RT-AX58U              | 1     | Router                            |
 | Lenovo M720q USFF i5-8600T | 3     | K8S cluster                       |
-| RPI 4 model B              | 1     | Home-Assistant + Adguard Home DNS |
-| Qnap NAS TS251+            | 1     | Storage                           |
+| RPI 4 model B              | 1     | Home Assistant OS (HAOS); AdGuard Home as HA addon |
+| QNAP TS-251D (8 GB RAM, QM2-2P10G1TA PCIe) | 1 | Storage (NFS + S3) |

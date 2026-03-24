@@ -18,6 +18,7 @@
 |------|------|---------|
 | [project_secrets_architecture.md](project_secrets_architecture.md) | project | Bitwarden-only secrets, 3 mechanisms, ESO gotchas |
 | [project_gateway_dns.md](project_gateway_dns.md) | project | Two-gateway setup, dns-controller annotation gotcha, static DNSEndpoints |
+| [reference_network_hardware.md](reference_network_hardware.md) | reference | Router (RT-AX58U/Merlin), NAS (QNAP TS-251D + QM2-2P10G1TA), RPi (HAOS) hardware details |
 | [reference_local_access.md](reference_local_access.md) | reference | kubectl/talosctl/terraform/argocd permission rules and CLI details |
 | [feedback_render_verification.md](feedback_render_verification.md) | feedback | Run helm template / kustomize build after every values change |
 | [feedback_docs_updates.md](feedback_docs_updates.md) | feedback | Proactively update README/CLAUDE.md/docs after changes; memory file location |

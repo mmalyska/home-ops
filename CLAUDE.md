@@ -258,6 +258,8 @@ Required secrets for devcontainer: `TERRAFORM_TOKEN`
 
 ## Network Topology
 
+**Physical path**: ISP fiber → ONT (1 GbE WAN) → ASUS RT-AX58U (Asuswrt-Merlin) → LAN
+
 | Range / Address | Purpose |
 |----------------|---------|
 | `10.244.0.0/16` | Pod network (clusterPodNets) |
@@ -268,9 +270,9 @@ Required secrets for devcontainer: `TERRAFORM_TOKEN`
 | `192.168.48.3` | mc2 (control plane) |
 | `192.168.48.4` | mc3 (control plane) |
 | `192.168.48.20–50` | Cilium LB IP pool (for LoadBalancer services) |
-| `192.168.50.1` | Router/gateway |
-| `192.168.50.8` | QNAP NAS (NFS + S3 storage) |
-| `192.168.50.9` | RPI — AdGuard Home DNS + Home Assistant proxy target |
+| `192.168.50.1` | Router/gateway — ASUS RT-AX58U (Asuswrt-Merlin firmware) |
+| `192.168.50.8` | QNAP TS-251D NAS (8 GB RAM, QM2-2P10G1TA PCIe card) — NFS + S3 storage |
+| `192.168.50.9` | Raspberry Pi — Home Assistant OS (HAOS); AdGuard Home runs as HA addon |
 
 **Known assigned LoadBalancer IPs** (set via `lbipam.cilium.io/ips` annotation):
 
