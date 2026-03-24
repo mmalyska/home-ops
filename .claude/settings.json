@@ -1,6 +1,6 @@
 {
-  "model": "sonnet",
   "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "MAX_THINKING_TOKENS": "10000",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
   },
@@ -57,12 +57,29 @@
       "Bash(git push -f *)"
     ]
   },
+  "model": "sonnet",
   "statusLine": {
     "type": "command",
     "command": "npx -y ccstatusline@latest --config ./.claude/statusline/settings.json",
     "padding": 0
   },
   "enabledPlugins": {
+    "superpowers@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false,
+    "context7@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": false,
     "everything-claude-code@everything-claude-code": true
+  },
+  "extraKnownMarketplaces": {
+    "everything-claude-code": {
+      "source": {
+        "source": "github",
+        "repo": "affaan-m/everything-claude-code"
+      }
+    }
+  },
+  "alwaysThinkingEnabled": true,
+  "preferences": {
+    "tmuxSplitPanes": true
   }
 }
