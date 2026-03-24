@@ -9,9 +9,10 @@ flowchart TB
     ISP([ISP - fiber])
     ONT[ONT\n1 GbE WAN]
     Router[ASUS RT-AX58U\nAsuswrt-Merlin\n192.168.50.1]
+    UPS[CyberPower CP1350EPFCLCD\n1350VA/810W, AVR]
 
     subgraph LAN[Home Network]
-        Switch[Unmanaged Switch]
+        Switch[NETGEAR GS108GE\n8-port unmanaged\n1 GbE]
         QNAP[QNAP TS-251D\n192.168.50.8]
         RPi[Raspberry Pi 4B\nHAOS + AdGuard Home addon\n192.168.50.9]
         Other[Other devices]
@@ -26,14 +27,23 @@ flowchart TB
 
     ISP --> ONT
     ONT -->|1 GbE| Router
-    Router --> Switch
-    Router --> QNAP
+    Router -->|1 GbE| Switch
     Router --> RPi
     Router --> Other
     Router -. WiFi .- WiFi
     Switch --> mc1
     Switch --> mc2
     Switch --> mc3
+    Switch --> QNAP
+
+    UPS -->|Schuko| Router
+    UPS -->|Schuko| Switch
+    UPS -->|Schuko| RPi
+    UPS -->|Schuko| mc1
+    UPS -->|Schuko| mc2
+    UPS -->|Schuko| mc3
+    UPS -->|Schuko| QNAP
+    UPS -->|USB| RPi
 ```
 
 ## Gateway Architecture
@@ -77,6 +87,18 @@ HTTPRoutes attached to `envoy-external` are automatically published to Cloudflar
 ## External Access via Cloudflare Tunnel
 
 `cloudflared` runs 2 replicas in the cluster and connects to Cloudflare's network. Incoming requests from the internet are routed by Cloudflare to the `envoy-external` gateway. No ports need to be forwarded on the home router.
+
+## UPS & Power Management
+
+A **CyberPower CP1350EPFCLCD** (1350VA/810W, AVR) protects all critical devices: router, switch, RPi, all 3 k8s nodes, and QNAP NAS.
+
+The UPS is connected via USB to the RPi, which runs the **NUT Server** Home Assistant addon as the NUT master. The k8s nodes and QNAP act as NUT clients (slaves) and shut down gracefully on battery-low events.
+
+| Role | Device |
+|------|--------|
+| NUT master (USB) | RPi — HAOS NUT Server addon |
+| NUT slave | mc1, mc2, mc3 (k8s nodes) |
+| NUT slave | QNAP TS-251D |
 
 ## IP Allocation
 
