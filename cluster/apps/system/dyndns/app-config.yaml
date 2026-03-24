@@ -1,4 +1,4 @@
-- enabled: "false"
+- enabled: "false" # permanently disabled to not expose the public IP of router, using cloudflare instead
   namespace: dyndns
   syncPolicy:
     enabled: true
