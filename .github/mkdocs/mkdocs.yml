@@ -133,6 +133,7 @@ nav:
   - "General":
       - "Hardware": general/hardware.md
       - "Network": general/network.md
+      - "UPS & Power": general/ups.md
   - "Home Ops":
       - "Kubernetes":
           - "Bootstrap": k8s/bootstrap.md
