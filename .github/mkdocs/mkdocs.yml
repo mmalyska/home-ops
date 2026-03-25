@@ -134,6 +134,7 @@ nav:
       - "Hardware": general/hardware.md
       - "Network": general/network.md
       - "UPS & Power": general/ups.md
+      - "Network Upgrade Plan": general/network-upgrade-plan.md
   - "Home Ops":
       - "Kubernetes":
           - "Bootstrap": k8s/bootstrap.md
