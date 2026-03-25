@@ -14,13 +14,20 @@
       "enabled": false
     },
     {
-      "description": "Disable pinDigests for talconfig.yaml (talosVersion/kubernetesVersion format is incompatible with @sha256 suffixes)",
-      "matchFileNames": ["provision/talos/talconfig.yaml"],
+      "description": "Disable pinDigests for talconfig.yaml and Taskfile.yaml (talosVersion/kubernetesVersion format is incompatible with @sha256 suffixes)",
+      "matchFileNames": ["provision/talos/talconfig.yaml", ".taskfiles/talos/Taskfile.yaml"],
       "pinDigests": false
     },
     {
       "description": "Disable pinDigests for vintagestory (vs-version is a game version env var, not a container image tag; container tag digest is managed via autoReplaceStringTemplate)",
       "matchPackageNames": ["ghcr.io/mmalyska/vintagestory"],
+      "matchUpdateTypes": ["pinDigest"],
+      "enabled": false
+    },
+    {
+      "description": "Disable pinDigests for prometheus-operator-crds OCI helm chart in helmfile (no digest field in helmfile format)",
+      "matchManagers": ["helmfile"],
+      "matchPackageNames": ["ghcr.io/prometheus-community/charts/prometheus-operator-crds"],
       "matchUpdateTypes": ["pinDigest"],
       "enabled": false
     }
