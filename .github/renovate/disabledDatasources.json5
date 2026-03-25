@@ -12,6 +12,17 @@
       "matchManagers": ["helm-values"],
       "matchPackageNames": ["gitea/gitea"],
       "enabled": false
+    },
+    {
+      "description": "Disable pinDigests for talconfig.yaml (talosVersion/kubernetesVersion format is incompatible with @sha256 suffixes)",
+      "matchFileNames": ["provision/talos/talconfig.yaml"],
+      "pinDigests": false
+    },
+    {
+      "description": "Disable pinDigests for vintagestory (vs-version is a game version env var, not a container image tag; container tag digest is managed via autoReplaceStringTemplate)",
+      "matchPackageNames": ["ghcr.io/mmalyska/vintagestory"],
+      "matchUpdateTypes": ["pinDigest"],
+      "enabled": false
     }
   ]
 }

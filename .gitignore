@@ -24,3 +24,4 @@ Chart.lock
 .task
 # env variables
 .devcontainer/devcontainer.env
+.local
