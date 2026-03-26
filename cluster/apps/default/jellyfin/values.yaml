@@ -77,7 +77,7 @@ jellyfin:
       mountPath: /transcoding
 
   deploymentStrategy:
-    type: RollingUpdate
+    type: Recreate
 
   nodeSelector: {}
   tolerations: []
