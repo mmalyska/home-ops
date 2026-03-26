@@ -78,7 +78,6 @@ jellyfin:
 
   deploymentStrategy:
     type: Recreate
-    rollingUpdate: null
 
   nodeSelector: {}
   tolerations: []

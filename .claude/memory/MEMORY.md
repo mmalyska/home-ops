@@ -24,3 +24,4 @@
 | [feedback_docs_updates.md](feedback_docs_updates.md) | feedback | Proactively update README/CLAUDE.md/docs after changes; memory file location |
 | [feedback_check_native_gateway_support.md](feedback_check_native_gateway_support.md) | feedback | Check upstream chart for native HTTPRoute support BEFORE writing manual templates/httproute.yaml |
 | [feedback_skill_location.md](feedback_skill_location.md) | feedback | Learned skills go to /workspaces/home-ops/.claude/skills/learned/, not ~/.claude/ |
+| [feedback_recreate_strategy_migration.md](feedback_recreate_strategy_migration.md) | feedback | Changing Deployment strategy to Recreate requires kubectl JSON patch to remove rollingUpdate from live object first |
