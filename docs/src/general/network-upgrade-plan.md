@@ -6,7 +6,7 @@ Migration from current flat home network to a rack-based UniFi setup with proper
 
 - Rack-mounted networking gear in existing ceiling-mounted 6U garage rack
 - Proper VLAN segmentation (cluster, servers, trusted, IoT)
-- K8s cluster and NAS in new floor-standing 12U garage rack
+- K8s cluster and NAS in new floor-standing 15U garage rack (Lanberg FF01-6615-23B)
 - 2× UniFi APs for full house WiFi coverage (2 floors)
 - Retain existing IP/subnet scheme to avoid Talos reconfiguration
 - UPS protection for both racks
@@ -19,19 +19,19 @@ Migration from current flat home network to a rack-based UniFi setup with proper
 
 | Item | Est. price (PLN) |
 |------|-----------------|
-| UniFi Cloud Gateway Ultra (UCG-Ultra) | ~650 |
-| UniFi USW-Pro-24-PoE | ~1,800 |
+| UniFi Cloud Gateway Ultra (UCG-Ultra) | ~464 |
+| UniFi USW-Pro-24-PoE | ~2,799 |
 | UniFi USW-Lite-8-PoE (server rack ToR) | ~530 |
-| UniFi U6-Lite × 2 | ~1,000 |
-| 12U floor-standing rack | ~400 |
-| 24-port CAT6 patch panel | ~100 |
-| 2U open shelf × 2 | ~140 |
-| 1U shelf × 3 (UCG-Ultra, USW-Lite, RPi) | ~150 |
-| 1U PDU strip × 2 | ~140 |
-| Cable trunking 40×25mm + accessories | ~60 |
-| CAT6 patch cables (assorted) | ~100 |
+| UniFi U6-Lite × 2 | ~1,210 |
+| [Lanberg FF01-6615-23B](https://www.komputronik.pl/product/1002234/lanberg-szafa-rack-stojaca-19-15u-600x600-czarna-drzwi-perforowane.html) (15U, 600×600mm, perforated steel front+rear, built-in 2-fan panel, 800kg top) | 1,069 |
+| [Lanberg AK-1002-B](https://www.morele.net/szuflada-rack-lanberg-1u-ak-1002-b-6602609/) 1U shelf × 3 (UCG-Ultra, QNAP NAS, Raspberry Pi) | ~141 |
+| M5×12mm screws × 6 + M5 hex nuts × 6 (for 3D-printed M720q rack tray) | ~10 |
+| [Lanberg PDU-08E-0200-BK](https://www.szafa-rackowa.pl/LISTWA-ZASILAJACA-RACK-PDU-19-LANBERG-1U-16A-8X-230V-PL-2M-CZARNA-113765.html) 1U PDU (16A, 8× Schuko, surge protection, 2m) × 2 | ~164 |
+| BKK 40×25mm cable channel 2m × 2 + accessories (end caps, corner pieces, wall anchors) | ~35 |
+| 3m Schuko extension cable (CP550EFCLCD → ceiling rack PDU, runs in trunking) | ~25 |
+| CAT6 patch cables: 0.5m × 14 (in-rack), 1m × 7 (AP1 + 6 room ends), 5m × 1 (inter-rack trunk) | ~200 |
 | CP550EFCLCD replacement battery (12V 7Ah SLA) | ~70 |
-| **Total** | **~5,140** |
+| **Total** | **~6,717** |
 | TP-Link TL-SG105 unmanaged switch (optional, per room needing extra ports) | ~60 each |
 
 ### Already Owned (no cost)
@@ -44,6 +44,7 @@ Migration from current flat home network to a rack-based UniFi setup with proper
 | CyberPower CP1350EPFCLCD | Server rack UPS |
 | CyberPower CP550EFCLCD | Networking rack UPS (battery replacement needed) |
 | 6U ceiling-mounted rack | Networking rack (existing) |
+| 24-port CAT6 patch panel | Ceiling rack patch panel |
 | 2× outdoor IP camera (RTSP) | Security cameras (Frigate NVR) |
 
 ---
@@ -63,7 +64,7 @@ flowchart TB
         USW[USW-Pro-24-PoE]
     end
 
-    subgraph floor12[Server rack - 12U]
+    subgraph floor12[Server rack - 15U]
         ToR[USW-Lite-8-PoE\nToR switch]
         mc1[mc1\n192.168.48.2]
         mc2[mc2\n192.168.48.3]
@@ -97,7 +98,7 @@ flowchart TB
 | Cluster | 20 | `192.168.48.x` | K8s nodes (existing subnet) | ✅ | ↔ 30 |
 | Servers | 30 | `192.168.50.x` | QNAP, RPi (existing subnet) | ✅ | ↔ 20 |
 | IoT | 40 | `192.168.40.x` | Smart home devices | ✅ | ❌ |
-| Guest | 50 | `192.168.50.x` | Guest WiFi | ✅ | ❌ |
+| Guest | 50 | `192.168.60.x` | Guest WiFi | ✅ | ❌ |
 
 Existing subnets (`192.168.48.x` and `192.168.50.x`) are kept — no Talos, QNAP, or RPi reconfiguration needed.
 
@@ -146,7 +147,7 @@ Rooms needing more than 1 port get a **TP-Link TL-SG105** (~60 PLN) locally. One
 │ 1U  24-port patch panel     │
 │ 1U  USW-Pro-24-PoE          │
 │ 1U  shelf — UCG-Ultra       │
-│ 1U  1U PDU strip            │
+│ 1U  PDU (PDU-08E-0200-BK)   │
 │ 1U  blanking panel          │
 │ 1U  blanking panel          │
 └─────────────────────────────┘
@@ -158,28 +159,39 @@ Rooms needing more than 1 port get a **TP-Link TL-SG105** (~60 PLN) locally. One
 > UCG-Ultra and USW-Pro-24-PoE are fully remote-managed via UniFi — treat as set-and-forget.
 > Only go up to swap a failed device or add a cable.
 
-### Server Rack (12U, floor-standing)
+### Server Rack (15U, floor-standing — Lanberg FF01-6615-23B)
 
 ```
-┌─────────────────────────────┐
-│ 1U  shelf — USW-Lite-8-PoE  │
-│ 2U  shelf — 3× M720q        │
-│ 2U  shelf — QNAP TS-251D    │
-│ 1U  shelf — RPi             │
-│ 1U  1U PDU strip            │
-│ 5U  spare / future          │
-└─────────────────────────────┘
+┌─────────────────────────────┐  ← TOP (exhaust)
+│ 1U  built-in fan panel      │  hot air out ↑  [FF01-6615-23B integrated]
+│ 7U  spare / future          │
+│ 1U  USW-Lite-8-PoE (rack ears)│  ~10W
+│ 2U  3× M720q (3D-printed tray)│  ~90–195W  ← main heat source
+│ 2U  QNAP TS-251D (1U shelf)  │  ~20–30W
+│ 1U  RPi (1U shelf)           │  ~5W
+│ 1U  PDU (PDU-08E-0200-BK)   │  no heat
+└─────────────────────────────┘  ← BOTTOM (cool air in)
 ⬛ CP1350EPFCLCD (floor beside rack)
      USB → RPi (NUT master)
 ```
 
-> **M720q mounting**: three M720q fit side by side on a standard 2U open shelf oriented with
-> the long axis going into the rack depth. For a cleaner result, use a 3D-printed rack tray
-> (files available on Printables/Thingiverse for the Lenovo M720q USFF form factor).
+> **Airflow**: cool air enters through the vented front door at the bottom, rises past M720q and
+> QNAP (which have their own rear-exhaust fans), and is actively pulled out by the 1U fan panel
+> at the top. PDU and RPi sit at the bottom where heat load is minimal. Spare U-space is placed
+> above the active gear so future additions don't disrupt the airflow stack.
 
-> **Why 12U over 6U**: 6U would be exactly full with zero cable management space and no room
-> for future expansion (adding a node, a 10G card, etc.). The rack enclosure itself costs
-> ~€20–30 more — worth it.
+> **M720q mounting**: three M720q fit side by side in a 2U space with a 3D-printed rack tray.
+> Free model: [Lenovo ThinkCentre Tiny M720Q/M715Q/M920Q 19-inch Rack Mount](https://www.printables.com/model/1360667-lenovo-thinkcentre-tiny-m720qm715qm920q-19-inch-ra)
+> by Mixmeister on Printables (3MF + STL, free). Assembled with 6× M5 screws + 6× M5 hex nuts.
+> The tray is multi-section — verify part dimensions fit the A1 Mini (180×180×180mm) before printing.
+
+> **Why 15U (FF01-6615-23B)**: Lanberg's smallest floor-standing enclosed model — 12U
+> doesn't exist in their floor-standing range. The 3 extra U gives 7U of spare space for future
+> expansion. Built-in 2-fan panel and perforated steel doors mean no extra fan hardware needed.
+
+> **Rack top**: the FF01-6615-23B's steel top (rated 800 kg) doubles as a shelf for a
+> **Bambu Lab A1 Mini + AMS Lite** (~16 kg combined). 600×600mm footprint fits the printer
+> (347×389mm) comfortably.
 
 ### Inter-Rack Cabling
 
@@ -199,7 +211,7 @@ All inter-rack cables routed in 40×25mm surface cable trunking along garage wal
 |----------|--------|-----------|
 | UCG-Ultra vs UDM-SE | UCG-Ultra | Already buying USW-Pro-24-PoE. UDM-SE has a built-in 8-port PoE switch but would still need USW-Pro for 24 ports — two devices drawing ~100W+ vs ~60W for UCG-Ultra + USW-Pro. Power-efficient split wins. UDM-SE would be needed for UniFi Protect (cameras) — ruled out in favour of Frigate on K8s (see below). |
 | Coral TPU vs Intel OpenVINO | OpenVINO | M720q nodes have Intel UHD 630 iGPU. Frigate's OpenVINO detector uses it for hardware-accelerated inference — no extra hardware needed for 2 cameras. |
-| 12U vs 6U server rack | 12U | 6U fills completely with zero headroom for cable management or future expansion. Rack enclosure price difference is negligible. |
+| Server rack model | Lanberg FF01-6615-23B (15U) | Smallest Lanberg floor-standing enclosed model. 3 extra U over 12U gives 7U spare. Perforated steel doors, 2-fan panel built in, 800 kg top panel — no separate fan panel needed. 1,069 PLN (Komputronik). |
 | Individual runs vs ToR switch | Managed ToR (USW-Lite-8-PoE) | VLANs require per-port tagging in the server rack. Unmanaged ToR can't do this; individual runs would mean 5 cables between racks. One trunk cable + managed ToR is cleaner. |
 | QNAP 10G to cluster | Not direct | QNAP is on VLAN 30 (servers), cluster is on VLAN 20. Routed via UCG-Ultra, same as current setup. No dedicated passthrough needed for home lab workloads. |
 
@@ -302,7 +314,7 @@ Both UPS units connect via USB to RPi for NUT monitoring in Home Assistant.
 2. Install wall cable trunking between ceiling rack and server rack location
 3. Run 6 room CAT6 cables to patch panel (ports 1–6)
 4. Run inter-rack trunk CAT6 cable (patch panel port 7 → server rack)
-5. Assemble 12U server rack (shelves, PDU)
+5. Assemble 15U server rack (shelves, PDU)
 6. Place CP550EFCLCD on floor below ceiling rack, run power cable up to rack PDU
 
 ### Phase 3 — Cutover day
@@ -322,10 +334,10 @@ talosctl shutdown --nodes 192.168.48.2,192.168.48.3,192.168.48.4
 
 #### Physical move
 
-1. Move 3× M720q → 12U shelf, connect to USW-Lite-8-PoE ports 2–4
-2. Move QNAP → 12U shelf, connect to USW-Lite-8-PoE port 5
-3. Move RPi → 12U shelf, connect to USW-Lite-8-PoE port 6
-4. Move CP1350EPFCLCD → floor beside 12U rack, connect USB to RPi
+1. Move 3× M720q → 15U rack, connect to USW-Lite-8-PoE ports 2–4
+2. Move QNAP → 15U rack, connect to USW-Lite-8-PoE port 5
+3. Move RPi → 15U rack, connect to USW-Lite-8-PoE port 6
+4. Move CP1350EPFCLCD → floor beside 15U rack, connect USB to RPi
 5. Connect USW-Lite-8-PoE uplink (port 1) → inter-rack trunk cable
 
 #### Power up
