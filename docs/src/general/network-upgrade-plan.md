@@ -44,6 +44,7 @@ Migration from current flat home network to a rack-based UniFi setup with proper
 | CyberPower CP1350EPFCLCD | Server rack UPS |
 | CyberPower CP550EFCLCD | Networking rack UPS (battery replacement needed) |
 | 6U ceiling-mounted rack | Networking rack (existing) |
+| 2× outdoor IP camera (RTSP) | Security cameras (Frigate NVR) |
 
 ---
 
@@ -197,6 +198,7 @@ All inter-rack cables routed in 40×25mm surface cable trunking along garage wal
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | UCG-Ultra vs UDM-SE | UCG-Ultra | Already buying USW-Pro-24-PoE. UDM-SE has a built-in 8-port PoE switch but would still need USW-Pro for 24 ports — two devices drawing ~100W+ vs ~60W for UCG-Ultra + USW-Pro. Power-efficient split wins. UDM-SE would be needed for UniFi Protect (cameras) — ruled out in favour of Frigate on K8s (see below). |
+| Coral TPU vs Intel OpenVINO | OpenVINO | M720q nodes have Intel UHD 630 iGPU. Frigate's OpenVINO detector uses it for hardware-accelerated inference — no extra hardware needed for 2 cameras. |
 | 12U vs 6U server rack | 12U | 6U fills completely with zero headroom for cable management or future expansion. Rack enclosure price difference is negligible. |
 | Individual runs vs ToR switch | Managed ToR (USW-Lite-8-PoE) | VLANs require per-port tagging in the server rack. Unmanaged ToR can't do this; individual runs would mean 5 cables between racks. One trunk cable + managed ToR is cleaner. |
 | QNAP 10G to cluster | Not direct | QNAP is on VLAN 30 (servers), cluster is on VLAN 20. Routed via UCG-Ultra, same as current setup. No dedicated passthrough needed for home lab workloads. |
@@ -227,9 +229,9 @@ Cameras go on **VLAN 40 (IoT)** — isolated from trusted devices and cluster. F
 - Add firewall rule: VLAN 20 → VLAN 40 (RTSP port 554) allow
 - Cameras have no outbound internet access (IoT VLAN default deny)
 
-### Future hardware consideration
+### Object detection
 
-If object detection performance on CPU is insufficient, add a **Coral USB TPU** (~300 PLN) to one of the M720q nodes for hardware-accelerated inference.
+Frigate uses **Intel OpenVINO** as the detector, running on the iGPU already present in the M720q nodes (Intel UHD 630). No additional hardware needed for 2 cameras.
 
 ---
 
