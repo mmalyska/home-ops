@@ -1,6 +1,7 @@
 #!/bin/bash -i
 
-/home/linuxbrew/.linuxbrew/bin/brew install age direnv egctl gitleaks go-task/tap/go-task helm ipcalc jq kubectl kustomize prettier stern terraform yamllint yq argocd int128/kubelogin/kubelogin k9s pre-commit mkdocs gh claude-code
+/home/linuxbrew/.linuxbrew/bin/brew update
+/home/linuxbrew/.linuxbrew/bin/brew bundle install --file=Brewfile && /home/linuxbrew/.linuxbrew/bin/brew bundle upgrade --file=Brewfile
 
 echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc
 echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc

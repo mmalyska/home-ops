@@ -30,35 +30,16 @@ tasks:
   init:
     desc: Initialize workstation dependencies with Brew
     cmds:
-      - brew install {{.DEPS}} {{.CLI_ARGS}}
+      - brew update
+      - brew bundle upgrade --file=.github/.devcontainer/local-features/common/Brewfile {{.CLI_ARGS}}
     preconditions:
       - sh: command -v brew
         msg: |
           Homebrew is not installed. Using MacOS, Linux or WSL?
           Head over to https://brew.sh to get up and running.
-    vars:
-      DEPS: >-
-        age
-        direnv
-        egctl
-        gitleaks
-        go-task/tap/go-task
-        helm
-        ipcalc
-        jq
-        kubectl
-        kustomize
-        prettier
-        stern
-        terraform
-        yamllint
-        yq
-        argocd
-        int128/kubelogin/kubelogin
-        k9s
-        pre-commit
-        mkdocs
-        helmfile
+      - sh: -f .github/.devcontainer/local-features/common/Brewfile
+        msg: |
+          Homebrew dependencies are not up to date. Run `task init` to update them.
   init-subtasks:
     desc: Initialize subtasks
     cmds:
