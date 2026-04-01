@@ -37,7 +37,7 @@ tasks:
         msg: |
           Homebrew is not installed. Using MacOS, Linux or WSL?
           Head over to https://brew.sh to get up and running.
-      - sh: -f .github/.devcontainer/local-features/common/Brewfile
+      - sh: test -f .github/.devcontainer/local-features/common/Brewfile
         msg: |
           Homebrew dependencies are not up to date. Run `task init` to update them.
   init-subtasks:
