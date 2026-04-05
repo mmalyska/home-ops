@@ -79,9 +79,6 @@ nodes:
           officialExtensions:
             - siderolabs/nvidia-container-toolkit-lts
             - siderolabs/nvidia-open-gpu-kernel-modules-lts
-      # overlay:
-      #   name: jetson_nano
-      #   image: siderolabs/sbc-jetson
     networkInterfaces:
       - interface: enP8p1s0
         addresses:
