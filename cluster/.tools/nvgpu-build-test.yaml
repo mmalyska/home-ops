@@ -170,13 +170,15 @@ spec:
 
               # ── 11. Patch platform_driver.remove int->void (kernel 6.11) ────────
               # .remove field type changed: int(*)(struct platform_device*) -> void(*)()
-              # gk20a_remove_wrapper returns int; change to void + replace return 0 with return.
-              # sed -z: file as single record so [^}]* matches across newlines but stops at '}'.
+              # Two steps: (1) change return type in signature, (2) change return 0 -> return
+              # within the function using a sed line-range address (avoids nested-brace issues).
               MODULE_C=/build/nvgpu/drivers/gpu/nvgpu/os/linux/module.c
               echo "==> Patching platform_driver.remove int->void in module.c..."
-              sed -z -i \
-                's/static int \(gk20a_remove_wrapper([^)]*)\)\([^}]*\)return 0;/static void \1\2return;/g' \
+              # Step 1: fix the function signature (declaration line)
+              sed -i 's/static int gk20a_remove_wrapper/static void gk20a_remove_wrapper/g' \
                 ${MODULE_C}
+              # Step 2: within the function body (from signature to closing '}'), fix return 0;
+              sed -i '/gk20a_remove_wrapper/,/^}/s/\breturn 0;/return;/' ${MODULE_C}
               echo "--- verify gk20a_remove_wrapper signature (should say void) ---"
               grep -n 'gk20a_remove_wrapper' ${MODULE_C} || echo "not found"
               echo "--- check for other platform_driver int remove callbacks ---"

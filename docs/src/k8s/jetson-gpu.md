@@ -83,6 +83,12 @@ all API incompatibilities.
 
 Continue running the Job until **BUILD EXIT CODE: 0** is achieved.
 
+> **Cleanup:** Once BUILD EXIT CODE: 0 is reached, delete the build cache from nv1:
+> ```sh
+> talosctl -n 192.168.48.5 shell  # then: rm -rf /var/nvgpu-build-cache
+> ```
+> Also delete the Job: `kubectl delete -f cluster/.tools/nvgpu-build-test.yaml`
+
 ### Phase 2 — Collect all patches as a proper diff
 
 Once the build passes:
