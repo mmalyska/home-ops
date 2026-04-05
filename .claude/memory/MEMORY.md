@@ -25,3 +25,4 @@
 | [feedback_check_native_gateway_support.md](feedback_check_native_gateway_support.md) | feedback | Check upstream chart for native HTTPRoute support BEFORE writing manual templates/httproute.yaml |
 | [feedback_skill_location.md](feedback_skill_location.md) | feedback | Learned skills go to /workspaces/home-ops/.claude/skills/learned/, not ~/.claude/ |
 | [feedback_recreate_strategy_migration.md](feedback_recreate_strategy_migration.md) | feedback | Changing Deployment strategy to Recreate requires kubectl JSON patch to remove rollingUpdate from live object first |
+| [project_jetson_gpu.md](project_jetson_gpu.md) | project | nv1 Jetson Orin NX nvgpu extension — active build/patch work, full plan at docs/src/k8s/jetson-gpu.md |

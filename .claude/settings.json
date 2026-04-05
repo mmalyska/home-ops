@@ -67,17 +67,9 @@
     "superpowers@claude-plugins-official": false,
     "code-simplifier@claude-plugins-official": false,
     "context7@claude-plugins-official": true,
-    "claude-md-management@claude-plugins-official": false,
-    "everything-claude-code@everything-claude-code": true
+    "claude-md-management@claude-plugins-official": false
   },
-  "extraKnownMarketplaces": {
-    "everything-claude-code": {
-      "source": {
-        "source": "github",
-        "repo": "affaan-m/everything-claude-code"
-      }
-    }
-  },
+  "extraKnownMarketplaces": {},
   "alwaysThinkingEnabled": true,
   "preferences": {
     "tmuxSplitPanes": true

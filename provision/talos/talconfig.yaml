@@ -89,6 +89,15 @@ nodes:
             gateway: 192.168.50.1
     nodeTaints:
       nv: NoSchedule
+    # TODO(nvgpu): activate once nvgpu extension is built and published
+    # patches:
+    #   - |-
+    #     machine:
+    #       kernel:
+    #         modules:
+    #           - name: nvgpu   # explicit load — nvgpu.ko is not autoloaded on Talos
+    #       sysctls:
+    #         net.core.bpf_jit_harden: "1"  # required by nvidia-container-toolkit
 
 controlPlane:
   nodeLabels: &nodeLabels

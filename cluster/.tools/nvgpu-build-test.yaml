@@ -1,0 +1,209 @@
+---
+# One-shot Job to test if OE4T nvgpu driver compiles against Talos kernel 6.18.18 headers.
+# Run on nv1 (arm64 Jetson Orin NX) where the actual kernel is already running.
+# Usage:
+#   kubectl apply -f cluster/.tools/nvgpu-build-test.yaml
+#   kubectl logs -f -n default job/nvgpu-build-test
+#   kubectl delete -f cluster/.tools/nvgpu-build-test.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nvgpu-build-test
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      nodeName: nv1
+      tolerations:
+        - operator: Exists  # tolerate any taint on nv1
+      hostPID: false
+      hostNetwork: false
+      securityContext:
+        runAsNonRoot: false
+      volumes:
+        - name: workspace
+          emptyDir:
+            sizeLimit: 4Gi
+      containers:
+        - name: build
+          image: ubuntu:24.04
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "6"
+              memory: 2Gi
+            limits:
+              cpu: "8"
+              memory: 4Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /build
+          command: ["/bin/bash", "-xec"]
+          args:
+            - |
+              # ── 1. Install build dependencies ────────────────────────────────
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y --no-install-recommends \
+                build-essential bc flex bison \
+                libelf-dev libssl-dev \
+                wget ca-certificates git \
+                kmod 2>&1 | tail -5
+
+              cd /build
+
+              # ── 2. Download and prepare kernel 6.18.18 source ────────────────
+              KVER=6.18.18
+              KMAJ=6
+              echo "==> Downloading kernel ${KVER} source..."
+              wget -q --show-progress \
+                "https://cdn.kernel.org/pub/linux/kernel/v${KMAJ}.x/linux-${KVER}.tar.xz"
+              echo "==> Extracting..."
+              tar -xf linux-${KVER}.tar.xz
+              KSRC=/build/linux-${KVER}
+
+              NPROC=$(nproc)
+              echo "==> Building with ${NPROC} parallel jobs..."
+
+              echo "==> Running make defconfig (arm64)..."
+              make -j${NPROC} -C ${KSRC} ARCH=arm64 defconfig
+
+              echo "==> Running make modules_prepare (arm64)..."
+              make -j${NPROC} -C ${KSRC} ARCH=arm64 modules_prepare
+
+              # ── 3. Clone OE4T/linux-nvgpu ─────────────────────────────────────
+              echo "==> Cloning OE4T/linux-nvgpu branch patches-r36.5..."
+              git clone --depth=1 --branch patches-r36.5 \
+                https://github.com/OE4T/linux-nvgpu.git nvgpu
+
+              # ── 4. Patch vm_flags API change (kernel 6.3+) ───────────────────
+              # vma->vm_flags became read-only in 6.3.
+              # |= must become vm_flags_set(); &= ~ must become vm_flags_clear().
+              # Apply across entire driver tree — multiple files affected.
+              # -z reads each file as single record so [^;]* can span newlines.
+              NVGPU_OS=/build/nvgpu/drivers/gpu/nvgpu/os/linux
+              echo "==> Patching vm_flags |= assignments (vm_flags_set)..."
+              grep -rl 'vm_flags |=' /build/nvgpu/drivers/gpu/nvgpu/ | \
+                xargs -I{} sed -z -i 's/vma->vm_flags |= \([^;]*\);/vm_flags_set(vma, \1);/g' {}
+              echo "==> Patching vm_flags &= ~ assignments (vm_flags_clear)..."
+              grep -rl 'vm_flags &= ~' /build/nvgpu/drivers/gpu/nvgpu/ | \
+                xargs -I{} sed -z -i 's/vma->vm_flags &= ~\([^;]*\);/vm_flags_clear(vma, \1);/g' {}
+              echo "--- remaining vm_flags |= / &= ~ occurrences (should be 0) ---"
+              grep -rn 'vm_flags |=\|vm_flags &= ~' /build/nvgpu/drivers/gpu/nvgpu/ || echo "none"
+
+              # ── 5. Patch class_create API change (kernel 6.4) ────────────────
+              # THIS_MODULE arg was removed: class_create(THIS_MODULE, name) -> class_create(name)
+              IOCTL_C=/build/nvgpu/drivers/gpu/nvgpu/os/linux/ioctl.c
+              echo "==> Patching class_create in ioctl.c..."
+              sed -i 's/class_create(THIS_MODULE, /class_create(/g' ${IOCTL_C}
+
+              # ── 6. Patch devnode callback const (kernel 6.2) ──────────────────
+              # devnode signature gained 'const': char*(*)(struct device*) -> char*(*)(const struct device*)
+              # Patch function definitions across all os/linux .c and .h files
+              echo "==> Patching devnode callback signatures..."
+              grep -rl 'devnode' /build/nvgpu/drivers/gpu/nvgpu/os/linux/ \
+                | xargs sed -i 's/\(nvgpu[a-z_0-9]*devnode[a-z_0-9_v]*\)(struct device/\1(const struct device/g'
+              echo "--- patched devnode definitions ---"
+              grep -rn 'devnode.*struct device' /build/nvgpu/drivers/gpu/nvgpu/os/linux/ || true
+              grep -rn 'devnode.*const struct device' /build/nvgpu/drivers/gpu/nvgpu/os/linux/ || true
+
+              # ── 7. Patch struct fd .file member removed (kernel 6.9) ────────────
+              # fd.file -> fd_file(fd) accessor; apply across all os/linux .c files
+              echo "==> Patching struct fd .file -> fd_file(fd)..."
+              grep -rl 'fd\.file' /build/nvgpu/drivers/gpu/nvgpu/os/linux/ | \
+                xargs sed -i 's/fd\.file/fd_file(fd)/g'
+              echo "--- remaining fd.file occurrences (should be 0) ---"
+              grep -rn 'fd\.file' /build/nvgpu/drivers/gpu/nvgpu/os/linux/ || echo "none"
+
+              # ── 8. Patch dma-buf-map.h → iosys-map.h (kernel 5.18) ──────────────
+              # linux/dma-buf-map.h was renamed to linux/iosys-map.h in 5.18.
+              # struct dma_buf_map → struct iosys_map; all dma_buf_map_* → iosys_map_*;
+              # DMA_BUF_MAP_* macros → IOSYS_MAP_* macros.
+              # Apply across entire nvgpu driver tree (not just os/linux).
+              NVGPU_ROOT=/build/nvgpu/drivers/gpu/nvgpu
+              echo "==> Patching dma-buf-map.h -> iosys-map.h include..."
+              grep -rl 'dma-buf-map\.h' ${NVGPU_ROOT}/ | \
+                xargs sed -i 's|linux/dma-buf-map\.h|linux/iosys-map.h|g'
+              echo "==> Patching struct dma_buf_map -> struct iosys_map..."
+              grep -rl 'dma_buf_map' ${NVGPU_ROOT}/ | \
+                xargs sed -i \
+                  -e 's/struct dma_buf_map/struct iosys_map/g' \
+                  -e 's/dma_buf_map_set_/iosys_map_set_/g' \
+                  -e 's/dma_buf_map_clear/iosys_map_clear/g' \
+                  -e 's/dma_buf_map_is_null/iosys_map_is_null/g' \
+                  -e 's/dma_buf_map_is_vaddr/iosys_map_is_vaddr/g' \
+                  -e 's/DMA_BUF_MAP_INIT_/IOSYS_MAP_INIT_/g' \
+                  -e 's/DMA_BUF_MAP_/IOSYS_MAP_/g'
+              echo "--- remaining dma_buf_map type occurrences (dma_buf_map_attachment is ok) ---"
+              grep -rn 'dma_buf_map\|dma-buf-map' ${NVGPU_ROOT}/ | grep -v 'dma_buf_map_attachment' || echo "none"
+
+              # ── 9. Patch hrtimer_init -> hrtimer_setup (kernel 6.15) ─────────────
+              # hrtimer_init removed; hrtimer_setup merges init + .function assignment.
+              # Pattern (two adjacent lines):
+              #   hrtimer_init(&x, CLOCK, MODE);\n  x.function = cb;
+              # Replacement:
+              #   hrtimer_setup(&x, cb, CLOCK, MODE);
+              # sed -z reads file as single record so \n matches literal newline.
+              echo "==> Patching hrtimer_init -> hrtimer_setup..."
+              grep -rl 'hrtimer_init' /build/nvgpu/drivers/gpu/nvgpu/ | \
+                xargs -I{} sed -z -i \
+                  's/hrtimer_init(\([^,]*\), \([^,]*\), \([^)]*\));\n[^\n]*\.function = \([^;]*\);/hrtimer_setup(\1, \4, \2, \3);/g' {}
+              echo "--- remaining hrtimer_init occurrences (should be 0) ---"
+              grep -rn 'hrtimer_init' /build/nvgpu/drivers/gpu/nvgpu/ || echo "none"
+
+              # ── 10. Stub all files that need soc/tegra/virt/hv-ivc.h ────────────
+              # hv-ivc.h is NVIDIA L4T hypervisor-only — not in vanilla kernel.
+              # Removing .o entries from Makefiles is fragile (breaks ifdef/endif blocks).
+              # Instead: replace each offending .c with an empty stub so it compiles to
+              # an empty .o. IVC/IVM code paths are only invoked under Tegra hypervisor;
+              # on bare-metal Talos no code calls into them at runtime.
+              echo "==> Stubbing all .c files that include hv-ivc.h..."
+              grep -rl 'hv-ivc\.h' /build/nvgpu/drivers/gpu/nvgpu/ | grep '\.c$' | while read f; do
+                echo "  stubbing: $f"
+                printf '/* stub: soc/tegra/virt/hv-ivc.h not available on vanilla kernel.\n * IVC/IVM is unused on bare-metal (non-hypervisor) Jetson/Talos. */\n' > "$f"
+              done
+              echo "--- stubbed files ---"
+              grep -rl 'hv-ivc\.h' /build/nvgpu/drivers/gpu/nvgpu/ | grep '\.c$' || echo "none remaining (already stubbed)"
+
+              # ── 11. Patch platform_driver.remove int->void (kernel 6.11) ────────
+              # .remove field type changed: int(*)(struct platform_device*) -> void(*)()
+              # gk20a_remove_wrapper returns int; change to void + replace return 0 with return.
+              # sed -z: file as single record so [^}]* matches across newlines but stops at '}'.
+              MODULE_C=/build/nvgpu/drivers/gpu/nvgpu/os/linux/module.c
+              echo "==> Patching platform_driver.remove int->void in module.c..."
+              sed -z -i \
+                's/static int \(gk20a_remove_wrapper([^)]*)\)\([^}]*\)return 0;/static void \1\2return;/g' \
+                ${MODULE_C}
+              echo "--- verify gk20a_remove_wrapper signature (should say void) ---"
+              grep -n 'gk20a_remove_wrapper' ${MODULE_C} || echo "not found"
+              echo "--- check for other platform_driver int remove callbacks ---"
+              grep -rn 'static int.*_remove.*struct platform_device' \
+                /build/nvgpu/drivers/gpu/nvgpu/os/linux/ || echo "none"
+
+              # ── 12. Attempt to build nvgpu ─────────────────────────────────────
+              echo "==> Attempting nvgpu build against kernel ${KVER}..."
+              echo "KERNEL_SRC=${KSRC}"
+
+              # Use pipefail so make's exit code is not swallowed by tee
+              set +e
+              bash -o pipefail -c "make -j${NPROC} -C ${KSRC} ARCH=arm64 M=/build/nvgpu/drivers/gpu/nvgpu modules 2>&1 | tee /build/build.log"
+              BUILD_RC=$?
+              set -e
+
+              echo ""
+              echo "====== BUILD EXIT CODE: ${BUILD_RC} ======"
+              echo ""
+
+              if [ ${BUILD_RC} -eq 0 ]; then
+                echo "SUCCESS: nvgpu compiled cleanly against kernel ${KVER}"
+                find /build/nvgpu -name '*.ko' 2>/dev/null
+              else
+                echo "FAILED: all errors from build.log:"
+                grep -E "error:" /build/build.log | head -60 || true
+                echo ""
+                echo "--- last 60 lines of build.log ---"
+                tail -60 /build/build.log
+              fi
