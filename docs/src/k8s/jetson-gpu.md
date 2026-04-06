@@ -269,6 +269,121 @@ Pods wanting GPU access must set `runtimeClassName: nvidia`.
 
 ---
 
+## Upstreaming to Mainline Siderolabs
+
+The fork approach (`ghcr.io/mmalyska/nvgpu`) is a self-hosted workaround. Once the
+driver builds cleanly and works on `nv1`, the natural next step is to contribute the extension
+upstream so it appears in the [Talos Image Factory](https://factory.talos.dev/) catalogue.
+
+### Prerequisites before opening PRs
+
+1. The `nvgpu.ko` module must load successfully on a real Talos node (Phase 5–6 complete).
+2. Both PRs must target the **same Talos kernel version** as the current `main` branch of
+   each upstream repo. Check `Pkgfile` in `siderolabs/pkgs` for the active `kernel_version`.
+3. Coordinate PR ordering: **pkgs PR must merge first** so the extensions PR can reference
+   the published `ghcr.io/siderolabs/nvgpu-driver-pkg:<tag>` image.
+
+### siderolabs/pkgs PR
+
+Branch: `feat/jetson-nvgpu` on `mmalyska/siderolabs-pkgs`
+
+**Before opening the PR:**
+
+1. **Delete the custom CI workflow** — upstream has its own CI:
+   ```bash
+   git -C /tmp/mmalyska-pkgs rm .github/workflows/nvgpu-driver.yaml
+   ```
+
+2. **`Makefile` and `.kres.yaml` need `kres` regeneration** — upstream maintainers run `make rekres`
+   on merge. Your hand-edited additions to these files follow the correct pattern but will be
+   regenerated. You can either leave them as-is (maintainers will regen) or run `kres` locally:
+   ```bash
+   docker pull ghcr.io/siderolabs/kres:latest
+   docker run --rm --net=host --user $(id -u):$(id -g) \
+     -v /tmp/mmalyska-pkgs:/src -w /src \
+     ghcr.io/siderolabs/kres:latest
+   ```
+
+3. **Update `nvgpu_driver_sha512` in `Pkgfile`** — the placeholder value must be replaced with
+   the real SHA-512 of the nvgpu source tarball at the pinned commit:
+   ```bash
+   curl -sL "https://github.com/OE4T/linux-nvgpu/archive/d530a48d64f9ad3020d9f3307f53e8dde8e3fba1.tar.gz" \
+     | sha512sum
+   ```
+
+4. **Update the PKGS tag** to match whatever upstream `main` is building against — do not
+   submit against a stale PKGS tag.
+
+**PR checklist:**
+- [ ] `nvgpu-driver/pkg.yaml` — no fork-specific paths; `PKGS_PREFIX` variable used correctly
+- [ ] `nvgpu-driver/files/nv_compat.h` — macros verified against the upstream kernel version
+- [ ] `nvgpu-driver/files/nvgpu-kernel-compat.patch` — applies cleanly to pinned nvgpu commit
+- [ ] `Pkgfile` vars — real checksums, `renovate` datasource annotation present
+- [ ] No custom CI workflow committed
+
+### siderolabs/extensions PR
+
+Branch: `feat/jetson-nvgpu` on `mmalyska/siderolabs-extensions`
+
+**Before opening the PR (after pkgs PR merges):**
+
+1. **Delete the custom CI workflow:**
+   ```bash
+   git -C /tmp/mmalyska-extensions rm .github/workflows/nvgpu.yaml
+   ```
+
+2. **Change `author` in `manifest.yaml.tmpl`** from `Michał Małyska` to `Sidero Labs`:
+   ```yaml
+   author: Sidero Labs
+   ```
+
+3. **Update `vars.yaml`** — the `VERSION` string currently embeds the nvgpu commit hash prefix.
+   Upstream may prefer a cleaner versioning scheme; follow the pattern used by other `extra`
+   tier extensions in the repo.
+
+4. **Run `kres` regeneration** — same as pkgs above. Alternatively, leave it for maintainers.
+
+5. **Verify `PKGS` default** in `.kres.yaml` matches upstream `main` after the pkgs PR merged.
+
+**PR checklist:**
+- [ ] `nvidia-gpu/nvgpu/pkg.yaml` — uses `{{ .BUILD_ARG_PKGS_PREFIX }}` (no hardcoded fork URLs)
+- [ ] `manifest.yaml.tmpl` — `author: Sidero Labs`, description accurate
+- [ ] `files/nvgpu.conf` — `softdep` line correct for tegra platform
+- [ ] `.kres.yaml` — `nvgpu` in targets list
+- [ ] No custom CI workflow committed
+
+### Local builds after upstreaming
+
+Once upstream merges, switch your local build to use the official images:
+
+```bash
+# No longer needed — use upstream PKGS defaults
+make nvgpu \
+  PLATFORM=linux/arm64 \
+  REGISTRY=ghcr.io \
+  USERNAME=siderolabs
+```
+
+For `talconfig.yaml`, replace the fork image reference:
+
+```yaml
+# Before (fork):
+- image: ghcr.io/mmalyska/nvgpu@sha256:...
+
+# After (upstream, via Talos Image Factory):
+# Use the factory schematic ID — no explicit image reference needed
+```
+
+### Talos Image Factory
+
+After upstream acceptance, the extension will appear in the
+[Talos Image Factory](https://factory.talos.dev/). Generate a schematic that includes
+`nvgpu` and replace the `nv1` installer image in `talconfig.yaml` with the factory URL.
+The `machine.systemDiskImage` (or `talosImageURL`) field in talconfig accepts factory-generated
+installer URLs directly.
+
+---
+
 ## Gaps vs Standard Talos NVIDIA Flow
 
 The [official Talos NVIDIA GPU guide](https://docs.siderolabs.com/talos/v1.12/configure-your-talos-cluster/hardware-and-drivers/nvidia-gpu)

@@ -10,8 +10,8 @@ type: project
 `nvidia-open-gpu-kernel-modules-lts` extension is for discrete PCIe GPUs and will never work.
 The correct driver is `nvgpu` from OE4T/linux-nvgpu (branch `patches-r36.5`).
 
-**Current phase:** Phase 2 COMPLETE — patch file created and verified.
-Next: Phase 3 — build Talos sysext OCI image with nvgpu.ko.
+**Current phase:** Phase 3 COMPLETE — pkgs fork + extensions fork both have `feat/jetson-nvgpu` branches pushed.
+Next: Phase 4 — update talconfig.yaml for nv1, then trigger builds and verify.
 
 **Key insight:** The OE4T driver has ALL kernel compatibility code behind `#ifdef NV_*` guards.
 No source patching is needed. Pass the right macros via `KCPPFLAGS="-include /path/nv_compat.h"`.
@@ -50,12 +50,21 @@ KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
 
 **Patch file:** `provision/talos/patches/nvgpu-kernel-compat.patch` — unified diff, verified with `git apply` round-trip. Stubs 4 files: `contig_pool.c`, `nvgpu_ivm.c`, `soc.c`, `platform_ga10b_tegra.c`.
 
+**Phase 3 repos & branches:**
+- `mmalyska/siderolabs-pkgs` → `feat/jetson-nvgpu`: `nvgpu-driver/pkg.yaml` (name: `nvgpu-driver-pkg`), `files/nv_compat.h`, `files/nvgpu-kernel-compat.patch`, custom CI workflow `nvgpu-driver.yaml` (`ubuntu-24.04-arm`)
+- `mmalyska/siderolabs-extensions` → `feat/jetson-nvgpu`: `nvidia-gpu/nvgpu/pkg.yaml` (name: `nvgpu`), `manifest.yaml.tmpl`, `vars.yaml`, `files/nvgpu.conf`, custom CI workflow `nvgpu.yaml`
+- PKGS tag for Talos v1.12.6: `v1.12.0-50-ga92bed5`
+- nvgpu source pin: commit `d530a48d64f9ad3020d9f3307f53e8dde8e3fba1` on `patches-r36.5`
+- CI builds with `PKGS=v1.12.0-50-ga92bed5 PKGS_PREFIX=ghcr.io/mmalyska`
+- Published as `ghcr.io/mmalyska/nvgpu:<tag>`
+
 **Next steps:**
 1. ~~Create patch file~~ DONE
-2. Package stubs + nvgpu.ko build into a Talos sysext OCI image
-3. Update talconfig.yaml: remove `nvidia-open-gpu-kernel-modules-lts` + `nvidia-container-toolkit-lts`, add custom nvgpu extension
-4. Configure CDI spec for Tegra device nodes + deploy k8s-device-plugin in CDI mode
-5. Regenerate + apply Talos config to nv1
+2. ~~Build pkgs fork + extensions fork~~ DONE (Phase 3)
+3. Trigger CI on both forks; verify images publish to `ghcr.io/mmalyska/`
+4. Update talconfig.yaml: remove `nvidia-open-gpu-kernel-modules-lts` + `nvidia-container-toolkit-lts`, add `ghcr.io/mmalyska/nvgpu`, add `machine.kernel.modules: [{name: nvgpu}]` and `net.core.bpf_jit_harden: "1"`
+5. Configure CDI spec for Tegra device nodes + deploy k8s-device-plugin in CDI mode
+6. Regenerate + apply Talos config to nv1
 
 **Full plan:** `docs/src/k8s/jetson-gpu.md`
 **Job file:** `cluster/.tools/nvgpu-build-test.yaml` (can be deleted — phase 1 done)
