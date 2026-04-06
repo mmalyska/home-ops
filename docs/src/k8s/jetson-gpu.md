@@ -97,14 +97,28 @@ umbrella build. When building standalone, none are defined — the fix is simply
 > **Cleanup:** Delete the Job: `kubectl delete -f cluster/.tools/nvgpu-build-test.yaml`
 > (no build cache to clean — using `emptyDir`, not `hostPath`)
 
-### Phase 2 — Create proper patch file
+### Phase 2 — Create proper patch file ✅ COMPLETE
 
-Produce a unified diff that the extension build can apply to a clean nvgpu checkout:
+`provision/talos/patches/nvgpu-kernel-compat.patch` — a `git apply`-compatible unified diff
+that stubs the 4 L4T-only `.c` files listed above. Verified with a clean `git apply` round-trip.
 
-1. Create `provision/talos/patches/nvgpu-kernel-compat.patch` as a proper unified diff
-2. The patch set encodes the stubs (hv-ivc.h, mc_utils.h files) as file replacements
-3. The NV_* macros are NOT patched into source — they are passed via build flags at compile time
-4. The patch + KCPPFLAGS flag set is the complete input for the Talos extension build
+Files patched (all replaced with a one-line stub comment):
+
+| File | L4T-only header removed |
+|------|------------------------|
+| `drivers/gpu/nvgpu/common/cbc/contig_pool.c` | `soc/tegra/virt/hv-ivc.h` |
+| `drivers/gpu/nvgpu/os/linux/nvgpu_ivm.c` | `soc/tegra/virt/hv-ivc.h` |
+| `drivers/gpu/nvgpu/os/linux/soc.c` | `soc/tegra/virt/hv-ivc.h` + `syscalls.h` |
+| `drivers/gpu/nvgpu/os/linux/platform_ga10b_tegra.c` | `linux/platform/tegra/mc_utils.h` |
+
+Apply during extension build:
+```bash
+git clone --depth=1 --branch patches-r36.5 https://github.com/OE4T/linux-nvgpu.git
+git -C linux-nvgpu apply nvgpu-kernel-compat.patch
+```
+
+The NV_* macros are **not** in the patch — they are passed as build flags (`KCPPFLAGS`) at
+compile time (see Kernel API Compatibility Reference below).
 
 ### Phase 3 — Build a Talos system extension
 

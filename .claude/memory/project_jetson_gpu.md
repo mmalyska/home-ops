@@ -10,8 +10,8 @@ type: project
 `nvidia-open-gpu-kernel-modules-lts` extension is for discrete PCIe GPUs and will never work.
 The correct driver is `nvgpu` from OE4T/linux-nvgpu (branch `patches-r36.5`).
 
-**Current phase:** Phase 1 COMPLETE — BUILD EXIT CODE: 0 achieved against kernel 6.18.18.
-Next: Phase 2 — create proper patch file + build Talos extension.
+**Current phase:** Phase 2 COMPLETE — patch file created and verified.
+Next: Phase 3 — build Talos sysext OCI image with nvgpu.ko.
 
 **Key insight:** The OE4T driver has ALL kernel compatibility code behind `#ifdef NV_*` guards.
 No source patching is needed. Pass the right macros via `KCPPFLAGS="-include /path/nv_compat.h"`.
@@ -48,8 +48,10 @@ KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
 
 **Commented placeholder added to talconfig.yaml** (nv1 node) for `machine.kernel.modules` + sysctl.
 
+**Patch file:** `provision/talos/patches/nvgpu-kernel-compat.patch` — unified diff, verified with `git apply` round-trip. Stubs 4 files: `contig_pool.c`, `nvgpu_ivm.c`, `soc.c`, `platform_ga10b_tegra.c`.
+
 **Next steps:**
-1. Create `provision/talos/patches/nvgpu-kernel-compat.patch` — unified diff of the L4T stubs
+1. ~~Create patch file~~ DONE
 2. Package stubs + nvgpu.ko build into a Talos sysext OCI image
 3. Update talconfig.yaml: remove `nvidia-open-gpu-kernel-modules-lts` + `nvidia-container-toolkit-lts`, add custom nvgpu extension
 4. Configure CDI spec for Tegra device nodes + deploy k8s-device-plugin in CDI mode
