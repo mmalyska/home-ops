@@ -42,84 +42,84 @@ index 1392245..622247d 100644
 -
 -static void nvgpu_init_cbc_contig_pa(struct nvgpu_contig_cbcmempool *contig_pool)
 -{
--   contig_pool->base_addr = nvgpu_get_pa_from_ipa(contig_pool->g,
--                   contig_pool->cookie->ipa);
--   contig_pool->size = contig_pool->cookie->size;
+-	contig_pool->base_addr = nvgpu_get_pa_from_ipa(contig_pool->g,
+-					contig_pool->cookie->ipa);
+-	contig_pool->size = contig_pool->cookie->size;
 -}
 -
 -int nvgpu_cbc_contig_init(struct gk20a *g)
 -{
--   struct nvgpu_contig_cbcmempool *contig_pool;
--   u32 mempool_id;
--   int err;
+-	struct nvgpu_contig_cbcmempool *contig_pool;
+-	u32 mempool_id;
+-	int err;
 -
--   contig_pool = nvgpu_kzalloc(g, sizeof(*contig_pool));
--   if (!contig_pool) {
--       nvgpu_set_enabled(g, NVGPU_SUPPORT_COMPRESSION, false);
--       return -ENOMEM;
--   }
+-	contig_pool = nvgpu_kzalloc(g, sizeof(*contig_pool));
+-	if (!contig_pool) {
+-		nvgpu_set_enabled(g, NVGPU_SUPPORT_COMPRESSION, false);
+-		return -ENOMEM;
+-	}
 -
--   contig_pool->g = g;
--   nvgpu_mutex_init(&contig_pool->contigmem_mutex);
--   g->cbc->cbc_contig_mempool = contig_pool;
--   err = nvgpu_dt_read_u32_index(g, "phys_contiguous_mempool",
--           0, &mempool_id);
--   if (err) {
--       nvgpu_err(g, "Reading the contig_mempool from dt failed %d", err);
--       goto fail;
--   }
+-	contig_pool->g = g;
+-	nvgpu_mutex_init(&contig_pool->contigmem_mutex);
+-	g->cbc->cbc_contig_mempool = contig_pool;
+-	err = nvgpu_dt_read_u32_index(g, "phys_contiguous_mempool",
+-			0, &mempool_id);
+-	if (err) {
+-		nvgpu_err(g, "Reading the contig_mempool from dt failed %d", err);
+-		goto fail;
+-	}
 -
--   contig_pool->cookie = nvgpu_ivm_mempool_reserve(mempool_id);
--   if (contig_pool->cookie == NULL) {
--       nvgpu_err(g,
--           "mempool  %u reserve failed", mempool_id);
--       contig_pool->cookie = NULL;
--       goto fail;
--   }
+-	contig_pool->cookie = nvgpu_ivm_mempool_reserve(mempool_id);
+-	if (contig_pool->cookie == NULL) {
+-		nvgpu_err(g,
+-			"mempool  %u reserve failed", mempool_id);
+-		contig_pool->cookie = NULL;
+-		goto fail;
+-	}
 -
--   contig_pool->cbc_cpuva = nvgpu_ivm_mempool_map(contig_pool->cookie);
--   if (contig_pool->cbc_cpuva == NULL) {
--       nvgpu_err(g, "nvgpu_ivm_mempool_map failed");
--       goto fail;
--   }
+-	contig_pool->cbc_cpuva = nvgpu_ivm_mempool_map(contig_pool->cookie);
+-	if (contig_pool->cbc_cpuva == NULL) {
+-		nvgpu_err(g, "nvgpu_ivm_mempool_map failed");
+-		goto fail;
+-	}
 -
--   nvgpu_init_cbc_contig_pa(contig_pool);
+-	nvgpu_init_cbc_contig_pa(contig_pool);
 -
--   return 0;
+-	return 0;
 -fail:
--   nvgpu_cbc_contig_deinit(g);
--   err = -ENOMEM;
--   nvgpu_set_enabled(g, NVGPU_SUPPORT_COMPRESSION, false);
--   return err;
+-	nvgpu_cbc_contig_deinit(g);
+-	err = -ENOMEM;
+-	nvgpu_set_enabled(g, NVGPU_SUPPORT_COMPRESSION, false);
+-	return err;
 -}
 -
 -void nvgpu_cbc_contig_deinit(struct gk20a *g)
 -{
--   struct nvgpu_contig_cbcmempool *contig_pool;
--   struct nvgpu_mem *mem;
+-	struct nvgpu_contig_cbcmempool *contig_pool;
+-	struct nvgpu_mem *mem;
 -
--   if ((g->cbc == NULL) || (g->cbc->cbc_contig_mempool == NULL)) {
--       return;
--   }
+-	if ((g->cbc == NULL) || (g->cbc->cbc_contig_mempool == NULL)) {
+-		return;
+-	}
 -
--   contig_pool = g->cbc->cbc_contig_mempool;
--   if (contig_pool->cookie != NULL &&
--           contig_pool->cbc_cpuva != NULL) {
--       nvgpu_ivm_mempool_unmap(contig_pool->cookie,
--               contig_pool->cbc_cpuva);
--   }
+-	contig_pool = g->cbc->cbc_contig_mempool;
+-	if (contig_pool->cookie != NULL &&
+-			contig_pool->cbc_cpuva != NULL) {
+-		nvgpu_ivm_mempool_unmap(contig_pool->cookie,
+-				contig_pool->cbc_cpuva);
+-	}
 -
--   if (contig_pool->cookie) {
--       nvgpu_ivm_mempool_unreserve(contig_pool->cookie);
--   }
+-	if (contig_pool->cookie) {
+-		nvgpu_ivm_mempool_unreserve(contig_pool->cookie);
+-	}
 -
--   nvgpu_kfree(g, contig_pool);
--   g->cbc->cbc_contig_mempool = NULL;
--   mem = &g->cbc->compbit_store.mem;
--   nvgpu_kfree(g, mem->phys_sgt->sgl);
--   nvgpu_kfree(g, mem->phys_sgt);
--   (void) memset(&g->cbc->compbit_store, 0,
--           sizeof(struct compbit_store_desc));
+-	nvgpu_kfree(g, contig_pool);
+-	g->cbc->cbc_contig_mempool = NULL;
+-	mem = &g->cbc->compbit_store.mem;
+-	nvgpu_kfree(g, mem->phys_sgt->sgl);
+-	nvgpu_kfree(g, mem->phys_sgt);
+-	(void) memset(&g->cbc->compbit_store, 0,
+-			sizeof(struct compbit_store_desc));
 -}
 -
 +/* stub: L4T-only header not available on vanilla kernel — see nvgpu-kernel-compat.patch. */
@@ -156,34 +156,34 @@ index 1de7229..622247d 100644
 -
 -struct tegra_hv_ivm_cookie *nvgpu_ivm_mempool_reserve(unsigned int id)
 -{
--   return tegra_hv_mempool_reserve(id);
+-	return tegra_hv_mempool_reserve(id);
 -}
 -
 -int nvgpu_ivm_mempool_unreserve(struct tegra_hv_ivm_cookie *cookie)
 -{
--   return tegra_hv_mempool_unreserve(cookie);
+-	return tegra_hv_mempool_unreserve(cookie);
 -}
 -
 -u64 nvgpu_ivm_get_ipa(struct tegra_hv_ivm_cookie *cookie)
 -{
--   return cookie->ipa;
+-	return cookie->ipa;
 -}
 -
 -u64 nvgpu_ivm_get_size(struct tegra_hv_ivm_cookie *cookie)
 -{
--   return cookie->size;
+-	return cookie->size;
 -}
 -
 -void *nvgpu_ivm_mempool_map(struct tegra_hv_ivm_cookie *cookie)
 -{
--   return ioremap_cache(nvgpu_ivm_get_ipa(cookie),
--               nvgpu_ivm_get_size(cookie));
+-	return ioremap_cache(nvgpu_ivm_get_ipa(cookie),
+-				nvgpu_ivm_get_size(cookie));
 -}
 -
 -void nvgpu_ivm_mempool_unmap(struct tegra_hv_ivm_cookie *cookie,
--       void *addr)
+-		void *addr)
 -{
--   iounmap(addr);
+-	iounmap(addr);
 -}
 +/* stub: L4T-only header not available on vanilla kernel — see nvgpu-kernel-compat.patch. */
 diff --git a/drivers/gpu/nvgpu/os/linux/platform_ga10b_tegra.c b/drivers/gpu/nvgpu/os/linux/platform_ga10b_tegra.c
@@ -247,20 +247,20 @@ index 8f1d235..622247d 100644
 - * JIRA NVGPU-7124
 - */
 -/** @brief Controls NV_FUSE_CTRL_OPT_GPC */
--#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_GPC        1U
+-#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_GPC		1U
 -/** @brief Controls NV_FUSE_CTRL_OPT_FBP */
--#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_FBP        2U
+-#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_FBP		2U
 -/** @brief Controls NV_FUSE_CTRL_OPT_TPC_GPC(0) */
--#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_TPC_GPC0   3U
+-#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_TPC_GPC0	3U
 -/** @brief Controls NV_FUSE_CTRL_OPT_TPC_GPC(1) */
--#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_TPC_GPC1   4U
+-#define TEGRA234_STRAP_NV_FUSE_CTRL_OPT_TPC_GPC1	4U
 -
 -/* Run gpc0, gpc1 and sysclk at same rate */
 -struct gk20a_platform_clk tegra_ga10b_clocks[] = {
--   {"sysclk", UINT_MAX},
--   {"gpc0clk", UINT_MAX},
--   {"gpc1clk", UINT_MAX},
--   {"fuse", UINT_MAX}
+-	{"sysclk", UINT_MAX},
+-	{"gpc0clk", UINT_MAX},
+-	{"gpc1clk", UINT_MAX},
+-	{"fuse", UINT_MAX}
 -};
 -
 -#define NVGPU_GPC0_DISABLE  BIT(0)
@@ -268,58 +268,58 @@ index 8f1d235..622247d 100644
 -
 -#if defined(CONFIG_INTERCONNECT)
 -static int ga10b_tegra_set_emc_rate(struct gk20a_scale_profile *profile,
--       unsigned long gpu_rate, unsigned long emc3d_ratio)
+-		unsigned long gpu_rate, unsigned long emc3d_ratio)
 -{
--   unsigned long emc_rate, rate;
--   unsigned long peak_bw;
--   u32 emc_freq_kbps;
+-	unsigned long emc_rate, rate;
+-	unsigned long peak_bw;
+-	u32 emc_freq_kbps;
 -
--   if (profile && profile->private_data) {
+-	if (profile && profile->private_data) {
 -
--       emc_rate = gpu_rate * EMC_BW_RATIO;
--       emc_rate = (emc_rate < gpu_rate) ? ULONG_MAX : emc_rate;
--       rate = emc_rate * emc3d_ratio;
--       emc_rate = (rate < emc_rate && emc3d_ratio > 0) ? ULONG_MAX : rate;
--       emc_rate /= 1000;
+-		emc_rate = gpu_rate * EMC_BW_RATIO;
+-		emc_rate = (emc_rate < gpu_rate) ? ULONG_MAX : emc_rate;
+-		rate = emc_rate * emc3d_ratio;
+-		emc_rate = (rate < emc_rate && emc3d_ratio > 0) ? ULONG_MAX : rate;
+-		emc_rate /= 1000;
 -
--       /* peak bandwidth in kilobytes per second  */
--       peak_bw = emc_freq_to_bw(emc_rate/1000);
--       emc_freq_kbps = (peak_bw > UINT_MAX) ? UINT_MAX : peak_bw;
+-		/* peak bandwidth in kilobytes per second  */
+-		peak_bw = emc_freq_to_bw(emc_rate/1000);
+-		emc_freq_kbps = (peak_bw > UINT_MAX) ? UINT_MAX : peak_bw;
 -
--       return icc_set_bw((struct icc_path *)profile->private_data,
--                               0, emc_freq_kbps);
--   } else {
--       /* EMC scaling profile is not available */
--       return 0;
--   }
+-		return icc_set_bw((struct icc_path *)profile->private_data,
+-								0, emc_freq_kbps);
+-	} else {
+-		/* EMC scaling profile is not available */
+-		return 0;
+-	}
 -}
 -#endif
 -
 -static bool ga10b_tegra_is_clock_available(struct gk20a *g, char *clk_name)
 -{
--   u32 gpc_disable = 0U;
+-	u32 gpc_disable = 0U;
 -
--   /* Check for gpc floor-sweeping and report availability of gpcclks */
--   if (nvgpu_tegra_fuse_read_opt_gpc_disable(g, &gpc_disable)) {
--       nvgpu_err(g, "unable to read opt_gpc_disable fuse");
--       return false;
--   }
+-	/* Check for gpc floor-sweeping and report availability of gpcclks */
+-	if (nvgpu_tegra_fuse_read_opt_gpc_disable(g, &gpc_disable)) {
+-		nvgpu_err(g, "unable to read opt_gpc_disable fuse");
+-		return false;
+-	}
 -
--   if ((strcmp(clk_name, "gpc0clk") == 0) &&
--               ((gpc_disable & NVGPU_GPC0_DISABLE) ||
--                (g->gpc_pg_mask & NVGPU_GPC0_DISABLE))) {
--       nvgpu_log_info(g, "GPC0 is floor-swept");
--       return false;
--   }
+-	if ((strcmp(clk_name, "gpc0clk") == 0) &&
+-				((gpc_disable & NVGPU_GPC0_DISABLE) ||
+-				 (g->gpc_pg_mask & NVGPU_GPC0_DISABLE))) {
+-		nvgpu_log_info(g, "GPC0 is floor-swept");
+-		return false;
+-	}
 -
--   if ((strcmp(clk_name, "gpc1clk") == 0) &&
--               ((gpc_disable & NVGPU_GPC1_DISABLE) ||
--                (g->gpc_pg_mask & NVGPU_GPC1_DISABLE))) {
--       nvgpu_log_info(g, "GPC1 is floor-swept");
--       return false;
--   }
+-	if ((strcmp(clk_name, "gpc1clk") == 0) &&
+-				((gpc_disable & NVGPU_GPC1_DISABLE) ||
+-				 (g->gpc_pg_mask & NVGPU_GPC1_DISABLE))) {
+-		nvgpu_log_info(g, "GPC1 is floor-swept");
+-		return false;
+-	}
 -
--   return true;
+-	return true;
 -}
 -
 -/*
@@ -328,715 +328,715 @@ index 8f1d235..622247d 100644
 - */
 -
 -static int ga10b_tegra_acquire_platform_clocks(struct device *dev,
--       struct gk20a_platform_clk *clk_entries,
--       unsigned int num_clk_entries)
+-		struct gk20a_platform_clk *clk_entries,
+-		unsigned int num_clk_entries)
 -{
--   struct gk20a_platform *platform = dev_get_drvdata(dev);
--   struct gk20a *g = platform->g;
--   struct device_node *np = nvgpu_get_node(g);
--   unsigned int i, j = 0, num_clks_dt;
--   int err;
+-	struct gk20a_platform *platform = dev_get_drvdata(dev);
+-	struct gk20a *g = platform->g;
+-	struct device_node *np = nvgpu_get_node(g);
+-	unsigned int i, j = 0, num_clks_dt;
+-	int err;
 -
--   /* Get clocks only on supported platforms(silicon and fpga) */
--   if (!nvgpu_platform_is_silicon(g) && !nvgpu_platform_is_fpga(g)) {
--       return 0;
--   }
+-	/* Get clocks only on supported platforms(silicon and fpga) */
+-	if (!nvgpu_platform_is_silicon(g) && !nvgpu_platform_is_fpga(g)) {
+-		return 0;
+-	}
 -
--   num_clks_dt = of_clk_get_parent_count(np);
--   if (num_clks_dt > num_clk_entries) {
--       nvgpu_err(g, "maximum number of clocks supported is %d",
--           num_clk_entries);
--       return -EINVAL;
--   } else if (num_clks_dt == 0) {
--       nvgpu_err(g, "unable to read clocks from DT");
--       return -ENODEV;
--   }
+-	num_clks_dt = of_clk_get_parent_count(np);
+-	if (num_clks_dt > num_clk_entries) {
+-		nvgpu_err(g, "maximum number of clocks supported is %d",
+-			num_clk_entries);
+-		return -EINVAL;
+-	} else if (num_clks_dt == 0) {
+-		nvgpu_err(g, "unable to read clocks from DT");
+-		return -ENODEV;
+-	}
 -
--   nvgpu_mutex_acquire(&platform->clks_lock);
+-	nvgpu_mutex_acquire(&platform->clks_lock);
 -
--   platform->num_clks = 0;
+-	platform->num_clks = 0;
 -
--   for (i = 0; i < num_clks_dt; i++) {
--       long rate;
--       struct clk *c;
+-	for (i = 0; i < num_clks_dt; i++) {
+-		long rate;
+-		struct clk *c;
 -
--       if (ga10b_tegra_is_clock_available(g, clk_entries[i].name)) {
--           c = of_clk_get_by_name(np, clk_entries[i].name);
--       } else {
--           continue;
--       }
+-		if (ga10b_tegra_is_clock_available(g, clk_entries[i].name)) {
+-			c = of_clk_get_by_name(np, clk_entries[i].name);
+-		} else {
+-			continue;
+-		}
 -
--       if (IS_ERR(c)) {
--           nvgpu_info(g, "cannot get clock %s",
--                   clk_entries[i].name);
--           err = PTR_ERR(c);
--           goto err_get_clock;
--       } else {
--           rate = clk_entries[i].default_rate;
--           clk_set_rate(c, rate);
+-		if (IS_ERR(c)) {
+-			nvgpu_info(g, "cannot get clock %s",
+-					clk_entries[i].name);
+-			err = PTR_ERR(c);
+-			goto err_get_clock;
+-		} else {
+-			rate = clk_entries[i].default_rate;
+-			clk_set_rate(c, rate);
 -
--           /*
--            * Note that DT clocks are iterated by index 'i' and
--            * available clocks are iterated by index 'j' in the
--            * platform->clk array.
--            */
--           platform->clk[j++] = c;
--       }
--   }
+-			/*
+-			 * Note that DT clocks are iterated by index 'i' and
+-			 * available clocks are iterated by index 'j' in the
+-			 * platform->clk array.
+-			 */
+-			platform->clk[j++] = c;
+-		}
+-	}
 -
--   platform->num_clks = j;
+-	platform->num_clks = j;
 -
 -#ifdef CONFIG_NV_TEGRA_BPMP
--   if (platform->clk[0]) {
--       i = tegra_bpmp_dvfs_get_clk_id(dev->of_node,
--                          clk_entries[0].name);
--       if (i > 0)
--           platform->maxmin_clk_id = i;
--   }
+-	if (platform->clk[0]) {
+-		i = tegra_bpmp_dvfs_get_clk_id(dev->of_node,
+-					       clk_entries[0].name);
+-		if (i > 0)
+-			platform->maxmin_clk_id = i;
+-	}
 -#endif
 -
--   nvgpu_mutex_release(&platform->clks_lock);
+-	nvgpu_mutex_release(&platform->clks_lock);
 -
--   return 0;
+-	return 0;
 -
 -err_get_clock:
--   while (j > 0 && j--) {
--       clk_put(platform->clk[j]);
--       platform->clk[j] = NULL;
--   }
+-	while (j > 0 && j--) {
+-		clk_put(platform->clk[j]);
+-		platform->clk[j] = NULL;
+-	}
 -
--   nvgpu_mutex_release(&platform->clks_lock);
+-	nvgpu_mutex_release(&platform->clks_lock);
 -
--   return err;
+-	return err;
 -}
 -
 -static int ga10b_tegra_get_clocks(struct device *dev)
 -{
--   return ga10b_tegra_acquire_platform_clocks(dev, tegra_ga10b_clocks,
--           ARRAY_SIZE(tegra_ga10b_clocks));
+-	return ga10b_tegra_acquire_platform_clocks(dev, tegra_ga10b_clocks,
+-			ARRAY_SIZE(tegra_ga10b_clocks));
 -}
 -
 -static void ga10b_tegra_scale_init(struct device *dev)
 -{
 -#if defined(CONFIG_INTERCONNECT)
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct gk20a_scale_profile *profile = platform->g->scale_profile;
--   struct icc_path *icc_path_handle;
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a_scale_profile *profile = platform->g->scale_profile;
+-	struct icc_path *icc_path_handle;
 -
--   if (!profile)
--       return;
+-	if (!profile)
+-		return;
 -
--   platform->g->emc3d_ratio = EMC3D_GA10B_RATIO;
+-	platform->g->emc3d_ratio = EMC3D_GA10B_RATIO;
 -
--   if ((struct icc_path *)profile->private_data)
--       return;
+-	if ((struct icc_path *)profile->private_data)
+-		return;
 -
 -#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
--   icc_path_handle = devm_of_icc_get(dev, "write");
+-	icc_path_handle = devm_of_icc_get(dev, "write");
 -#else
--   icc_path_handle = icc_get(dev, TEGRA_ICC_GPU, TEGRA_ICC_PRIMARY);
+-	icc_path_handle = icc_get(dev, TEGRA_ICC_GPU, TEGRA_ICC_PRIMARY);
 -#endif
--   if (IS_ERR_OR_NULL(icc_path_handle)) {
--       dev_info(dev, "%s unable to get icc path (err=%ld)\n",
--               __func__, PTR_ERR(icc_path_handle));
--       return;
--   }
+-	if (IS_ERR_OR_NULL(icc_path_handle)) {
+-		dev_info(dev, "%s unable to get icc path (err=%ld)\n",
+-				__func__, PTR_ERR(icc_path_handle));
+-		return;
+-	}
 -
--   profile->private_data = (void *)icc_path_handle;
+-	profile->private_data = (void *)icc_path_handle;
 -#endif
 -}
 -
 -static void ga10b_tegra_scale_exit(struct device *dev)
 -{
 -#if defined(CONFIG_INTERCONNECT)
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct gk20a_scale_profile *profile = platform->g->scale_profile;
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a_scale_profile *profile = platform->g->scale_profile;
 -
--   if (profile && profile->private_data) {
+-	if (profile && profile->private_data) {
 -#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
--       icc_put((struct icc_path *)profile->private_data);
+-		icc_put((struct icc_path *)profile->private_data);
 -#endif
--       profile->private_data = NULL;
--   }
+-		profile->private_data = NULL;
+-	}
 -#endif
 -}
 -
 -static int ga10b_tegra_probe(struct device *dev)
 -{
--   struct gk20a_platform *platform = dev_get_drvdata(dev);
--   int err;
--   bool joint_xpu_rail = false;
--   struct gk20a *g = platform->g;
+-	struct gk20a_platform *platform = dev_get_drvdata(dev);
+-	int err;
+-	bool joint_xpu_rail = false;
+-	struct gk20a *g = platform->g;
 -#ifdef CONFIG_OF
--   struct device_node *of_chosen;
+-	struct device_node *of_chosen;
 -#endif
 -
--   err = nvgpu_nvhost_syncpt_init(platform->g);
--   if (err) {
--       if (err != -ENOSYS)
--           return err;
--   }
+-	err = nvgpu_nvhost_syncpt_init(platform->g);
+-	if (err) {
+-		if (err != -ENOSYS)
+-			return err;
+-	}
 -
--   platform->disable_bigpage = !iommu_get_domain_for_dev(dev) &&
--       (NVGPU_CPU_PAGE_SIZE < SZ_64K);
+-	platform->disable_bigpage = !iommu_get_domain_for_dev(dev) &&
+-		(NVGPU_CPU_PAGE_SIZE < SZ_64K);
 -
 -#ifdef CONFIG_OF
--   of_chosen = of_find_node_by_path("/chosen");
--   if (!of_chosen)
--       return -ENODEV;
+-	of_chosen = of_find_node_by_path("/chosen");
+-	if (!of_chosen)
+-		return -ENODEV;
 -
--   joint_xpu_rail = of_property_read_bool(of_chosen,
--               "nvidia,tegra-joint_xpu_rail");
+-	joint_xpu_rail = of_property_read_bool(of_chosen,
+-				"nvidia,tegra-joint_xpu_rail");
 -#endif
 -
--   if (joint_xpu_rail) {
--       nvgpu_log_info(g, "XPU rails are joint\n");
--       platform->can_railgate_init = false;
--       nvgpu_set_enabled(g, NVGPU_CAN_RAILGATE, false);
--   }
+-	if (joint_xpu_rail) {
+-		nvgpu_log_info(g, "XPU rails are joint\n");
+-		platform->can_railgate_init = false;
+-		nvgpu_set_enabled(g, NVGPU_CAN_RAILGATE, false);
+-	}
 -
--   nvgpu_mutex_init(&platform->clks_lock);
+-	nvgpu_mutex_init(&platform->clks_lock);
 -
--   err = ga10b_tegra_get_clocks(dev);
--   if (err != 0) {
--       return err;
--   }
--   nvgpu_linux_init_clk_support(platform->g);
+-	err = ga10b_tegra_get_clocks(dev);
+-	if (err != 0) {
+-		return err;
+-	}
+-	nvgpu_linux_init_clk_support(platform->g);
 -
--   nvgpu_mutex_init(&platform->clk_get_freq_lock);
+-	nvgpu_mutex_init(&platform->clk_get_freq_lock);
 -
--   return 0;
+-	return 0;
 -}
 -
 -static int ga10b_tegra_late_probe(struct device *dev)
 -{
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   int err;
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	int err;
 -
--   err = gk20a_tegra_init_secure_alloc(platform);
--   if (err)
--       return err;
+-	err = gk20a_tegra_init_secure_alloc(platform);
+-	if (err)
+-		return err;
 -
--   return 0;
+-	return 0;
 -}
 -
 -static int ga10b_tegra_remove(struct device *dev)
 -{
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
 -
--   ga10b_tegra_scale_exit(dev);
+-	ga10b_tegra_scale_exit(dev);
 -
 -#ifdef CONFIG_TEGRA_GK20A_NVHOST
--   nvgpu_free_nvhost_dev(get_gk20a(dev));
+-	nvgpu_free_nvhost_dev(get_gk20a(dev));
 -#endif
 -
--   nvgpu_mutex_destroy(&platform->clk_get_freq_lock);
--   nvgpu_mutex_destroy(&platform->clks_lock);
+-	nvgpu_mutex_destroy(&platform->clk_get_freq_lock);
+-	nvgpu_mutex_destroy(&platform->clks_lock);
 -
--   return 0;
+-	return 0;
 -}
 -
 -#if defined(CONFIG_TEGRA_BPMP) && defined(CONFIG_NVGPU_STATIC_POWERGATE)
 -static int ga10b_tegra_static_pg_control(struct device *dev, struct tegra_bpmp *bpmp,
--       struct mrq_strap_request *req)
+-		struct mrq_strap_request *req)
 -{
--   struct tegra_bpmp_message msg;
--   int err;
+-	struct tegra_bpmp_message msg;
+-	int err;
 -
--   memset(&msg, 0, sizeof(msg));
--   msg.mrq = MRQ_STRAP;
--   msg.tx.data = req;
--   msg.tx.size = sizeof(*req);
+-	memset(&msg, 0, sizeof(msg));
+-	msg.mrq = MRQ_STRAP;
+-	msg.tx.data = req;
+-	msg.tx.size = sizeof(*req);
 -
--   err = tegra_bpmp_transfer(bpmp, &msg);
+-	err = tegra_bpmp_transfer(bpmp, &msg);
 -
--   if (msg.rx.ret == -BPMP_EINVAL) {
--       return -EINVAL;
--   } else if (msg.rx.ret == -BPMP_ENODEV) {
--       return -ENODEV;
--   } else if (msg.rx.ret == -BPMP_EACCES) {
--       return -EPERM;
--   } else {
--       return err;
--   }
+-	if (msg.rx.ret == -BPMP_EINVAL) {
+-		return -EINVAL;
+-	} else if (msg.rx.ret == -BPMP_ENODEV) {
+-		return -ENODEV;
+-	} else if (msg.rx.ret == -BPMP_EACCES) {
+-		return -EPERM;
+-	} else {
+-		return err;
+-	}
 -}
 -#endif
 -
 -static bool ga10b_tegra_is_railgated(struct device *dev)
 -{
--   struct gk20a *g = get_gk20a(dev);
--   bool ret = false;
+-	struct gk20a *g = get_gk20a(dev);
+-	bool ret = false;
 -
--   if (pm_runtime_status_suspended(dev)) {
--       ret = true;
--   }
+-	if (pm_runtime_status_suspended(dev)) {
+-		ret = true;
+-	}
 -
--   nvgpu_log(g, gpu_dbg_info, "railgated? %s", ret ? "yes" : "no");
+-	nvgpu_log(g, gpu_dbg_info, "railgated? %s", ret ? "yes" : "no");
 -
--   return ret;
+-	return ret;
 -}
 -
 -static int ga10b_tegra_railgate(struct device *dev)
 -{
 -#if defined(CONFIG_INTERCONNECT)
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct gk20a_scale_profile *profile = platform->g->scale_profile;
--   int ret = 0;
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a_scale_profile *profile = platform->g->scale_profile;
+-	int ret = 0;
 -
--   /* remove emc frequency floor */
--   if (profile && profile->private_data) {
--       ret = icc_set_bw((struct icc_path *)profile->private_data,
--                       0, 0);
--       if (ret)
--           dev_err(dev, "failed to set emc freq rate:%d\n", ret);
--   }
+-	/* remove emc frequency floor */
+-	if (profile && profile->private_data) {
+-		ret = icc_set_bw((struct icc_path *)profile->private_data,
+-						0, 0);
+-		if (ret)
+-			dev_err(dev, "failed to set emc freq rate:%d\n", ret);
+-	}
 -#endif
--   gp10b_tegra_clks_control(dev, false);
+-	gp10b_tegra_clks_control(dev, false);
 -
--   return 0;
+-	return 0;
 -}
 -
 -#if defined(CONFIG_TEGRA_BPMP) && defined(CONFIG_NVGPU_STATIC_POWERGATE)
 -static int ga10b_tegra_bpmp_mrq_set(struct device *dev)
 -{
--   struct tegra_bpmp *bpmp;
--   struct mrq_strap_request req;
--   struct gk20a *g = get_gk20a(dev);
--   u32 i = 0;
--   int ret = 0;
+-	struct tegra_bpmp *bpmp;
+-	struct mrq_strap_request req;
+-	struct gk20a *g = get_gk20a(dev);
+-	u32 i = 0;
+-	int ret = 0;
 -
--   /*
--    * Silicon - Static pg feature fuse settings will done in BPMP
--    * Pre- Silicon - Static pg feature fuse settings will be done
--    * in NvGPU driver during gpu poweron
--    * Send computed GPC, FBP and TPC PG masks to BPMP
--    */
--   if (nvgpu_platform_is_silicon(g)) {
--       bpmp = tegra_bpmp_get(dev);
--       if (!IS_ERR(bpmp)) {
--           /* send GPC-PG mask */
--           memset(&req, 0, sizeof(req));
--           req.cmd = STRAP_SET;
--           req.id = TEGRA234_STRAP_NV_FUSE_CTRL_OPT_GPC;
--           req.value = g->gpc_pg_mask;
--           ret = ga10b_tegra_static_pg_control(dev, bpmp, &req);
--           if (ret != 0) {
--               nvgpu_err(g, "GPC-PG mask send failed");
--               return ret;
--           }
+-	/*
+-	 * Silicon - Static pg feature fuse settings will done in BPMP
+-	 * Pre- Silicon - Static pg feature fuse settings will be done
+-	 * in NvGPU driver during gpu poweron
+-	 * Send computed GPC, FBP and TPC PG masks to BPMP
+-	 */
+-	if (nvgpu_platform_is_silicon(g)) {
+-		bpmp = tegra_bpmp_get(dev);
+-		if (!IS_ERR(bpmp)) {
+-			/* send GPC-PG mask */
+-			memset(&req, 0, sizeof(req));
+-			req.cmd = STRAP_SET;
+-			req.id = TEGRA234_STRAP_NV_FUSE_CTRL_OPT_GPC;
+-			req.value = g->gpc_pg_mask;
+-			ret = ga10b_tegra_static_pg_control(dev, bpmp, &req);
+-			if (ret != 0) {
+-				nvgpu_err(g, "GPC-PG mask send failed");
+-				return ret;
+-			}
 -
--           /* send FBP-PG mask */
--           memset(&req, 0, sizeof(req));
--           req.cmd = STRAP_SET;
--           req.id = TEGRA234_STRAP_NV_FUSE_CTRL_OPT_FBP;
--           req.value = g->fbp_pg_mask;
--           ret = ga10b_tegra_static_pg_control(dev, bpmp, &req);
--           if (ret != 0) {
--               nvgpu_err(g, "FBP-PG mask send failed");
--               return ret;
--           }
+-			/* send FBP-PG mask */
+-			memset(&req, 0, sizeof(req));
+-			req.cmd = STRAP_SET;
+-			req.id = TEGRA234_STRAP_NV_FUSE_CTRL_OPT_FBP;
+-			req.value = g->fbp_pg_mask;
+-			ret = ga10b_tegra_static_pg_control(dev, bpmp, &req);
+-			if (ret != 0) {
+-				nvgpu_err(g, "FBP-PG mask send failed");
+-				return ret;
+-			}
 -
--           /* send TPC-PG mask */
--           for (i = 0U; i < MAX_PG_GPC; i++) {
--               memset(&req, 0, sizeof(req));
--               req.cmd = STRAP_SET;
--               req.id = TEGRA234_STRAP_NV_FUSE_CTRL_OPT_TPC_GPC0 + i;
--               req.value = g->tpc_pg_mask[i];
--               ret = ga10b_tegra_static_pg_control(dev, bpmp, &req);
--               if (ret != 0) {
--                   nvgpu_err(g, "TPC-PG mask send failed "
--                           "for GPC: %d", i);
--                   return ret;
--               }
--           }
+-			/* send TPC-PG mask */
+-			for (i = 0U; i < MAX_PG_GPC; i++) {
+-				memset(&req, 0, sizeof(req));
+-				req.cmd = STRAP_SET;
+-				req.id = TEGRA234_STRAP_NV_FUSE_CTRL_OPT_TPC_GPC0 + i;
+-				req.value = g->tpc_pg_mask[i];
+-				ret = ga10b_tegra_static_pg_control(dev, bpmp, &req);
+-				if (ret != 0) {
+-					nvgpu_err(g, "TPC-PG mask send failed "
+-							"for GPC: %d", i);
+-					return ret;
+-				}
+-			}
 -
--           /* re-initialize the clocks */
--           ret = ga10b_tegra_get_clocks(dev);
--           if (ret != 0) {
--               nvgpu_err(g, "get clocks failed ");
--               return ret;
--           }
--       }
--   }
--   return 0;
+-			/* re-initialize the clocks */
+-			ret = ga10b_tegra_get_clocks(dev);
+-			if (ret != 0) {
+-				nvgpu_err(g, "get clocks failed ");
+-				return ret;
+-			}
+-		}
+-	}
+-	return 0;
 -}
 -#endif
 -
 -static int ga10b_tegra_unrailgate(struct device *dev)
 -{
--   int ret = 0;
+-	int ret = 0;
 -#if defined(CONFIG_INTERCONNECT)
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct gk20a_scale_profile *profile = platform->g->scale_profile;
--   unsigned long max_rate;
--   long rate;
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a_scale_profile *profile = platform->g->scale_profile;
+-	unsigned long max_rate;
+-	long rate;
 -#endif
 -#if defined(CONFIG_TEGRA_BPMP)
--   struct gk20a *g = get_gk20a(dev);
+-	struct gk20a *g = get_gk20a(dev);
 -
--   ret = ga10b_tegra_bpmp_mrq_set(dev);
--   if (ret == -EINVAL) {
--       nvgpu_err(g, "MRQ incorrect parameters");
--       return ret;
--   } else if (ret == -ENODEV) {
--       nvgpu_log_info(g, "MRQ is not supported by BPMP-FW");
--       /*
--        * reset the return value to 0
--        * as the control can go forward
--        */
--       ret = 0;
--   } else if (ret == -EPERM) {
--       nvgpu_log_info(g, "MRQ not permitted");
--       /*
--        * reset the return value to 0
--        * as the control can go forward
--        */
--       ret = 0;
--   }
+-	ret = ga10b_tegra_bpmp_mrq_set(dev);
+-	if (ret == -EINVAL) {
+-		nvgpu_err(g, "MRQ incorrect parameters");
+-		return ret;
+-	} else if (ret == -ENODEV) {
+-		nvgpu_log_info(g, "MRQ is not supported by BPMP-FW");
+-		/*
+-		 * reset the return value to 0
+-		 * as the control can go forward
+-		 */
+-		ret = 0;
+-	} else if (ret == -EPERM) {
+-		nvgpu_log_info(g, "MRQ not permitted");
+-		/*
+-		 * reset the return value to 0
+-		 * as the control can go forward
+-		 */
+-		ret = 0;
+-	}
 -
 -#endif
 -
--   /* Setting clk controls */
--   gp10b_tegra_clks_control(dev, true);
+-	/* Setting clk controls */
+-	gp10b_tegra_clks_control(dev, true);
 -
 -#if defined(CONFIG_INTERCONNECT)
--   /* to start with set emc frequency floor for max gpu sys rate*/
--   rate = clk_round_rate(platform->clk[0], (UINT_MAX - 1));
--   max_rate = (rate < 0) ? ULONG_MAX : (unsigned long)rate;
--   ret = ga10b_tegra_set_emc_rate(profile,
--                   max_rate, platform->g->emc3d_ratio);
--   if (ret)
--       dev_err(dev, "failed to set emc freq rate:%d\n", ret);
+-	/* to start with set emc frequency floor for max gpu sys rate*/
+-	rate = clk_round_rate(platform->clk[0], (UINT_MAX - 1));
+-	max_rate = (rate < 0) ? ULONG_MAX : (unsigned long)rate;
+-	ret = ga10b_tegra_set_emc_rate(profile,
+-					max_rate, platform->g->emc3d_ratio);
+-	if (ret)
+-		dev_err(dev, "failed to set emc freq rate:%d\n", ret);
 -#endif
--   return ret;
+-	return ret;
 -}
 -
 -static int ga10b_tegra_suspend(struct device *dev)
 -{
--   return 0;
+-	return 0;
 -}
 -
 -#ifdef CONFIG_NVGPU_STATIC_POWERGATE
 -static bool ga10b_tegra_is_gpc_fbp_pg_mask_valid(struct gk20a_platform *platform,
--                   u32 dt_gpc_fbp_pg_mask)
+-					u32 dt_gpc_fbp_pg_mask)
 -{
--   u32 i;
--   bool valid = false;
+-	u32 i;
+-	bool valid = false;
 -
--   for (i = 0U; i < MAX_PG_GPC_FBP_CONFIGS; i++) {
--       /*
--        * check if gpc/fbp pg mask passed by DT node
--        * is valid gpc/fbp pg mask
--        */
--       if (dt_gpc_fbp_pg_mask == platform->valid_gpc_fbp_pg_mask[i]) {
--           valid = true;
--           break;
--       }
--   }
--   return valid;
+-	for (i = 0U; i < MAX_PG_GPC_FBP_CONFIGS; i++) {
+-		/*
+-		 * check if gpc/fbp pg mask passed by DT node
+-		 * is valid gpc/fbp pg mask
+-		 */
+-		if (dt_gpc_fbp_pg_mask == platform->valid_gpc_fbp_pg_mask[i]) {
+-			valid = true;
+-			break;
+-		}
+-	}
+-	return valid;
 -}
 -
 -static int ga10b_tegra_set_gpc_pg_mask(struct device *dev, u32 dt_gpc_pg_mask)
 -{
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct gk20a *g = get_gk20a(dev);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a *g = get_gk20a(dev);
 -
--   if (ga10b_tegra_is_gpc_fbp_pg_mask_valid(platform, dt_gpc_pg_mask)) {
--       g->gpc_pg_mask = dt_gpc_pg_mask;
+-	if (ga10b_tegra_is_gpc_fbp_pg_mask_valid(platform, dt_gpc_pg_mask)) {
+-		g->gpc_pg_mask = dt_gpc_pg_mask;
 -#if defined(CONFIG_TEGRA_BPMP)
--       return ga10b_tegra_bpmp_mrq_set(dev);
+-		return ga10b_tegra_bpmp_mrq_set(dev);
 -#else
--       return 0;
+-		return 0;
 -#endif
--   }
+-	}
 -
--   nvgpu_err(g, "Invalid GPC-PG mask");
--   return -EINVAL;
+-	nvgpu_err(g, "Invalid GPC-PG mask");
+-	return -EINVAL;
 -}
 -
 -static int ga10b_tegra_set_fbp_pg_mask(struct device *dev, u32 dt_fbp_pg_mask)
 -{
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct gk20a *g = get_gk20a(dev);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct gk20a *g = get_gk20a(dev);
 -
--   if (ga10b_tegra_is_gpc_fbp_pg_mask_valid(platform, dt_fbp_pg_mask)) {
--       g->fbp_pg_mask = dt_fbp_pg_mask;
+-	if (ga10b_tegra_is_gpc_fbp_pg_mask_valid(platform, dt_fbp_pg_mask)) {
+-		g->fbp_pg_mask = dt_fbp_pg_mask;
 -#if defined(CONFIG_TEGRA_BPMP)
--       return ga10b_tegra_bpmp_mrq_set(dev);
+-		return ga10b_tegra_bpmp_mrq_set(dev);
 -#else
--       return 0;
+-		return 0;
 -#endif
--   }
+-	}
 -
--   nvgpu_err(g, "Invalid FBP-PG mask");
--   return -EINVAL;
+-	nvgpu_err(g, "Invalid FBP-PG mask");
+-	return -EINVAL;
 -}
 -
 -static void ga10b_tegra_postscale(struct device *pdev,
--                   unsigned long freq)
+-					unsigned long freq)
 -{
 -#if defined(CONFIG_INTERCONNECT)
--   struct gk20a_platform *platform = gk20a_get_platform(pdev);
--   struct gk20a_scale_profile *profile = platform->g->scale_profile;
--   struct gk20a *g = get_gk20a(pdev);
--   int ret = 0;
+-	struct gk20a_platform *platform = gk20a_get_platform(pdev);
+-	struct gk20a_scale_profile *profile = platform->g->scale_profile;
+-	struct gk20a *g = get_gk20a(pdev);
+-	int ret = 0;
 -
--   nvgpu_log_fn(g, " ");
--   if (profile && profile->private_data &&
--           !platform->is_railgated(pdev)) {
--       unsigned long emc_scale;
+-	nvgpu_log_fn(g, " ");
+-	if (profile && profile->private_data &&
+-			!platform->is_railgated(pdev)) {
+-		unsigned long emc_scale;
 -
--       if (freq <= gp10b_freq_table[0])
--           emc_scale = 0;
--       else
--           emc_scale = g->emc3d_ratio;
+-		if (freq <= gp10b_freq_table[0])
+-			emc_scale = 0;
+-		else
+-			emc_scale = g->emc3d_ratio;
 -
--       ret = ga10b_tegra_set_emc_rate(profile,
--                   freq, emc_scale);
--       if (ret)
--           dev_err(pdev, "failed to set emc freq rate:%d\n", ret);
--   }
--   nvgpu_log_fn(g, "done");
+-		ret = ga10b_tegra_set_emc_rate(profile,
+-					freq, emc_scale);
+-		if (ret)
+-			dev_err(pdev, "failed to set emc freq rate:%d\n", ret);
+-	}
+-	nvgpu_log_fn(g, "done");
 -#endif
 -}
 -
 -static void ga10b_tegra_set_valid_tpc_pg_mask(struct gk20a_platform *platform)
 -{
--   u32 i;
+-	u32 i;
 -
--   for (i = 0U; i < MAX_PG_TPC_CONFIGS; i++) {
--       /*
--        * There are 4 TPCs in each GPC in ga10b
--        * thus, valid tpc pg mask ranges from
--        * 0x0 to 0xF
--        * 0XF will powergate all TPCs, but this
--        * value will be re-checked again as per the
--        * the GPC-PG mask
--        */
--       platform->valid_tpc_pg_mask[i] = i;
--   }
+-	for (i = 0U; i < MAX_PG_TPC_CONFIGS; i++) {
+-		/*
+-		 * There are 4 TPCs in each GPC in ga10b
+-		 * thus, valid tpc pg mask ranges from
+-		 * 0x0 to 0xF
+-		 * 0XF will powergate all TPCs, but this
+-		 * value will be re-checked again as per the
+-		 * the GPC-PG mask
+-		 */
+-		platform->valid_tpc_pg_mask[i] = i;
+-	}
 -}
 -
 -static int ga10b_tegra_set_tpc_pg_mask(struct device *dev, u32 dt_tpc_pg_mask)
 -{
--   struct gk20a *g = get_gk20a(dev);
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   u32 i, j;
--   bool pg_status, valid = false;
--   /* Hold tpc pg mask value for validation */
--   u32 tmp_tpc_pg_mask[MAX_PG_GPC];
--   /* Hold user requested combined tpc pg mask value */
--   u32 combined_tpc_pg_mask;
+-	struct gk20a *g = get_gk20a(dev);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	u32 i, j;
+-	bool pg_status, valid = false;
+-	/* Hold tpc pg mask value for validation */
+-	u32 tmp_tpc_pg_mask[MAX_PG_GPC];
+-	/* Hold user requested combined tpc pg mask value */
+-	u32 combined_tpc_pg_mask;
 -
--   /* first set the valid masks ranges for tpc pg */
--   ga10b_tegra_set_valid_tpc_pg_mask(platform);
+-	/* first set the valid masks ranges for tpc pg */
+-	ga10b_tegra_set_valid_tpc_pg_mask(platform);
 -
--   /*
--    * if tpc pg mask sent from DT node tries
--    * to powergate all the TPCs in both GPC0 and GPC1
--    * then it is inavlid pg config
--    */
--   if (dt_tpc_pg_mask == 0xFF) {
--       nvgpu_err(g, "Invalid TPC_PG_MASK:0x%x", dt_tpc_pg_mask);
--       return -EINVAL;
--   } else {
--       /* store dt_tpc_pg_mask in a temp variable */
--       combined_tpc_pg_mask = dt_tpc_pg_mask;
+-	/*
+-	 * if tpc pg mask sent from DT node tries
+-	 * to powergate all the TPCs in both GPC0 and GPC1
+-	 * then it is inavlid pg config
+-	 */
+-	if (dt_tpc_pg_mask == 0xFF) {
+-		nvgpu_err(g, "Invalid TPC_PG_MASK:0x%x", dt_tpc_pg_mask);
+-		return -EINVAL;
+-	} else {
+-		/* store dt_tpc_pg_mask in a temp variable */
+-		combined_tpc_pg_mask = dt_tpc_pg_mask;
 -
--       /* separately store tpc pg mask in a temp array */
--       for (i = 0U; i < MAX_PG_GPC; i++) {
--           tmp_tpc_pg_mask[i] = (combined_tpc_pg_mask >> (4*i)) & 0xFU;
--       }
+-		/* separately store tpc pg mask in a temp array */
+-		for (i = 0U; i < MAX_PG_GPC; i++) {
+-			tmp_tpc_pg_mask[i] = (combined_tpc_pg_mask >> (4*i)) & 0xFU;
+-		}
 -
--       /* check if the tpc pg mask sent from DT is valid or not */
--       for (i = 0U ; i < MAX_PG_GPC; i++) {
--           for (j = 0U; j < MAX_PG_TPC_CONFIGS; j++) {
--               if (tmp_tpc_pg_mask[i] == platform->valid_tpc_pg_mask[j]) {
--                   /* store the valid config */
--                   g->tpc_pg_mask[i] = tmp_tpc_pg_mask[i];
--                   valid = true;
--                   break;
--               }
--           }
--           if (valid == false) {
--               nvgpu_err(g, "Invalid TPC PG mask: 0x%x",
--                               tmp_tpc_pg_mask[i]);
--               return -EINVAL;
--           }
--       }
--       /*
--        * check if all TPCs of a GPC are powergated
--        * then powergate the corresponding GPC
--        */
--       for (i = 0U; i < MAX_PG_GPC; i++) {
--           if (g->tpc_pg_mask[i] == 0xFU) {
--               g->gpc_pg_mask = (0x1U << i);
--           }
--       }
+-		/* check if the tpc pg mask sent from DT is valid or not */
+-		for (i = 0U ; i < MAX_PG_GPC; i++) {
+-			for (j = 0U; j < MAX_PG_TPC_CONFIGS; j++) {
+-				if (tmp_tpc_pg_mask[i] == platform->valid_tpc_pg_mask[j]) {
+-					/* store the valid config */
+-					g->tpc_pg_mask[i] = tmp_tpc_pg_mask[i];
+-					valid = true;
+-					break;
+-				}
+-			}
+-			if (valid == false) {
+-				nvgpu_err(g, "Invalid TPC PG mask: 0x%x",
+-								tmp_tpc_pg_mask[i]);
+-				return -EINVAL;
+-			}
+-		}
+-		/*
+-		 * check if all TPCs of a GPC are powergated
+-		 * then powergate the corresponding GPC
+-		 */
+-		for (i = 0U; i < MAX_PG_GPC; i++) {
+-			if (g->tpc_pg_mask[i] == 0xFU) {
+-				g->gpc_pg_mask = (0x1U << i);
+-			}
+-		}
 -
--       /*
--        * If any one GPC is already floorswept
--        * then all the TPCs in that GPC are floorswept
--        * based on gpc_mask update the tpc_pg_mask
--        */
--       switch (g->gpc_pg_mask) {
--       case 0x0: /* do nothing as all GPCs are active */
--           break;
--       case 0x1:
--           g->tpc_pg_mask[PG_GPC0] = 0xFU;
--           break;
--       case 0x2:
--           g->tpc_pg_mask[PG_GPC1] = 0xFU;
--           break;
--       default:
--           nvgpu_err(g, "Invalid GPC PG mask: 0x%x",
--                    g->gpc_pg_mask);
--           return -EINVAL;
--       }
--   }
+-		/*
+-		 * If any one GPC is already floorswept
+-		 * then all the TPCs in that GPC are floorswept
+-		 * based on gpc_mask update the tpc_pg_mask
+-		 */
+-		switch (g->gpc_pg_mask) {
+-		case 0x0: /* do nothing as all GPCs are active */
+-			break;
+-		case 0x1:
+-			g->tpc_pg_mask[PG_GPC0] = 0xFU;
+-			break;
+-		case 0x2:
+-			g->tpc_pg_mask[PG_GPC1] = 0xFU;
+-			break;
+-		default:
+-			nvgpu_err(g, "Invalid GPC PG mask: 0x%x",
+-					 g->gpc_pg_mask);
+-			return -EINVAL;
+-		}
+-	}
 -
--   /*
--    * If both GPC0_TPC and GPC1_TPC mask are 0xF
--    * then it is invalid as we cannot powergate
--    * all the TPCs on the chip. This is invalid
--    * configuration
--    */
--   for (i = 0U; i < MAX_PG_GPC; i++) {
--       if (g->tpc_pg_mask[i] == 0xF) {
--           pg_status = true;
--       } else {
--           pg_status = false;
--           break;
--       }
--   }
--   if (pg_status == true) {
--       nvgpu_err(g, "Disabling all TPCs isn't allowed!");
--       return -EINVAL;
--   }
+-	/*
+-	 * If both GPC0_TPC and GPC1_TPC mask are 0xF
+-	 * then it is invalid as we cannot powergate
+-	 * all the TPCs on the chip. This is invalid
+-	 * configuration
+-	 */
+-	for (i = 0U; i < MAX_PG_GPC; i++) {
+-		if (g->tpc_pg_mask[i] == 0xF) {
+-			pg_status = true;
+-		} else {
+-			pg_status = false;
+-			break;
+-		}
+-	}
+-	if (pg_status == true) {
+-		nvgpu_err(g, "Disabling all TPCs isn't allowed!");
+-		return -EINVAL;
+-	}
 -#if defined(CONFIG_TEGRA_BPMP)
--   return ga10b_tegra_bpmp_mrq_set(dev);
+-	return ga10b_tegra_bpmp_mrq_set(dev);
 -#else
--   return 0;
+-	return 0;
 -#endif
 -}
 -#endif
 -
 -struct gk20a_platform ga10b_tegra_platform = {
 -#ifdef CONFIG_TEGRA_GK20A_NVHOST
--   .has_syncpoints = true,
+-	.has_syncpoints = true,
 -#endif
 -
--   /* ptimer src frequency in hz*/
--   .ptimer_src_freq = 31250000,
+-	/* ptimer src frequency in hz*/
+-	.ptimer_src_freq = 31250000,
 -
--   .ch_wdt_init_limit_ms = 5000,
+-	.ch_wdt_init_limit_ms = 5000,
 -
--   .probe = ga10b_tegra_probe,
--   .late_probe = ga10b_tegra_late_probe,
--   .remove = ga10b_tegra_remove,
--   .railgate_delay_init    = 500,
--   .can_railgate_init      = true,
+-	.probe = ga10b_tegra_probe,
+-	.late_probe = ga10b_tegra_late_probe,
+-	.remove = ga10b_tegra_remove,
+-	.railgate_delay_init    = 500,
+-	.can_railgate_init      = true,
 -
 -#ifdef CONFIG_NVGPU_STATIC_POWERGATE
--   /* add tpc powergate JIRA NVGPU-4683 */
--   .can_tpc_pg             = false,
--   .can_gpc_pg             = false,
--   .can_fbp_pg             = false,
+-	/* add tpc powergate JIRA NVGPU-4683 */
+-	.can_tpc_pg             = false,
+-	.can_gpc_pg             = false,
+-	.can_fbp_pg             = false,
 -
--   /*
--    * there are 2 GPCs and 2 FBPs
--    * so the valid config to powergate
--    * is 0x0 (all active)
--    * 0x1 (GPC1/FBP1 active)
--    * 0x2 (GPC0/FBP0 active)
--    * 0x3 (both powergated) becomes invalid
--    */
--   .valid_gpc_fbp_pg_mask[0]  = 0x0,
--   .valid_gpc_fbp_pg_mask[1]  = 0x1,
--   .valid_gpc_fbp_pg_mask[2]  = 0x2,
+-	/*
+-	 * there are 2 GPCs and 2 FBPs
+-	 * so the valid config to powergate
+-	 * is 0x0 (all active)
+-	 * 0x1 (GPC1/FBP1 active)
+-	 * 0x2 (GPC0/FBP0 active)
+-	 * 0x3 (both powergated) becomes invalid
+-	 */
+-	.valid_gpc_fbp_pg_mask[0]  = 0x0,
+-	.valid_gpc_fbp_pg_mask[1]  = 0x1,
+-	.valid_gpc_fbp_pg_mask[2]  = 0x2,
 -
--   .set_tpc_pg_mask        = ga10b_tegra_set_tpc_pg_mask,
--   .set_gpc_pg_mask        = ga10b_tegra_set_gpc_pg_mask,
--   .set_fbp_pg_mask        = ga10b_tegra_set_fbp_pg_mask,
+-	.set_tpc_pg_mask        = ga10b_tegra_set_tpc_pg_mask,
+-	.set_gpc_pg_mask        = ga10b_tegra_set_gpc_pg_mask,
+-	.set_fbp_pg_mask        = ga10b_tegra_set_fbp_pg_mask,
 -#endif
--   .can_slcg               = true,
--   .can_blcg               = true,
--   .can_elcg               = true,
--   .enable_slcg            = true,
--   .enable_blcg            = true,
--   .enable_elcg            = true,
+-	.can_slcg               = true,
+-	.can_blcg               = true,
+-	.can_elcg               = true,
+-	.enable_slcg            = true,
+-	.enable_blcg            = true,
+-	.enable_elcg            = true,
 -
--   /* power management configuration  JIRA NVGPU-4683 */
+-	/* power management configuration  JIRA NVGPU-4683 */
 -#ifndef CONFIG_NVGPU_EMB_LINUX_PROD_BUILD
--   .enable_perfmon         = true,
--   .enable_elpg            = true,
--   .can_elpg_init          = true,
--   .enable_aelpg           = true,
+-	.enable_perfmon         = true,
+-	.enable_elpg            = true,
+-	.can_elpg_init          = true,
+-	.enable_aelpg           = true,
 -#else
--   /* Disable elpg on embedded linux prod build */
--   .enable_perfmon         = false,
--   .enable_elpg            = false,
--   .can_elpg_init          = false,
--   .enable_aelpg           = false,
+-	/* Disable elpg on embedded linux prod build */
+-	.enable_perfmon         = false,
+-	.enable_elpg            = false,
+-	.can_elpg_init          = false,
+-	.enable_aelpg           = false,
 -#endif
--   .enable_elpg_ms         = false,
+-	.enable_elpg_ms         = false,
 -
--   /* power management callbacks */
--   .suspend = ga10b_tegra_suspend,
--   .railgate = ga10b_tegra_railgate,
--   .unrailgate = ga10b_tegra_unrailgate,
--   .is_railgated = ga10b_tegra_is_railgated,
+-	/* power management callbacks */
+-	.suspend = ga10b_tegra_suspend,
+-	.railgate = ga10b_tegra_railgate,
+-	.unrailgate = ga10b_tegra_unrailgate,
+-	.is_railgated = ga10b_tegra_is_railgated,
 -
--   .busy = gk20a_tegra_busy,
--   .idle = gk20a_tegra_idle,
+-	.busy = gk20a_tegra_busy,
+-	.idle = gk20a_tegra_idle,
 -
--   .clk_round_rate = gp10b_round_clk_rate,
--   .get_clk_freqs = gp10b_clk_get_freqs,
+-	.clk_round_rate = gp10b_round_clk_rate,
+-	.get_clk_freqs = gp10b_clk_get_freqs,
 -
--   /* frequency scaling configuration */
--   .initscale = ga10b_tegra_scale_init,
--   .prescale = gp10b_tegra_prescale,
--   .postscale = ga10b_tegra_postscale,
--   .devfreq_governor = "nvhost_podgov",
+-	/* frequency scaling configuration */
+-	.initscale = ga10b_tegra_scale_init,
+-	.prescale = gp10b_tegra_prescale,
+-	.postscale = ga10b_tegra_postscale,
+-	.devfreq_governor = "nvhost_podgov",
 -
 -#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
--   .qos_min_notify = gk20a_scale_qos_min_notify,
--   .qos_max_notify = gk20a_scale_qos_max_notify,
+-	.qos_min_notify = gk20a_scale_qos_min_notify,
+-	.qos_max_notify = gk20a_scale_qos_max_notify,
 -#else
--   .qos_notify = gk20a_scale_qos_notify,
+-	.qos_notify = gk20a_scale_qos_notify,
 -#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) */
 -
--   .dump_platform_dependencies = gk20a_tegra_debug_dump,
+-	.dump_platform_dependencies = gk20a_tegra_debug_dump,
 -
--   .platform_chip_id = TEGRA_234,
--   .soc_name = "tegra23x",
+-	.platform_chip_id = TEGRA_234,
+-	.soc_name = "tegra23x",
 -
--   .honors_aperture = true,
--   .unified_memory = true,
+-	.honors_aperture = true,
+-	.unified_memory = true,
 -
--   /*
--    * This specifies the maximum contiguous size of a DMA mapping to Linux
--    * kernel's DMA framework.
--    * The IOMMU is capable of mapping all of physical memory and hence
--    * dma_mask is set to memory size (512GB in this case).
--    * For iGPU, nvgpu executes own dma allocs (e.g. alloc_page()) and
--    * sg_table construction. No IOMMU mapping is required and so dma_mask
--    * value is not important.
--    * However, for dGPU connected over PCIe through an IOMMU, dma_mask is
--    * significant. In this case, IOMMU bit in GPU physical address is not
--    * relevant.
--    */
--   .dma_mask = DMA_BIT_MASK(39),
+-	/*
+-	 * This specifies the maximum contiguous size of a DMA mapping to Linux
+-	 * kernel's DMA framework.
+-	 * The IOMMU is capable of mapping all of physical memory and hence
+-	 * dma_mask is set to memory size (512GB in this case).
+-	 * For iGPU, nvgpu executes own dma allocs (e.g. alloc_page()) and
+-	 * sg_table construction. No IOMMU mapping is required and so dma_mask
+-	 * value is not important.
+-	 * However, for dGPU connected over PCIe through an IOMMU, dma_mask is
+-	 * significant. In this case, IOMMU bit in GPU physical address is not
+-	 * relevant.
+-	 */
+-	.dma_mask = DMA_BIT_MASK(39),
 -
--   .reset_assert = gp10b_tegra_reset_assert,
--   .reset_deassert = gp10b_tegra_reset_deassert,
+-	.reset_assert = gp10b_tegra_reset_assert,
+-	.reset_deassert = gp10b_tegra_reset_deassert,
 -
--   /*
--    * Size includes total size of ctxsw VPR buffers.
--    * The size can vary for different chips as attribute ctx buffer
--    * size depends on max number of tpcs supported on the chip.
--    */
--   .secure_buffer_size = 0x400000, /* 4 MB */
+-	/*
+-	 * Size includes total size of ctxsw VPR buffers.
+-	 * The size can vary for different chips as attribute ctx buffer
+-	 * size depends on max number of tpcs supported on the chip.
+-	 */
+-	.secure_buffer_size = 0x400000, /* 4 MB */
 -};
 +/* stub: L4T-only header not available on vanilla kernel — see nvgpu-kernel-compat.patch. */
 diff --git a/drivers/gpu/nvgpu/os/linux/soc.c b/drivers/gpu/nvgpu/os/linux/soc.c
@@ -1076,46 +1076,46 @@ index 294f01f..622247d 100644
 -
 -bool nvgpu_platform_is_silicon(struct gk20a *g)
 -{
--   return tegra_platform_is_silicon();
+-	return tegra_platform_is_silicon();
 -}
 -
 -bool nvgpu_platform_is_simulation(struct gk20a *g)
 -{
--   return tegra_platform_is_vdk();
+-	return tegra_platform_is_vdk();
 -}
 -
 -bool nvgpu_platform_is_fpga(struct gk20a *g)
 -{
--   return tegra_platform_is_fpga();
+-	return tegra_platform_is_fpga();
 -}
 -
 -bool nvgpu_is_hypervisor_mode(struct gk20a *g)
 -{
--   return is_tegra_hypervisor_mode();
+-	return is_tegra_hypervisor_mode();
 -}
 -
 -bool nvgpu_is_soc_t194_a01(struct gk20a *g)
 -{
 -#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
--   struct device *dev = dev_from_gk20a(g);
+-	struct device *dev = dev_from_gk20a(g);
 -
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   return ((platform->platform_chip_id == TEGRA_194 &&
--           tegra_chip_get_revision() == TEGRA_REVISION_A01) ?
--           true : false);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	return ((platform->platform_chip_id == TEGRA_194 &&
+-			tegra_chip_get_revision() == TEGRA_REVISION_A01) ?
+-			true : false);
 -#else
--   const struct soc_device_attribute tegra_soc_attrs[] = {
--       {
--           .soc_id = "TEGRA194",
--           .revision = "*A01*"
--       },
--       {/* sentinel */}
--   };
--   if (soc_device_match(tegra_soc_attrs)) {
--       return true;
--   }
+-	const struct soc_device_attribute tegra_soc_attrs[] = {
+-		{
+-			.soc_id = "TEGRA194",
+-			.revision = "*A01*"
+-		},
+-		{/* sentinel */}
+-	};
+-	if (soc_device_match(tegra_soc_attrs)) {
+-		return true;
+-	}
 -
--   return false;
+-	return false;
 -#endif
 -}
 -
@@ -1131,75 +1131,75 @@ index 294f01f..622247d 100644
 - */
 -static u64 nvgpu_tegra_hv_ipa_pa(struct gk20a *g, u64 ipa, u64 *pa_len)
 -{
--   struct device *dev = dev_from_gk20a(g);
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   struct hyp_ipa_pa_info info;
--   struct nvgpu_hyp_ipa_pa_info nvgpu_ipapainfo;
--   int err;
--   u64 pa = 0ULL;
+-	struct device *dev = dev_from_gk20a(g);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	struct hyp_ipa_pa_info info;
+-	struct nvgpu_hyp_ipa_pa_info nvgpu_ipapainfo;
+-	int err;
+-	u64 pa = 0ULL;
 -
--   pa = nvgpu_ipa_to_pa_cache_lookup_locked(g, ipa, pa_len);
--   if (pa != 0UL) {
--       return pa;
--   }
+-	pa = nvgpu_ipa_to_pa_cache_lookup_locked(g, ipa, pa_len);
+-	if (pa != 0UL) {
+-		return pa;
+-	}
 -
--   err = hyp_read_ipa_pa_info(&info, platform->vmid, ipa);
--   if (err < 0) {
--       nvgpu_err(g, "ipa=%llx translation failed vmid=%u err=%d",
--           ipa, platform->vmid, err);
--   } else {
--       pa = info.base + info.offset;
--       if (pa_len != NULL) {
--           /*
--            * Update the size of physical memory chunk after the
--            * specified offset.
--            */
--           *pa_len = info.size - info.offset;
--       }
--       nvgpu_log(g, gpu_dbg_map_v,
--               "ipa=%llx vmid=%d -> pa=%llx "
--               "base=%llx offset=%llx size=%llx\n",
--               ipa, platform->vmid, pa, info.base,
--               info.offset, info.size);
--   }
+-	err = hyp_read_ipa_pa_info(&info, platform->vmid, ipa);
+-	if (err < 0) {
+-		nvgpu_err(g, "ipa=%llx translation failed vmid=%u err=%d",
+-			ipa, platform->vmid, err);
+-	} else {
+-		pa = info.base + info.offset;
+-		if (pa_len != NULL) {
+-			/*
+-			 * Update the size of physical memory chunk after the
+-			 * specified offset.
+-			 */
+-			*pa_len = info.size - info.offset;
+-		}
+-		nvgpu_log(g, gpu_dbg_map_v,
+-				"ipa=%llx vmid=%d -> pa=%llx "
+-				"base=%llx offset=%llx size=%llx\n",
+-				ipa, platform->vmid, pa, info.base,
+-				info.offset, info.size);
+-	}
 -
--   if (pa != 0U) {
--       nvgpu_ipapainfo.base = info.base;
--       nvgpu_ipapainfo.offset = info.offset;
--       nvgpu_ipapainfo.size = info.size;
--       nvgpu_ipa_to_pa_add_to_cache(g, ipa, pa,
--               &nvgpu_ipapainfo);
--   }
+-	if (pa != 0U) {
+-		nvgpu_ipapainfo.base = info.base;
+-		nvgpu_ipapainfo.offset = info.offset;
+-		nvgpu_ipapainfo.size = info.size;
+-		nvgpu_ipa_to_pa_add_to_cache(g, ipa, pa,
+-				&nvgpu_ipapainfo);
+-	}
 -
--   return pa;
+-	return pa;
 -}
 -
 -int nvgpu_init_soc_vars(struct gk20a *g)
 -{
--   struct device *dev = dev_from_gk20a(g);
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   int err;
+-	struct device *dev = dev_from_gk20a(g);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	int err;
 -
--   if (nvgpu_is_hypervisor_mode(g)) {
--       err = hyp_read_gid(&platform->vmid);
--       if (err) {
--           nvgpu_err(g, "failed to read vmid");
--           return err;
--       }
--       platform->phys_addr = nvgpu_tegra_hv_ipa_pa;
--   }
--   return 0;
+-	if (nvgpu_is_hypervisor_mode(g)) {
+-		err = hyp_read_gid(&platform->vmid);
+-		if (err) {
+-			nvgpu_err(g, "failed to read vmid");
+-			return err;
+-		}
+-		platform->phys_addr = nvgpu_tegra_hv_ipa_pa;
+-	}
+-	return 0;
 -}
 -
 -u64 nvgpu_get_pa_from_ipa(struct gk20a *g, u64 ipa)
 -{
--   struct device *dev = dev_from_gk20a(g);
--   struct gk20a_platform *platform = gk20a_get_platform(dev);
--   u64 pa_len = 0U;
+-	struct device *dev = dev_from_gk20a(g);
+-	struct gk20a_platform *platform = gk20a_get_platform(dev);
+-	u64 pa_len = 0U;
 -
--   if (platform->phys_addr) {
--       return platform->phys_addr(g, ipa, &pa_len);
--   }
--   return ipa;
+-	if (platform->phys_addr) {
+-		return platform->phys_addr(g, ipa, &pa_len);
+-	}
+-	return ipa;
 -}
 +/* stub: L4T-only header not available on vanilla kernel — see nvgpu-kernel-compat.patch. */
