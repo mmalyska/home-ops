@@ -10,18 +10,33 @@ type: project
 `nvidia-open-gpu-kernel-modules-lts` extension is for discrete PCIe GPUs and will never work.
 The correct driver is `nvgpu` from OE4T/linux-nvgpu (branch `patches-r36.5`).
 
-**Current phase:** Phase 1 — viability compilation test running as K8s Job on nv1.
-Job file: `cluster/.tools/nvgpu-build-test.yaml`
+**Current phase:** Phase 1 COMPLETE — BUILD EXIT CODE: 0 achieved against kernel 6.18.18.
+Next: Phase 2 — create proper patch file + build Talos extension.
 
-**Kernel API patches discovered so far** (applied in the Job, needed for the real extension):
-1. Multiple files — `vm_flags |=` read-only (kernel 6.3): use `vm_flags_set()`; `vm_flags &= ~` read-only: use `vm_flags_clear()` — apply across entire driver tree
-2. `os/linux/ioctl.c` — `class_create` lost `THIS_MODULE` arg (kernel 6.4)
-3. `os/linux/ioctl.c` — `devnode` callback `struct device *` → `const struct device *` (kernel 6.2)
-4. `os/linux/*.c` — `struct fd` `.file` member removed (kernel 6.9): use `fd_file(fd)`
-5. `os/linux/dmabuf_priv.c` (+ others) — `linux/dma-buf-map.h` removed (kernel 5.18): use `linux/iosys-map.h`; rename `struct dma_buf_map` → `struct iosys_map` and all `dma_buf_map_*`/`DMA_BUF_MAP_*` symbols
-6. `os/linux/periodic_timer.c` (+ others) — `hrtimer_init` removed (kernel 6.15): replace two-line `hrtimer_init(x,clock,mode); x.function=cb;` with `hrtimer_setup(x, cb, clock, mode);` using `sed -z`
-7. `os/linux/nvgpu_ivm.c`, `common/cbc/contig_pool.c` (+ more) — need `soc/tegra/virt/hv-ivc.h` (Tegra hypervisor/L4T only): grep all `.c` files including `hv-ivc.h`, replace with empty stubs (Makefile surgery breaks ifdef/endif balance)
-8. `os/linux/module.c` — `platform_driver.remove` changed from `int(*)()` to `void(*)()` (kernel 6.11): change `gk20a_remove_wrapper` return type `int`→`void` + `return 0;`→`return;` using `sed -z`
+**Key insight:** The OE4T driver has ALL kernel compatibility code behind `#ifdef NV_*` guards.
+No source patching is needed. Pass the right macros via `KCPPFLAGS="-include /path/nv_compat.h"`.
+
+**NV_* macros required for kernel 6.18** (put in a force-include header):
+- `NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS` (6.3+) — vm_flags_set/clear
+- `NV_CLASS_CREATE_HAS_NO_OWNER_ARG` (6.4+) — class_create(name) no THIS_MODULE
+- `NV_CLASS_STRUCT_DEVNODE_HAS_CONST_DEV_ARG` (6.2+) — const struct device* in devnode
+- `NV_FD_FILE_PRESENT` (6.9+) — fd_file(fd) accessor
+- `NV_FD_EMPTY_PRESENT` (6.12+) — fd_empty(fd)
+- `NV_HRTIMER_SETUP_PRESENT` (6.15+) — hrtimer_setup()
+- `NV_LINUX_IOSYS_MAP_H_PRESENT` (5.18+) — linux/iosys-map.h
+- `NV_PLATFORM_DRIVER_STRUCT_REMOVE_RETURNS_VOID` (6.11+) — void .remove
+- Do NOT define `NV_MODULE_IMPORT_NS_CALLS_STRINGIFY` (6.18 uses string literal form)
+
+**L4T-only stubs required** (headers not in vanilla kernel, not guarded by NV_* macros):
+- `soc/tegra/virt/hv-ivc.h` → stub: `nvgpu_ivm.c`, `soc.c`, `contig_pool.c`
+- `linux/platform/tegra/mc_utils.h` → stub: `platform_ga10b_tegra.c`
+
+**Build command for kernel 6.18:**
+```bash
+KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
+  make -j$(nproc) -C /path/to/kernel ARCH=arm64 \
+  M=/path/to/nvgpu/drivers/gpu/nvgpu modules
+```
 
 **Gaps vs standard Talos NVIDIA flow (identified from Talos docs):**
 - `machine.kernel.modules: [{name: nvgpu}]` missing — nvgpu.ko won't autoload on Talos
@@ -34,13 +49,12 @@ Job file: `cluster/.tools/nvgpu-build-test.yaml`
 **Commented placeholder added to talconfig.yaml** (nv1 node) for `machine.kernel.modules` + sysctl.
 
 **Next steps:**
-1. Run Job until BUILD EXIT CODE: 0 — collect any remaining patches
-2. Package all patches + nvgpu.ko into a Talos sysext OCI image
-3. Update talconfig.yaml: remove `nvidia-open-gpu-kernel-modules-lts` + `nvidia-container-toolkit-lts`, add custom nvgpu extension + activate commented patches block
+1. Create `provision/talos/patches/nvgpu-kernel-compat.patch` — unified diff of the L4T stubs
+2. Package stubs + nvgpu.ko build into a Talos sysext OCI image
+3. Update talconfig.yaml: remove `nvidia-open-gpu-kernel-modules-lts` + `nvidia-container-toolkit-lts`, add custom nvgpu extension
 4. Configure CDI spec for Tegra device nodes + deploy k8s-device-plugin in CDI mode
 5. Regenerate + apply Talos config to nv1
 
 **Full plan:** `docs/src/k8s/jetson-gpu.md`
-
-**Why:** Getting GPU for ollama/whisper/piper workloads on nv1.
+**Job file:** `cluster/.tools/nvgpu-build-test.yaml` (can be deleted — phase 1 done)
 **How to apply:** Always load this memory when working on nv1, GPU, nvgpu, or Jetson topics.
