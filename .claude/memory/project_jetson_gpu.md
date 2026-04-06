@@ -67,5 +67,6 @@ KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
 6. Regenerate + apply Talos config to nv1
 
 **Full plan:** `docs/src/k8s/jetson-gpu.md`
+**CUDA extension plan:** `docs/src/k8s/jetson-cuda-extension.md` (follow-up plan — start after jetson-gpu plan phases 1–4 complete)
 **Job file:** `cluster/.tools/nvgpu-build-test.yaml` (can be deleted — phase 1 done)
 **How to apply:** Always load this memory when working on nv1, GPU, nvgpu, or Jetson topics.

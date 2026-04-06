@@ -120,56 +120,60 @@ git -C linux-nvgpu apply nvgpu-kernel-compat.patch
 The NV_* macros are **not** in the patch — they are passed as build flags (`KCPPFLAGS`) at
 compile time (see Kernel API Compatibility Reference below).
 
-### Phase 3 — Build a Talos system extension
+### Phase 3 — Build a Talos system extension ✅ COMPLETE
 
-Talos extensions package kernel modules as OCI images following the
-[siderolabs/extensions](https://github.com/siderolabs/extensions) pattern.
+Two forked repos on branch `feat/jetson-nvgpu` implement Option A (fork + contribute upstream):
 
-The extension needs:
-- A `pkg.yaml` that builds the `.ko` from source (or packages pre-built `.ko`)
-- Extension manifest: `manifest.yaml` declaring `nvgpu.ko` and any dependencies
-- The compiled `nvgpu.ko` placed at `/lib/modules/<talos-kver>/extras/nvgpu/nvgpu.ko`
+**`mmalyska/siderolabs-pkgs`** — builds `nvgpu.ko` as an OCI package image:
 
-**Build strategy options (choose one):**
+| File | Purpose |
+|------|---------|
+| `nvgpu-driver/pkg.yaml` | Fetches nvgpu source at pinned commit, applies patch, builds with LLVM + nv_compat.h |
+| `nvgpu-driver/files/nv_compat.h` | Force-include header defining all 8 required `NV_*` macros |
+| `nvgpu-driver/files/nvgpu-kernel-compat.patch` | Stubs 4 L4T-only `.c` files |
+| `.github/workflows/nvgpu-driver.yaml` | CI on `ubuntu-24.04-arm` (fork-only, remove before upstream PR) |
 
-| Option | Description | Effort |
-|--------|-------------|--------|
-| A | Fork siderolabs/extensions, add `nvgpu/` alongside `nvidia-gpu/` | Medium |
-| B | Build standalone OCI image using `bldr` / Talos toolchain | Medium |
-| C | Simple Docker image that just copies the `.ko` and runs `insmod` via a DaemonSet | Low (hacky) |
-
-Option A is the correct long-term approach. Option C is the fastest for a proof-of-concept.
-
-For Option A, the extension directory structure:
-```
-nvidia-gpu/nvgpu/
-├── pkg.yaml          # build spec — compile OE4T/linux-nvgpu against talos kernel pkg
-└── manifest.yaml     # extension manifest
+Build command:
+```bash
+make nvgpu-driver \
+  PLATFORM=linux/arm64 \
+  REGISTRY=ghcr.io \
+  USERNAME=mmalyska \
+  PUSH=true
 ```
 
-The `pkg.yaml` needs to use the Talos kernel build image matching the running version:
-```yaml
-# pkg.yaml (sketch)
-name: nvgpu
-variant: scratch
-dependencies:
-  - image: ghcr.io/siderolabs/kernel:v1.12.6   # must match running Talos version
-steps:
-  - sources:
-      - url: https://github.com/OE4T/linux-nvgpu/archive/refs/heads/patches-r36.5.tar.gz
-        destination: nvgpu.tar.gz
-    prepare:
-      - tar -xf nvgpu.tar.gz
-    build:
-      - make -C linux-nvgpu-patches-r36.5/drivers/gpu/nvgpu \
-          ARCH=arm64 \
-          KERNEL_SRC=/usr/src/linux-headers-<ver> \
-          M=$(pwd)/linux-nvgpu-patches-r36.5/drivers/gpu/nvgpu \
-          modules
-    install:
-      - mkdir -p /rootfs/lib/modules/<ver>/extras/nvgpu
-      - cp nvgpu.ko /rootfs/lib/modules/<ver>/extras/nvgpu/
+Published as `ghcr.io/mmalyska/nvgpu-driver-pkg:<tag>`.
+
+**`mmalyska/siderolabs-extensions`** — wraps the pkg into a Talos system extension:
+
+| File | Purpose |
+|------|---------|
+| `nvidia-gpu/nvgpu/pkg.yaml` | Pulls `nvgpu-driver-pkg`, installs `.ko` + modprobe conf |
+| `nvidia-gpu/nvgpu/manifest.yaml.tmpl` | Extension manifest (`name: nvgpu`, author, compat) |
+| `nvidia-gpu/nvgpu/vars.yaml` | VERSION string: `d530a48-{{ .BUILD_ARG_TAG }}`, TIER: extra |
+| `nvidia-gpu/nvgpu/files/nvgpu.conf` | `softdep nvgpu pre: tegra_mc` |
+| `.github/workflows/nvgpu.yaml` | CI on `ubuntu-24.04-arm`, passes `PKGS_PREFIX=ghcr.io/mmalyska` |
+
+Build command:
+```bash
+make nvgpu \
+  PLATFORM=linux/arm64 \
+  REGISTRY=ghcr.io \
+  USERNAME=mmalyska \
+  PKGS=v1.12.0-50-ga92bed5 \
+  PKGS_PREFIX=ghcr.io/mmalyska \
+  PUSH=true
 ```
+
+Published as `ghcr.io/mmalyska/nvgpu:<tag>`.
+
+**Key build details:**
+- nvgpu source: commit `d530a48d64f9ad3020d9f3307f53e8dde8e3fba1` on `patches-r36.5`
+- PKGS tag for Talos v1.12.6: `v1.12.0-50-ga92bed5`
+- Build uses LLVM (`LLVM=1`) and `NV_BUILD_KERNEL_INTERFACE=yes`
+- Module installed to `/rootfs/usr/lib/modules/extras/` with `INSTALL_MOD_STRIP=1`
+
+**Next:** Trigger CI on both forks and confirm `ghcr.io/mmalyska/nvgpu:<tag>` is published before proceeding to Phase 4.
 
 ### Phase 4 — Update talconfig.yaml
 
@@ -187,7 +191,7 @@ schematic:
     systemExtensions:
       officialExtensions: []      # remove nvidia-open-gpu-kernel-modules-lts
       additionalExtensions:
-        - image: ghcr.io/<your-org>/nvgpu-extension:v<tag>
+        - image: ghcr.io/mmalyska/nvgpu:<tag>   # get <tag> from ghcr.io/mmalyska/nvgpu after CI builds
 patches:
   - |-
     machine:
@@ -250,7 +254,7 @@ A Tegra-aware alternative is needed. Options:
 The recommended path is option 1 (CDI) since it keeps compatibility with the standard
 `nvidia.com/gpu` resource name that workloads (ollama, whisper) already request.
 
-This phase is TBD pending Phase 3 completion.
+This phase is TBD pending Phase 4 completion (nvgpu.ko must load on nv1 first).
 
 ### Phase 6 — RuntimeClass
 
