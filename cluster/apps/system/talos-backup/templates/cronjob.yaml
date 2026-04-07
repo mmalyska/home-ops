@@ -54,6 +54,8 @@ spec:
                   name: tmp
                 - mountPath: /var/run/secrets/talos.dev
                   name: talos-secrets
+          nodeSelector:
+            kubernetes.io/arch: amd64
           restartPolicy: OnFailure
           volumes:
             - emptyDir: {}
