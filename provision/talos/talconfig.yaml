@@ -75,6 +75,8 @@ nodes:
           - console=tty0
           - console=ttyS0,115200
           - talos.auditd.disabled=1
+        systemExtensions:
+          officialExtensions: []
     networkInterfaces:
       - interface: enP8p1s0
         addresses:
@@ -88,11 +90,6 @@ nodes:
     patches:
       - |-
         machine:
-          install:
-            image: ghcr.io/mmalyska/talos-nv1-installer:v1.12.6
-          kernel:
-            modules:
-              - name: nvgpu   # explicit load — nvgpu.ko is not autoloaded on Talos
           sysctls:
             net.core.bpf_jit_harden: "1"  # required by nvidia-container-toolkit
 
