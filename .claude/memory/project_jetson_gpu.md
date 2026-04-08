@@ -60,6 +60,22 @@ KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
 - CI builds with `PKGS=v1.12.0-50-ga92bed5 PKGS_PREFIX=ghcr.io/mmalyska`
 - Published as `ghcr.io/mmalyska/nvgpu:<tag>`
 
+**CRITICAL — pkgs fork tag must match PKGS tag used by extensions:**
+The extensions `pkg.yaml` pulls `ghcr.io/mmalyska/nvgpu-driver-pkg:{{ .BUILD_ARG_PKGS }}`. The bldr
+tool derives the image tag from `git describe --tag --match v[0-9]*` on the pkgs repo. If the pkgs
+fork has no matching git tag, bldr falls back to the commit SHA (e.g. `8f563d4`) and the extensions
+CI fails with "not found".
+
+**Fix applied 2026-04-08:** Tagged `mmalyska/siderolabs-pkgs` at commit `8f563d4` with
+`v1.12.0-50-ga92bed5` so the published image tag matches what the extensions workflow expects.
+
+**On every Talos upgrade (new PKGS tag):**
+1. Find new PKGS tag from `siderolabs/talos` release → `pkg/machinery/gendata/data/pkgs`
+2. Rebase/update `mmalyska/siderolabs-pkgs` `feat/jetson-nvgpu` to the new upstream PKGS base
+3. `git tag <new-pkgs-tag> && git push origin <new-pkgs-tag>` on the pkgs fork
+4. Update the hardcoded PKGS default in `mmalyska/siderolabs-extensions` `.github/workflows/nvgpu.yaml`
+5. Trigger pkgs CI first → wait for `nvgpu-driver-pkg:<new-pkgs-tag>` to publish → then extensions CI
+
 **Next steps:**
 1. ~~Create patch file~~ DONE
 2. ~~Build pkgs fork + extensions fork~~ DONE (Phase 3)

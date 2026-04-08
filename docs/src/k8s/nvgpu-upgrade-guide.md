@@ -11,12 +11,56 @@ This guide explains how to investigate and fix it.
 
 ## Background: what changes on a Talos upgrade
 
-A Talos upgrade bumps the kernel version (e.g., 6.18 → 6.19). This triggers one or both failure modes:
+A Talos upgrade bumps the kernel version (e.g., 6.18 → 6.19) **and** the PKGS tag (the OCI image
+set that Talos uses for kernel builds). Both must be updated together. This triggers up to three
+failure modes:
 
 | Failure mode | Symptom | Root cause |
 |---|---|---|
 | **NV_* macro mismatch** | Compile error in `nvgpu/os/linux/` or `nvgpu/drivers/gpu/nvgpu/` | A kernel API changed; nvgpu has an `#ifdef NV_*` guard for it, but `nv_compat.h` is not updated |
 | **New L4T stub needed** | `fatal error: some/l4t/header.h: No such file` | OE4T upstream added new L4T-BSP-only code without a vanilla alternative |
+| **Extensions CI "not found"** | `ghcr.io/mmalyska/nvgpu-driver-pkg:<pkgs-tag>: not found` | pkgs fork git tag missing — see below |
+
+---
+
+## Critical: pkgs fork git tag must match the PKGS tag
+
+The extensions `pkg.yaml` pulls the driver package as:
+
+```
+ghcr.io/mmalyska/nvgpu-driver-pkg:{{ .BUILD_ARG_PKGS }}
+```
+
+The bldr tool derives the image tag from `git describe --tag --match 'v[0-9]*'` on the pkgs repo.
+**If the pkgs fork has no matching git tag, bldr falls back to the short commit SHA** (e.g.
+`8f563d4`) and the extensions CI fails with `not found` even though the pkgs CI passed.
+
+### Fix: tag the pkgs fork before the extensions build
+
+```bash
+# 1. Find the new PKGS tag from the Talos release
+# https://github.com/siderolabs/talos/blob/<version>/pkg/machinery/gendata/data/pkgs
+NEW_PKGS_TAG=v1.XX.Y-N-gabcdef0
+
+# 2. Get the current HEAD of feat/jetson-nvgpu on the pkgs fork
+HEAD=$(git -C /tmp/mmalyska-pkgs rev-parse HEAD)
+
+# 3. Create and push the tag
+git -C /tmp/mmalyska-pkgs tag ${NEW_PKGS_TAG} ${HEAD}
+git -C /tmp/mmalyska-pkgs push origin ${NEW_PKGS_TAG}
+
+# 4. Update the hardcoded PKGS default in the extensions workflow
+# mmalyska/siderolabs-extensions/.github/workflows/nvgpu.yaml
+# Change: default: "v1.12.0-50-ga92bed5"
+# To:     default: "${NEW_PKGS_TAG}"
+
+# 5. Wait for pkgs CI to finish and publish nvgpu-driver-pkg:${NEW_PKGS_TAG}
+# THEN trigger extensions CI — not before
+gh run list --repo mmalyska/siderolabs-pkgs --branch feat/jetson-nvgpu --limit 3
+```
+
+**Order matters:** pkgs CI must complete and publish the image **before** the extensions CI runs.
+Triggering them in parallel will always fail.
 
 ---
 
