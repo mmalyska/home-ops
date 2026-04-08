@@ -173,7 +173,9 @@ Published as `ghcr.io/mmalyska/nvgpu:<tag>`.
 - Build uses LLVM (`LLVM=1`) and `NV_BUILD_KERNEL_INTERFACE=yes`
 - Module installed to `/rootfs/usr/lib/modules/extras/` with `INSTALL_MOD_STRIP=1`
 
-**Next:** Trigger CI on both forks and confirm `ghcr.io/mmalyska/nvgpu:<tag>` is published before proceeding to Phase 4.
+**CI status (2026-04-08):** `mmalyska/siderolabs-pkgs` CI passing ✅. `mmalyska/siderolabs-extensions` CI pending.
+
+**Next:** Confirm extensions fork CI passes and `ghcr.io/mmalyska/nvgpu:<tag>` is published, then proceed to Phase 4.
 
 ### Phase 4 — Update talconfig.yaml
 

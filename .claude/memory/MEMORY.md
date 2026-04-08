@@ -8,6 +8,7 @@
 - **Always update docs proactively after changes** — [feedback_docs_updates.md](feedback_docs_updates.md)
 - **Always check for native Gateway API support before writing manual HTTPRoute templates** — [feedback_check_native_gateway_support.md](feedback_check_native_gateway_support.md)
 - **Save learned skills to `/workspaces/home-ops/.claude/skills/learned/`**, not `~/.claude/` — [feedback_skill_location.md](feedback_skill_location.md)
+- **Run full patch safety audit after every change to nvgpu-kernel-compat.patch** — [feedback_nvgpu_patch_audit.md](feedback_nvgpu_patch_audit.md)
 - NEVER write secrets, tokens, passwords, or sensitive data to any repo file
 - The private domain is a secret — use `<secret:private-domain>` placeholder only
 - Secret values belong in Bitwarden Secrets Manager only
@@ -26,3 +27,4 @@
 | [feedback_skill_location.md](feedback_skill_location.md) | feedback | Learned skills go to /workspaces/home-ops/.claude/skills/learned/, not ~/.claude/ |
 | [feedback_recreate_strategy_migration.md](feedback_recreate_strategy_migration.md) | feedback | Changing Deployment strategy to Recreate requires kubectl JSON patch to remove rollingUpdate from live object first |
 | [project_jetson_gpu.md](project_jetson_gpu.md) | project | nv1 Jetson Orin NX nvgpu extension — active build/patch work, full plan at docs/src/k8s/jetson-gpu.md; CUDA extension plan at docs/src/k8s/jetson-cuda-extension.md |
+| [feedback_nvgpu_patch_audit.md](feedback_nvgpu_patch_audit.md) | feedback | Full 5-step audit required after every nvgpu-kernel-compat.patch change: clean tree, apply check, symbol/caller audit, platform callback NULL check, hunk line count verify |

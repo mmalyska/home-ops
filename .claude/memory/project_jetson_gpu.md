@@ -10,8 +10,8 @@ type: project
 `nvidia-open-gpu-kernel-modules-lts` extension is for discrete PCIe GPUs and will never work.
 The correct driver is `nvgpu` from OE4T/linux-nvgpu (branch `patches-r36.5`).
 
-**Current phase:** Phase 3 COMPLETE — pkgs fork + extensions fork both have `feat/jetson-nvgpu` branches pushed.
-Next: Phase 4 — update talconfig.yaml for nv1, then trigger builds and verify.
+**Current phase:** Phase 3 IN PROGRESS — pkgs fork CI is passing (tests green as of 2026-04-08). Extensions fork CI pending.
+Next: Confirm extensions fork CI passes + images publish to `ghcr.io/mmalyska/`, then Phase 4 — update talconfig.yaml for nv1.
 
 **Key insight:** The OE4T driver has ALL kernel compatibility code behind `#ifdef NV_*` guards.
 No source patching is needed. Pass the right macros via `KCPPFLAGS="-include /path/nv_compat.h"`.
@@ -50,6 +50,8 @@ KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
 
 **Patch file:** `provision/talos/patches/nvgpu-kernel-compat.patch` — unified diff, verified with `git apply` round-trip. Stubs 4 files: `contig_pool.c`, `nvgpu_ivm.c`, `soc.c`, `platform_ga10b_tegra.c`.
 
+**MANDATORY: Run full patch safety audit after every patch change** — see [feedback_nvgpu_patch_audit.md](feedback_nvgpu_patch_audit.md). Steps: (1) restore clean OE4T source from tarball, (2) `git apply --check`, (3) symbol/caller audit for every stubbed file, (4) verify platform struct mandatory callbacks are non-NULL, (5) verify hunk line counts.
+
 **Phase 3 repos & branches:**
 - `mmalyska/siderolabs-pkgs` → `feat/jetson-nvgpu`: `nvgpu-driver/pkg.yaml` (name: `nvgpu-driver-pkg`), `files/nv_compat.h`, `files/nvgpu-kernel-compat.patch`, custom CI workflow `nvgpu-driver.yaml` (`ubuntu-24.04-arm`)
 - `mmalyska/siderolabs-extensions` → `feat/jetson-nvgpu`: `nvidia-gpu/nvgpu/pkg.yaml` (name: `nvgpu`), `manifest.yaml.tmpl`, `vars.yaml`, `files/nvgpu.conf`, custom CI workflow `nvgpu.yaml`
@@ -61,7 +63,7 @@ KCPPFLAGS="-include /path/nv_compat.h" KBUILD_MODPOST_WARN=1 \
 **Next steps:**
 1. ~~Create patch file~~ DONE
 2. ~~Build pkgs fork + extensions fork~~ DONE (Phase 3)
-3. Trigger CI on both forks; verify images publish to `ghcr.io/mmalyska/`
+3. ~~Trigger CI on pkgs fork~~ DONE (tests passing 2026-04-08). Verify extensions fork CI + images publish to `ghcr.io/mmalyska/`
 4. Update talconfig.yaml: remove `nvidia-open-gpu-kernel-modules-lts` + `nvidia-container-toolkit-lts`, add `ghcr.io/mmalyska/nvgpu`, add `machine.kernel.modules: [{name: nvgpu}]` and `net.core.bpf_jit_harden: "1"`
 5. Configure CDI spec for Tegra device nodes + deploy k8s-device-plugin in CDI mode
 6. Regenerate + apply Talos config to nv1
