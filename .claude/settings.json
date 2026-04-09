@@ -1,43 +1,10 @@
 {
-  "alwaysThinkingEnabled": true,
-  "enabledPlugins": {
-    "claude-md-management@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "context7@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false
-  },
   "env": {
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "MAX_THINKING_TOKENS": "10000"
   },
-  "extraKnownMarketplaces": {},
-  "hooks": {
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ]
-  },
   "includeCoAuthoredBy": false,
-  "model": "sonnet",
   "permissions": {
     "allow": [
       "Bash(kubectl get *)",
@@ -90,12 +57,45 @@
       "Bash(git push -f *)"
     ]
   },
-  "preferences": {
-    "tmuxSplitPanes": true
+  "model": "sonnet",
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime"
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
+    "type": "command",
     "command": "npx -y ccstatusline@latest --config ./.claude/statusline/settings.json",
-    "padding": 0,
-    "type": "command"
+    "padding": 0
+  },
+  "enabledPlugins": {
+    "claude-md-management@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false,
+    "context7@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false
+  },
+  "extraKnownMarketplaces": {},
+  "alwaysThinkingEnabled": true,
+  "preferences": {
+    "tmuxSplitPanes": true
   }
 }
