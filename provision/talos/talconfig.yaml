@@ -65,18 +65,10 @@ nodes:
         vip:
           ip: *talosControlplaneVip
   - hostname: nv1
+    # talosImageURL: ghcr.io/mmalyska/talos-nv1-installer
     ipAddress: 192.168.48.5
     installDisk: /dev/nvme0n1
     controlPlane: false
-    schematic:
-      customization:
-        extraKernelArgs:
-          - -selinux
-          - console=tty0
-          - console=ttyS0,115200
-          - talos.auditd.disabled=1
-        systemExtensions:
-          officialExtensions: []
     networkInterfaces:
       - interface: enP8p1s0
         addresses:
@@ -87,6 +79,10 @@ nodes:
             gateway: 192.168.50.1
     nodeTaints:
       nv: NoSchedule
+    # schematic:
+    #   customization:
+    #     systemExtensions:
+    #       officialExtensions: []
     patches:
       - |-
         machine:
@@ -245,7 +241,7 @@ worker:
     customization:
       systemExtensions:
         officialExtensions:
-          - nut-client
+          - siderolabs/nut-client
   machineFiles:
     - *patchContainerd
   patches:

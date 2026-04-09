@@ -4,9 +4,11 @@
 
 > **Do not start this plan until the [jetson-gpu plan](./jetson-gpu.md) is complete.**
 > Specifically, Phase 1–4 of that plan must be done and `nvgpu.ko` must load successfully on `nv1`
-> with Tegra device nodes (`/dev/nvgpu`, `/dev/nvhost-*`, `/dev/nvmap`) appearing at boot.
+> with Tegra device nodes (`/dev/nvgpu/igpu0/`, `/dev/nvhost-*`) appearing at boot.
 >
 > This plan picks up from that point and adds the CUDA userspace layer.
+> **Note (Phase 0 finding):** `/dev/nvmap` is NOT created by the OE4T `nvgpu.ko` extension.
+> It requires a separate `nvmap.ko` kernel module (see OQ-13).
 
 ---
 
@@ -29,10 +31,10 @@ Kubernetes. That is necessary but not sufficient for CUDA. CUDA requires a Tegra
 `libcuda.so` that speaks the nvgpu ioctl ABI (`/dev/nvhost-*` + unified memory model). This
 library is architecturally incompatible with the standard discrete-GPU `libcuda.so`:
 
-| | Discrete GPU | Jetson Tegra |
+| | Discrete GPU | Jetson Tegra (Orin/t234) |
 |---|---|---|
-| Kernel driver | `nvidia.ko` | `nvgpu.ko` |
-| Device nodes | `/dev/nvidia0`, `/dev/nvidiactl` | `/dev/nvgpu`, `/dev/nvhost-*`, `/dev/nvmap` |
+| Kernel driver | `nvidia.ko` | `nvgpu.ko` + `nvmap.ko` (separate) |
+| Device nodes | `/dev/nvidia0`, `/dev/nvidiactl` | `/dev/nvgpu/igpu0/{ctrl,channel,as,...}`, `/dev/nvhost-*` (13 flat devices) |
 | ioctl magic | `'F'` (base 200) | `'G'`, `'A'`, `'H'`, `'T'`, `'D'` |
 | `libcuda.so` source | CUDA Toolkit / `libnvidia-compute` | JetPack `nvidia-l4t-cuda` |
 
@@ -50,7 +52,10 @@ CDI (Container Device Interface) to bind-mount those libs into containers at run
 ```
 nv1 node (Talos Linux)
 ├── nvgpu extension (from jetson-gpu plan)
-│   └── nvgpu.ko loaded → /dev/nvgpu, /dev/nvhost-*, /dev/nvmap created
+│   └── nvgpu.ko loaded → /dev/nvgpu/ (dir), /dev/nvhost-* created
+│
+├── nvmap extension (BLOCKER — new, needed before CUDA works)
+│   └── nvmap.ko loaded → /dev/nvmap created (required by libcuda.so NvRmMemMgr)
 │
 ├── nvgpu-cuda-pkg (new — siderolabs/pkgs fork)
 │   └── extracts nvidia-l4t-core + nvidia-l4t-cuda .deb packages
@@ -90,8 +95,9 @@ Manually replicate what the extension will do, on a live `nv1` node, and confirm
    From the Jetson L4T apt repo for Orin (t234 platform, r36.x series):
    ```bash
    # On a machine with internet access — download the .deb files
-   curl -LO https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-core/nvidia-l4t-core_36.4.0-20240910085053_arm64.deb
-   curl -LO https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-cuda/nvidia-l4t-cuda_36.4.0-20240910085053_arm64.deb
+   # NOTE: correct timestamp for r36.4.0 is 20240912212859 (NOT 20240910085053)
+   curl -LO https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-core/nvidia-l4t-core_36.4.0-20240912212859_arm64.deb
+   curl -LO https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-cuda/nvidia-l4t-cuda_36.4.0-20240912212859_arm64.deb
 
    # Extract file trees (no install scripts — just the files)
    dpkg -x nvidia-l4t-core_*.deb ./l4t-rootfs
@@ -124,12 +130,18 @@ Manually replicate what the extension will do, on a live `nv1` node, and confirm
      - name: "0"
        containerEdits:
          deviceNodes:
+           # /dev/nvgpu is a DIRECTORY — mount it as a whole
            - path: /dev/nvgpu
+           # Flat nvhost devices
            - path: /dev/nvhost-ctrl
            - path: /dev/nvhost-ctrl-gpu
            - path: /dev/nvhost-gpu
            - path: /dev/nvhost-as-gpu
+           - path: /dev/nvhost-ctxsw-gpu
+           - path: /dev/nvhost-dbg-gpu
            - path: /dev/nvhost-prof-gpu
+           - path: /dev/nvhost-tsg-gpu
+           # /dev/nvmap — requires nvmap.ko extension (NOT present with nvgpu-only)
            - path: /dev/nvmap
          mounts:
            - hostPath: /var/lib/tegra/usr/lib/aarch64-linux-gnu/tegra
@@ -202,7 +214,84 @@ Manually replicate what the extension will do, on a live `nv1` node, and confirm
    - `cuInit(0)` returns `CUDA_SUCCESS (0)` → lib injection works, proceed to Phase 1
    - Returns `CUDA_ERROR_NO_DEVICE (100)` → device nodes not injected correctly
    - `libcuda.so: cannot open` → lib paths not injected correctly
+   - `NvRmMemInitNvmap failed: No such file or directory` + `cuInit(0) = 999` → `/dev/nvmap` missing, need `nvmap.ko`
    - Segfault / illegal instruction → wrong libcuda.so ABI (wrong L4T version)
+
+### Phase 0 Findings (completed 2026-04-09)
+
+#### OQ-1 — RESOLVED: dpkg -x is sufficient, symlinks are preserved
+
+`dpkg -x` produces a clean file tree with all symlinks intact:
+- `libcuda.so.1.1` (41 MB real file) at `/usr/lib/aarch64-linux-gnu/tegra/`
+- `libcuda.so.1 → libcuda.so.1.1` (symlink)
+- `libcuda.so → libcuda.so.1.1` (symlink)
+- Top-level compat symlink: `/usr/lib/aarch64-linux-gnu/libcuda.so`
+
+Maintainer scripts are not needed for library extraction.
+
+#### OQ-4 — RESOLVED: Device node layout on nv1
+
+`/dev/nvgpu` is a **directory**, not a character device. Full structure:
+
+```
+/dev/nvgpu/
+└── igpu0/
+    ├── as
+    ├── channel
+    ├── ctrl
+    ├── ctxsw
+    ├── dbg
+    ├── nvsched
+    ├── nvsched_ctrl_fifo
+    ├── power
+    ├── prof
+    ├── prof-ctx
+    ├── prof-dev
+    ├── sched
+    └── tsg
+```
+
+Flat nvhost devices at `/dev/`:
+- `nvhost-ctrl`, `nvhost-ctrl-gpu`, `nvhost-gpu`, `nvhost-as-gpu`
+- `nvhost-ctxsw-gpu`, `nvhost-dbg-gpu`, `nvhost-nvsched-gpu`
+- `nvhost-nvsched_ctrl_fifo-gpu`, `nvhost-power-gpu`
+- `nvhost-prof-ctx-gpu`, `nvhost-prof-dev-gpu`, `nvhost-prof-gpu`
+- `nvhost-sched-gpu`, `nvhost-tsg-gpu`
+
+**`/dev/nvmap` does NOT exist** — it is not created by the OE4T `nvgpu.ko` module.
+
+#### OQ-5 — RESOLVED: Symlinks preserved by dpkg -x
+
+Confirmed — see OQ-1 above.
+
+#### OQ-6 — RESOLVED: Correct L4T package URLs for t234/r36.4
+
+Packages live in the `t234` repo (NOT `common`). Available r36.4.x versions (use index from
+`https://repo.download.nvidia.com/jetson/t234/dists/r36.4/main/binary-arm64/Packages.gz`):
+
+| Version | Timestamp | JetPack |
+|---------|-----------|---------|
+| `36.4.0-20240912212859` | Sep 2024 | JetPack 6.0 |
+| `36.4.3-20250107174145` | Jan 2025 | JetPack 6.1 |
+| `36.4.4-20250616085344` | Jun 2025 | JetPack 6.1+ |
+| `36.4.7-20250918154033` | Sep 2025 | JetPack 6.x |
+
+URL pattern: `https://repo.download.nvidia.com/jetson/t234/pool/main/n/{pkg}/{pkg}_{version}_arm64.deb`
+
+#### BLOCKER — nvmap.ko required for cuInit
+
+When device nodes and libcuda are both correctly injected, `cuInit(0)` returns **999 (CUDA_ERROR_UNKNOWN)**
+with the following error from libcuda internals:
+
+```
+NvRmMemInitNvmap failed with No such file or directory
+Memory Manager Not supported
+****NvRmMemMgrInit failed**** error type: 196626
+```
+
+The L4T `libcuda.so.1` memory manager (`NvRmMemMgr`) attempts to open `/dev/nvmap` at init time.
+This device is provided by `nvmap.ko` — a Tegra-BSP kernel module separate from `nvgpu.ko`.
+The OE4T nvgpu extension does NOT include nvmap. This is the next build blocker (OQ-13).
 
 ### Open questions to answer in Phase 0
 
@@ -270,7 +359,7 @@ finalize:
 
 ```makefile
 # renovate: datasource=custom.l4t depName=nvidia-l4t-cuda
-L4T_VERSION ?= 36.4.0-20240910085053
+L4T_VERSION ?= 36.4.0-20240912212859
 L4T_CORE_SHA256 ?= <sha256>
 L4T_CUDA_SHA256 ?= <sha256>
 L4T_MULTIMEDIA_SHA256 ?= <sha256>
@@ -354,17 +443,26 @@ ACTION=="add", SUBSYSTEM=="module", KERNEL=="nvgpu", \
 
 ### CSV files (Phase 0 investigation will finalize these)
 
-`l4t.csv` enumerates Tegra device nodes:
+`l4t.csv` enumerates Tegra device nodes (updated from Phase 0 findings — actual nv1 device list):
 ```
+# /dev/nvgpu is a directory — CDI mounts the whole tree
 /dev/nvgpu, dev, 0666
+# Flat nvhost devices (confirmed present on nv1)
 /dev/nvhost-ctrl, dev, 0666
 /dev/nvhost-ctrl-gpu, dev, 0666
 /dev/nvhost-gpu, dev, 0666
 /dev/nvhost-as-gpu, dev, 0666
+/dev/nvhost-ctxsw-gpu, dev, 0666
+/dev/nvhost-dbg-gpu, dev, 0666
+/dev/nvhost-nvsched-gpu, dev, 0666
+/dev/nvhost-nvsched_ctrl_fifo-gpu, dev, 0666
+/dev/nvhost-power-gpu, dev, 0666
+/dev/nvhost-prof-ctx-gpu, dev, 0666
+/dev/nvhost-prof-dev-gpu, dev, 0666
 /dev/nvhost-prof-gpu, dev, 0666
-/dev/nvhost-vic, dev, 0666
-/dev/nvhost-nvdec, dev, 0666
-/dev/nvhost-nvenc, dev, 0666
+/dev/nvhost-sched-gpu, dev, 0666
+/dev/nvhost-tsg-gpu, dev, 0666
+# /dev/nvmap — requires nvmap.ko extension (OQ-13 BLOCKER)
 /dev/nvmap, dev, 0666
 ```
 
@@ -516,20 +614,21 @@ image references accordingly.
 
 ## Open Questions Summary
 
-| ID | Question | Resolved in |
-|----|----------|-------------|
-| OQ-1 | Do `nvidia-l4t-core` maintainer scripts perform runtime setup the libs depend on? | Phase 0 |
-| OQ-2 | Does `libcuda.so` call platform-detection at `cuInit()` that rejects non-L4T kernels? | Phase 0 |
-| OQ-3 | Is `handler: runc` sufficient for CDI injection, or is `handler: nvidia` required? | Phase 0 |
-| OQ-4 | What exact device nodes does `nvgpu.ko` create on this hardware? | Phase 0 |
-| OQ-5 | Does `dpkg -x` preserve all symlinks, or do post-install scripts create essential ones? | Phase 1 |
-| OQ-6 | Exact package version URL for `t234` pool for L4T r36.4? | Phase 1 |
-| OQ-7 | Are `nvidia-l4t-core` + `nvidia-l4t-cuda` sufficient, or are transitive deps needed? | Phase 1 |
-| OQ-8 | Renovate datasource strategy for L4T package versioning scheme? | Phase 1 |
-| OQ-9 | Does `nvidia-ctk cdi generate --mode=csv` work on non-L4T host, or must CDI spec be static? | Phase 2 |
-| OQ-10 | Does the CDI spec need `ldcacheUpdateHints` for Tegra lib path? | Phase 2 |
-| OQ-11 | Is `/dev/nvgpu` the correct sentinel for the `tegra-cdi-gen` service dependency? | Phase 2 |
-| OQ-12 | Which device plugin approach works with Tegra CDI — `k8s-device-plugin` with CDI mode, or custom? | Phase 4 |
+| ID | Question | Status | Resolved in |
+|----|----------|--------|-------------|
+| OQ-1 | Do `nvidia-l4t-core` maintainer scripts perform runtime setup the libs depend on? | ✅ No — `dpkg -x` is sufficient, symlinks preserved | Phase 0 |
+| OQ-2 | Does `libcuda.so` call platform-detection at `cuInit()` that rejects non-L4T kernels? | Open | Phase 0 |
+| OQ-3 | Is `handler: runc` sufficient for CDI injection, or is `handler: nvidia` required? | Open | Phase 0 |
+| OQ-4 | What exact device nodes does `nvgpu.ko` create on this hardware? | ✅ See Phase 0 Findings — `/dev/nvgpu/igpu0/` (dir) + 14 flat nvhost devices, no nvmap | Phase 0 |
+| OQ-5 | Does `dpkg -x` preserve all symlinks, or do post-install scripts create essential ones? | ✅ Symlinks preserved — libcuda.so → libcuda.so.1 → libcuda.so.1.1 all present | Phase 0 / Phase 1 |
+| OQ-6 | Exact package version URL for `t234` pool for L4T r36.4? | ✅ See Phase 0 Findings — correct timestamp table provided | Phase 0 / Phase 1 |
+| OQ-7 | Are `nvidia-l4t-core` + `nvidia-l4t-cuda` sufficient, or are transitive deps needed? | Open (blocked by OQ-13) | Phase 1 |
+| OQ-8 | Renovate datasource strategy for L4T package versioning scheme? | Open | Phase 1 |
+| OQ-9 | Does `nvidia-ctk cdi generate --mode=csv` work on non-L4T host, or must CDI spec be static? | Open | Phase 2 |
+| OQ-10 | Does the CDI spec need `ldcacheUpdateHints` for Tegra lib path? | Open | Phase 2 |
+| OQ-11 | Is `/dev/nvgpu` the correct sentinel for the `tegra-cdi-gen` service dependency? | Open — `/dev/nvgpu` is a directory now; may need `/dev/nvgpu/igpu0/ctrl` as sentinel | Phase 2 |
+| OQ-12 | Which device plugin approach works with Tegra CDI — `k8s-device-plugin` with CDI mode, or custom? | Open | Phase 4 |
+| OQ-13 | Can `nvmap.ko` be built as a separate Talos extension from OE4T sources? Is it required for all L4T CUDA versions? | **BLOCKER** — `libcuda.so` opens `/dev/nvmap` unconditionally at `cuInit()`; no nvmap → `cuInit = 999` | Phase 0 |
 
 ---
 
@@ -537,7 +636,9 @@ image references accordingly.
 
 NVIDIA L4T (Linux for Tegra) packages ship from
 `repo.download.nvidia.com/jetson/t234/` for the Orin platform (t234 SoC).
-All packages follow the versioning scheme `<major>.<minor>.<patch>-<yyyymmddhhmmss>` (e.g. `36.4.0-20240910085053`).
+All packages follow the versioning scheme `<major>.<minor>.<patch>-<yyyymmddhhmmss>` (e.g. `36.4.0-20240912212859`).
+The timestamp is assigned at build time and does NOT follow a predictable pattern — always look up the
+actual filename in the repo index: `https://repo.download.nvidia.com/jetson/t234/dists/r36.4/main/binary-arm64/Packages.gz`
 
 ### Core packages (always required)
 
