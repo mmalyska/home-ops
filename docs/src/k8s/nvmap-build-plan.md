@@ -17,9 +17,9 @@ The work touches three repos:
 
 ---
 
-## Task 1 — Add nvmap-driver-pkg to mmalyska-pkgs ✅
+## Task 1 — Add nvmap-driver-pkg to mmalyska-pkgs
 
-**Status**: Complete — committed and pushed to `feat/jetson-nvgpu`.
+**Status**: In progress — CI build running (run 24232989678). Tag v1.12.2 needed after build succeeds.
 
 ### 1.1 — Pin linux-nv-oot source in Pkgfile ✅
 
@@ -48,6 +48,24 @@ Key differences from `nvgpu-driver/pkg.yaml`:
 - `CONFIG_ARCH_TEGRA=y` must be accepted by the kernel build; if it causes issues, try passing
   as `KCPPFLAGS="-DCONFIG_ARCH_TEGRA=1 ..."`
 - If build fails with missing symbols, may need to set `NVMAP_CONFIG_SCIIPC=n` explicitly
+
+### 1.4 — Tag v1.12.2 after successful build
+
+Once the CI build passes, create and push a new tag so the extensions repo can reference the built packages (currently deployed at `v1.12.1`):
+
+```bash
+cd /tmp/mmalyska-pkgs
+git tag v1.12.2
+git push origin v1.12.2
+```
+
+The tag build publishes:
+- `ghcr.io/mmalyska/nvgpu-driver-pkg:v1.12.2`
+- `ghcr.io/mmalyska/nvmap-driver-pkg:v1.12.2`
+
+Task 2 (extensions repo) references these via `BUILD_ARG_PKGS=v1.12.2`.
+
+---
 
 ### 1.3 — Combine nvmap-driver-pkg into nvgpu-driver CI workflow ✅
 
