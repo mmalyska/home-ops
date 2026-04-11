@@ -65,7 +65,7 @@ nodes:
         vip:
           ip: *talosControlplaneVip
   - hostname: nv1
-    # talosImageURL: ghcr.io/mmalyska/talos-nv1-installer
+    talosImageURL: ghcr.io/mmalyska/talos-nv1-installer
     ipAddress: 192.168.48.5
     installDisk: /dev/nvme0n1
     controlPlane: false
@@ -83,6 +83,20 @@ nodes:
     #   customization:
     #     systemExtensions:
     #       officialExtensions: []
+    machineFiles:
+      - op: create
+        path: /etc/cri/conf.d/20-customization.part
+        content: |
+          [plugins]
+            [plugins."io.containerd.grpc.v1.cri"]
+              enable_unprivileged_ports = true
+              enable_unprivileged_icmp = true
+          [plugins."io.containerd.grpc.v1.cri".containerd]
+            discard_unpacked_layers = false
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            discard_unpacked_layers = false
+          [plugins."io.containerd.cri.v1.runtime"]
+            cdi_spec_dirs = ["/var/cdi/static", "/var/cdi/dynamic"]
     patches:
       - |-
         machine:

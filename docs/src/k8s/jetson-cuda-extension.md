@@ -278,7 +278,7 @@ Packages live in the `t234` repo (NOT `common`). Available r36.4.x versions (use
 
 URL pattern: `https://repo.download.nvidia.com/jetson/t234/pool/main/n/{pkg}/{pkg}_{version}_arm64.deb`
 
-#### BLOCKER — nvmap.ko required for cuInit
+#### BLOCKER — nvmap.ko required for cuInit (SUPERSEDED — see below)
 
 When device nodes and libcuda are both correctly injected, `cuInit(0)` returns **999 (CUDA_ERROR_UNKNOWN)**
 with the following error from libcuda internals:
@@ -289,166 +289,95 @@ Memory Manager Not supported
 ****NvRmMemMgrInit failed**** error type: 196626
 ```
 
-The L4T `libcuda.so.1` memory manager (`NvRmMemMgr`) attempts to open `/dev/nvmap` at init time.
-This device is provided by `nvmap.ko` — a Tegra-BSP kernel module separate from `nvgpu.ko`.
-The OE4T nvgpu extension does NOT include nvmap. This is the next build blocker (OQ-13).
+`nvmap.ko` was added (2026-04-10). With `/dev/nvmap` present, `cuInit(0)` returns **801
+(CUDA_ERROR_SYSTEM_NOT_READY)**. See blocker below.
+
+#### BLOCKER — CDI approach is architecturally incorrect for Jetson
+
+**Root cause identified (2026-04-10):** The `libcuda.so.1.1` from `nvidia-l4t-cuda` is a
+**discrete GPU shim** — it references `/dev/nvidiactl`, `/dev/nvidia0`, etc. and returns
+`CUDA_ERROR_SYSTEM_NOT_READY (801)` on Tegra because those paths do not exist.
+
+The Tegra iGPU CUDA stack uses a fundamentally different injection mechanism:
+
+| Aspect | Discrete GPU (CDI) | Jetson Tegra (correct) |
+|--------|-------------------|----------------------|
+| Device nodes | `/dev/nvidiactl`, `/dev/nvidia0` | `/dev/nvhost-*`, `/dev/nvmap` |
+| Library injection | CDI spec | `nvidia-container-runtime` CSV plugins |
+| Config path | `/var/cdi/` | `/etc/nvidia-container-runtime/host-files-for-container.d/*.csv` |
+| Container runtime | runc + CDI | `nvidia-container-runtime` handler |
+| Base image | Generic CUDA images | L4T images (`l4t-base`, `l4t-cuda`) |
+
+**Correct architecture:**
+
+1. `containerd` must use `handler: nvidia` (nvidia-container-runtime, not runc)
+2. `nvidia-container-runtime` reads CSV files listing Tegra device nodes and libs to inject
+3. L4T userspace libs are already present in L4T base container images — no host extraction needed
+4. The Tegra extension must bundle `libnvidia-container` with Tegra/CSV support
+
+This invalidates the Phase 1 `nvgpu-cuda-pkg` design (lib extraction + CDI). Phase 1 must
+instead build `nvidia-container-toolkit` for Talos with Tegra CSV plugin support.
+
+References:
+- https://nvidia.github.io/container-wiki/toolkit/jetson.html
+- https://github.com/NVIDIA/libnvidia-container/blob/jetson/design/mount_plugins.md
 
 ### Open questions to answer in Phase 0
 
-- **OQ-1**: Do `nvidia-l4t-core` maintainer scripts (bypassed by `dpkg -x`) perform any
-  runtime setup that the libs depend on? (symlink creation, ldconfig, platform detection)
-- **OQ-2**: Does `libcuda.so` from L4T r36.x call any platform-detection API at `cuInit()`
-  that rejects non-L4T kernels? (e.g. reads `/proc/device-tree/compatible` for Tegra SOC ID)
+- **OQ-1**: ~~Do `nvidia-l4t-core` maintainer scripts perform runtime setup?~~ RESOLVED — moot,
+  libs are not extracted to host; they live in L4T container images.
+- **OQ-2**: ~~Does `libcuda.so` reject non-L4T kernels?~~ RESOLVED — wrong lib; L4T images
+  carry correct userspace.
 - **OQ-3**: Is `handler: runc` sufficient for CDI injection, or does containerd require
-  `handler: nvidia` (i.e. `nvidia-container-runtime` binary)?
-- **OQ-4**: What exact device nodes does nvgpu.ko create on boot? Are all of `/dev/nvhost-*`
-  present, or only a subset depending on what the hardware reports?
+  `handler: nvidia` (i.e. `nvidia-container-runtime` binary)? **→ RESOLVED: requires
+  `handler: nvidia` with nvidia-container-runtime configured for Tegra CSV mode.**
+- **OQ-4**: What exact device nodes does nvgpu.ko create on boot? **→ RESOLVED: all `/dev/nvhost-*`
+  present; `/dev/nvgpu/igpu0/` only has `power` at boot — `ctrl` etc. are not statically created.**
 
 ---
 
-## Phase 1 — nvgpu-cuda-pkg (siderolabs/pkgs fork)
+## Phase 1 — nvgpu-toolkit extension (REDESIGNED)
 
-**Depends on:** Phase 0 successful (lib paths confirmed working)
+> **Tracking:** beads issue `home-ops-fwh`
+>
+> **Previous design (SUPERSEDED):** Extract L4T userspace libs (`nvidia-l4t-core`,
+> `nvidia-l4t-cuda`) to host and inject via CDI. **This approach is wrong** — `libcuda.so`
+> from `nvidia-l4t-cuda` is a discrete GPU shim and does not work on Tegra iGPU. See
+> Phase 0 findings.
 
-Create a new package in `mmalyska/siderolabs-pkgs` fork on branch `feat/jetson-nvgpu`
-(alongside the existing `nvgpu-driver` package).
+**Depends on:** Phase 0 complete (device nodes confirmed, architecture validated)
 
-### Directory structure
+**Why the redesign:** Jetson Tegra uses `nvidia-container-runtime` with `libnvidia-container`
+in CSV/plugin mode — not CDI. L4T container images carry their own userspace libs; the host
+only needs to provide the runtime hook and CSV device lists.
 
-```
-nvgpu-cuda-pkg/
-├── pkg.yaml
-└── files/
-    └── tegra-ld.conf    # ldconfig config for tegra lib path
-```
-
-### pkg.yaml sketch
-
-```yaml
-name: nvgpu-cuda-pkg
-variant: scratch
-dependencies:
-  - image: ghcr.io/siderolabs/fhs
-
-steps:
-  - sources:
-      - url: https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-core/nvidia-l4t-core_{{ .L4T_VERSION }}_arm64.deb
-        destination: nvidia-l4t-core.deb
-        sha256: "{{ .L4T_CORE_SHA256 }}"
-      - url: https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-cuda/nvidia-l4t-cuda_{{ .L4T_VERSION }}_arm64.deb
-        destination: nvidia-l4t-cuda.deb
-        sha256: "{{ .L4T_CUDA_SHA256 }}"
-      - url: https://repo.download.nvidia.com/jetson/t234/pool/main/n/nvidia-l4t-multimedia/nvidia-l4t-multimedia_{{ .L4T_VERSION }}_arm64.deb
-        destination: nvidia-l4t-multimedia.deb
-        sha256: "{{ .L4T_MULTIMEDIA_SHA256 }}"
-    prepare:
-      - dpkg -x nvidia-l4t-core.deb /rootfs
-      - dpkg -x nvidia-l4t-cuda.deb /rootfs
-      - dpkg -x nvidia-l4t-multimedia.deb /rootfs
-    install:
-      - mkdir -p /rootfs/etc/ld.so.conf.d
-      - cp /pkg/files/tegra-ld.conf /rootfs/etc/ld.so.conf.d/nvidia-tegra.conf
-      - ldconfig -r /rootfs
-
-finalize:
-  - from: /rootfs
-    to: /rootfs
-```
-
-### Pkgfile additions
-
-```makefile
-# renovate: datasource=custom.l4t depName=nvidia-l4t-cuda
-L4T_VERSION ?= 36.4.0-20240912212859
-L4T_CORE_SHA256 ?= <sha256>
-L4T_CUDA_SHA256 ?= <sha256>
-L4T_MULTIMEDIA_SHA256 ?= <sha256>
-```
-
-### Open questions
-
-- **OQ-5**: Does `dpkg -x` produce a clean file tree, or do the packages have post-install
-  scripts that create essential symlinks (e.g. `libcuda.so → libcuda.so.1.1`)? Verify symlinks
-  are present after extraction.
-- **OQ-6**: What is the exact package version URL for the `t234` pool for r36.4? Confirm the
-  right platform string (some packages are in `/jetson/common/`, some in `/jetson/t234/`).
-- **OQ-7**: Is `nvidia-l4t-multimedia` fully self-contained after `dpkg -x`, or does it pull
-  in transitive runtime deps (e.g. `nvidia-l4t-camera`, `nvidia-l4t-gbm`) that must also be
-  extracted? Verify that NVMPI symbols resolve inside a container with only these three packages.
-- **OQ-8**: Renovate datasource strategy for L4T packages — L4T uses a non-standard versioning
-  scheme (`36.4.0-20240910085053`). A custom datasource or regex manager will be needed.
-
----
-
-## Phase 2 — nvgpu-toolkit extension (siderolabs/extensions fork)
-
-**Depends on:** Phase 1 published and Phase 0 CDI approach confirmed
-
-Create `nvidia-gpu/nvgpu-toolkit/` in `mmalyska/siderolabs-extensions` fork on branch
-`feat/jetson-nvgpu`.
-
-### Directory structure
+### Architecture
 
 ```
-nvidia-gpu/nvgpu-toolkit/
-├── pkg.yaml
-├── manifest.yaml.tmpl
-├── vars.yaml
-├── tegra-cdi-gen.yaml         # Talos guest service: CDI spec generation
-└── files/
-    ├── cuda.csv               # nvidia-ctk CSV: CUDA lib paths
-    ├── l4t.csv                # nvidia-ctk CSV: Tegra device nodes
-    └── 15-nvgpu-device.rules  # udev: trigger on nvgpu module load
+containerd
+└── handler: nvidia  →  nvidia-container-runtime (OCI hook)
+                            └── libnvidia-container (Tegra/CSV mode)
+                                    ├── reads CSV files → inject /dev/nvhost-* device nodes
+                                    └── L4T image carries own libcuda, libnvrm_gpu, etc.
 ```
 
-### tegra-cdi-gen service
+No host lib extraction needed. Workload containers must be L4T-based
+(`nvcr.io/nvidia/l4t-base`, `dustynv/*`, etc.).
 
-Replaces `nvidia-persistenced` + `nvidia-cdi-gen` from the discrete GPU extension.
-Tegra does not use persistenced.
+### What the extension must provide
 
-```yaml
-name: tegra-cdi-gen
-container:
-  entrypoint: /usr/local/bin/nvidia-ctk
-  args:
-    - cdi
-    - generate
-    - --mode=csv
-    - --csv-file-sources=/etc/nvidia-container-runtime/host-files-for-container.d/cuda.csv,/etc/nvidia-container-runtime/host-files-for-container.d/l4t.csv
-    - --library-search-path=/usr/lib/aarch64-linux-gnu/tegra
-    - --output=/run/cdi/nvidia.yaml
-  mounts:
-    - source: /dev
-      destination: /dev
-      options: [rshared, rbind, ro]
-    - source: /usr/lib/aarch64-linux-gnu/tegra
-      destination: /usr/lib/aarch64-linux-gnu/tegra
-      options: [bind, ro]
-    - source: /run/cdi
-      destination: /run/cdi
-      options: [bind, rw]
-  depends:
-    - path: /dev/nvgpu      # waits for nvgpu.ko to load device nodes
-  restart: untilSuccess
-```
+| Component | Location on host | Notes |
+|-----------|-----------------|-------|
+| `nvidia-container-runtime` | `/usr/bin/nvidia-container-runtime` | OCI hook binary |
+| `libnvidia-container.so` | `/usr/lib/` | Built `--enable-tegra` |
+| `nvidia-container-cli` | `/usr/bin/` | Used by runtime |
+| `l4t.csv` | `/etc/nvidia-container-runtime/host-files-for-container.d/l4t.csv` | Device node list |
+| containerd config | `/etc/cri/conf.d/20-customization.part` | `handler: nvidia` runtime class |
 
-### udev rules
+### l4t.csv — device node list (from Phase 0 findings)
 
-```udev
-# 15-nvgpu-device.rules
-# Create /dev/nvgpu and nvhost devices when nvgpu module loads
-ACTION=="add", SUBSYSTEM=="module", KERNEL=="nvgpu", \
-  RUN+="/sbin/modprobe -b nvgpu"
-```
-
-### CSV files (Phase 0 investigation will finalize these)
-
-`l4t.csv` enumerates Tegra device nodes (updated from Phase 0 findings — actual nv1 device list):
-```
-# /dev/nvgpu is a directory — CDI mounts the whole tree
-/dev/nvgpu, dev, 0666
-# Flat nvhost devices (confirmed present on nv1)
-/dev/nvhost-ctrl, dev, 0666
+```csv
+# nvhost devices — confirmed present on nv1 (OE4T nvgpu + nvmap extensions)
 /dev/nvhost-ctrl-gpu, dev, 0666
 /dev/nvhost-gpu, dev, 0666
 /dev/nvhost-as-gpu, dev, 0666
@@ -462,17 +391,53 @@ ACTION=="add", SUBSYSTEM=="module", KERNEL=="nvgpu", \
 /dev/nvhost-prof-gpu, dev, 0666
 /dev/nvhost-sched-gpu, dev, 0666
 /dev/nvhost-tsg-gpu, dev, 0666
-# /dev/nvmap — requires nvmap.ko extension (OQ-13 BLOCKER)
 /dev/nvmap, dev, 0666
 ```
 
-`cuda.csv` enumerates CUDA lib paths:
-```
-/usr/lib/aarch64-linux-gnu/tegra/libcuda.so.1.1, lib, 0644
-/usr/lib/aarch64-linux-gnu/tegra/libcudart.so, lib, 0644
+> **Note:** `/dev/nvhost-ctrl` (base, non-GPU) is NOT present on OE4T nvgpu driver.
+> `/dev/nvgpu/igpu0/ctrl` is NOT statically created at boot — only `power` exists.
+> The nvhost interface is the correct one for Tegra CUDA.
+
+### containerd config addition
+
+```toml
+# Add to 20-customization.part alongside existing settings
+[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia]
+  runtime_type = "io.containerd.runc.v2"
+  [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia.options]
+    BinaryName = "/usr/bin/nvidia-container-runtime"
 ```
 
-(Exact entries depend on Phase 0 findings.)
+### Open questions
+
+- **OQ-9**: Does `libnvidia-container` build successfully for `aarch64` in the Talos pkgs
+  build environment? It has Go + C components and Tegra-specific code paths.
+- **OQ-10**: Does the `nvidia-container-runtime` Tegra path require any sysfs paths
+  (`/sys/devices/platform/17000000.gpu/`) to be accessible inside the container?
+- **OQ-11**: Which version of `nvidia-container-toolkit` is compatible with JetPack 6 / L4T
+  r36.4? The Jetson branch diverged from mainline.
+- **OQ-12**: Renovate strategy for `nvidia-container-toolkit` version pinning.
+
+---
+
+## Phase 2 — nvgpu-toolkit extension wiring (siderolabs/extensions fork)
+
+**Depends on:** Phase 1 packages built and published
+
+Create `nvidia-gpu/nvgpu-toolkit/` in `mmalyska/siderolabs-extensions` fork on branch
+`feat/jetson-nvgpu`.
+
+### Directory structure
+
+```
+nvidia-gpu/nvgpu-toolkit/
+├── pkg.yaml              # depends on nvgpu-driver + nvidia-container-toolkit pkgs
+├── manifest.yaml.tmpl
+├── vars.yaml
+└── files/
+    ├── l4t.csv           # device node list (from Phase 1)
+    └── 20-nvidia-runtime.part  # containerd nvidia handler config
+```
 
 ### manifest.yaml.tmpl
 
