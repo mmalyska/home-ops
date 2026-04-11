@@ -1,9 +1,5 @@
 ---
 nvidia-device-plugin:
-  gfd:
-    enabled: true
-  nfd:
-    enabled: false
   nodeSelector:
     kubernetes.io/hostname: nv1
 
