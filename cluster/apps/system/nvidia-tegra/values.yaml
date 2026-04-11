@@ -1,0 +1,34 @@
+---
+nvidia-device-plugin:
+  nodeSelector:
+    kubernetes.io/hostname: nv1
+
+  # Replace default NFD-based affinity — nv1 has no NFD labels (see home-ops-h3l: NFD taint issue)
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - nv1
+
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists
+    - key: nv
+      operator: Exists
+      effect: NoSchedule
+
+  config:
+    map:
+      default: |
+        version: v1
+        flags:
+          migStrategy: none
+          deviceDiscoveryStrategy: tegra
+          deviceListStrategy:
+            - envvar
+          deviceIDStrategy: uuid
+          nvidiaDriverRoot: "/"

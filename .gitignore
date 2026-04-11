@@ -25,3 +25,10 @@ Chart.lock
 # env variables
 .devcontainer/devcontainer.env
 .local
+# Claude
+.claude/settings.local.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

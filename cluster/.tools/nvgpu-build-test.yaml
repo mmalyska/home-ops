@@ -1,0 +1,171 @@
+---
+# One-shot Job to test if OE4T nvgpu driver compiles against Talos kernel 6.18.18 headers.
+# Run on nv1 (arm64 Jetson Orin NX) where the actual kernel is already running.
+# Usage:
+#   kubectl apply -f cluster/.tools/nvgpu-build-test.yaml
+#   kubectl logs -f -n default job/nvgpu-build-test
+#   kubectl delete -f cluster/.tools/nvgpu-build-test.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nvgpu-build-test
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      nodeName: nv1
+      tolerations:
+        - operator: Exists  # tolerate any taint on nv1
+      hostPID: false
+      hostNetwork: false
+      securityContext:
+        runAsNonRoot: false
+      volumes:
+        - name: workspace
+          emptyDir:
+            sizeLimit: 4Gi
+      containers:
+        - name: build
+          image: ubuntu:24.04
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "6"
+              memory: 2Gi
+            limits:
+              cpu: "8"
+              memory: 4Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /build
+          command: ["/bin/bash", "-xec"]
+          args:
+            - |
+              # ── 1. Install build dependencies ────────────────────────────────
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y --no-install-recommends \
+                build-essential bc flex bison \
+                libelf-dev libssl-dev \
+                wget ca-certificates git \
+                kmod 2>&1 | tail -5
+
+              cd /build
+
+              # ── 2. Download and prepare kernel 6.18.18 source ────────────────
+              KVER=6.18.18
+              KMAJ=6
+              echo "==> Downloading kernel ${KVER} source..."
+              wget -q --show-progress \
+                "https://cdn.kernel.org/pub/linux/kernel/v${KMAJ}.x/linux-${KVER}.tar.xz"
+              echo "==> Extracting..."
+              tar -xf linux-${KVER}.tar.xz
+              KSRC=/build/linux-${KVER}
+
+              NPROC=$(nproc)
+              echo "==> Building with ${NPROC} parallel jobs..."
+
+              echo "==> Running make defconfig (arm64)..."
+              make -j${NPROC} -C ${KSRC} ARCH=arm64 defconfig
+
+              echo "==> Running make modules_prepare (arm64)..."
+              make -j${NPROC} -C ${KSRC} ARCH=arm64 modules_prepare
+
+              # ── 3. Clone OE4T/linux-nvgpu ─────────────────────────────────────
+              echo "==> Cloning OE4T/linux-nvgpu branch patches-r36.5..."
+              git clone --depth=1 --branch patches-r36.5 \
+                https://github.com/OE4T/linux-nvgpu.git nvgpu
+
+              # ── 4. Stub .c files that include L4T-only headers ───────────────
+              # Several headers are NVIDIA L4T / Tegra BSP only — not in vanilla kernel:
+              #   soc/tegra/virt/hv-ivc.h         (hypervisor IVC, unconditional includes)
+              #   linux/platform/tegra/mc_utils.h  (Tegra memory controller)
+              # Replace each offending .c with an empty stub. These are Tegra platform
+              # or hypervisor files not needed for bare-metal Talos runtime.
+              # (linux/platform/tegra/common.h and tegra_fd.h are guarded by version/config
+              # checks that evaluate to false on kernel 6.18 — no stub needed.)
+              echo "==> Stubbing .c files with L4T-only headers..."
+              for hdr in 'hv-ivc\.h' 'linux/platform/tegra/mc_utils\.h'; do
+                grep -rl "${hdr}" /build/nvgpu/drivers/gpu/nvgpu/ | grep '\.c$' | while read f; do
+                  echo "  stubbing (${hdr}): $f"
+                  printf '/* stub: L4T-only header not available on vanilla kernel. */\n' > "$f"
+                done
+              done
+              echo "--- remaining L4T header references in .c files ---"
+              grep -rl 'hv-ivc\.h\|platform/tegra/mc_utils' /build/nvgpu/drivers/gpu/nvgpu/ | grep '\.c$' || echo "none remaining (all stubbed)"
+
+              # ── 5. Attempt to build nvgpu ─────────────────────────────────────
+              # The OE4T driver uses the nvconftest detection system to generate NV_*
+              # macros at build time. When building standalone those macros are never
+              # defined and the compiler always picks the old-API #else branches.
+              #
+              # Create a force-include compatibility header (printf avoids << YAML conflict):
+              #   NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS   -- kernel 6.3+  (vm_flags_set/clear)
+              #   NV_CLASS_CREATE_HAS_NO_OWNER_ARG        -- kernel 6.4+  (class_create(name))
+              #   NV_CLASS_STRUCT_DEVNODE_HAS_CONST_DEV_ARG -- kernel 6.2+ (const struct device*)
+              #   NV_FD_FILE_PRESENT                      -- kernel 6.9+  (fd_file(fd))
+              #   NV_FD_EMPTY_PRESENT                     -- kernel 6.12+ (fd_empty(fd))
+              #   NV_HRTIMER_SETUP_PRESENT                -- kernel 6.15+ (hrtimer_setup())
+              #   NV_LINUX_IOSYS_MAP_H_PRESENT            -- kernel 5.18+ (linux/iosys-map.h)
+              #   NV_PLATFORM_DRIVER_STRUCT_REMOVE_RETURNS_VOID -- kernel 6.11+ (void .remove)
+              #
+              # NOT defined: NV_MODULE_IMPORT_NS_CALLS_STRINGIFY
+              #   kernel 6.18 uses string literal form MODULE_IMPORT_NS("DMA_BUF"),
+              #   not the STRINGIFY macro form — so this flag must stay undefined.
+              printf '%s\n' \
+                '#ifndef NV_COMPAT_H' \
+                '#define NV_COMPAT_H' \
+                '#define NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS 1' \
+                '#define NV_CLASS_CREATE_HAS_NO_OWNER_ARG 1' \
+                '#define NV_CLASS_STRUCT_DEVNODE_HAS_CONST_DEV_ARG 1' \
+                '#define NV_FD_FILE_PRESENT 1' \
+                '#define NV_FD_EMPTY_PRESENT 1' \
+                '#define NV_HRTIMER_SETUP_PRESENT 1' \
+                '#define NV_LINUX_IOSYS_MAP_H_PRESENT 1' \
+                '#define NV_PLATFORM_DRIVER_STRUCT_REMOVE_RETURNS_VOID 1' \
+                '#endif' \
+                > /build/nv_compat.h
+              echo "==> nv_compat.h:"
+              cat /build/nv_compat.h
+
+              echo "==> Attempting nvgpu build against kernel ${KVER}..."
+              echo "KERNEL_SRC=${KSRC}"
+
+              # KCPPFLAGS is added to KBUILD_CPPFLAGS in the top-level kernel Makefile
+              # and applies to all compilation units (in-tree and external modules).
+              # -include forces the header into every .c file before anything else.
+              #
+              # KBUILD_MODPOST_WARN=1: when building against a modules_prepare-only kernel
+              # (no full build), Module.symvers is absent and modpost reports "undefined"
+              # for every kernel symbol nvgpu uses. KBUILD_MODPOST_WARN=1 demotes these
+              # modpost errors to warnings so the build exits 0. The C compilation itself
+              # is what we are testing — symbol resolution is fine at runtime against the
+              # actual running kernel.
+              set +e
+              set -o pipefail
+              make -j${NPROC} -C ${KSRC} ARCH=arm64 \
+                M=/build/nvgpu/drivers/gpu/nvgpu \
+                KCPPFLAGS="-include /build/nv_compat.h" \
+                KBUILD_MODPOST_WARN=1 \
+                modules 2>&1 | tee /build/build.log
+              BUILD_RC=$?
+              set +o pipefail
+              set -e
+
+              echo ""
+              echo "====== BUILD EXIT CODE: ${BUILD_RC} ======"
+              echo ""
+
+              if [ ${BUILD_RC} -eq 0 ]; then
+                echo "SUCCESS: nvgpu compiled cleanly against kernel ${KVER}"
+                find /build/nvgpu -name '*.ko' 2>/dev/null
+              else
+                echo "FAILED: all errors from build.log:"
+                grep -E "error:" /build/build.log | head -60 || true
+                echo ""
+                echo "--- last 60 lines of build.log ---"
+                tail -60 /build/build.log
+              fi

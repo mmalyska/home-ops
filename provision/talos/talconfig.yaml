@@ -65,23 +65,10 @@ nodes:
         vip:
           ip: *talosControlplaneVip
   - hostname: nv1
+    talosImageURL: ghcr.io/mmalyska/talos-nv1-installer
     ipAddress: 192.168.48.5
     installDisk: /dev/nvme0n1
     controlPlane: false
-    schematic:
-      customization:
-        extraKernelArgs:
-          - -selinux
-          - console=tty0
-          - console=ttyS0,115200
-          - talos.auditd.disabled=1
-        systemExtensions:
-          officialExtensions:
-            - siderolabs/nvidia-container-toolkit-lts
-            - siderolabs/nvidia-open-gpu-kernel-modules-lts
-      # overlay:
-      #   name: jetson_nano
-      #   image: siderolabs/sbc-jetson
     networkInterfaces:
       - interface: enP8p1s0
         addresses:
@@ -92,6 +79,29 @@ nodes:
             gateway: 192.168.50.1
     nodeTaints:
       nv: NoSchedule
+    # schematic:
+    #   customization:
+    #     systemExtensions:
+    #       officialExtensions: []
+    machineFiles:
+      - op: create
+        path: /etc/cri/conf.d/20-customization.part
+        content: |
+          [plugins]
+            [plugins."io.containerd.grpc.v1.cri"]
+              enable_unprivileged_ports = true
+              enable_unprivileged_icmp = true
+          [plugins."io.containerd.grpc.v1.cri".containerd]
+            discard_unpacked_layers = false
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            discard_unpacked_layers = false
+          [plugins."io.containerd.cri.v1.runtime"]
+            cdi_spec_dirs = ["/var/cdi/static", "/var/cdi/dynamic"]
+    patches:
+      - |-
+        machine:
+          sysctls:
+            net.core.bpf_jit_harden: "1"  # required by nvidia-container-toolkit
 
 controlPlane:
   nodeLabels: &nodeLabels
@@ -245,7 +255,7 @@ worker:
     customization:
       systemExtensions:
         officialExtensions:
-          - nut-client
+          - siderolabs/nut-client
   machineFiles:
     - *patchContainerd
   patches:
