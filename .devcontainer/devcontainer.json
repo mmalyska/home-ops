@@ -2,7 +2,7 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
   "name": "home-ops",
-  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:51c7f975f8a9078c80a4e732120c9b8c6392f2b73c20230ac7cea6721b845aca",
+  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:128f2d2c27d618fca7ff4ca732dbe69d9676bc241649159eb0d1220ec69023cc",
   "secrets": {
     "TERRAFORM_TOKEN": {
       "description": "Token to access terraform cloud."
