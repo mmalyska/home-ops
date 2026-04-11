@@ -1,0 +1,11 @@
+---
+apiVersion: v2
+name: nvidia-tegra
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+dependencies:
+  # renovate: datasource=helm registryUrl=https://nvidia.github.io/k8s-device-plugin depName=nvidia-device-plugin
+  - name: nvidia-device-plugin
+    version: 0.19.0
+    repository: https://nvidia.github.io/k8s-device-plugin
