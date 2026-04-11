@@ -31,20 +31,10 @@ The correct driver is **[OE4T/linux-nvgpu](https://github.com/OE4T/linux-nvgpu)*
 
 ```yaml
 - hostname: nv1
+  talosImageURL: ghcr.io/mmalyska/talos-nv1-installer  # custom installer with nvgpu baked in
   ipAddress: 192.168.48.5
   installDisk: /dev/nvme0n1
   controlPlane: false
-  schematic:
-    customization:
-      extraKernelArgs:
-        - -selinux
-        - console=tty0
-        - console=ttyS0,115200
-        - talos.auditd.disabled=1
-      systemExtensions:
-        officialExtensions:
-          - siderolabs/nvidia-container-toolkit-lts   # ← remove once custom ext is ready
-          - siderolabs/nvidia-open-gpu-kernel-modules-lts  # ← remove, wrong for Jetson
   networkInterfaces:
     - interface: enP8p1s0
       addresses:
@@ -52,10 +42,23 @@ The correct driver is **[OE4T/linux-nvgpu](https://github.com/OE4T/linux-nvgpu)*
       ...
   nodeTaints:
     nv: NoSchedule
+  machineFiles:
+    - op: create
+      path: /etc/cri/conf.d/20-customization.part
+      content: |
+        [plugins."io.containerd.cri.v1.runtime"]
+          cdi_spec_dirs = ["/var/cdi/static", "/var/cdi/dynamic"]
+        # ... (standard containerd unprivileged port/icmp settings)
+  patches:
+    - |-
+      machine:
+        sysctls:
+          net.core.bpf_jit_harden: "1"  # required by nvidia-container-toolkit
 ```
 
-Both NVIDIA extensions need to be **removed** and replaced with a custom `nvgpu` extension once
-it is built.
+The official `siderolabs/nvidia-*` extensions have been removed. The custom
+`ghcr.io/mmalyska/talos-nv1-installer` bakes in the `nvgpu` extension (nvgpu.ko + nvmap.ko).
+`nvgpu.ko` loads automatically at boot — no explicit `machine.kernel.modules` entry is needed.
 
 ---
 
@@ -173,90 +176,65 @@ Published as `ghcr.io/mmalyska/nvgpu:<tag>`.
 - Build uses LLVM (`LLVM=1`) and `NV_BUILD_KERNEL_INTERFACE=yes`
 - Module installed to `/rootfs/usr/lib/modules/extras/` with `INSTALL_MOD_STRIP=1`
 
-**CI status (2026-04-08):** `mmalyska/siderolabs-pkgs` CI passing ✅. `mmalyska/siderolabs-extensions` CI pending.
+**CI status:** Both `mmalyska/siderolabs-pkgs` and `mmalyska/siderolabs-extensions` CI passing ✅.
+`ghcr.io/mmalyska/nvgpu:<tag>` published and deployed on nv1.
 
-**Next:** Confirm extensions fork CI passes and `ghcr.io/mmalyska/nvgpu:<tag>` is published, then proceed to Phase 4.
+### Phase 4 — Update talconfig.yaml ✅ COMPLETE
 
-### Phase 4 — Update talconfig.yaml
-
-Once the extension OCI image is published:
+The nvgpu extension is deployed via a custom installer image rather than via
+`schematic.customization.additionalExtensions`. The installer image
+`ghcr.io/mmalyska/talos-nv1-installer` has nvgpu baked in:
 
 ```yaml
-# nv1 node in talconfig.yaml
-schematic:
-  customization:
-    extraKernelArgs:
-      - -selinux
-      - console=tty0
-      - console=ttyS0,115200
-      - talos.auditd.disabled=1
-    systemExtensions:
-      officialExtensions: []      # remove nvidia-open-gpu-kernel-modules-lts
-      additionalExtensions:
-        - image: ghcr.io/mmalyska/nvgpu:<tag>   # get <tag> from ghcr.io/mmalyska/nvgpu after CI builds
+# nv1 node in talconfig.yaml (actual deployed state)
+talosImageURL: ghcr.io/mmalyska/talos-nv1-installer
+machineFiles:
+  - op: create
+    path: /etc/cri/conf.d/20-customization.part
+    content: |
+      [plugins."io.containerd.cri.v1.runtime"]
+        cdi_spec_dirs = ["/var/cdi/static", "/var/cdi/dynamic"]
+      # ... standard containerd settings
 patches:
   - |-
     machine:
-      kernel:
-        modules:
-          - name: nvgpu          # explicit module load (not autoloaded by udev on Talos)
       sysctls:
         net.core.bpf_jit_harden: "1"   # required by nvidia-container-toolkit
 ```
 
-Then regenerate and apply:
-```sh
-task talos:generate
-task talos:apply NODE=192.168.48.5
-```
+**Result:** `nvgpu.ko` and `nvmap.ko` load at boot. `/dev/nvmap` confirmed present on nv1.
+No explicit `machine.kernel.modules` entry needed — the module loads automatically via the
+extension's modprobe.d softdep configuration.
 
 ### Phase 5 — NVIDIA container toolkit
 
-Once `nvgpu.ko` loads, the container toolkit needs to be set up for container GPU access.
+> **This phase has been fully redesigned.** Phase 0 CUDA validation (see
+> [jetson-cuda-extension.md](jetson-cuda-extension.md)) revealed that CDI-based device injection
+> is the wrong approach for Jetson Tegra. The correct mechanism is
+> `nvidia-container-runtime` with `libnvidia-container` compiled `--enable-tegra`, using CSV
+> files to enumerate Tegra device nodes.
+>
+> **The detailed plan for this phase lives in
+> [jetson-cuda-extension.md — Phase 1](jetson-cuda-extension.md).**
+> Tracked under beads issue `home-ops-fwh`.
 
-**Tegra device node differences (gap vs standard NVIDIA flow):**
+**Why CDI doesn't work for Jetson (summary):**
+- `libcuda.so` from `nvidia-l4t-cuda` is a dGPU shim — it opens `/dev/nvidiactl` and
+  `/dev/nvidia0` which do not exist on Tegra. Returns `CUDA_ERROR_SYSTEM_NOT_READY` (801).
+- CDI injects device nodes but cannot substitute the wrong `libcuda.so` shim.
+- The correct CUDA path on Tegra goes through `/dev/nvhost-ctrl-gpu`, `/dev/nvhost-gpu`, etc.
+  via `libnvidia-container --enable-tegra` which reads CSV device lists.
 
-Standard discrete GPU exposes `/dev/nvidia0`, `/dev/nvidiactl`, `/dev/nvidia-uvm`.
-Jetson Tegra exposes a different set of device nodes:
+**Confirmed Tegra device nodes** (from Phase 0 exploration of `nvgpu.ko`):
 
 | Device | Purpose |
 |--------|---------|
-| `/dev/nvgpu` | GPU control |
-| `/dev/nvhost-ctrl` | Host1x sync point control |
+| `/dev/nvhost-ctrl-gpu` | GPU control |
 | `/dev/nvhost-gpu` | GPU channel submission |
-| `/dev/nvhost-vic` | Video image compositor |
-| `/dev/nvhost-nvdec` | Hardware video decoder |
-| `/dev/nvhost-nvenc` | Hardware video encoder |
+| `/dev/nvhost-as-gpu` | GPU address space |
+| `/dev/nvhost-tsg-gpu` | Time-slice GPU |
 | `/dev/nvmap` | NVIDIA memory allocator |
-
-**Container toolkit:**
-`siderolabs/nvidia-container-toolkit-lts` handles the userspace side (CDI device injection).
-However it is configured for discrete GPUs. For Jetson:
-- The toolkit must be configured to use CDI spec for Tegra devices
-- `/etc/cdi/nvidia.yaml` must enumerate the Tegra device nodes above, not `/dev/nvidia*`
-- The Tegra CDI spec generation requires `nvidia-ctk cdi generate --mode=nvml` is not applicable;
-  instead the Tegra paths must be specified manually or via `--mode=csv` with a mounted libs list.
-
-**Device plugin (gap):**
-Standard `k8s-device-plugin` (`nvidia/k8s-device-plugin`) uses NVML (`libnvidia-ml.so`) to
-enumerate GPUs and advertises `nvidia.com/gpu` resources. On Jetson:
-- NVML enumerates via `/dev/nvidiactl` + PCIe GPU endpoint — **neither exists on Tegra**
-- The plugin's default `deviceListStrategy: envvar` injects `NVIDIA_VISIBLE_DEVICES` which the
-  container runtime maps to `/dev/nvidia*` device nodes — **not the Tegra paths**
-- Result: `nvidia/k8s-device-plugin` will find **zero GPUs** on Jetson regardless of config
-
-A Tegra-aware alternative is needed. Options:
-1. **`nvidia/k8s-device-plugin` with CDI + `deviceListStrategy: cdi`** — if CDI spec correctly
-   enumerates Tegra device nodes, the plugin can work without NVML. Requires nvgpu.ko loaded
-   and CDI spec pre-generated for Tegra paths.
-2. **Custom device plugin** enumerating `/dev/nvgpu` as the GPU device and passing Tegra nodes
-   directly. Lower effort for a proof-of-concept.
-3. **`tegra-device-plugin`** from JetPack BSP — not available for non-L4T kernels.
-
-The recommended path is option 1 (CDI) since it keeps compatibility with the standard
-`nvidia.com/gpu` resource name that workloads (ollama, whisper) already request.
-
-This phase is TBD pending Phase 4 completion (nvgpu.ko must load on nv1 first).
+| (+ 9 more nvhost-* nodes) | See `l4t.csv` in jetson-cuda-extension.md |
 
 ### Phase 6 — RuntimeClass
 
@@ -270,8 +248,10 @@ metadata:
 handler: nvidia
 ```
 
-This is still required on Jetson to select the NVIDIA container runtime for GPU workloads.
+This is required on Jetson to select the `nvidia-container-runtime` handler for GPU workloads.
 Pods wanting GPU access must set `runtimeClassName: nvidia`.
+
+Pending Phase 5 (nvidia-container-toolkit extension) completion.
 
 ---
 
