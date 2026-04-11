@@ -12,13 +12,13 @@
 
 ## Goal
 
-Build a Talos system extension (`nvgpu-toolkit`) that installs NVIDIA L4T CUDA userspace
-libraries onto the `nv1` host and configures the NVIDIA container runtime so that containers
-can make CUDA API calls without bundling any CUDA libraries themselves.
+Build a Talos system extension (`nvgpu-toolkit`) that installs `nvidia-container-runtime` and
+`libnvidia-container` (Tegra/CSV mode) onto `nv1`, enabling containers to receive injected
+Tegra device nodes at startup without bundling any CUDA libraries themselves.
 
 The end state: a pod with `runtimeClassName: nvidia` and resource request `nvidia.com/gpu: 1`
-can run standard CUDA workloads (ollama, whisper, inference frameworks) using Jetson-native
-container images.
+can run standard CUDA workloads (ollama, whisper, inference frameworks) using L4T-based
+container images (`dustynv/*`) which carry their own `libcuda.so` Tegra stack.
 
 ---
 
@@ -39,9 +39,10 @@ library is architecturally incompatible with the standard discrete-GPU `libcuda.
 Standard `nvidia/cuda:*` container images contain the discrete-GPU `libcuda.so` and will not
 work on Jetson regardless of device node injection.
 
-The approach here mirrors how the existing `nvidia-container-toolkit` Siderolabs extension
-works for discrete GPUs: install CUDA libs onto the Talos host via an extension, then use
-CDI (Container Device Interface) to bind-mount those libs into containers at runtime.
+The correct approach for Tegra uses `nvidia-container-runtime` with `libnvidia-container`
+compiled `--enable-tegra` (CSV/plugin mode), which injects Tegra device nodes into containers
+at runtime. L4T-based container images (`dustynv/*`) carry their own correct `libcuda.so`
+Tegra stack — no host lib extraction is needed.
 
 ---
 
@@ -404,14 +405,44 @@ No host lib extraction needed. Workload containers must be L4T-based
     BinaryName = "/usr/bin/nvidia-container-runtime"
 ```
 
+### Source strategy: OE4T mirrors vs nv-tegra.nvidia.com
+
+`OE4T/linux-nvgpu` and `OE4T/linux-nv-oot` are **pure mirrors** of `nv-tegra.nvidia.com` —
+identical source, no OE4T-added patches. They exist for GitHub accessibility
+(`nv-tegra.nvidia.com` has known connectivity issues). Continue using OE4T.
+
+The `nvidia-container-toolkit` source lives at
+[github.com/NVIDIA/nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
+with a dedicated `jetson` branch of `libnvidia-container` at
+[github.com/NVIDIA/libnvidia-container](https://github.com/NVIDIA/libnvidia-container/tree/jetson).
+
+### L4T version target: r36
+
+| L4T | Kernel | CUDA | Orin NX | Status |
+|-----|--------|------|---------|--------|
+| r32 | 4.9 | 10.2–11.4 | ❌ | Xavier era |
+| r34 | 5.10 | 11.4 | ⚠️ dev preview | Unsupported |
+| r35 | 5.10 | 11.4 | ✅ first prod | EOL approaching |
+| r36 | 5.15 | 12.2–12.6 | ✅ current | Supported to 2027 |
+
+Target **r36** (JetPack 6.x): our nvgpu/nvmap already come from the `patches-r36.5` branch,
+`dustynv/*` images actively target r36.x, and CUDA 12.x is required for modern model formats.
+
+### libnvidia-container version target: v1.14.x (jetson branch)
+
+JetPack 6 / L4T r36 bundles `nvidia-container-toolkit` **v1.14.x**. CSV mode (Tegra device
+injection) was introduced in v1.10.0 and is stable in v1.14.x. The `jetson` branch of
+`libnvidia-container` exists because the main branch requires `libnvidia-ml` which is absent
+on Tegra; the `jetson` branch uses CSV pathname translation instead.
+
 ### Open questions
 
-- **OQ-9**: Does `libnvidia-container` build successfully for `aarch64` in the Talos pkgs
-  build environment? It has Go + C components and Tegra-specific code paths.
-- **OQ-10**: Does the `nvidia-container-runtime` Tegra path require any sysfs paths
+- **OQ-9**: Does `libnvidia-container` (`jetson` branch, v1.14.x) build successfully for
+  `aarch64` in the Talos pkgs build environment? It has Go + C components.
+- **OQ-10**: Does `nvidia-container-runtime` Tegra path require sysfs paths
   (`/sys/devices/platform/17000000.gpu/`) to be accessible inside the container?
-- **OQ-11**: Which version of `nvidia-container-toolkit` is compatible with JetPack 6 / L4T
-  r36.4? The Jetson branch diverged from mainline.
+- **OQ-11**: ~~Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36?~~
+  **RESOLVED — v1.14.x** (`libnvidia-container` jetson branch). Bundled with JetPack 6 / L4T r36.
 - **OQ-12**: Renovate strategy for `nvidia-container-toolkit` version pinning.
 
 ---
@@ -444,23 +475,16 @@ metadata:
   version: "{{ .VERSION }}"
   author: Michał Małyska
   description: |
-    [extra] Tegra CUDA userspace extension for NVIDIA Jetson Orin NX.
-    Installs L4T CUDA libraries and configures CDI for container GPU access.
-    Requires nvgpu extension (nvgpu.ko kernel module).
+    [extra] NVIDIA container runtime extension for Jetson Orin NX (Tegra/CSV mode).
+    Installs nvidia-container-runtime and libnvidia-container (--enable-tegra) to enable
+    GPU device node injection into containers. Requires nvgpu extension (nvgpu.ko + nvmap.ko).
+    Target: L4T r36 / JetPack 6 / libnvidia-container v1.14.x jetson branch.
   compatibility:
     talos:
       version: ">= v1.4.0"
 ```
 
-### Open questions
-
-- **OQ-9**: Does `libnvidia-container` build successfully for `aarch64` in the Talos pkgs
-  build environment? It has Go + C components and Tegra-specific code paths.
-- **OQ-10**: Does `nvidia-container-runtime` Tegra path require any sysfs paths
-  (`/sys/devices/platform/17000000.gpu/`) to be accessible inside the container?
-- **OQ-11**: Which version of `nvidia-container-toolkit` is compatible with JetPack 6 / L4T
-  r36.4? The Jetson branch diverged from mainline.
-- **OQ-12**: Renovate strategy for `nvidia-container-toolkit` version pinning.
+Open questions for this phase: see OQ-9, OQ-10, OQ-12 in Phase 1 above.
 
 ---
 
@@ -572,7 +596,7 @@ image references accordingly.
 | OQ-8 | Renovate datasource strategy for L4T package versioning? | ✅ Moot — no L4T packages pinned on host | Phase 0 |
 | OQ-9 | Does `libnvidia-container` build for `aarch64` in Talos pkgs build env? | Open | Phase 1 |
 | OQ-10 | Does `nvidia-container-runtime` Tegra path require sysfs paths inside container? | Open | Phase 1 |
-| OQ-11 | Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36.4? | Open | Phase 1 |
+| OQ-11 | Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36.4? | ✅ **v1.14.x**, `libnvidia-container` jetson branch — bundled with JetPack 6 / L4T r36 | Phase 1 |
 | OQ-12 | Renovate strategy for `nvidia-container-toolkit` version pinning? | Open | Phase 2 |
 | OQ-13 | Can `nvmap.ko` be built as a Talos extension? | ✅ Yes — deployed in `ghcr.io/mmalyska/talos-nv1-installer`, `/dev/nvmap` confirmed present | Phase 0 |
 
@@ -613,12 +637,23 @@ Available r36.4.x versions (use index at
 
 ## Reference
 
-- [OE4T/linux-nvgpu](https://github.com/OE4T/linux-nvgpu) — `patches-r36.5` branch
-- [siderolabs/extensions — nvidia-container-toolkit](https://github.com/siderolabs/extensions/tree/main/nvidia-gpu/nvidia-container-toolkit)
+### Kernel driver sources
+- [OE4T/linux-nvgpu](https://github.com/OE4T/linux-nvgpu) — `patches-r36.5` branch (**pure mirror** of `nv-tegra.nvidia.com/linux-nvgpu.git`)
+- [OE4T/linux-nv-oot](https://github.com/OE4T/linux-nv-oot) — `patches-r36.5` branch (pure mirror; nvmap lives in `drivers/video/tegra/nvmap/`)
+- [nv-tegra.nvidia.com](https://nv-tegra.nvidia.com/) — official NVIDIA git server (same content, less reliable)
+
+### Container runtime
+- [NVIDIA/libnvidia-container — jetson branch](https://github.com/NVIDIA/libnvidia-container/tree/jetson) — Tegra CSV plugin mode; target v1.14.x
+- [libnvidia-container mount plugin design](https://github.com/NVIDIA/libnvidia-container/blob/jetson/design/mount_plugins.md)
+- [NVIDIA/nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) — runtime wrapper; v1.14.x for L4T r36
 - [NVIDIA Container Runtime on Jetson](https://nvidia.github.io/container-wiki/toolkit/jetson.html)
-- [dusty-nv/jetson-containers](https://github.com/dusty-nv/jetson-containers)
-- [anduril/jetpack-nixos](https://github.com/anduril/jetpack-nixos) — reference for L4T package extraction
-- [NVIDIA L4T apt repo](https://repo.download.nvidia.com/jetson/) — `t234/` for Orin
+- [siderolabs/extensions — nvidia-container-toolkit](https://github.com/siderolabs/extensions/tree/main/nvidia-gpu/nvidia-container-toolkit) — reference for discrete GPU extension pattern
+
+### Workload containers
+- [dusty-nv/jetson-containers](https://github.com/dusty-nv/jetson-containers) — L4T r36 images for ollama, whisper, PyTorch
+- [NVIDIA L4T apt repo](https://repo.download.nvidia.com/jetson/) — `t234/` for Orin (r36.x packages)
 - [CUDA for Tegra appnote](https://docs.nvidia.com/cuda/cuda-for-tegra-appnote/)
-- [CDI spec v0.5.0](https://github.com/cncf-tags/container-device-interface/blob/main/SPEC.md)
+
+### Plans
 - Jetson-gpu plan (archived — Phases 1–4 complete): [jetson-gpu.md](./archive/jetson-gpu.md)
+- nvgpu upgrade/maintenance guide: [nvgpu-upgrade-guide.md](./nvgpu-upgrade-guide.md)
