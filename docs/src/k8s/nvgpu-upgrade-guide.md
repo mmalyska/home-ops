@@ -258,31 +258,35 @@ signature marker — both are part of the `test:` step in `pkg.yaml`.
 
 ## Step 7 — Bump the nvgpu source ref
 
-If OE4T upstream fixed the issue or you want to track a newer commit:
+Both `jetson_nvgpu_ref` and `jetson_nvmap_ref` are pinned commit SHAs from the
+`patches-r36.5` branch of their respective OE4T mirrors (which are pure mirrors of
+`nv-tegra.nvidia.com`). Renovate watches the branch and opens a PR when new commits land.
+To bump manually:
 
 ```bash
-NEW_REF=<new-commit-sha>
+# Find the latest commit on patches-r36.5
+NEW_NVGPU_REF=$(git ls-remote https://github.com/OE4T/linux-nvgpu.git patches-r36.5 | awk '{print $1}')
+NEW_NVMAP_REF=$(git ls-remote https://github.com/OE4T/linux-nv-oot.git patches-r36.5 | awk '{print $1}')
 
-# Regenerate checksums
-SHA256=$(curl -sL "https://github.com/OE4T/linux-nvgpu/archive/${NEW_REF}.tar.gz" | sha256sum | awk '{print $1}')
-SHA512=$(curl -sL "https://github.com/OE4T/linux-nvgpu/archive/${NEW_REF}.tar.gz" | sha512sum | awk '{print $1}')
-
-echo "jetson_nvgpu_ref: ${NEW_REF}"
-echo "jetson_nvgpu_sha256: ${SHA256}"
-echo "jetson_nvgpu_sha512: ${SHA512}"
+# Regenerate checksums for nvgpu
+SHA256=$(curl -sL "https://github.com/OE4T/linux-nvgpu/archive/${NEW_NVGPU_REF}.tar.gz" | sha256sum | awk '{print $1}')
+SHA512=$(curl -sL "https://github.com/OE4T/linux-nvgpu/archive/${NEW_NVGPU_REF}.tar.gz" | sha512sum | awk '{print $1}')
 ```
 
-Update `Pkgfile` lines 201–204 in `mmalyska/siderolabs-pkgs`:
+Update `Pkgfile` in `mmalyska/siderolabs-pkgs`:
 
 ```yaml
 # renovate: datasource=git-refs versioning=git depName=https://github.com/OE4T/linux-nvgpu.git
-jetson_nvgpu_ref: <NEW_REF>
+# tracking branch: patches-r36.5 (mirror of nv-tegra.nvidia.com/linux-nvgpu.git)
+jetson_nvgpu_ref: <NEW_NVGPU_REF>
 jetson_nvgpu_sha256: <SHA256>
 jetson_nvgpu_sha512: <SHA512>
 ```
 
+Same pattern for `jetson_nvmap_ref` using the `linux-nv-oot` tarball URL.
+
 Also update the VERSION prefix in `nvidia-gpu/nvgpu/vars.yaml` in the extensions repo to match
-the first 7 characters of the new commit SHA.
+the first 7 characters of the new nvgpu commit SHA.
 
 ---
 
@@ -361,7 +365,7 @@ Done ✓       Check OE4T patches-r36.5 for new commits
 |---|---|---|
 | NV_* macro shims | `nvgpu-driver/files/nv_compat.h` | `mmalyska/siderolabs-pkgs` |
 | L4T file stubs | `nvgpu-driver/files/nvgpu-kernel-compat.patch` | `mmalyska/siderolabs-pkgs` |
-| Source ref + checksums | `Pkgfile` lines 201–204 | `mmalyska/siderolabs-pkgs` |
+| Source ref + checksums | `Pkgfile` — search `jetson_nvgpu_ref` / `jetson_nvmap_ref` (branch: `patches-r36.5`) | `mmalyska/siderolabs-pkgs` |
 | Extension version string | `nvidia-gpu/nvgpu/vars.yaml` | `mmalyska/siderolabs-extensions` |
 | talconfig node config | `provision/talos/talconfig.yaml` | `home-ops` |
 
