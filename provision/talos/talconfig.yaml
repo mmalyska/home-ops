@@ -100,6 +100,8 @@ nodes:
     patches:
       - |-
         machine:
+          env:
+            NVIDIA_CTK_CONFIG_FILE_PATH: /usr/local/etc/nvidia-container-runtime/config.toml
           sysctls:
             net.core.bpf_jit_harden: "1"  # required by nvidia-container-toolkit
 
