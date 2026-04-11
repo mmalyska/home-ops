@@ -4,7 +4,7 @@ When a new Talos release bumps the kernel version, the `nvgpu` extension may fai
 This guide explains how to investigate and fix it.
 
 > **Related docs:**
-> - [jetson-gpu.md](jetson-gpu.md) — full architecture and build plan
+> - [jetson-gpu.md](archive/jetson-gpu.md) — full architecture and build plan (archived)
 > - [jetson-cuda-extension.md](jetson-cuda-extension.md) — CUDA extension plan
 
 ---

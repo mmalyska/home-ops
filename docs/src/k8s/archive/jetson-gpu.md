@@ -394,7 +394,8 @@ covers discrete PCIe GPUs. Jetson requires additional steps:
 - [siderolabs/extensions](https://github.com/siderolabs/extensions) — extension build pattern
 - [siderolabs/pkgs](https://github.com/siderolabs/pkgs) — kernel build images used by extensions
 - [Talos extension spec](https://www.talos.dev/latest/talos-guides/configuration/system-extensions/)
-- Build test Job: `cluster/.tools/nvgpu-build-test.yaml`
+- Build test Job: `cluster/.tools/nvgpu-build-test.yaml` (deleted — Phase 1 complete)
+- CUDA extension plan (active): [jetson-cuda-extension.md](../jetson-cuda-extension.md)
 
 ---
 
