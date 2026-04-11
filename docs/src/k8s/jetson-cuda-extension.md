@@ -428,28 +428,34 @@ with a dedicated `jetson` branch of `libnvidia-container` at
 Target **r36** (JetPack 6.x): our nvgpu/nvmap already come from the `patches-r36.5` branch,
 `dustynv/*` images actively target r36.x, and CUDA 12.x is required for modern model formats.
 
-### libnvidia-container version target: v1.14.x (jetson branch)
+### toolkit version: v1.19.0 (pure Go — no C libnvidia-container needed)
 
-JetPack 6 / L4T r36 bundles `nvidia-container-toolkit` **v1.14.x**. CSV mode (Tegra device
-injection) was introduced in v1.10.0 and is stable in v1.14.x. The `jetson` branch of
-`libnvidia-container` exists because the main branch requires `libnvidia-ml` which is absent
-on Tegra; the `jetson` branch uses CSV pathname translation instead.
+**OQ-9 RESOLVED (Moot):** The `nvidia-container-toolkit` v1.14.6+ handles Tegra CSV mode
+as pure Go — no C `libnvidia-container.so` is required. The `jetson` branch of
+`libnvidia-container` (C library, last updated 2022) is superseded by the Go-native
+CSV implementation in the toolkit. `make cmds` builds cleanly on aarch64 using
+`cgr.io/chainguard/wolfi-base` (confirmed by pkgs CI, `nvidia-container-toolkit-tegra-pkg`).
+
+We target **v1.19.0** (current, same version the discrete GPU toolkit extension uses)
+rather than v1.14.x. CSV mode is stable across the entire v1.14.x–v1.19.x range.
+
+**OQ-11 UPDATED — v1.19.0.** No C library required; toolkit is pure Go.
+**OQ-12 RESOLVED** — `renovate: datasource=github-releases depName=nvidia/nvidia-container-toolkit`
+in pkgs fork `Pkgfile` tracks updates automatically, same as extensions fork `nvidia-gpu/vars.yaml`.
 
 ### Open questions
 
-- **OQ-9**: Does `libnvidia-container` (`jetson` branch, v1.14.x) build successfully for
-  `aarch64` in the Talos pkgs build environment? It has Go + C components.
 - **OQ-10**: Does `nvidia-container-runtime` Tegra path require sysfs paths
   (`/sys/devices/platform/17000000.gpu/`) to be accessible inside the container?
-- **OQ-11**: ~~Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36?~~
-  **RESOLVED — v1.14.x** (`libnvidia-container` jetson branch). Bundled with JetPack 6 / L4T r36.
-- **OQ-12**: Renovate strategy for `nvidia-container-toolkit` version pinning.
 
 ---
 
 ## Phase 2 — nvgpu-toolkit extension wiring (siderolabs/extensions fork)
 
-**Depends on:** Phase 1 packages built and published
+> **STATUS: IMPLEMENTED** — `nvidia-gpu/nvgpu-toolkit/` created in `mmalyska/siderolabs-extensions`
+> `feat/jetson-nvgpu` branch. CI building at `ghcr.io/mmalyska/nvgpu-toolkit:v1.12.4`.
+
+**Depends on:** Phase 1 packages built and published (pkgs `v1.12.4` ✅)
 
 Create `nvidia-gpu/nvgpu-toolkit/` in `mmalyska/siderolabs-extensions` fork on branch
 `feat/jetson-nvgpu`.
@@ -594,10 +600,10 @@ image references accordingly.
 | OQ-6 | Exact package version URL for `t234` pool for L4T r36.4? | ✅ See Phase 0 Findings — timestamp table | Phase 0 |
 | OQ-7 | Are `nvidia-l4t-core` + `nvidia-l4t-cuda` sufficient for host extraction? | ✅ Moot — no host lib extraction in redesigned approach | Phase 0 |
 | OQ-8 | Renovate datasource strategy for L4T package versioning? | ✅ Moot — no L4T packages pinned on host | Phase 0 |
-| OQ-9 | Does `libnvidia-container` build for `aarch64` in Talos pkgs build env? | Open | Phase 1 |
+| OQ-9 | Does `libnvidia-container` build for `aarch64` in Talos pkgs build env? | ✅ **Moot** — modern `nvidia-container-toolkit` (v1.14.6+) handles Tegra CSV mode as pure Go; no C `libnvidia-container.so` required. `make cmds` builds cleanly using `cgr.io/chainguard/wolfi-base` on arm64. | Phase 1 |
 | OQ-10 | Does `nvidia-container-runtime` Tegra path require sysfs paths inside container? | Open | Phase 1 |
-| OQ-11 | Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36.4? | ✅ **v1.14.x**, `libnvidia-container` jetson branch — bundled with JetPack 6 / L4T r36 | Phase 1 |
-| OQ-12 | Renovate strategy for `nvidia-container-toolkit` version pinning? | Open | Phase 2 |
+| OQ-11 | Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36.4? | ✅ **v1.19.0** (latest; CSV mode stable since v1.14.6). No C library required — toolkit is pure Go with native CSV mode. | Phase 1 |
+| OQ-12 | Renovate strategy for `nvidia-container-toolkit` version pinning? | ✅ `renovate: datasource=github-releases depName=nvidia/nvidia-container-toolkit` in `Pkgfile` — same as extensions fork `nvidia-gpu/vars.yaml`. | Phase 2 |
 | OQ-13 | Can `nvmap.ko` be built as a Talos extension? | ✅ Yes — deployed in `ghcr.io/mmalyska/talos-nv1-installer`, `/dev/nvmap` confirmed present | Phase 0 |
 
 ---
