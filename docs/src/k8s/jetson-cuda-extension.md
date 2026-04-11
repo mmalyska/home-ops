@@ -494,30 +494,33 @@ Open questions for this phase: see OQ-9, OQ-10, OQ-12 in Phase 1 above.
 
 ---
 
-## Phase 3 — talconfig.yaml update for nv1
+## Phase 3 — Update installer image for nv1
 
-**Depends on:** Phase 2 extension published and tested
+> **STATUS: IN PROGRESS** — `nvgpu.yaml` workflow updated to build both nvgpu + nvgpu-toolkit
+> and bake both into `ghcr.io/mmalyska/talos-nv1-installer:v1.12.6`. CI running.
 
-The nv1 node already uses `talosImageURL: ghcr.io/mmalyska/talos-nv1-installer`. Once the
-`nvgpu-toolkit` extension is published, add it alongside the existing nvgpu extension and
-add the nvidia runtime handler to the containerd config.
+**Depends on:** Phase 2 extension published and tested (✅ `v1.12.4`)
 
-The `machineFiles` containerd config (`20-customization.part`) needs the nvidia runtime
-handler appended (the extension's `20-nvidia-runtime.part` handles this automatically via
-the extension mechanism):
+The `nvgpu` workflow (`mmalyska/siderolabs-extensions` `feat/jetson-nvgpu`) now:
 
-```yaml
-# nv1 in provision/talos/talconfig.yaml — after nvgpu-toolkit extension is deployed
-# The talosImageURL installer image will include both nvgpu and nvgpu-toolkit extensions.
-# No schematic changes needed — the installer image is rebuilt with the new extension baked in.
-```
+1. Builds and pushes `nvgpu` extension
+2. Builds and pushes `nvgpu-toolkit` extension (same job — digest available immediately)
+3. Reads both digests from `_out/*.metadata.json`
+4. Passes both as `--system-extension-image` to `make image-installer`
+5. Pushes `ghcr.io/mmalyska/talos-nv1-installer:v1.12.6`
 
-Then regenerate and apply:
+No `talconfig.yaml` changes needed — `talosImageURL: ghcr.io/mmalyska/talos-nv1-installer`
+with talhelper appending `:v1.12.6` already resolves to the updated installer once CI completes.
+
+**To apply after CI passes:**
 
 ```sh
 task talos:generate
 task talos:apply N=192.168.48.5
 ```
+
+The `20-nvidia-runtime.part` containerd config (shipped in the nvgpu-toolkit extension) is
+installed automatically by Talos extension mechanism — no `machineFiles` changes needed.
 
 ---
 
