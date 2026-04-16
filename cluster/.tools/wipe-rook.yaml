@@ -9,7 +9,7 @@ spec:
   nodeName: mc1
   initContainers:
     - name: data
-      image: docker.io/library/alpine:latest@sha256:c69a6ff7c24d1ffa913798501d0e7104e0e9764e28eb44a930939f91ef829e64
+      image: docker.io/library/alpine:latest@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
       command: ["/bin/sh", "-c"]
       args: ["rm -rf /mnt/host_var/lib/rook"]
       volumeMounts:
@@ -20,7 +20,7 @@ spec:
       resources: {}
   containers:
     - name: disk
-      image: docker.io/library/alpine:latest@sha256:c69a6ff7c24d1ffa913798501d0e7104e0e9764e28eb44a930939f91ef829e64
+      image: docker.io/library/alpine:latest@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -57,7 +57,7 @@ spec:
   nodeName: mc2
   initContainers:
     - name: data
-      image: docker.io/library/alpine:latest@sha256:c69a6ff7c24d1ffa913798501d0e7104e0e9764e28eb44a930939f91ef829e64
+      image: docker.io/library/alpine:latest@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
       command: ["/bin/sh", "-c"]
       args: ["rm -rf /mnt/host_var/lib/rook"]
       volumeMounts:
@@ -68,7 +68,7 @@ spec:
       resources: {}
   containers:
     - name: disk
-      image: docker.io/library/alpine:latest@sha256:c69a6ff7c24d1ffa913798501d0e7104e0e9764e28eb44a930939f91ef829e64
+      image: docker.io/library/alpine:latest@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
       command: ["/bin/sh", "-c"]
       args:
         - |
@@ -105,7 +105,7 @@ spec:
   nodeName: mc3
   initContainers:
     - name: data
-      image: docker.io/library/alpine:latest@sha256:c69a6ff7c24d1ffa913798501d0e7104e0e9764e28eb44a930939f91ef829e64
+      image: docker.io/library/alpine:latest@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
       command: ["/bin/sh", "-c"]
       args: ["rm -rf /mnt/host_var/lib/rook"]
       volumeMounts:
@@ -116,7 +116,7 @@ spec:
       resources: {}
   containers:
     - name: disk
-      image: docker.io/library/alpine:latest@sha256:c69a6ff7c24d1ffa913798501d0e7104e0e9764e28eb44a930939f91ef829e64
+      image: docker.io/library/alpine:latest@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
       command: ["/bin/sh", "-c"]
       args:
         - |
