@@ -538,6 +538,57 @@ lazy-load `libnvidia-ml.so` at runtime if needed (not required for Tegra CSV mod
 was redundant — `nvgpu.yaml` already builds and pushes `nvgpu-toolkit` as part of the same
 job, then uses both digests for the installer. Only `nvgpu.yaml` runs now.
 
+### Allowed paths in Talos extensions
+
+Talos enforces a strict path allowlist via the `extensions-validator` tool that runs at CI time
+(and at install time on the node). Any file installed outside the allowlist causes the validation
+step to fail with:
+
+```
+Error: path "/some/path/file" is not allowed in extensions
+```
+
+**Confirmed allowed paths** (used by nvgpu-toolkit and other extensions):
+
+| Path | Used for |
+|------|----------|
+| `/usr/local/bin/` | Extension binaries (nvidia-container-runtime, nvidia-ctk, …) |
+| `/usr/local/etc/` | Extension config files (config.toml, l4t.csv, …) |
+| `/usr/local/lib/` | Extension shared libraries |
+| `/usr/local/share/` | Extension data files |
+| `/etc/cri/conf.d/` | containerd drop-in config files (`*.part`) |
+| `/etc/udev/rules.d/` | udev rules for device nodes |
+| `/etc/modules-load.d/` | Kernel module load config |
+| `/usr/lib/` | System library extensions |
+
+**Confirmed blocked paths** (attempted and rejected):
+
+| Path | Rejection reason |
+|------|-----------------|
+| `/etc/nvidia-container-runtime/` | Not in allowlist; arbitrary `/etc/` subdirs are blocked |
+
+**Why `/etc/nvidia-container-runtime/config.toml` is blocked:**
+
+`nvidia-container-runtime` defaults to reading its config from `/etc/nvidia-container-runtime/config.toml`
+(via `GetConfigFilePath()` in `api/config/v1/config.go`). An alternative path can be set via
+the `NVIDIA_CTK_CONFIG_FILE_PATH` environment variable — but containerd sanitizes the environment
+when forking OCI runtime subprocesses, so env vars set via Talos `machine.env` (including
+`NVIDIA_CTK_CONFIG_FILE_PATH`) are **not inherited** by `nvidia-container-runtime`.
+
+Since `/etc/nvidia-container-runtime/` cannot be written by an extension, and the env var is
+not propagated, the config.toml must be delivered via one of two workarounds:
+
+1. **Wrapper script** — install a shell wrapper at `/usr/local/bin/nvidia-container-runtime`
+   that explicitly sets `NVIDIA_CTK_CONFIG_FILE_PATH=/usr/local/etc/nvidia-container-runtime/config.toml`
+   and then `exec`s the real binary (renamed to `nvidia-container-runtime.real`).
+
+2. **Talos `machineFiles` patch** — add a `machine.files` entry to `talconfig.yaml` to write
+   `/etc/nvidia-container-runtime/config.toml` outside the extension, at node provision time.
+   The extension then only owns the binaries and CSV files; the config lives in the Talos
+   machine config.
+
+The current implementation uses option 1 (wrapper script) to keep the extension self-contained.
+
 ### Source strategy: OE4T mirrors vs nv-tegra.nvidia.com
 
 `OE4T/linux-nvgpu` and `OE4T/linux-nv-oot` are **pure mirrors** of `nv-tegra.nvidia.com` —
