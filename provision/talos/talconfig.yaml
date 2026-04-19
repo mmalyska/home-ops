@@ -97,6 +97,16 @@ nodes:
             discard_unpacked_layers = false
           [plugins."io.containerd.cri.v1.runtime"]
             cdi_spec_dirs = ["/var/cdi/static", "/var/cdi/dynamic"]
+      - op: create
+        path: /etc/nvidia-container-runtime/config.toml
+        content: |
+          [nvidia-container-runtime]
+            log-level = "info"
+            mode = "csv"
+            disable-require = true
+
+          [nvidia-container-runtime.modes.csv]
+            mount-spec-path = "/usr/local/etc/nvidia-container-runtime/host-files-for-container.d"
     patches:
       - |-
         machine:
