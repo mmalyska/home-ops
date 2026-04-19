@@ -22,6 +22,105 @@ container images (`dustynv/*`) which carry their own `libcuda.so` Tegra stack.
 
 ---
 
+## Why CSV Mode, Not CDI
+
+`nvidia-container-runtime` supports four modes: `legacy`, `csv`, `cdi`, and `jit-cdi`.
+CDI and jit-CDI are the modern default for discrete GPUs. CSV is the Tegra-specific mode.
+This section explains why CSV is the only viable choice for Jetson Orin and traces that
+decision back to the toolkit source code.
+
+### Platform detection (nvidia-container-toolkit v1.19.0)
+
+`ResolveRuntimeMode` in
+[`internal/info/auto.go`](https://github.com/NVIDIA/nvidia-container-toolkit/blob/main/internal/info/auto.go)
+determines the mode when `mode = "auto"`:
+
+```go
+switch nvinfo.ResolvePlatform() {
+case info.PlatformNVML, info.PlatformWSL:
+    return m.defaultMode  // jit-cdi or cdi
+case info.PlatformTegra:
+    return CSVRuntimeMode  // always csv, no override
+}
+```
+
+Tegra is **always routed to CSV** — there is no code path that enables CDI on a Tegra platform.
+This is an intentional architectural decision by NVIDIA, not a missing feature.
+
+`ResolvePlatform` in
+[`vendor/github.com/NVIDIA/go-nvlib/pkg/nvlib/info/resolver.go`](https://github.com/NVIDIA/go-nvlib/blob/main/pkg/nvlib/info/resolver.go)
+classifies the platform:
+
+```go
+case (hasTegraFiles && !hasNVML), hasAnIntegratedGPU:
+    return PlatformTegra
+case hasNVML:
+    return PlatformNVML
+```
+
+`hasTegraFiles` checks for `/etc/nv_tegra_release` or `/sys/devices/soc0/family` containing
+`"tegra"` ([`property-extractor.go`](https://github.com/NVIDIA/go-nvlib/blob/main/pkg/nvlib/info/property-extractor.go)).
+`hasNVML` checks whether `libnvidia-ml.so` loads successfully.
+
+**On Jetson Orin: `hasTegraFiles = true`, `hasNVML = false`** — `libnvidia-ml.so` does not
+exist on Tegra. The GPU stack is `nvgpu.ko` (open kernel driver), not the discrete GPU driver
+that ships NVML. So platform = `PlatformTegra` → mode = `CSVRuntimeMode`.
+
+### Why CDI fundamentally cannot work on Tegra
+
+CDI generates or reads a spec that lists device nodes, then injects them into the container.
+For discrete GPUs this is straightforward: `/dev/nvidia0`, `/dev/nvidiactl`, `/dev/nvidia-uvm`
+are well-known paths. NVML enumerates them.
+
+On Orin the GPU is a **host1x/nvhost bus device**, not a discrete PCIe GPU:
+
+| | Discrete GPU | Jetson Orin (t234) |
+|---|---|---|
+| Kernel driver | `nvidia.ko` | `nvgpu.ko` + `nvmap.ko` |
+| Device nodes | `/dev/nvidia0`, `/dev/nvidiactl` | `/dev/nvhost-ctrl-gpu`, `/dev/nvhost-gpu`, `/dev/nvmap`, … (13 devices) |
+| Discovery mechanism | NVML (`libnvidia-ml.so`) | None — paths are statically known |
+| `libcuda.so` | CUDA Toolkit / `libnvidia-compute` | JetPack `nvidia-l4t-cuda` (different ioctl ABI) |
+
+CDI has no knowledge of the nvhost bus. There is no NVML to enumerate Tegra devices.
+The `libcuda.so` from `nvidia-l4t-cuda` (Tegra) and from `libnvidia-compute` (discrete) use
+entirely different ioctl interfaces — they are not interchangeable.
+
+### What CSV mode actually does on Tegra
+
+The CSV discoverer ([`internal/platform-support/tegra/`](https://github.com/NVIDIA/nvidia-container-toolkit/tree/main/internal/platform-support/tegra))
+reads hand-curated CSV files from `mount-spec-path` and injects each listed entry into the
+container as a device node, library, or directory mount. It also always mounts
+`/etc/nv_tegra_release` (the Tegra platform marker file) into every container.
+
+Our `l4t.csv` enumerates the 13 `/dev/nvhost-*` devices and `/dev/nvmap` that nvgpu.ko creates.
+L4T-based container images (`nvcr.io/nvidia/l4t-cuda`, `dustynv/*`) carry their own correct
+Tegra `libcuda.so` — no host lib extraction is needed.
+
+### `disable-require = true`
+
+`nvidia-container-runtime` checks OCI image labels for CUDA version requirements
+(`com.nvidia.cuda.version`, etc.) and validates them against the host. On discrete GPU
+systems this works via `/proc/driver/nvidia/version`. On Tegra that file does not exist —
+the host CUDA version is always detected as empty, causing requirement checks to fail with:
+
+```
+unsatisfied condition: cuda>=12.2 (cuda=)
+```
+
+Setting `disable-require = true` in `config.toml` skips these checks. The requirement is
+meaningful for discrete GPUs (driver/CUDA version coupling) but has no semantic value in
+CSV mode where the CUDA version is implicit in the L4T kernel and the container image.
+
+### References
+
+- [`internal/info/auto.go` — mode resolution](https://github.com/NVIDIA/nvidia-container-toolkit/blob/main/internal/info/auto.go)
+- [`go-nvlib/info/resolver.go` — platform detection](https://github.com/NVIDIA/go-nvlib/blob/main/pkg/nvlib/info/resolver.go)
+- [`go-nvlib/info/property-extractor.go` — Tegra/NVML probes](https://github.com/NVIDIA/go-nvlib/blob/main/pkg/nvlib/info/property-extractor.go)
+- [`internal/platform-support/tegra/` — CSV discoverer](https://github.com/NVIDIA/nvidia-container-toolkit/tree/main/internal/platform-support/tegra)
+- [NVIDIA Container Runtime on Jetson](https://nvidia.github.io/container-wiki/toolkit/jetson.html)
+
+---
+
 ## Why This Is Needed
 
 The [jetson-gpu plan](./jetson-gpu.md) loads `nvgpu.ko` and exposes Tegra GPU device nodes to
@@ -54,19 +153,20 @@ nv1 node (Talos Linux)
 │   ├── nvgpu.ko loaded → /dev/nvgpu/ (dir), /dev/nvhost-* created
 │   └── nvmap.ko loaded → /dev/nvmap created
 │
-└── nvgpu-toolkit extension (new — Phase 1/2 of this plan)
-    ├── nvidia-container-runtime binary (/usr/bin/nvidia-container-runtime)
-    ├── libnvidia-container.so (built --enable-tegra, CSV plugin mode)
+└── nvgpu-toolkit extension (DEPLOYED — nvgpu-toolkit v1.19.0)
+    ├── nvidia-container-runtime binary (/usr/local/bin/nvidia-container-runtime)
+    ├── config.toml — mode=csv, disable-require=true
     ├── l4t.csv — device node list (/dev/nvhost-*, /dev/nvmap)
-    └── containerd config: registers nvidia-container-runtime handler
+    └── 20-nvidia-runtime.part — containerd nvidia handler config
 
 containerd
-└── handler: nvidia  →  nvidia-container-runtime (OCI hook)
-                            └── libnvidia-container (Tegra/CSV mode)
+└── handler: nvidia  →  /usr/local/bin/nvidia-container-runtime (OCI hook, static binary)
+                            └── CSV mode (pure Go, no libnvidia-container.so needed)
                                     ├── reads l4t.csv → injects /dev/nvhost-* device nodes
+                                    ├── injects /dev/nvmap
                                     └── L4T container image carries its own libcuda.so etc.
 
-Container (e.g. dustynv/ollama:r36.x):
+Container (e.g. nvcr.io/nvidia/l4t-cuda:12.2.12-runtime):
 └── runtimeClassName: nvidia
     → nvidia-container-runtime injects /dev/nvhost-* + /dev/nvmap
     → L4T image's libcuda.so speaks the nvgpu ioctl ABI → CUDA works
@@ -365,11 +465,14 @@ No host lib extraction needed. Workload containers must be L4T-based
 
 | Component | Location on host | Notes |
 |-----------|-----------------|-------|
-| `nvidia-container-runtime` | `/usr/bin/nvidia-container-runtime` | OCI hook binary |
-| `libnvidia-container.so` | `/usr/lib/` | Built `--enable-tegra` |
-| `nvidia-container-cli` | `/usr/bin/` | Used by runtime |
-| `l4t.csv` | `/etc/nvidia-container-runtime/host-files-for-container.d/l4t.csv` | Device node list |
-| containerd config | `/etc/cri/conf.d/20-customization.part` | `handler: nvidia` runtime class |
+| `nvidia-container-runtime` | `/usr/local/bin/nvidia-container-runtime` | OCI hook binary (static, CGO+musl) |
+| `nvidia-container-runtime-hook` | `/usr/local/bin/` | Prestart hook |
+| `nvidia-container-runtime.cdi` | `/usr/local/bin/` | CDI variant (built, unused on Tegra) |
+| `nvidia-container-runtime.legacy` | `/usr/local/bin/` | Legacy CSV variant |
+| `nvidia-ctk` | `/usr/local/bin/` | Config tool |
+| `config.toml` | `/usr/local/etc/nvidia-container-runtime/config.toml` | `mode=csv`, `disable-require=true` |
+| `l4t.csv` | `/usr/local/etc/nvidia-container-runtime/host-files-for-container.d/l4t.csv` | Device node list |
+| containerd config | `/etc/cri/conf.d/20-nvidia-runtime.part` | `handler: nvidia` runtime class |
 
 ### l4t.csv — device node list (from Phase 0 findings)
 
@@ -395,15 +498,45 @@ No host lib extraction needed. Workload containers must be L4T-based
 > `/dev/nvgpu/igpu0/ctrl` is NOT statically created at boot — only `power` exists.
 > The nvhost interface is the correct one for Tegra CUDA.
 
-### containerd config addition
+### containerd config addition (`20-nvidia-runtime.part`)
 
 ```toml
-# Add to 20-customization.part alongside existing settings
 [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia]
+  privileged_without_host_devices = false
+  runtime_engine = ""
+  runtime_root = ""
   runtime_type = "io.containerd.runc.v2"
   [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia.options]
-    BinaryName = "/usr/bin/nvidia-container-runtime"
+    BinaryName = "/usr/local/bin/nvidia-container-runtime"
 ```
+
+### config.toml
+
+```toml
+[nvidia-container-runtime]
+  log-level = "info"
+  mode = "csv"
+  # Tegra has no /proc/driver/nvidia/version — disable image CUDA version checks.
+  disable-require = true
+
+[nvidia-container-runtime.modes.csv]
+  mount-spec-path = "/usr/local/etc/nvidia-container-runtime/host-files-for-container.d"
+```
+
+### Build notes (resolved issues)
+
+**CGO requirement:** `go-nvml/pkg/dl` and `internal/cuda` have CGO-only implementations
+(build constraints exclude all files when `CGO_ENABLED=0`). The toolkit must be built with
+CGO enabled. `CGO_ENABLED=0` causes `build constraints exclude all Go files` errors.
+
+**Static binaries:** Talos has no dynamic linker in the extension overlay context. The build
+overrides the Makefile's dynamic linker flags via `make EXTLDFLAGS="-static"`, producing
+fully static musl binaries. musl static libc includes `dlopen`, so the binary can still
+lazy-load `libnvidia-ml.so` at runtime if needed (not required for Tegra CSV mode).
+
+**Standalone nvgpu-toolkit workflow removed:** The separate `nvgpu-toolkit.yaml` CI workflow
+was redundant — `nvgpu.yaml` already builds and pushes `nvgpu-toolkit` as part of the same
+job, then uses both digests for the installer. Only `nvgpu.yaml` runs now.
 
 ### Source strategy: OE4T mirrors vs nv-tegra.nvidia.com
 
@@ -452,8 +585,8 @@ in pkgs fork `Pkgfile` tracks updates automatically, same as extensions fork `nv
 
 ## Phase 2 — nvgpu-toolkit extension wiring (siderolabs/extensions fork)
 
-> **STATUS: IMPLEMENTED** — `nvidia-gpu/nvgpu-toolkit/` created in `mmalyska/siderolabs-extensions`
-> `feat/jetson-nvgpu` branch. CI building at `ghcr.io/mmalyska/nvgpu-toolkit:v1.12.4`.
+> **STATUS: COMPLETE** — `nvidia-gpu/nvgpu-toolkit/` deployed in `mmalyska/siderolabs-extensions`
+> `feat/jetson-nvgpu` branch. Running on `nv1` as `nvgpu-toolkit v1.19.0`.
 
 **Depends on:** Phase 1 packages built and published (pkgs `v1.12.4` ✅)
 
@@ -496,8 +629,8 @@ Open questions for this phase: see OQ-9, OQ-10, OQ-12 in Phase 1 above.
 
 ## Phase 3 — Update installer image for nv1
 
-> **STATUS: IN PROGRESS** — `nvgpu.yaml` workflow updated to build both nvgpu + nvgpu-toolkit
-> and bake both into `ghcr.io/mmalyska/talos-nv1-installer:v1.12.6`. CI running.
+> **STATUS: COMPLETE** — Applied on `nv1`. Extensions confirmed loaded:
+> `nvgpu v1.12.6` + `nvgpu-toolkit v1.19.0`. `nvidia.com/gpu: 1` allocatable. Node Ready.
 
 **Depends on:** Phase 2 extension published and tested (✅ `v1.12.4`)
 
@@ -575,19 +708,67 @@ image references accordingly.
 
 ## Phase 5 — Validation
 
+> **STATUS: IN PROGRESS** — Extension loaded, `nvidia.com/gpu: 1` allocatable.
+> CUDA pod validation blocked pending `disable-require = true` fix (OQ-14 resolved, rebuild in progress).
+
+### Validation pod
+
+Use `nvcr.io/nvidia/l4t-cuda:12.2.12-runtime` (already cached on nv1):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cuda-validation
+  namespace: default
+spec:
+  restartPolicy: Never
+  runtimeClassName: nvidia
+  nodeSelector:
+    kubernetes.io/hostname: nv1
+  containers:
+    - name: cuda-validation
+      image: nvcr.io/nvidia/l4t-cuda:12.2.12-runtime
+      command:
+        - python3
+        - -c
+        - |
+          import ctypes, sys
+          lib = ctypes.CDLL('libcuda.so.1')
+          ret = lib.cuInit(0)
+          print(f"cuInit(0) = {ret}  ({'OK' if ret == 0 else 'FAILED'})")
+          if ret != 0:
+              sys.exit(1)
+          count = ctypes.c_int(0)
+          lib.cuDeviceGetCount(ctypes.byref(count))
+          print(f"cuDeviceGetCount = {count.value}")
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+```
+
+Expected outcome: `cuInit(0) = 0  (OK)`, `cuDeviceGetCount = 1`.
+
+### Further validation steps
+
 1. `kubectl exec` into a running ollama/whisper pod and confirm CUDA device is visible:
    ```bash
    python3 -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_count())"
    ```
-2. Run a CUDA compute benchmark to confirm throughput (not just initialization):
-   ```bash
-   # Inside dustynv/cuda image
-   /usr/local/cuda/samples/bin/aarch64/linux/release/bandwidthTest
-   ```
-3. Confirm `nvidia.com/gpu: 1` resource is schedulable:
+2. Confirm `nvidia.com/gpu: 1` resource is schedulable:
    ```bash
    kubectl describe node nv1 | grep nvidia
    ```
+
+### Known failure modes
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `unsatisfied condition: cuda>=12.2 (cuda=)` | `disable-require` not set | Add `disable-require = true` to config.toml |
+| `CUDA_ERROR_NO_DEVICE (100)` | Device nodes not injected | Check l4t.csv paths vs actual `/dev/nvhost-*` |
+| `libcuda.so: cannot open` | Wrong container image (dGPU) | Use `nvcr.io/nvidia/l4t-cuda` or `dustynv/*` |
+| `cuInit = 999 (CUDA_ERROR_UNKNOWN)` | `/dev/nvmap` missing | Verify nvmap.ko loaded |
+| `cuInit = 801 (CUDA_ERROR_SYSTEM_NOT_READY)` | Wrong `libcuda.so` (dGPU shim) | Use L4T-based image, not `nvidia/cuda:*` |
 
 ---
 
@@ -604,10 +785,11 @@ image references accordingly.
 | OQ-7 | Are `nvidia-l4t-core` + `nvidia-l4t-cuda` sufficient for host extraction? | ✅ Moot — no host lib extraction in redesigned approach | Phase 0 |
 | OQ-8 | Renovate datasource strategy for L4T package versioning? | ✅ Moot — no L4T packages pinned on host | Phase 0 |
 | OQ-9 | Does `libnvidia-container` build for `aarch64` in Talos pkgs build env? | ✅ **Moot** — modern `nvidia-container-toolkit` (v1.14.6+) handles Tegra CSV mode as pure Go; no C `libnvidia-container.so` required. `make cmds` builds cleanly using `cgr.io/chainguard/wolfi-base` on arm64. | Phase 1 |
-| OQ-10 | Does `nvidia-container-runtime` Tegra path require sysfs paths inside container? | Open | Phase 1 |
+| OQ-10 | Does `nvidia-container-runtime` Tegra path require sysfs paths inside container? | Open — not yet validated | Phase 5 |
 | OQ-11 | Which `nvidia-container-toolkit` version is compatible with JetPack 6 / L4T r36.4? | ✅ **v1.19.0** (latest; CSV mode stable since v1.14.6). No C library required — toolkit is pure Go with native CSV mode. | Phase 1 |
 | OQ-12 | Renovate strategy for `nvidia-container-toolkit` version pinning? | ✅ `renovate: datasource=github-releases depName=nvidia/nvidia-container-toolkit` in `Pkgfile` — same as extensions fork `nvidia-gpu/vars.yaml`. | Phase 2 |
 | OQ-13 | Can `nvmap.ko` be built as a Talos extension? | ✅ Yes — deployed in `ghcr.io/mmalyska/talos-nv1-installer`, `/dev/nvmap` confirmed present | Phase 0 |
+| OQ-14 | Why does `nvidia-container-runtime` reject L4T CUDA images with `unsatisfied condition: cuda>=12.2 (cuda=)`? | ✅ Tegra has no `/proc/driver/nvidia/version` — host CUDA version is always empty. Fixed with `disable-require = true` in config.toml. | Phase 5 |
 
 ---
 
