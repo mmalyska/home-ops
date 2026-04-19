@@ -465,7 +465,8 @@ No host lib extraction needed. Workload containers must be L4T-based
 
 | Component | Location on host | Notes |
 |-----------|-----------------|-------|
-| `nvidia-container-runtime` | `/usr/local/bin/nvidia-container-runtime` | OCI hook binary (static, CGO+musl) |
+| `nvidia-container-runtime` | `/usr/local/bin/nvidia-container-runtime` | Config-path wrapper (static, pure Go) — sets env, execs `.real` |
+| `nvidia-container-runtime.real` | `/usr/local/bin/nvidia-container-runtime.real` | Real OCI hook binary (static, CGO+musl) |
 | `nvidia-container-runtime-hook` | `/usr/local/bin/` | Prestart hook |
 | `nvidia-container-runtime.cdi` | `/usr/local/bin/` | CDI variant (built, unused on Tegra) |
 | `nvidia-container-runtime.legacy` | `/usr/local/bin/` | Legacy CSV variant |
@@ -587,7 +588,12 @@ not propagated, the config.toml must be delivered via one of two workarounds:
    The extension then only owns the binaries and CSV files; the config lives in the Talos
    machine config.
 
-The current implementation uses option 1 (wrapper script) to keep the extension self-contained.
+The current implementation uses option 1 — a **compiled Go binary** (not a shell script; Talos
+has no `/bin/sh` in the extension overlay). The wrapper is built during the extension's `build`
+step with `CGO_ENABLED=0` (pure Go, no C dependencies) and installed as
+`/usr/local/bin/nvidia-container-runtime`. The real binary is installed alongside it as
+`nvidia-container-runtime.real`. containerd invokes the wrapper; the wrapper sets the env var
+and `exec`-replaces itself with the real binary — zero overhead, no extra process.
 
 ### Source strategy: OE4T mirrors vs nv-tegra.nvidia.com
 
