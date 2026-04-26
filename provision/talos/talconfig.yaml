@@ -162,7 +162,7 @@ controlPlane:
             forwardKubeDNSToHost: false
 
     # Configure kubelet
-    - |-
+    - &patchKubeletRotateCerts |-
       machine:
         kubelet:
           extraArgs:
@@ -264,3 +264,4 @@ worker:
     - *patchHostDNS
     - *patchTimeServer
     - *patchDNS
+    - *patchKubeletRotateCerts
