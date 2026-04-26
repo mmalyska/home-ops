@@ -20,7 +20,7 @@ minecraft-bedrock:
       memory: 250Mi
       cpu: 200m
     limits:
-      memory: 1Gi
+      memory: 2Gi
   minecraftServer:
     eula: "TRUE"
     version: 1.21.111.1
