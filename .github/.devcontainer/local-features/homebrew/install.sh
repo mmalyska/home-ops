@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 
 apt-get update
 export DEBIAN_FRONTEND=noninteractive

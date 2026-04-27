@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 
 # renovate: datasource=github-releases depName=bitwarden/sdk-sm
 VERSION=bws-v2.0.0

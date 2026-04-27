@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 
 # renovate: datasource=github-releases depName=mmalyska/argocd-secret-replacer
 VERSION=0.3.0

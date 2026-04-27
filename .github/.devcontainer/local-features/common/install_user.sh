@@ -1,4 +1,4 @@
-#!/bin/bash -i
+#!/bin/bash
 
 /home/linuxbrew/.linuxbrew/bin/brew update
 /home/linuxbrew/.linuxbrew/bin/brew bundle install --file=Brewfile && /home/linuxbrew/.linuxbrew/bin/brew bundle upgrade --file=Brewfile
