@@ -76,7 +76,7 @@ gitea:
     accessModes:
       - ReadWriteOnce
     storageClass: ceph-block
-  replicaCount: 1
+  replicaCount: 0
   deployment:
     env:
       - name: GITEA__database__DB_TYPE
