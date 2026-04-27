@@ -6,4 +6,8 @@ apt-get -y install build-essential procps curl file git --no-install-recommends
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 
-sudo -Hn -u ${_REMOTE_USER} ./install_user.sh
+# Pre-create the Homebrew prefix so the installer doesn't need sudo
+mkdir -p /home/linuxbrew
+chown "${_REMOTE_USER}" /home/linuxbrew
+
+sudo -Hn -u "${_REMOTE_USER}" NONINTERACTIVE=1 ./install_user.sh
