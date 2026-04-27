@@ -1,2 +1,2 @@
 #!/bin/bash -i
-sudo -Hn ./install_user.sh
+sudo -Hn -u ${_REMOTE_USER} ./install_user.sh

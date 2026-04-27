@@ -27,3 +27,5 @@ Chart.lock
 .local
 # Claude
 .claude/settings.local.json
+# Zed
+.zed/
