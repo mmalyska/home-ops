@@ -1,0 +1,13 @@
+# Ignore files and directories that should not be included in the project
+.vscode
+.archive
+# Tasks
+.task
+# Terraform
+.terraform
+.terraform.tfstate*
+terraform.tfstate*
+.terraform.lock.hcl
+# Helm
+Chart.lock
+*.tgz

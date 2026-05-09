@@ -21,6 +21,6 @@ echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> /home/vscode/.bashrc
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 kubectl krew install browse-pvc
 
-npm install -g @mariozechner/pi-coding-agent
+# npm install -g @mariozechner/pi-coding-agent
 
 echo "Done!"

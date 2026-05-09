@@ -80,11 +80,14 @@ HTTPRoutes attached to `envoy-external` are automatically published to Cloudflar
 
 ## IP Allocation
 
+Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` service, pick an unused IP from this range and annotate with `lbipam.cilium.io/ips: "192.168.48.XX"`.
+
 | IP | Service |
 |---|---|
 | `192.168.48.1` | Cluster VIP (kube-apiserver) |
 | `192.168.48.20` | `envoy-external` gateway |
 | `192.168.48.21` | `envoy-internal` gateway |
+| `192.168.48.22` | Jellyfin |
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.27` | Home automation (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
