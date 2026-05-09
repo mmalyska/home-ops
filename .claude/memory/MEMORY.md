@@ -8,9 +8,10 @@
 - [Deployment strategy patch required](feedback_deployment_strategy_patch.md) — RollingUpdate→Recreate needs live object kubectl patch before ArgoCD sync
 - [nvgpu patch 5-step safety audit](feedback_nvgpu_patch_audit.md) — mandatory after every nvgpu-kernel-compat.patch change
 - [nvidia-oot conftest static header approach](feedback_nvidia_oot_conftest.md) — conftest.sh silently fails; use static NV_* compat header instead
-- [Learned skills path is workspace-rooted](feedback_learned_skills_path.md) — save to /workspaces/home-ops/.claude/skills/learned/ not ~/.claude/
+- [Claude files belong in workspace .claude/](feedback_claude_files_in_workspace.md) — skills/config/artifacts go in /workspaces/home-ops/.claude/, not ~/.claude/ (ephemeral)
 - [Cluster access permission rules](feedback_cluster_access_rules.md) — read-only free, mutating ops need user confirmation
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
+- [Non-interactive shell flags](feedback_noninteractive_shell.md) — always use -f/-rf for cp/mv/rm (aliased to -i in devcontainer)
 
 ## Project Context
 

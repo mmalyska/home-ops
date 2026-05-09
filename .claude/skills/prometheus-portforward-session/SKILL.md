@@ -1,3 +1,15 @@
+---
+name: prometheus-portforward-session
+description: >
+  Protocol for managing kubectl port-forward to Prometheus across multiple
+  Bash tool calls in Claude Code. Use pkill -f instead of kill %1 — job
+  control does not work across separate shell invocations.
+when_to_use: >
+  Use whenever running kubectl port-forward to Prometheus and making multiple
+  Bash tool calls in the same session.
+user-invocable: false
+---
+
 # Prometheus Port-Forward: Correct Lifecycle Across Bash Tool Calls
 
 **Extracted:** 2026-03-23

@@ -1,3 +1,14 @@
+---
+name: add-app
+description: >
+  Step-by-step workflow for adding a new application to the home-ops cluster.
+  Use when creating a new ArgoCD app, writing app-config.yaml, Chart.yaml,
+  values.yaml, HTTPRoutes, ExternalSecrets, or any cluster/apps/ templates.
+when_to_use: >
+  Trigger phrases: "add app", "new application", "create app", "deploy X to cluster",
+  "add HTTPRoute", "write ExternalSecret", "add secret for app".
+---
+
 # Add App Skill
 
 Use this skill when adding a new application, creating HTTPRoutes, writing ExternalSecrets, or working with template patterns.

@@ -1,8 +1,13 @@
 ---
 name: secops-public-repo-audit
-description: "Security audit checklist for public GitOps/home-lab repos — verify git tracking before escalating findings"
+description: >
+  Security audit checklist for public GitOps/home-lab repositories.
+  Use when asked to audit a public repo for exposed secrets, assess what is
+  safe to make public, or review a home-lab GitOps setup for information leaks.
+when_to_use: >
+  Trigger phrases: "audit repo", "public repo security", "exposed secrets",
+  "safe to make public", "security review", "check gitignore", "secops".
 user-invocable: false
-origin: auto-extracted
 ---
 
 # SecOps Audit — Public Home-Lab Repo

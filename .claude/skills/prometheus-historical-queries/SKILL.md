@@ -1,3 +1,14 @@
+---
+name: prometheus-historical-queries
+description: >
+  Pattern for Prometheus point-in-time historical queries using the instant
+  query endpoint with ?time=<epoch>. Use when comparing metrics now vs N days
+  ago, or when avg_over_time / subquery approaches fail.
+when_to_use: >
+  Trigger phrases: "prometheus", "metrics comparison", "7 days ago",
+  "historical query", "now vs last week", "promql over time".
+---
+
 # Prometheus Historical Point-in-Time Queries
 
 **Extracted:** 2026-03-23

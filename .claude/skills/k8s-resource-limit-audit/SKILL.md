@@ -1,3 +1,14 @@
+---
+name: k8s-resource-limit-audit
+description: >
+  Audit Kubernetes container resource requests and limits via kubectl JSON output.
+  Use when checking resource limits, capacity planning, or finding containers
+  without limits set. Avoids broken Prometheus label-join approach.
+when_to_use: >
+  Trigger phrases: "resource limits", "resource audit", "capacity planning",
+  "containers without limits", "CPU/memory usage vs limits".
+---
+
 # Kubernetes Container Resource Limit Audit via JSON
 
 **Extracted:** 2026-03-23
