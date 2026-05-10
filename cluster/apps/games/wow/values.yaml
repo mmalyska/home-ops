@@ -27,7 +27,7 @@ controllers:
 
   worldserver:
     type: deployment
-    replicas: 1
+    replicas: 0
     annotations:
       argocd.argoproj.io/sync-wave: "4"
     initContainers:
