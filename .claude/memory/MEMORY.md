@@ -27,3 +27,4 @@
 - [Gateway and DNS architecture](reference_gateway_dns_architecture.md) — two Envoy Gateway instances; HTTPRoute annotation rules
 - [L4T packages for CUDA on Orin](reference_l4t_packages.md) — t234 repo URLs, libcuda.so.1 location
 - [Home network hardware](reference_home_network_hardware.md) — router/NAS/RPi IPs and roles
+- [Plans and TODOs location](reference_plans_todos.md) — `.plans/` for plans, `.plans/TODO.md` for ad-hoc tasks

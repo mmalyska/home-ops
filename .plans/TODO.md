@@ -12,5 +12,3 @@ General backlog items not tied to a specific migration plan.
   - Check if official chart supports Gateway API `route:` natively (would let us drop `templates/httproute.yaml` too)
   - Review if PVC/storage config, LoadBalancer service (`192.168.48.22`), and resource requests map cleanly to new chart values
   - Do after Traefik → Envoy migration Phase 1 is stable
-
----
