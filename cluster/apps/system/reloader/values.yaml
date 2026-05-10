@@ -1,0 +1,5 @@
+reloader:
+  reloader:
+    logFormat: json
+    serviceMonitor:
+      enabled: true
