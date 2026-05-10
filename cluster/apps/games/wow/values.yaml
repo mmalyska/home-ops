@@ -8,7 +8,7 @@ controllers:
       authserver:
         image:
           repository: ghcr.io/mmalyska/azerothcore-authserver
-          tag: stable@sha256:replaceme
+          tag: 2026-05-10@sha256:6d91682bf12b6a14634630f7d4fe8bc28ad62afa9e115648c31e07c065976093
         env:
           AC_LOGS_DIR: /azerothcore/env/dist/logs
           AC_LOGIN_DATABASE_INFO:
@@ -37,7 +37,7 @@ controllers:
       worldserver:
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: stable@sha256:replaceme
+          tag: 2026-05-10@sha256:869f86c3cb21f088c035637ed27081c8483c9cf20d1d3d213b61cc2b57840e35
         env:
           AC_DATA_DIR: /azerothcore/env/dist/data
           AC_LOGS_DIR: /azerothcore/env/dist/logs
