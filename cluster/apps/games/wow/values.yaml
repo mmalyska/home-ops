@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/refs/tags/app-template-3.6.1/charts/other/app-template/values.schema.json
+---
+controllers:
+  authserver:
+    type: deployment
+    replicas: 1
+    containers:
+      authserver:
+        image:
+          repository: ghcr.io/mmalyska/azerothcore-authserver
+          tag: stable@sha256:replaceme
+        env:
+          AC_LOGS_DIR: /azerothcore/env/dist/logs
+          AC_LOGIN_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_LOGIN_DATABASE_INFO
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+
+  worldserver:
+    type: deployment
+    replicas: 1
+    initContainers:
+      client-data:
+        image:
+          repository: acore/ac-wotlk-client-data
+          tag: master
+        env:
+          DATAPATH: /azerothcore/env/dist/data
+    containers:
+      worldserver:
+        image:
+          repository: ghcr.io/mmalyska/azerothcore-worldserver
+          tag: stable@sha256:replaceme
+        env:
+          AC_DATA_DIR: /azerothcore/env/dist/data
+          AC_LOGS_DIR: /azerothcore/env/dist/logs
+          AC_LOGIN_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_LOGIN_DATABASE_INFO
+          AC_WORLD_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_WORLD_DATABASE_INFO
+          AC_CHARACTER_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_CHARACTER_DATABASE_INFO
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            memory: 4Gi
+
+  adminer:
+    type: deployment
+    replicas: 1
+    containers:
+      adminer:
+        image:
+          repository: adminer
+          tag: latest
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+
+service:
+  authserver:
+    controller: authserver
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.29"
+    type: LoadBalancer
+    ports:
+      auth:
+        protocol: TCP
+        port: 3724
+  worldserver:
+    controller: worldserver
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.29"
+    type: LoadBalancer
+    ports:
+      world:
+        protocol: TCP
+        port: 8085
+      soap:
+        protocol: TCP
+        port: 7878
+  adminer:
+    controller: adminer
+    type: ClusterIP
+    ports:
+      http:
+        protocol: TCP
+        port: 8080
+
+persistence:
+  client-data:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: wow-client-data
+    advancedMounts:
+      worldserver:
+        client-data:
+          - path: /azerothcore/env/dist/data
+        worldserver:
+          - path: /azerothcore/env/dist/data
+            readOnly: true
+  logs:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      worldserver:
+        worldserver:
+          - path: /azerothcore/env/dist/logs
+      authserver:
+        authserver:
+          - path: /azerothcore/env/dist/logs

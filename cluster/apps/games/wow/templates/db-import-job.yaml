@@ -1,0 +1,53 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wow-db-import
+  namespace: wow
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-mysql
+          image: mysql:8.4
+          command:
+            - sh
+            - -c
+            - |
+              until mysqladmin ping -h mysql -u root -p$MYSQL_ROOT_PASSWORD --silent; do
+                echo "waiting for mysql..."; sleep 5
+              done
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wow-mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+      containers:
+        - name: db-import
+          image: ghcr.io/mmalyska/azerothcore-db-import:stable@sha256:replaceme
+          env:
+            - name: AC_DATA_DIR
+              value: /azerothcore/env/dist/data
+            - name: AC_LOGS_DIR
+              value: /azerothcore/env/dist/logs
+            - name: AC_LOGIN_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: wow-mysql-secret
+                  key: AC_LOGIN_DATABASE_INFO_ROOT
+            - name: AC_WORLD_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: wow-mysql-secret
+                  key: AC_WORLD_DATABASE_INFO_ROOT
+            - name: AC_CHARACTER_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: wow-mysql-secret
+                  key: AC_CHARACTER_DATABASE_INFO_ROOT
