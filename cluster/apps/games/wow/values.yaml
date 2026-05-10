@@ -34,7 +34,7 @@ controllers:
       client-data:
         image:
           repository: acore/ac-wotlk-client-data
-          tag: master
+          tag: master@sha256:c178f44711fe22d86a45f985afb0e39902a0fc457d09e540af255410cb3642c9
         env:
           DATAPATH: /azerothcore/env/dist/data
     containers:
@@ -74,7 +74,7 @@ controllers:
       adminer:
         image:
           repository: adminer
-          tag: latest
+          tag: latest@sha256:cc64d253db4f016cbcff2ff2f01e60ed07e74f38b4398f84d3c4fae4b5ce0e07
         resources:
           requests:
             cpu: 50m

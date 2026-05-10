@@ -15,7 +15,7 @@ spec:
       restartPolicy: OnFailure
       initContainers:
         - name: wait-for-mysql
-          image: mysql:8.4
+          image: mysql:8.4@sha256:6e54d72c66fb55fa2bba384cba8c7c0ea9d629fb4d2af613b0eef98d19c6df15
           command:
             - sh
             - -c
