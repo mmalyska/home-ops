@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/refs/tags/app-template-3.6.1/charts/other/app-template/values.schema.json
+---
+controllers:
+  authserver:
+    type: deployment
+    replicas: 1
+    annotations:
+      argocd.argoproj.io/sync-wave: "4"
+    containers:
+      authserver:
+        image:
+          repository: ghcr.io/mmalyska/azerothcore-authserver
+          tag: rolling@sha256:6d91682bf12b6a14634630f7d4fe8bc28ad62afa9e115648c31e07c065976093
+        env:
+          AC_LOGS_DIR: /azerothcore/env/dist/logs
+          AC_LOGIN_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_LOGIN_DATABASE_INFO
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+
+  worldserver:
+    type: deployment
+    replicas: 1
+    annotations:
+      argocd.argoproj.io/sync-wave: "4"
+    initContainers:
+      client-data:
+        image:
+          repository: acore/ac-wotlk-client-data
+          tag: master
+        env:
+          DATAPATH: /azerothcore/env/dist/data
+    containers:
+      worldserver:
+        image:
+          repository: ghcr.io/mmalyska/azerothcore-worldserver
+          tag: rolling@sha256:869f86c3cb21f088c035637ed27081c8483c9cf20d1d3d213b61cc2b57840e35
+        env:
+          AC_DATA_DIR: /azerothcore/env/dist/data
+          AC_LOGS_DIR: /azerothcore/env/dist/logs
+          AC_LOGIN_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_LOGIN_DATABASE_INFO
+          AC_WORLD_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_WORLD_DATABASE_INFO
+          AC_CHARACTER_DATABASE_INFO:
+            valueFrom:
+              secretKeyRef:
+                name: wow-mysql-secret
+                key: AC_CHARACTER_DATABASE_INFO
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            memory: 4Gi
+
+  adminer:
+    type: deployment
+    replicas: 1
+    containers:
+      adminer:
+        image:
+          repository: adminer
+          tag: latest
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+
+service:
+  authserver:
+    controller: authserver
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.29"
+      lbipam.cilium.io/sharing-key: "wow"
+    type: LoadBalancer
+    ports:
+      auth:
+        protocol: TCP
+        port: 3724
+  worldserver:
+    controller: worldserver
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.29"
+      lbipam.cilium.io/sharing-key: "wow"
+    type: LoadBalancer
+    ports:
+      world:
+        protocol: TCP
+        port: 8085
+      soap:
+        protocol: TCP
+        port: 7878
+  adminer:
+    controller: adminer
+    type: ClusterIP
+    ports:
+      http:
+        protocol: TCP
+        port: 8080
+
+persistence:
+  client-data:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: wow-client-data
+    advancedMounts:
+      worldserver:
+        client-data:
+          - path: /azerothcore/env/dist/data
+        worldserver:
+          - path: /azerothcore/env/dist/data
+            readOnly: true
+  logs:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      worldserver:
+        worldserver:
+          - path: /azerothcore/env/dist/logs
+      authserver:
+        authserver:
+          - path: /azerothcore/env/dist/logs

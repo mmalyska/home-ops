@@ -1,0 +1,10 @@
+- enabled: "true"
+  namespace: wow
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets

@@ -1,0 +1,12 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "wow.hardcodedValues" -}}
+{{ if not .Values.global.nameOverride }}
+global:
+    nameOverride: "{{ .Release.Name }}"
+{{ end }}
+{{- end -}}
+{{- $_ := mergeOverwrite .Values (include "wow.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ include "bjw-s.common.loader.generate" . }}
