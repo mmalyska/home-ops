@@ -5,8 +5,9 @@ metadata:
   name: wow-db-import
   namespace: wow
   annotations:
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   backoffLimit: 5
   template:

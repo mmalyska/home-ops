@@ -17,6 +17,8 @@ kind: StatefulSet
 metadata:
   name: mysql
   namespace: wow
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   selector:
     matchLabels:

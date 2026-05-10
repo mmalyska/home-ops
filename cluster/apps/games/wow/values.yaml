@@ -4,6 +4,8 @@ controllers:
   authserver:
     type: deployment
     replicas: 1
+    annotations:
+      argocd.argoproj.io/sync-wave: "4"
     containers:
       authserver:
         image:
@@ -26,6 +28,8 @@ controllers:
   worldserver:
     type: deployment
     replicas: 1
+    annotations:
+      argocd.argoproj.io/sync-wave: "4"
     initContainers:
       client-data:
         image:
