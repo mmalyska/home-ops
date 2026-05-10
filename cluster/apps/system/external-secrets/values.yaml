@@ -14,3 +14,5 @@ external-secrets:
       enabled: true
   bitwarden-sdk-server:
     enabled: true
+    deploymentAnnotations:
+      secret.reloader.stakater.com/reload: "bitwarden-tls-certs"

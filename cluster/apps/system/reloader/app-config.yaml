@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: reloader
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

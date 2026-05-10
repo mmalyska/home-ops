@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: reloader-subchart
+type: application
+version: 1.0.0
+appVersion: "v1.4.16"
+dependencies:
+  - name: reloader
+    version: 2.2.11
+    repository: https://stakater.github.io/stakater-charts
