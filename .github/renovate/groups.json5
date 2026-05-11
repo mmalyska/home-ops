@@ -17,8 +17,9 @@
     },
     {
       "description": "Prometheus stack",
-      "matchDatasources": ["github-tags", "helm"],
+      "matchDatasources": ["github-tags", "helm", "docker"],
       "matchPackagePatterns": [".*kube-prometheus-stack.*"],
+      "matchPackageNames": ["ghcr.io/prometheus-community/charts/prometheus-operator-crds"],
       "groupName": "kube-prometheus-stack",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
       "separateMinorPatch": true
