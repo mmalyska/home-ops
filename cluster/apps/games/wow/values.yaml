@@ -39,6 +39,8 @@ controllers:
           DATAPATH: /azerothcore/env/dist/data
     containers:
       worldserver:
+        tty: true
+        stdin: true
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
           tag: rolling@sha256:bbe2306a6324cff9cb9598f3e259c04412b0488f4860b74ce5730874144a92f1
