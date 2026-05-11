@@ -66,6 +66,18 @@
       "groupName": "helm",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
       "separateMinorPatch": true
+    },
+    {
+      "description": "AzerothCore WoW server images",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "ghcr.io/mmalyska/azerothcore-worldserver",
+        "ghcr.io/mmalyska/azerothcore-authserver",
+        "ghcr.io/mmalyska/azerothcore-db-import",
+        "acore/ac-wotlk-client-data"
+      ],
+      "groupName": "azerothcore",
+      "group": {"commitMessageTopic": "{{{groupName}}} group"}
     }
   ]
 }
