@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/refs/tags/app-template-3.6.1/charts/other/app-template/values.schema.json
 ---
+realmAddress: &realmAddress "192.168.48.29"
+
 controllers:
   authserver:
     type: deployment
@@ -90,7 +92,7 @@ service:
   authserver:
     controller: authserver
     annotations:
-      lbipam.cilium.io/ips: "192.168.48.29"
+      lbipam.cilium.io/ips: *realmAddress
       lbipam.cilium.io/sharing-key: "wow"
     type: LoadBalancer
     ports:
@@ -100,7 +102,7 @@ service:
   worldserver:
     controller: worldserver
     annotations:
-      lbipam.cilium.io/ips: "192.168.48.29"
+      lbipam.cilium.io/ips: *realmAddress
       lbipam.cilium.io/sharing-key: "wow"
     type: LoadBalancer
     ports:

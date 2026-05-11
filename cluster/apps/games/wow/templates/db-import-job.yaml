@@ -53,4 +53,4 @@ spec:
                   name: wow-mysql-secret
                   key: AC_CHARACTER_DATABASE_INFO_ROOT
             - name: AC_REALM_ADDRESS
-              value: "192.168.48.29"
+              value: {{ .Values.realmAddress | quote }}
