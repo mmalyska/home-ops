@@ -75,7 +75,7 @@ spec:
                   mountPath: /dump
           containers:
             - name: restic
-              image: restic/restic:0.17.3
+              image: restic/restic:0.18.1@sha256:39d9072fb5651c80d75c7a811612eb60b4c06b32ffe87c2e9f3c7222e1797e76
               command:
                 - sh
                 - -c
