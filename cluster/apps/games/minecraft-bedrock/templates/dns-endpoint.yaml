@@ -2,13 +2,13 @@
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
-  name: wow-game
-  namespace: wow
+  name: mc-game
+  namespace: minecraft-bedrock
   annotations:
     external-dns.alpha.kubernetes.io/controller: internal
 spec:
   endpoints:
-    - dnsName: wow.game.<secret:private-domain>
+    - dnsName: mc.game.<secret:private-domain>
       recordType: A
       targets:
-        - "192.168.48.29"
+        - "192.168.48.23"

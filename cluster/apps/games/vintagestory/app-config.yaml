@@ -4,3 +4,7 @@
     enabled: false
     selfHeal: true
     prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
