@@ -81,6 +81,12 @@ wow-cmd ".server info"
 wow-cmd ".account create myplayer mypassword"
 wow-cmd ".account set gmlevel myplayer 3 -1"
 wow-cmd ".account list"
+
+# AHBot runtime toggle (no restart needed)
+wow-cmd ".ahbotoptions buyer 1"   # enable buyer
+wow-cmd ".ahbotoptions buyer 0"   # disable buyer (saves ~500m CPU when idle)
+wow-cmd ".ahbotoptions seller 1"  # enable seller
+wow-cmd ".ahbotoptions seller 0"  # disable seller
 ```
 
 ## Module Configuration
