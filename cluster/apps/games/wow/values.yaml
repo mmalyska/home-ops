@@ -76,6 +76,7 @@ controllers:
                 key: AC_CHARACTER_DATABASE_INFO
           AC_SOAP_ENABLED: "1"
           AC_SOAP_IP: "0.0.0.0"
+          AC_MAP_UPDATE_INTERVAL: "100"
         resources:
           requests:
             cpu: 1000m

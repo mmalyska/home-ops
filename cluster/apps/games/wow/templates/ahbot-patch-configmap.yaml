@@ -13,3 +13,4 @@ data:
     sed -i 's/^AuctionHouseBot.GUID = .*/AuctionHouseBot.GUID = {{ .Values.ahbot.characterGuid }}/' /modules-config/mod_ahbot.conf
     sed -i 's/^AuctionHouseBot.EnableSeller = .*/AuctionHouseBot.EnableSeller = 1/' /modules-config/mod_ahbot.conf
     sed -i 's/^AuctionHouseBot.EnableBuyer = .*/AuctionHouseBot.EnableBuyer = 1/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.ItemsPerCycle = .*/AuctionHouseBot.ItemsPerCycle = 50/' /modules-config/mod_ahbot.conf
