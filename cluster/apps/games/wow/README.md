@@ -58,6 +58,9 @@ kubectl attach -it -n wow deploy/wow-worldserver -c worldserver
 | Worldserver console | `kubectl attach -it -n wow deploy/wow-worldserver -c worldserver` (detach: Ctrl+P Ctrl+Q) |
 | DB admin UI | `https://wow-adminer.mmalyska.cloud` (internal network only) |
 | View worldserver logs | `kubectl logs -n wow deploy/wow-worldserver -f` |
+| View worldserver errors | `kubectl exec -n wow deploy/wow-worldserver -c worldserver -- cat /azerothcore/env/dist/logs/Errors.log` |
+
+For help interpreting errors, see the [AzerothCore Common Errors wiki](https://www.azerothcore.org/wiki/common-errors).
 
 ### Account Management via SOAP
 
