@@ -25,12 +25,13 @@ kubectl exec -n wow statefulset/mysql -- mysql -u root -p$MYSQL_ROOT_PASSWORD ac
   -e "UPDATE realmlist SET address='192.168.48.29' WHERE id=1;"
 ```
 
-**2. Create admin account** (via worldserver stdin — the worldserver accepts commands):
+**2. Create admin account** (via worldserver console):
 ```bash
-kubectl exec -n wow deploy/wow-worldserver -it -- bash
-# The worldserver console is active; type commands directly:
-account create admin <password>
-account set gmlevel admin 3 -1
+kubectl attach -it -n wow deploy/wow-worldserver -c worldserver
+# At the AC> prompt:
+.account create admin <password>
+.account set gmlevel admin 3 -1
+# Detach: Ctrl+P Ctrl+Q
 ```
 
 **3. Set up AHBot** (requires an in-game character):
@@ -54,9 +55,30 @@ account set gmlevel admin 3 -1
 |------|---------|
 | Stop worldserver | `kubectl scale -n wow deploy/wow-worldserver --replicas=0` |
 | Start worldserver | `kubectl scale -n wow deploy/wow-worldserver --replicas=1` |
-| Worldserver console | `kubectl exec -n wow deploy/wow-worldserver -it -- bash` |
+| Worldserver console | `kubectl attach -it -n wow deploy/wow-worldserver -c worldserver` (detach: Ctrl+P Ctrl+Q) |
 | DB admin UI | `https://wow-adminer.mmalyska.cloud` (internal network only) |
 | View worldserver logs | `kubectl logs -n wow deploy/wow-worldserver -f` |
+
+### Account Management via SOAP
+
+SOAP is enabled on port 7878. Use `ADMIN:password` credentials (username must match what was set via the console).
+
+```bash
+# Helper function — put in ~/.bashrc  (set WOW_ADMIN_PASS before using)
+wow-cmd() {
+  curl -s -u "ADMIN:${WOW_ADMIN_PASS}" \
+    -H 'Content-Type: text/xml; charset=utf-8' \
+    -H 'SOAPAction: "urn:AC#executeCommand"' \
+    -d "<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"urn:AC\"><SOAP-ENV:Body><ns1:executeCommand><command>$1</command></ns1:executeCommand></SOAP-ENV:Body></SOAP-ENV:Envelope>" \
+    http://192.168.48.29:7878/ | grep -oP '(?<=<result>).*(?=</result>)' | sed 's/&#xD;//g'
+}
+
+# Usage examples
+wow-cmd ".server info"
+wow-cmd ".account create myplayer mypassword"
+wow-cmd ".account set gmlevel myplayer 3 -1"
+wow-cmd ".account list"
+```
 
 ## Module Configuration
 
