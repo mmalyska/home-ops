@@ -1,0 +1,25 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wow-scale-down
+  namespace: wow
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: default
+      containers:
+        - name: scale-down
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              kubectl scale deployment wow-worldserver wow-authserver --replicas=0 -n wow || true
+              kubectl rollout status deployment/wow-worldserver -n wow --timeout=120s || true
+              kubectl rollout status deployment/wow-authserver -n wow --timeout=120s || true
