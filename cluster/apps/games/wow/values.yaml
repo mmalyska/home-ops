@@ -41,7 +41,7 @@ controllers:
       worldserver:
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: rolling@sha256:f78a27266064ed9fc994581a563fa2b27088aa0fb54dba109fe9ecc3c766de1c
+          tag: rolling@sha256:504c4923eafcd5e34b2fcc9be19fa16000afa4c5bdd6fed121fa4990a58e5368
         env:
           AC_DATA_DIR: /azerothcore/env/dist/data
           AC_LOGS_DIR: /azerothcore/env/dist/logs
