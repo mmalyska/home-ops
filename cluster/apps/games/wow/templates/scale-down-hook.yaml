@@ -15,7 +15,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: scale-down
-          image: docker.io/alpine/k8s:1.34.7
+          image: docker.io/alpine/k8s:1.36.0@sha256:c105e4eaa265c617e43be34fffc7d9961de76b65a1e520179ed61e2f3a9fabf7
           command:
             - sh
             - -c
