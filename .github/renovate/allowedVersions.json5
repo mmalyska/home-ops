@@ -13,6 +13,13 @@
       "matchPackageNames": ["ghcr.io/linuxserver/jellyfin"]
     },
     {
+      "description": "Lock to MySQL 8.x — AzerothCore does not support MySQL 9+",
+      "matchDatasources": ["docker"],
+      "allowedVersions": "<9",
+      "matchPackageNames": ["mysql"],
+      "matchFileNames": ["cluster/apps/games/wow/**"]
+    },
+    {
       "description": "Lock version to cluster version",
       "matchDatasources": ["docker", "github-releases"],
       "allowedVersions": "<=1.34",
