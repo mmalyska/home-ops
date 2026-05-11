@@ -8,27 +8,29 @@
 
 ## Phase 1 — Custom Docker Images (`mmalyska/containers` repo)
 
-- [ ] `apps/azerothcore-worldserver/` — multi-stage Dockerfile: build with mod-solocraft, mod-ah-bot, mod-individual-progression; runtime from `acore/ac-wotlk-worldserver:master`
-- [ ] `apps/azerothcore-authserver/` — thin wrapper `FROM acore/ac-wotlk-authserver:master`
-- [ ] `apps/azerothcore-db-import/` — base `acore/ac-wotlk-db-import:master` + copy module SQL files from all 3 modules
-- [ ] CI passes and all 3 images publish to `ghcr.io/mmalyska/`
+- [x] `apps/azerothcore-worldserver/` — multi-stage Dockerfile: build with mod-solocraft, mod-ah-bot, mod-individual-progression; runtime from `acore/ac-wotlk-worldserver:master`
+- [x] `apps/azerothcore-authserver/` — thin wrapper `FROM acore/ac-wotlk-authserver:master`
+- [x] `apps/azerothcore-db-import/` — base `acore/ac-wotlk-db-import:master` + copy module SQL files from all 3 modules
+- [ ] CI passes and all 3 images publish to `ghcr.io/mmalyska/` (boost-fix PR open, pending merge)
 
 ## Phase 2 — Cluster App (`cluster/apps/games/wow/`)
 
-- [ ] Create 2 Bitwarden secrets (MySQL root password + acore user password), note UUIDs for `mysql-externalsecret.yaml`
-- [ ] `app-config.yaml` — namespace `wow`, selfHeal true, prune false, SECRET_PROVIDER plugin enabled
-- [ ] `Chart.yaml` — bjw-s common v5 dependency
-- [ ] `values.yaml` — authserver + worldserver + adminer controllers; authserver + worldserver as LoadBalancer on `192.168.48.29`; adminer as ClusterIP; client-data init container on worldserver; persistence for client-data PVC
-- [ ] `templates/mysql-statefulset.yaml` — MySQL 8.4, env from `wow-mysql-secret`, initdb script for `acore_world` + `acore_characters` DBs, liveness probe
-- [ ] `templates/mysql-service.yaml` — ClusterIP service named `mysql`
-- [ ] `templates/mysql-pvc.yaml` — 10Gi ceph-block PVC named `wow-mysql`
-- [ ] `templates/client-data-pvc.yaml` — 40Gi ceph-block PVC named `wow-client-data`
-- [ ] `templates/db-import-job.yaml` — PostSync ArgoCD hook Job; init container waits for MySQL; runs `azerothcore-db-import` image
-- [ ] `templates/mysql-externalsecret.yaml` — ExternalSecret from ClusterSecretStore `bitwarden`; creates `wow-mysql-secret` with root + acore passwords
-- [ ] `templates/adminer-httproute.yaml` — HTTPRoute on `envoy-internal`, hostname `wow-adminer.<secret:private-domain>`
-- [ ] `templates/dns-endpoint.yaml` — DNSEndpoint `wow.<secret:private-domain>` → `192.168.48.29`, controller `internal`
-- [ ] `templates/volsync.yaml` — ExternalSecret for restic credentials (reuse 4 shared Bitwarden UUIDs from plan.md) + ReplicationSource for `wow-mysql` PVC, schedule `0 */12 * * *`
+- [x] Create 2 Bitwarden secrets (MySQL root password + acore user password), note UUIDs for `mysql-externalsecret.yaml`
+- [x] `app-config.yaml` — namespace `wow`, selfHeal true, prune false, SECRET_PROVIDER plugin enabled
+- [x] `Chart.yaml` — bjw-s common v5 dependency
+- [x] `values.yaml` — authserver + worldserver + adminer controllers; authserver + worldserver as LoadBalancer on `192.168.48.29` with `lbipam.cilium.io/sharing-key: wow`; adminer as ClusterIP; client-data init container on worldserver; persistence for client-data PVC; sync waves 4 on game servers
+- [x] `templates/mysql-statefulset.yaml` — MySQL 8.4, env from `wow-mysql-secret`, initdb script for `acore_world` + `acore_characters` DBs, liveness probe; sync wave 2
+- [x] `templates/mysql-service.yaml` — ClusterIP service named `mysql`
+- [x] `templates/mysql-pvc.yaml` — 10Gi ceph-block PVC named `wow-mysql`
+- [x] `templates/client-data-pvc.yaml` — 40Gi ceph-block PVC named `wow-client-data`
+- [x] `templates/db-import-job.yaml` — Sync hook (wave 3) ArgoCD Job; init container waits for MySQL; runs `azerothcore-db-import` image
+- [x] `templates/mysql-externalsecret.yaml` — ExternalSecret from ClusterSecretStore `bitwarden`; creates `wow-mysql-secret` with root + acore passwords; sync wave 1
+- [x] `templates/adminer-httproute.yaml` — HTTPRoute on `envoy-internal`
+- [x] `templates/dns-endpoint.yaml` — DNSEndpoint `wow.<secret:private-domain>` → `192.168.48.29`
+- [x] `templates/volsync.yaml` — ExternalSecret for restic credentials + ReplicationSource for `wow-mysql` PVC
+- [ ] Pin new worldserver image digest in `values.yaml` after boost-fix CI build completes
 - [ ] `README.md` — client setup, first-time account creation, AHBot setup, day-to-day ops, backup/DR
+- [ ] Open and merge cluster PR (`feat/wow-server`)
 
 ## Phase 3 — Post-Deploy Manual Steps
 

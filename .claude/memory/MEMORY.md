@@ -2,6 +2,7 @@
 
 ## Feedback — How to Work
 
+- [Update plan tasks as work completes](feedback_update_plan_tasks.md) — mark tasks.md [x] immediately after each item is done, not in batch at end
 - [Always update docs after code changes](feedback_update_docs.md) — proactively update CLAUDE.md/docs/README after any non-trivial change
 - [Always verify rendered manifests](feedback_verify_manifests.md) — helm template / kubectl kustomize after every values.yaml edit
 - [Check native Gateway API support first](feedback_check_native_gateway.md) — before writing manual HTTPRoute, check chart values
