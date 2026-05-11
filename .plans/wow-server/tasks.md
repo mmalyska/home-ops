@@ -11,7 +11,7 @@
 - [x] `apps/azerothcore-worldserver/` — multi-stage Dockerfile: build with mod-solocraft, mod-ah-bot, mod-individual-progression; runtime from `acore/ac-wotlk-worldserver:master`
 - [x] `apps/azerothcore-authserver/` — thin wrapper `FROM acore/ac-wotlk-authserver:master`
 - [x] `apps/azerothcore-db-import/` — base `acore/ac-wotlk-db-import:master` + copy module SQL files from all 3 modules
-- [ ] CI passes and all 3 images publish to `ghcr.io/mmalyska/` (boost-fix PR open, pending merge)
+- [x] CI passes and all 3 images publish to `ghcr.io/mmalyska/`
 
 ## Phase 2 — Cluster App (`cluster/apps/games/wow/`)
 
@@ -28,9 +28,9 @@
 - [x] `templates/adminer-httproute.yaml` — HTTPRoute on `envoy-internal`
 - [x] `templates/dns-endpoint.yaml` — DNSEndpoint `wow.<secret:private-domain>` → `192.168.48.29`
 - [x] `templates/volsync.yaml` — ExternalSecret for restic credentials + ReplicationSource for `wow-mysql` PVC
-- [ ] Pin new worldserver image digest in `values.yaml` after boost-fix CI build completes
+- [x] Pin new worldserver image digest in `values.yaml` after boost-fix CI build completes
 - [ ] `README.md` — client setup, first-time account creation, AHBot setup, day-to-day ops, backup/DR
-- [ ] Open and merge cluster PR (`feat/wow-server`)
+- [x] Open and merge cluster PR (`feat/wow-server`)
 
 ## Phase 3 — Post-Deploy Manual Steps
 
