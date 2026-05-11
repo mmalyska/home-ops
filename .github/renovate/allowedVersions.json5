@@ -26,6 +26,7 @@
       "matchPackageNames": [
         "alpine/k8s",
         "kubernetes/kubernetes",
+        "registry.k8s.io/kubectl",
         "siderolabs/kubelet",
         "ghcr.io/siderolabs/kubelet"
       ]
