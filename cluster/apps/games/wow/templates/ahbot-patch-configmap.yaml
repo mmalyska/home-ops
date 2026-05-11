@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wow-ahbot-patch
+  namespace: wow
+data:
+  patch.sh: |
+    #!/bin/bash
+    set -e
+    cp -rn /azerothcore/env/ref/etc/modules/. /modules-config/
+    sed -i 's/^AuctionHouseBot.Account = .*/AuctionHouseBot.Account = {{ .Values.ahbot.accountId }}/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.GUID = .*/AuctionHouseBot.GUID = {{ .Values.ahbot.characterGuid }}/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.EnableSeller = .*/AuctionHouseBot.EnableSeller = 1/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.EnableBuyer = .*/AuctionHouseBot.EnableBuyer = 1/' /modules-config/mod_ahbot.conf

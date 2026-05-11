@@ -2,6 +2,10 @@
 ---
 realmAddress: &realmAddress "192.168.48.29"
 
+ahbot:
+  accountId: 2
+  characterGuid: 1
+
 controllers:
   authserver:
     type: deployment
@@ -39,6 +43,12 @@ controllers:
           tag: master@sha256:5a57099954f5cb8ce97fa5dd67941c3079a350cd2c1f9bdb9ab0f264a3339ef7
         env:
           DATAPATH: /azerothcore/env/dist/data
+      patch-ahbot-config:
+        image:
+          repository: ghcr.io/mmalyska/azerothcore-worldserver
+          tag: rolling@sha256:bbe2306a6324cff9cb9598f3e259c04412b0488f4860b74ce5730874144a92f1
+        command:
+          - /patches/patch.sh
     containers:
       worldserver:
         tty: true
@@ -132,6 +142,24 @@ persistence:
         worldserver:
           - path: /azerothcore/env/dist/data
             readOnly: true
+  ahbot-patch:
+    enabled: true
+    type: configMap
+    name: wow-ahbot-patch
+    defaultMode: 0755
+    advancedMounts:
+      worldserver:
+        patch-ahbot-config:
+          - path: /patches
+  modules-config:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      worldserver:
+        patch-ahbot-config:
+          - path: /modules-config
+        worldserver:
+          - path: /azerothcore/env/dist/etc/modules
   logs:
     enabled: true
     type: emptyDir
