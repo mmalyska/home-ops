@@ -16,7 +16,7 @@ controllers:
       authserver:
         image:
           repository: ghcr.io/mmalyska/azerothcore-authserver
-          tag: rolling@sha256:6d91682bf12b6a14634630f7d4fe8bc28ad62afa9e115648c31e07c065976093
+          tag: rolling@sha256:421edf2b60ff9052061d5330f8620032d2da05be4a51ebb34796e1a251302c07
         env:
           AC_LOGS_DIR: /azerothcore/env/dist/logs
           AC_LOGIN_DATABASE_INFO:
