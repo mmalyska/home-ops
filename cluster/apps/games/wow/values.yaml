@@ -34,14 +34,14 @@ controllers:
       client-data:
         image:
           repository: acore/ac-wotlk-client-data
-          tag: master
+          tag: master@sha256:c178f44711fe22d86a45f985afb0e39902a0fc457d09e540af255410cb3642c9
         env:
           DATAPATH: /azerothcore/env/dist/data
     containers:
       worldserver:
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: rolling@sha256:869f86c3cb21f088c035637ed27081c8483c9cf20d1d3d213b61cc2b57840e35
+          tag: rolling@sha256:f78a27266064ed9fc994581a563fa2b27088aa0fb54dba109fe9ecc3c766de1c
         env:
           AC_DATA_DIR: /azerothcore/env/dist/data
           AC_LOGS_DIR: /azerothcore/env/dist/logs
@@ -74,7 +74,7 @@ controllers:
       adminer:
         image:
           repository: adminer
-          tag: latest
+          tag: latest@sha256:cc64d253db4f016cbcff2ff2f01e60ed07e74f38b4398f84d3c4fae4b5ce0e07
         resources:
           requests:
             cpu: 50m
