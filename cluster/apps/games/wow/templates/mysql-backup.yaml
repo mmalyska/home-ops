@@ -81,6 +81,7 @@ spec:
                 - -c
                 - |
                   restic cat config > /dev/null 2>&1 || restic init
+                  restic unlock
                   restic backup /dump
                   restic forget --prune \
                     --keep-daily 6 \
