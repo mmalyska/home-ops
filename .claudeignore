@@ -1,6 +1,6 @@
 # Ignore files and directories that should not be included in the project
+.archive/cluster
 .vscode
-.archive
 # Tasks
 .task
 # Terraform

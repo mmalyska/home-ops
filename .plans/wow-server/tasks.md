@@ -29,7 +29,7 @@
 - [x] `templates/dns-endpoint.yaml` — DNSEndpoint `wow.<secret:private-domain>` → `192.168.48.29`
 - [x] `templates/volsync.yaml` — ExternalSecret for restic credentials + ReplicationSource for `wow-mysql` PVC
 - [x] Pin new worldserver image digest in `values.yaml` after boost-fix CI build completes
-- [ ] `README.md` — client setup, first-time account creation, AHBot setup, day-to-day ops, backup/DR
+- [x] `README.md` — client setup, first-time account creation, AHBot setup, day-to-day ops, backup/DR
 - [x] Open and merge cluster PR (`feat/wow-server`)
 
 ## Phase 3 — Post-Deploy Manual Steps

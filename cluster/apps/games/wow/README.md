@@ -40,8 +40,10 @@ kubectl attach -it -n wow deploy/wow-worldserver -c worldserver
 **3. Set up AHBot** (requires an in-game character):
 1. Create the ahbot account: `account create ahbot ahbot`
 2. Log in as `ahbot`, create a character named `Auctioneer`, enter the world once, then log out.
-3. Get the character GUID:
+3. Get the account ID and character GUID:
    ```bash
+   kubectl exec -n wow statefulset/mysql -- mysql -u root -p$MYSQL_ROOT_PASSWORD \
+     -e "SELECT id FROM acore_auth.account WHERE username='ahbot';"
    kubectl exec -n wow statefulset/mysql -- mysql -u root -p$MYSQL_ROOT_PASSWORD \
      -e "SELECT guid FROM acore_characters.characters WHERE name='Auctioneer';"
    ```
@@ -67,12 +69,12 @@ For help interpreting errors, see the [AzerothCore Common Errors wiki](https://w
 
 ### Account Management via SOAP
 
-SOAP is enabled on port 7878. Use `ADMIN:password` credentials (username must match what was set via the console).
+SOAP is enabled on port 7878. Use `admin:password` credentials (username must match what was set via the console).
 
 ```bash
 # Helper function — put in ~/.bashrc  (set WOW_ADMIN_PASS before using)
 wow-cmd() {
-  curl -s -u "ADMIN:${WOW_ADMIN_PASS}" \
+  curl -s -u "admin:${WOW_ADMIN_PASS}" \
     -H 'Content-Type: text/xml; charset=utf-8' \
     -H 'SOAPAction: "urn:AC#executeCommand"' \
     -d "<?xml version=\"1.0\" encoding=\"UTF-8\"?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"urn:AC\"><SOAP-ENV:Body><ns1:executeCommand><command>$1</command></ns1:executeCommand></SOAP-ENV:Body></SOAP-ENV:Envelope>" \
@@ -98,10 +100,28 @@ Config files are at `/azerothcore/env/dist/etc/modules/` inside the worldserver 
 
 - **mod-solocraft** (`mod_solocraft.conf`) — `SoloCraft.Enable`, difficulty multipliers per dungeon size
 - **mod-ah-bot** (`mod_ahbot.conf`) — enable buyer/seller, item quotas by rarity, AHBot account/GUID
-- **mod-transmog** (`mod_transmog.conf`) — `Transmogrification.Enable`, cost settings; Transmogrifier NPC spawns in Org/SW by default
+- **mod-transmog** (`mod_transmog.conf`) — `Transmogrification.Enable`, cost settings; Transmogrifier NPC must be manually spawned (see below)
 - **mod-solo-lfg** (`SoloLfg.conf`) — `SoloLFG.Enable`; no other config needed
 
 After editing configs, restart: `kubectl rollout restart -n wow deploy/wow-worldserver`
+
+### Spawning the Transmogrifier NPC (mod-transmog)
+
+The module provides NPC templates (`Warpweaver` entry 190010, `Ethereal Warpweaver` entry 190011) but does not auto-spawn them. Spawn once after the first deploy:
+
+1. Connect in-game as a GM account.
+2. Navigate to where you want the NPC (e.g. Orgrimmar or Stormwind).
+3. In the worldserver console or via SOAP, run:
+   ```
+   .npc add 190010
+   ```
+4. The NPC is now spawned at your character's location and persists across restarts.
+
+To spawn in both cities, teleport to each and repeat. To find or move an existing spawn:
+```
+.npc near          # list nearby NPCs with GUIDs
+.npc move <guid>   # move NPC to your current position
+```
 
 ## Updates
 
