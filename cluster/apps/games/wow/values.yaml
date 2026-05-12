@@ -100,6 +100,11 @@ controllers:
           AC_SKIP_CINEMATICS: "1"
           AC_ALWAYS_MAX_SKILL_FOR_LEVEL: "1"
           AC_INSTANCE_IGNORE_RAID: "1"
+          AC_START_PLAYER_MONEY: "100000"
+          AC_RATE_PET_LEVELXP: "0.15"
+          AC_DEATH_SICKNESS_LEVEL: "80"
+          AC_RATE_HONOR: "2"
+          AC_RATE_ARENA_POINTS: "2"
         resources:
           requests:
             cpu: 1000m
