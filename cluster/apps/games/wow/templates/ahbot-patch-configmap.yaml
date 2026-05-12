@@ -13,4 +13,20 @@ data:
     sed -i 's/^AuctionHouseBot.GUID = .*/AuctionHouseBot.GUID = {{ .Values.ahbot.characterGuid }}/' /modules-config/mod_ahbot.conf
     sed -i 's/^AuctionHouseBot.EnableSeller = .*/AuctionHouseBot.EnableSeller = 1/' /modules-config/mod_ahbot.conf
     sed -i 's/^AuctionHouseBot.EnableBuyer = .*/AuctionHouseBot.EnableBuyer = 1/' /modules-config/mod_ahbot.conf
-    sed -i 's/^AuctionHouseBot.ItemsPerCycle = .*/AuctionHouseBot.ItemsPerCycle = 50/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.ItemsPerCycle = .*/AuctionHouseBot.ItemsPerCycle = 200/' /modules-config/mod_ahbot.conf
+    # Item quality distribution: no grays, few whites (crafting mats), good green/blue supply, modest purple
+    sed -i 's/^AuctionHouseBot.Items.Gray = .*/AuctionHouseBot.Items.Gray = 0/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Items.White = .*/AuctionHouseBot.Items.White = 300/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Items.Green = .*/AuctionHouseBot.Items.Green = 600/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Items.Blue = .*/AuctionHouseBot.Items.Blue = 150/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Items.Purple = .*/AuctionHouseBot.Items.Purple = 30/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Items.Orange = .*/AuctionHouseBot.Items.Orange = 5/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Items.Yellow = .*/AuctionHouseBot.Items.Yellow = 5/' /modules-config/mod_ahbot.conf
+    # Buyer pays up to 100% of market value (default is lower, causing items to expire unsold)
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.Gray = .*/AuctionHouseBot.Buyer.PriceRatio.Gray = 100/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.White = .*/AuctionHouseBot.Buyer.PriceRatio.White = 100/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.Green = .*/AuctionHouseBot.Buyer.PriceRatio.Green = 100/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.Blue = .*/AuctionHouseBot.Buyer.PriceRatio.Blue = 100/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.Purple = .*/AuctionHouseBot.Buyer.PriceRatio.Purple = 100/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.Orange = .*/AuctionHouseBot.Buyer.PriceRatio.Orange = 100/' /modules-config/mod_ahbot.conf
+    sed -i 's/^AuctionHouseBot.Buyer.PriceRatio.Yellow = .*/AuctionHouseBot.Buyer.PriceRatio.Yellow = 100/' /modules-config/mod_ahbot.conf
