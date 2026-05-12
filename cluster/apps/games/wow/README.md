@@ -1,9 +1,12 @@
 # WoW WotLK AzerothCore — Single Player
 
 AzerothCore 3.3.5a private server with mods:
-- **mod-solocraft** — dungeon difficulty scaling for solo play
+- **mod-solocraft** — dungeon/raid difficulty scaling for solo play
 - **mod-ah-bot** — auction house bot (buyer + seller)
-- **mod-individual-progression** — per-player progression stages
+- **mod-transmog** — transmogrification: change item appearance at the Transmogrifier NPC
+- **mod-solo-lfg** — allows queuing into group dungeons alone via the LFG dungeon finder
+
+> **Bots (planned)**: npc-bots via `trickerer/AzerothCore-wotlk-with-NPCBots` will be added in a future update. Requires switching the worldserver build base to that pre-patched AC fork.
 
 ## Client Setup
 
@@ -95,7 +98,8 @@ Config files are at `/azerothcore/env/dist/etc/modules/` inside the worldserver 
 
 - **mod-solocraft** (`mod_solocraft.conf`) — `SoloCraft.Enable`, difficulty multipliers per dungeon size
 - **mod-ah-bot** (`mod_ahbot.conf`) — enable buyer/seller, item quotas by rarity, AHBot account/GUID
-- **mod-individual-progression** (`mod_individual_progression.conf`) — progression stage settings
+- **mod-transmog** (`mod_transmog.conf`) — `Transmogrification.Enable`, cost settings; Transmogrifier NPC spawns in Org/SW by default
+- **mod-solo-lfg** (`SoloLfg.conf`) — `SoloLFG.Enable`; no other config needed
 
 After editing configs, restart: `kubectl rollout restart -n wow deploy/wow-worldserver`
 
