@@ -34,9 +34,9 @@
 
 ## Phase 3 — Post-Deploy Manual Steps
 
-- [ ] Create in-game admin account: `account create admin <password>` + `account set gmlevel admin 3 -1` via worldserver console (`kubectl exec -n wow deploy/wow-worldserver -it -- bash`)
-- [ ] Create AHBot account + character ingame (`ahbot` account, `Auctioneer` character); run setup SQL; update `mod_ahbot.conf` with account + GUID
-- [ ] Update realmlist DB entry: `UPDATE realmlist SET address='192.168.48.29' WHERE id=1;` in `acore_auth`
-- [ ] Configure WoW 3.3.5a client `realmlist.wtf`: `set realmlist wow.<private-domain>`
-- [ ] Verify all three modules load in worldserver logs (grep `mod-solocraft`, `mod-ah-bot`, `mod-individual-progression`)
-- [ ] Confirm Volsync first backup completes: `kubectl get replicationsource -n wow`
+- [x] Create in-game admin account: `account create admin <password>` + `account set gmlevel admin 3 -1` via worldserver console (`kubectl exec -n wow deploy/wow-worldserver -it -- bash`)
+- [x] Create AHBot account + character ingame (`ahbot` account, `Auctioneer` character); run setup SQL; update `mod_ahbot.conf` with account + GUID
+- [x] Update realmlist DB entry: `UPDATE realmlist SET address='192.168.48.29' WHERE id=1;` in `acore_auth`
+- [x] Configure WoW 3.3.5a client `realmlist.wtf`: `set realmlist wow.<private-domain>`
+- [x] Verify all three modules load in worldserver logs (grep `mod-solocraft`, `mod-ah-bot`, `mod-individual-progression`)
+- [x] Confirm backup works (changed from Volsync ReplicationSource to mysql dump + restic upload)

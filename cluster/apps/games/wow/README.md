@@ -132,37 +132,44 @@ To spawn in both cities, teleport to each and repeat. To find or move an existin
 
 ## Backup
 
-Volsync backs up the MySQL PVC (`wow-mysql`) every 12h to Restic (S3).
+A CronJob (`mysql-backup`) runs every 12h (`0 */12 * * *`) in the `wow` namespace:
+1. An init container (`mysql:8.4`) dumps all three databases (`acore_auth`, `acore_characters`, `acore_world`) via `mysqldump --single-transaction` into a shared `emptyDir`
+2. The main container (`restic/restic:0.18.1`) uploads that directory to the shared S3 Restic repo at `$REPOSITORY_TEMPLATE/wow-mysql`
+
+Credentials come from `wow-restic-secret` (ExternalSecret backed by Bitwarden). Retention: 6 daily, 4 weekly, 2 monthly snapshots.
 
 ```bash
-# Check backup status
-kubectl get replicationsource -n wow
+# Check backup job history
+kubectl get jobs -n wow
 
-# Trigger immediate backup
-kubectl annotate replicationsource -n wow wow-mysql volsync.backube/trigger-immediate=true
+# Check logs of the most recent backup
+kubectl logs -n wow -l job-name=mysql-backup --tail=50
 ```
 
 ## Disaster Recovery
 
 **Full rebuild:**
 1. Bitwarden secrets already exist — ExternalSecret restores `wow-mysql-secret` and `wow-restic-secret` automatically
-2. Sync ArgoCD app — MySQL PVC is new/empty, worldserver client-data re-downloads on pod start
+2. Sync ArgoCD app — MySQL StatefulSet starts with empty PVC; worldserver client-data re-downloads on pod start
 3. Restore MySQL from Restic:
-   ```yaml
-   apiVersion: volsync.backube/v1alpha1
-   kind: ReplicationDestination
-   metadata:
-     name: wow-mysql-restore
-     namespace: wow
-   spec:
-     trigger:
-       manual: restore-once
-     restic:
-       copyMethod: Snapshot
-       destinationPVC: wow-mysql
-       repository: wow-restic-secret
-       accessModes: [ReadWriteOnce]
-       storageClassName: ceph-block
-       capacity: 10Gi
-   ```
-4. Once restore completes, delete the `ReplicationDestination` and sync ArgoCD to start services.
+
+```bash
+# List available snapshots
+kubectl run restic-restore -n wow --rm -it --image=restic/restic:0.18.1 \
+  --env-from=secret/wow-restic-secret -- snapshots
+
+# Restore dump files from a snapshot to /tmp/restore
+kubectl run restic-restore -n wow --rm -it --image=restic/restic:0.18.1 \
+  --env-from=secret/wow-restic-secret \
+  -- restore <snapshot-id> --target /tmp/restore
+
+# Import each database (run inside mysql-0 pod, after copying files in)
+kubectl exec -n wow mysql-0 -- sh -c \
+  'gunzip -c /tmp/acore_auth.sql.gz | mysql -u root -p"$MYSQL_ROOT_PASSWORD" acore_auth'
+kubectl exec -n wow mysql-0 -- sh -c \
+  'gunzip -c /tmp/acore_characters.sql.gz | mysql -u root -p"$MYSQL_ROOT_PASSWORD" acore_characters'
+kubectl exec -n wow mysql-0 -- sh -c \
+  'gunzip -c /tmp/acore_world.sql.gz | mysql -u root -p"$MYSQL_ROOT_PASSWORD" acore_world'
+```
+
+Each database is a separate `.sql.gz` file and can be restored independently.
