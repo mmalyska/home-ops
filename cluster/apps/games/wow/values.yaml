@@ -82,12 +82,24 @@ controllers:
           AC_RATE_XP_KILL: "3"
           AC_RATE_XP_QUEST: "3"
           AC_RATE_XP_EXPLORE: "3"
+          # Drop rates by quality (Rate.Drop.Item.* in worldserver.conf)
           AC_RATE_DROP_MONEY: "2"
           AC_RATE_DROP_ITEM_NORMAL: "2"
+          AC_RATE_DROP_ITEM_UNCOMMON: "2"
+          AC_RATE_DROP_ITEM_RARE: "2"
+          AC_RATE_DROP_ITEM_EPIC: "2"
+          AC_RATE_DROP_ITEM_LEGENDARY: "2"
           AC_RATE_REPUTATION_GAIN: "2"
-          AC_RATE_SKILLS: "2"
           AC_RATE_REST_INGAME: "2"
+          # Skill gain rates (SkillGain.* in worldserver.conf)
+          AC_SKILLGAIN_CRAFTING: "2"
+          AC_SKILLGAIN_GATHERING: "2"
+          AC_SKILLGAIN_WEAPON: "2"
+          AC_SKILLGAIN_DEFENSE: "2"
+          # QoL for solo play
           AC_SKIP_CINEMATICS: "1"
+          AC_ALWAYS_MAX_SKILL_FOR_LEVEL: "1"
+          AC_INSTANCE_IGNORE_RAID: "1"
         resources:
           requests:
             cpu: 1000m
