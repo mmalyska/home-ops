@@ -2,7 +2,7 @@
   namespace: wow
   syncPolicy:
     enabled: true
-    selfHeal: true
+    selfHeal: false
     prune: false
   plugin:
     env:

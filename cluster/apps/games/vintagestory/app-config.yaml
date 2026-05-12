@@ -2,7 +2,7 @@
   namespace: vintagestory
   syncPolicy:
     enabled: false
-    selfHeal: true
+    selfHeal: false
     prune: false
   plugin:
     env:
