@@ -7,8 +7,6 @@
 - [Always verify rendered manifests](feedback_verify_manifests.md) — helm template / kubectl kustomize after every values.yaml edit
 - [Check native Gateway API support first](feedback_check_native_gateway.md) — before writing manual HTTPRoute, check chart values
 - [Deployment strategy patch required](feedback_deployment_strategy_patch.md) — RollingUpdate→Recreate needs live object kubectl patch before ArgoCD sync
-- [nvgpu patch 5-step safety audit](feedback_nvgpu_patch_audit.md) — mandatory after every nvgpu-kernel-compat.patch change
-- [nvidia-oot conftest static header approach](feedback_nvidia_oot_conftest.md) — conftest.sh silently fails; use static NV_* compat header instead
 - [Claude files belong in workspace .claude/](feedback_claude_files_in_workspace.md) — skills/config/artifacts go in /workspaces/home-ops/.claude/, not ~/.claude/ (ephemeral)
 - [Cluster access permission rules](feedback_cluster_access_rules.md) — read-only free, mutating ops need user confirmation
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
@@ -16,11 +14,6 @@
 
 ## Project Context
 
-- [Jetson GPU (nvgpu) project — nv1](project_jetson_nvgpu.md) — Phase 3 in progress; Orin NX 16GB at .48.5; pkgs+extensions fork details
-- [siderolabs-extensions fork](project_siderolabs_extensions_fork.md) — mmalyska fork feat/jetson-nvgpu; produces talos-nv1-installer image
-- [siderolabs-pkgs fork](project_siderolabs_pkgs_fork.md) — mmalyska fork feat/jetson-nvgpu; produces nvgpu-driver-pkg
-- [Orin /dev/nvgpu device layout](project_orin_dev_nvgpu_layout.md) — /dev/nvgpu is a directory; use /dev/nvgpu/igpu0/* in device lists
-- [Jetson container runtime — CSV not CDI](project_jetson_container_runtime.md) — use nvidia-container-runtime CSV/Tegra mode for Orin
 - [Secrets architecture (post-2026-03-11)](project_secrets_architecture.md) — three mechanisms; when to use each
 
 ## Reference
