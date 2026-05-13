@@ -34,8 +34,9 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 
 ## Talos Configuration
 
-- Managed with `talhelper` from `provision/talos/talconfig.yaml`
-- Current versions: Talos v1.11.3, Kubernetes v1.34.5 (updated by Renovate)
+- Managed with `talosctl` + `envsubst` from `provision/talos/templates/` and `provision/talos/nodes/`
+- Node index: `provision/talos/nodes.yaml`; generate: `task talos:generate`
+- Current versions: Talos v1.12.7, Kubernetes v1.35.5 (updated by Renovate)
 - 3 control plane nodes (scheduling enabled on control plane, no dedicated workers)
 - Custom extensions: `siderolabs/i915`, `siderolabs/intel-ucode`, `siderolabs/nut-client`
 - OIDC on kube-apiserver pointing to Keycloak
@@ -51,6 +52,6 @@ Full IP allocation and gateway architecture: `@docs/src/general/network.md`.
 
 | File/Directory | Managed By | How to Update |
 |----------------|-----------|---------------|
-| `provision/talos/clusterconfig/` | `talhelper` | `task talos:generate` |
+| `provision/talos/clusterconfig/` | `talosctl` + `envsubst` | `task talos:generate` |
 | Lines prefixed `# renovate: datasource=...` | Renovate bot | Do not manually bump |
 | `.terraform.lock.hcl` | Terraform | `task terraform:init:cloudflare` |

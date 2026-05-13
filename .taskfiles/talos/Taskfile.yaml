@@ -2,15 +2,17 @@
 version: "3"
 
 vars:
-  N: '{{ .N | default "0" }}'
+  N: '{{ .N | default "mc1" }}'
   NODE_LIST:
-    sh: yq '.nodes | keys | join(",")' < {{.TALOS_DIR}}/talconfig.yaml
+    sh: yq '.nodes[].name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
+  CP_LIST:
+    sh: yq '.nodes[] | select(.type == "controlplane") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
+  WORKER_LIST:
+    sh: yq '.nodes[] | select(.type == "worker") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: "v1.13.2"
+  TALOS_VERSION: "v1.12.7"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.35.5"
-  # renovate: datasource=github-releases depName=budimanjojo/talhelper
-  TALHELPER: "v3.1.9"
   TALOS_CONTROLLER:
     sh: talosctl config info --output json | jq --raw-output '.endpoints[]' | shuf -n 1
 
@@ -23,14 +25,13 @@ tasks:
       - task: generate-kubeconfig
 
   install:
-    desc: Install talos and talhelper (task talos:install)
+    desc: Install talosctl (task talos:install)
     cmds:
       - task: install:talos
-      - task: install:talhelper
 
   install:talos:
     internal: true
-    desc: Install talos and talhelper (task talos:install)
+    desc: Install talosctl
     cmds:
       - sudo rm -f /usr/local/bin/talosctl
       - curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/{{ .TALOS_VERSION }}+g" | bash
@@ -39,40 +40,20 @@ tasks:
     status:
       - talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
 
-  install:talhelper:
-    internal: true
-    desc: Install talos and talhelper (task talos:install)
-    vars:
-      ARCH:
-        sh: uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/'
-    cmds:
-      - gh release download {{ .TALHELPER }} --repo budimanjojo/talhelper --pattern "talhelper_linux_{{ .ARCH }}.tar.gz" --dir /tmp/talhelper-install --clobber
-      - tar -xzf /tmp/talhelper-install/talhelper_linux_{{ .ARCH }}.tar.gz -C /tmp/talhelper-install talhelper
-      - sudo install /tmp/talhelper-install/talhelper /usr/local/bin/talhelper
-      - rm -rf /tmp/talhelper-install
-    generates:
-      - /usr/local/bin/talhelper
-    status:
-      - talhelper --version | grep -q 'talhelper version {{ trimPrefix "v" .TALHELPER }}'
-
   dashboard:
-    desc: Show talos dashboard fot N node (task talos:dashboard)
+    desc: Show talos dashboard for N node (task talos:dashboard N=mc1)
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
     cmds:
       - task: generate
       - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} dashboard
 
   shutdown:
-    desc: Shutdown talos N node (task talos:shutdown N=X)
+    desc: Shutdown talos N node (task talos:shutdown N=mc1)
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
     cmds:
       - task: generate
       - task: wait_for_health
@@ -80,23 +61,18 @@ tasks:
       - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} shutdown --wait
 
   upgrade:k8s:
-    dir: provision/talos
-    desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s)
+    desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s N=mc1)
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
     cmds:
       - task: init
       - talosctl --nodes {{ .NODE }} upgrade-k8s --to {{ .KUBERNETES_VERSION }}
 
   upgrade:all:
     desc: Upgrade all nodes to Talos version {{ .TALOS_VERSION }} (task talos:upgrade:all)
-    dir: provision/talos
     cmds:
       - task: init
-      # nodes
       - for:
           var: NODE_LIST
           split: ','
@@ -107,13 +83,11 @@ tasks:
         vars: {TIMEOUT: 10m}
 
   apply:restart:
-    desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=X)
+    desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=mc1)
     dir: provision/talos
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
     cmds:
       - task: generate
       - task: wait_for_health
@@ -124,13 +98,11 @@ tasks:
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   apply:
-    desc: Apply Talos config to a specific node without reboot (task talos:apply N=X)
+    desc: Apply Talos config to a specific node without reboot (task talos:apply N=mc1)
     dir: provision/talos
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
     cmds:
       - task: generate
       - task: wait_for_health
@@ -140,8 +112,7 @@ tasks:
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   apply:reinstall:
-    desc: Apply Talos config to a specific node without reboot (task talos:apply:reinstall N=X FORCE=false)
-    dir: provision/talos
+    desc: Apply Talos config to a specific node and reinstall (task talos:apply:reinstall N=mc1)
     cmds:
       - task: generate
       - task: upgrade
@@ -152,57 +123,96 @@ tasks:
     dir: provision/talos
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
     cmds:
       - cmd: talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig kubeconfig -f --nodes {{ .NODE }} $KUBECONFIG
     status:
       - test -f $KUBECONFIG
 
   generate:
-    internal: true
     desc: Generate Talos machine configurations (task talos:generate)
     dir: provision/talos
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+      KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
-      - talhelper genconfig
+      - task: generate:talosconfig
+      - for:
+          var: CP_LIST
+          split: ','
+        cmd: |
+          envsubst < templates/controlplane.yaml > /tmp/talos-base.yaml
+          talosctl machineconfig patch /tmp/talos-base.yaml \
+            --patch @nodes/{{.ITEM}}.yaml \
+            -o /tmp/talos-patched.yaml
+          envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
+          mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
+      - for:
+          var: WORKER_LIST
+          split: ','
+        cmd: |
+          envsubst < templates/worker.yaml > /tmp/talos-base.yaml
+          talosctl machineconfig patch /tmp/talos-base.yaml \
+            --patch @nodes/{{.ITEM}}.yaml \
+            -o /tmp/talos-patched.yaml
+          envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
+          mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
+      - rm -f /tmp/talos-base.yaml
     sources:
-      - talconfig.yaml
-      - talenv.yaml
-      - talsecret.yaml
+      - templates/*.yaml
+      - nodes/*.yaml
+      - nodes.yaml
     generates:
       - clusterconfig/*.yaml
       - clusterconfig/talosconfig
     preconditions:
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
+      - which envsubst
+      - which talosctl
+      - test -n "$TALHELPER_OSCERT"
+
+  generate:talosconfig:
+    desc: Generate talosconfig from cluster secrets
+    dir: provision/talos
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+    cmds:
+      - envsubst < templates/talosctl-secrets.yaml > /tmp/talos-secrets.yaml
+      - >
+        talosctl gen config home https://${TALHELPER_CLUSTERDOMAIN}:6443
+        --with-secrets /tmp/talos-secrets.yaml
+        --output-types talosconfig
+        --force
+        -o clusterconfig/talosconfig
+      - rm -f /tmp/talos-secrets.yaml
+      - >
+        talosctl --talosconfig=clusterconfig/talosconfig config endpoint
+        $(yq '.nodes[] | select(.type == "controlplane") | .ip' < nodes.yaml | tr '\n' ' ')
+      - >
+        talosctl --talosconfig=clusterconfig/talosconfig config node
+        $(yq '.nodes[].ip' < nodes.yaml | tr '\n' ' ')
 
   apply-config:
     internal: true
-    desc: Apply Talos config to a specific node (task talos:apply N=X)
+    desc: Apply Talos config to a specific node (task talos:apply N=mc1)
     dir: provision/talos
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
       FILE:
-        sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .NODE_NAME }}.yaml
+        sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .N }}.yaml
     cmds:
       - talosctl apply-config --nodes {{ .NODE }} --file {{.FILE}} {{ .CLI_ARGS }}
     preconditions:
-      - test -f {{.TALOS_DIR}}/talconfig.yaml
+      - test -f {{.TALOS_DIR}}/nodes.yaml
 
   upgrade:
     internal: true
-    desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=X)
-    dir: provision/talos
+    desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=mc1)
     vars:
       NODE:
-        sh: yq ".nodes[{{ .N }}].ipAddress" < {{.TALOS_DIR}}/talconfig.yaml
-      NODE_NAME:
-        sh: yq ".nodes[{{ .N }}].hostname" < {{.TALOS_DIR}}/talconfig.yaml
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
       FILE:
-        sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .NODE_NAME }}.yaml
+        sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .N }}.yaml
       TALOS_IMAGE:
         sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
       FORCE: "{{ .FORCE | default false }}"
@@ -211,19 +221,13 @@ tasks:
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
-      # - task: apply-config
-      #   vars: {N: "{{ .N }}", CLI_ARGS: "-m staged"}
       - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
-
 
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy
     cmds:
       - kubectl wait --timeout=5m --for=condition=Complete jobs --all --all-namespaces
-      # Ensure CephCluster is healthy
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
-      # Ensure CloudNative-PG cluster has 2 ready instances
-      # - kubectl -n gitea wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster giteadb-cnpg
       - kubectl -n identity wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster keycloakdb-cnpg

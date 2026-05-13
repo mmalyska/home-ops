@@ -312,7 +312,7 @@ make nvgpu \
   PUSH=true
 ```
 
-Then update `talconfig.yaml` with the new extension image digest and apply to `nv1`:
+Then update the install image digest in `provision/talos/templates/worker.yaml` and apply to `nv1`:
 
 ```bash
 task talos:generate
@@ -367,7 +367,7 @@ Done ✓       Check OE4T patches-r36.5 for new commits
 | L4T file stubs | `nvgpu-driver/files/nvgpu-kernel-compat.patch` | `mmalyska/siderolabs-pkgs` |
 | Source ref + checksums | `Pkgfile` — search `jetson_nvgpu_ref` / `jetson_nvmap_ref` (branch: `patches-r36.5`) | `mmalyska/siderolabs-pkgs` |
 | Extension version string | `nvidia-gpu/nvgpu/vars.yaml` | `mmalyska/siderolabs-extensions` |
-| talconfig node config | `provision/talos/talconfig.yaml` | `home-ops` |
+| Worker install image | `provision/talos/templates/worker.yaml` | `home-ops` |
 
 ---
 

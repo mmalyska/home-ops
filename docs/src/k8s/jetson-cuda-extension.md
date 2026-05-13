@@ -583,7 +583,7 @@ not propagated, the config.toml must be delivered via one of two workarounds:
    that explicitly sets `NVIDIA_CTK_CONFIG_FILE_PATH=/usr/local/etc/nvidia-container-runtime/config.toml`
    and then `exec`s the real binary (renamed to `nvidia-container-runtime.real`).
 
-2. **Talos `machineFiles` patch** — add a `machine.files` entry to `talconfig.yaml` to write
+2. **Talos `machineFiles` patch** — add a `machine.files` entry to `provision/talos/templates/worker.yaml` to write
    `/etc/nvidia-container-runtime/config.toml` outside the extension, at node provision time.
    The extension then only owns the binaries and CSV files; the config lives in the Talos
    machine config.
@@ -699,8 +699,8 @@ The `nvgpu` workflow (`mmalyska/siderolabs-extensions` `feat/jetson-nvgpu`) now:
 4. Passes both as `--system-extension-image` to `make image-installer`
 5. Pushes `ghcr.io/mmalyska/talos-nv1-installer:v1.12.6`
 
-No `talconfig.yaml` changes needed — `talosImageURL: ghcr.io/mmalyska/talos-nv1-installer`
-with talhelper appending `:v1.12.6` already resolves to the updated installer once CI completes.
+No `templates/worker.yaml` changes needed — the install image digest in `machine.install.image`
+already resolves to the updated installer once CI completes (update the digest when changing the image).
 
 **To apply after CI passes:**
 

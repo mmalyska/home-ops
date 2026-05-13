@@ -15,7 +15,7 @@ In this repo I'm focusing on:
 | Tool | Purpose |
 | ---- | ------- |
 | [Talos](https://talos.dev) | Kubernetes-focused immutable Linux OS for all nodes |
-| [talhelper](https://github.com/budimanjojo/talhelper) | Talos config generation from `talconfig.yaml` |
+| talosctl + envsubst | Talos config generation from `provision/talos/templates/` |
 | [Terraform](https://www.terraform.io) | Cloudflare DNS, tunnels, and firewall rules |
 
 ### Kubernetes

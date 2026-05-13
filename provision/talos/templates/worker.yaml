@@ -1,0 +1,84 @@
+version: v1alpha1
+debug: false
+persist: true
+machine:
+  type: worker
+  token: ${TALHELPER_TRUSTDTOKEN}
+  ca:
+    crt: ${TALHELPER_OSCERT}
+    key: ""
+  certSANs:
+    - ${TALHELPER_CLUSTERENDPOINTIP}
+    - ${TALHELPER_CLUSTERDOMAIN}
+    - 127.0.0.1
+  kubelet:
+    image: ghcr.io/siderolabs/kubelet:${KUBERNETES_VERSION}
+    extraArgs:
+      rotate-server-certificates: "true"
+    defaultRuntimeSeccompProfileEnabled: true
+    disableManifestsDirectory: true
+  network:
+    nameservers:
+      - 192.168.50.9
+  install:
+    disk: /dev/nvme0n1
+    image: factory.talos.dev/metal-installer/185266ddb5b9bb403289377302af1fd44575fe7f2864db5a7a96858837ccbcba:${TALOS_VERSION}
+    wipe: false
+    grubUseUKICmdline: true
+  files:
+    - content: |
+        [plugins]
+          [plugins."io.containerd.grpc.v1.cri"]
+            enable_unprivileged_ports = true
+            enable_unprivileged_icmp = true
+        [plugins."io.containerd.grpc.v1.cri".containerd]
+          discard_unpacked_layers = false
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          discard_unpacked_layers = false
+      permissions: 0o0
+      path: /etc/cri/conf.d/20-customization.part
+      op: create
+  time:
+    disabled: false
+    servers:
+      - 192.168.50.1
+  sysctls:
+    net.core.bpf_jit_harden: "1"
+  features:
+    diskQuotaSupport: true
+    kubePrism:
+      enabled: true
+      port: 7445
+    hostDNS:
+      enabled: true
+      forwardKubeDNSToHost: false
+      resolveMemberNames: true
+  nodeLabels:
+    topology.kubernetes.io/region: home
+    topology.kubernetes.io/zone: m
+  nodeTaints:
+    nv: :NoSchedule
+cluster:
+  id: ${TALHELPER_CLUSTERNAME}
+  secret: ${TALHELPER_CLUSTERSECRET}
+  controlPlane:
+    endpoint: https://${TALHELPER_CLUSTERDOMAIN}:6443
+  clusterName: home
+  network:
+    cni:
+      name: none
+    dnsDomain: cluster.local
+    podSubnets:
+      - 10.244.0.0/16
+    serviceSubnets:
+      - 10.96.0.0/12
+  token: ${TALHELPER_BOOTSTRAPTOKEN}
+  ca:
+    crt: ${TALHELPER_K8SCERT}
+    key: ""
+  discovery:
+    enabled: true
+    registries:
+      kubernetes:
+        disabled: true
+      service: {}

@@ -22,7 +22,7 @@ cluster/
   appsets/                     # ArgoCD ApplicationSets
   apps/                        # Applications by category: core, system, default, games, home-automation
 provision/
-  talos/                       # talconfig.yaml, talsecret.yaml, clusterconfig/
+  talos/                       # templates/, nodes/, nodes.yaml, clusterconfig/
   terraform/cloudflare/        # Cloudflare DNS, tunnels, firewall rules
 charts/                        # Local Helm charts
 docs/                          # MkDocs documentation
