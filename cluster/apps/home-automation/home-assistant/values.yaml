@@ -1,8 +1,10 @@
-postgres:
+pgsql-cnpg:
   name: home-assistant
   instances: 2
   storage:
     size: 5Gi
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
   monitoring:
     enablePodMonitor: true
   backup:

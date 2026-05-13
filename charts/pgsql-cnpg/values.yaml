@@ -1,8 +1,8 @@
-name: giteadb
-imageName: ghcr.io/cloudnative-pg/postgresql:15.10
-instances: 2
+name: ""
+imageName: ""
+instances: 1
 storage:
-  size: 5Gi
+  size: 1Gi
 # # bootstrap:
 # #   recovery:
 # #     source: crunchy-cluster

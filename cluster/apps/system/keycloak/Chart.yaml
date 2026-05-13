@@ -2,5 +2,9 @@
 apiVersion: v2
 name: keycloak
 type: application
-version: 2.5.0
+version: 2.6.0
 appVersion: "17.0.1"
+dependencies:
+  - name: pgsql-cnpg
+    version: 1.2.0
+    repository: file://../../../../charts/pgsql-cnpg/
