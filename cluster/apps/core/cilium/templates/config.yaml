@@ -14,4 +14,4 @@ metadata:
 spec:
   loadBalancerIPs: true
   interfaces:
-    - eth0
+    - ^(eth0|enP8p1s0)$
