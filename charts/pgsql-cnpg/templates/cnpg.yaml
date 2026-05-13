@@ -28,6 +28,9 @@ spec:
   externalClusters:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  affinity:
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
   monitoring:
     enablePodMonitor: {{ .Values.monitoring.enablePodMonitor }}
   {{- with .Values.backup }}
