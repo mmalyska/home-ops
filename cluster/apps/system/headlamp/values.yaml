@@ -1,0 +1,20 @@
+headlamp:
+  replicaCount: 1
+
+  config:
+    inCluster: true
+    inClusterContextName: "home"
+    oidc:
+      secret:
+        create: false
+      externalSecret:
+        enabled: true
+        name: headlamp-oidc
+
+  clusterRoleBinding:
+    create: true
+    clusterRoleName: cluster-admin
+
+  service:
+    type: ClusterIP
+    port: 80

@@ -1,0 +1,8 @@
+apiVersion: v2
+name: headlamp
+version: 0.0.1
+type: application
+dependencies:
+  - name: headlamp
+    version: 0.42.0
+    repository: https://kubernetes-sigs.github.io/headlamp/
