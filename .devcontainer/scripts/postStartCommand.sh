@@ -1,6 +1,8 @@
 #!/bin/bash -i
 eval "$(direnv export bash)"
-task talos:init
+if [ -z "${CODESPACES}" ]; then
+  task talos:init
+fi
 
 # Symlink all Claude Code memory files from repo into the expected location.
 # New memory files should be created in .claude/memory/ in the repo (not in the ephemeral dir)

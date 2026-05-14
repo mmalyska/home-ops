@@ -6,9 +6,16 @@
   "secrets": {
     "TERRAFORM_TOKEN": {
       "description": "Token to access terraform cloud."
+    },
+    "BWS_ACCESS_TOKEN": {
+      "description": "Token to access BWS API."
+    },
+    "GITHUB_TOKEN": {
+      "description": "Token to access GitHub API."
     }
   },
-  "runArgs": ["--env-file",".devcontainer/devcontainer.env"],
+  "runArgs": ["--env-file", ".devcontainer/devcontainer.env"],
+  "initializeCommand": "test -f .devcontainer/devcontainer.env || cp .devcontainer/devcontainer.env.sample .devcontainer/devcontainer.env",
   "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
   "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
   "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",
