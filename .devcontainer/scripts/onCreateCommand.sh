@@ -10,7 +10,7 @@ sudo git config --global pull.rebase true
 direnv allow
 
 if [ -n "${CODESPACES}" ]; then
-  sudo apt-get install -y --no-install-recommends wireguard-tools
+  sudo apt-get install -y --no-install-recommends wireguard-tools iputils-ping
 fi
 
 (
