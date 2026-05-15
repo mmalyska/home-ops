@@ -6,9 +6,22 @@
   "secrets": {
     "TERRAFORM_TOKEN": {
       "description": "Token to access terraform cloud."
+    },
+    "BWS_ACCESS_TOKEN": {
+      "description": "Token to access BWS API."
+    },
+    "GITHUB_TOKEN": {
+      "description": "Token to access GitHub API."
+    },
+    "WG_PRIVATE_KEY": {
+      "description": "WireGuard client private key for home lab VPN."
+    },
+    "WG_ENDPOINT": {
+      "description": "WireGuard server endpoint (host:port) for home lab VPN."
     }
   },
-  "runArgs": ["--env-file",".devcontainer/devcontainer.env"],
+  "runArgs": ["--env-file", ".devcontainer/devcontainer.env", "--cap-add=NET_ADMIN", "--device=/dev/net/tun"],
+  "initializeCommand": "test -f .devcontainer/devcontainer.env || cp .devcontainer/devcontainer.env.sample .devcontainer/devcontainer.env",
   "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
   "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
   "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",

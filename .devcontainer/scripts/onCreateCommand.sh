@@ -1,11 +1,17 @@
 #!/bin/bash -i
 sudo git config --global --add safe.directory "${1}"
-sudo git config --global gpg.program gpg
-sudo git config --global commit.gpgsign true
-sudo git config --global user.signingkey F6F676C60A077962
+if gpg --list-secret-keys F6F676C60A077962 &>/dev/null; then
+  sudo git config --global gpg.program gpg
+  sudo git config --global commit.gpgsign true
+  sudo git config --global user.signingkey F6F676C60A077962
+fi
 sudo git config --global pull.rebase true
 
 direnv allow
+
+if [ -n "${CODESPACES}" ]; then
+  sudo apt-get install -y --no-install-recommends wireguard-tools
+fi
 
 (
   set -x; cd "$(mktemp -d)" &&
