@@ -2,13 +2,26 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
   "name": "home-ops",
-  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:79d7e50829ddfd9da6350f4d0287c6902af6139060779e5ab73437dff0b2aaae",
+  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:190379025cb9f2537f50b0ac9dff75207e62c1a2d986b251eea4f1b8d0966b5a",
   "secrets": {
     "TERRAFORM_TOKEN": {
       "description": "Token to access terraform cloud."
+    },
+    "BWS_ACCESS_TOKEN": {
+      "description": "Token to access BWS API."
+    },
+    "GITHUB_TOKEN": {
+      "description": "Token to access GitHub API."
+    },
+    "WG_PRIVATE_KEY": {
+      "description": "WireGuard client private key for home lab VPN."
+    },
+    "WG_ENDPOINT": {
+      "description": "WireGuard server endpoint (host:port) for home lab VPN."
     }
   },
-  "runArgs": ["--env-file",".devcontainer/devcontainer.env"],
+  "runArgs": ["--env-file", ".devcontainer/devcontainer.env", "--cap-add=NET_ADMIN", "--device=/dev/net/tun"],
+  "initializeCommand": "test -f .devcontainer/devcontainer.env || cp .devcontainer/devcontainer.env.sample .devcontainer/devcontainer.env",
   "onCreateCommand": "bash .devcontainer/scripts/onCreateCommand.sh ${containerWorkspaceFolder}",
   "updateContentCommand": "bash .devcontainer/scripts/updateContentCommand.sh",
   "postStartCommand": "bash .devcontainer/scripts/postStartCommand.sh",

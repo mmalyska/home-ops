@@ -40,10 +40,3 @@ tasks:
       - sh: test -f .github/.devcontainer/local-features/common/Brewfile
         msg: |
           Homebrew dependencies are not up to date. Run `task init` to update them.
-  init-subtasks:
-    desc: Initialize subtasks
-    cmds:
-      - task: precommit:init
-      - task: terraform:upgrade:cloudflare
-      - task: talos:init
-      - task: cilium:init
