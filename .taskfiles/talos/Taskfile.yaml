@@ -57,7 +57,7 @@ tasks:
     cmds:
       - task: generate
       - task: wait_for_health
-        vars: {TIMEOUT: 10m}
+        vars: { TIMEOUT: 10m }
       - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} shutdown --wait
 
   upgrade:k8s:
@@ -75,12 +75,12 @@ tasks:
       - task: init
       - for:
           var: NODE_LIST
-          split: ','
+          split: ","
         task: upgrade
         vars:
-          N: '{{.ITEM}}'
+          N: "{{.ITEM}}"
       - task: wait_for_health
-        vars: {TIMEOUT: 10m}
+        vars: { TIMEOUT: 10m }
 
   apply:restart:
     desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=mc1)
@@ -91,9 +91,9 @@ tasks:
     cmds:
       - task: generate
       - task: wait_for_health
-        vars: {TIMEOUT: 10m}
+        vars: { TIMEOUT: 10m }
       - task: apply-config
-        vars: {CLI_ARGS: "-m staged"}
+        vars: { CLI_ARGS: "-m staged" }
       - talosctl reboot --nodes {{ .NODE }} --wait
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
@@ -106,9 +106,9 @@ tasks:
     cmds:
       - task: generate
       - task: wait_for_health
-        vars: {TIMEOUT: 10m}
+        vars: { TIMEOUT: 10m }
       - task: apply-config
-        vars: {CLI_ARGS: "-m auto"}
+        vars: { CLI_ARGS: "-m auto" }
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   apply:reinstall:
@@ -139,7 +139,7 @@ tasks:
       - task: generate:talosconfig
       - for:
           var: CP_LIST
-          split: ','
+          split: ","
         cmd: |
           envsubst < templates/controlplane.yaml > /tmp/talos-base.yaml
           talosctl machineconfig patch /tmp/talos-base.yaml \
@@ -149,7 +149,7 @@ tasks:
           mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
       - for:
           var: WORKER_LIST
-          split: ','
+          split: ","
         cmd: |
           envsubst < templates/worker.yaml > /tmp/talos-base.yaml
           talosctl machineconfig patch /tmp/talos-base.yaml \
@@ -220,7 +220,7 @@ tasks:
       - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .TALOS_VERSION }}' || return 1)
     cmds:
       - task: wait_for_health
-        vars: {TIMEOUT: 10m}
+        vars: { TIMEOUT: 10m }
       - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 

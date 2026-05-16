@@ -98,10 +98,10 @@ cluster:
     extraArgs:
       oidc-client-id: ${TALHELPER_OIDCCLIENTID}
       oidc-groups-claim: groups
-      oidc-groups-prefix: 'oidc:'
+      oidc-groups-prefix: "oidc:"
       oidc-issuer-url: ${TALHELPER_OIDCISSUERURL}
       oidc-username-claim: email
-      oidc-username-prefix: 'oidc:'
+      oidc-username-prefix: "oidc:"
     certSANs:
       - ${TALHELPER_CLUSTERENDPOINTIP}
       - ${TALHELPER_CLUSTERDOMAIN}
