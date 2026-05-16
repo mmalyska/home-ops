@@ -78,7 +78,9 @@
         "acore/ac-wotlk-client-data"
       ],
       "groupName": "azerothcore",
-      "group": {"commitMessageTopic": "{{{groupName}}} group"}
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "schedule": ["once a week"],
+      "minimumReleaseAge": "6 hours"
     }
   ]
 }
