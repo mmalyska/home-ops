@@ -4,6 +4,7 @@ When a new Talos release bumps the kernel version, the `nvgpu` extension may fai
 This guide explains how to investigate and fix it.
 
 > **Related docs:**
+>
 > - [jetson-gpu.md](archive/jetson-gpu.md) — full architecture and build plan (archived)
 > - [jetson-cuda-extension.md](jetson-cuda-extension.md) — CUDA extension plan
 
@@ -16,7 +17,7 @@ set that Talos uses for kernel builds). Both must be updated together. This trig
 failure modes:
 
 | Failure mode | Symptom | Root cause |
-|---|---|---|
+| --- | --- | --- |
 | **NV_* macro mismatch** | Compile error in `nvgpu/os/linux/` or `nvgpu/drivers/gpu/nvgpu/` | A kernel API changed; nvgpu has an `#ifdef NV_*` guard for it, but `nv_compat.h` is not updated |
 | **New L4T stub needed** | `fatal error: some/l4t/header.h: No such file` | OE4T upstream added new L4T-BSP-only code without a vanilla alternative |
 | **Extensions CI "not found"** | `ghcr.io/mmalyska/nvgpu-driver-pkg:<pkgs-tag>: not found` | pkgs fork git tag missing — see below |
@@ -27,7 +28,7 @@ failure modes:
 
 The extensions `pkg.yaml` pulls the driver package as:
 
-```
+```text
 ghcr.io/mmalyska/nvgpu-driver-pkg:{{ .BUILD_ARG_PKGS }}
 ```
 
@@ -116,7 +117,8 @@ checksums (see [Step 7](#step-7--bump-the-nvgpu-source-ref) below).
 ### Case A: NV_* macro missing (most common)
 
 **Symptom:**
-```
+
+```text
 error: implicit declaration of function 'foo_new_api'
 error: 'FOO' undeclared
 ```
@@ -138,6 +140,7 @@ grep -rn "foo_new_api" /src/include/ /src/kernel/ 2>/dev/null | head -10
 **Fix:**
 
 If the new kernel **has** the new API:
+
 ```c
 // Add to nvgpu-driver/files/nv_compat.h with a comment
 /* foo_new_api() replaced foo_old_api() in 6.XX */
@@ -145,6 +148,7 @@ If the new kernel **has** the new API:
 ```
 
 If the new kernel does **not** have the new API (or the feature was removed):
+
 - Do NOT define the macro — the `#else` branch of the guard handles the old API.
 - If a previously-defined macro is now wrong, **remove** it from `nv_compat.h`.
 
@@ -156,7 +160,8 @@ If the new kernel does **not** have the new API (or the feature was removed):
 ### Case B: Missing L4T-only header
 
 **Symptom:**
-```
+
+```text
 fatal error: soc/tegra/some/bsp/header.h: No such file or directory
 fatal error: linux/platform/tegra/some_header.h: No such file or directory
 ```
@@ -186,6 +191,7 @@ head -50 /tmp/nvgpu/drivers/gpu/nvgpu/path/to/the/file.c
 ```
 
 Verify the patch applies cleanly:
+
 ```bash
 git clone --depth=1 --branch patches-r36.5 https://github.com/OE4T/linux-nvgpu.git /tmp/nvgpu-test
 git -C /tmp/nvgpu-test apply nvgpu-driver/files/nvgpu-kernel-compat.patch
@@ -196,7 +202,8 @@ git -C /tmp/nvgpu-test apply nvgpu-driver/files/nvgpu-kernel-compat.patch
 ### Case C: Linker error / undefined symbol
 
 **Symptom:**
-```
+
+```text
 ERROR: modpost: "some_kernel_symbol" [nvgpu.ko] undefined!
 ```
 
@@ -247,7 +254,8 @@ make nvgpu-driver \
 ```
 
 Expected output ends with:
-```
+
+```text
 Successfully built <image-id>
 ```
 
@@ -312,7 +320,7 @@ make nvgpu \
   PUSH=true
 ```
 
-Then update `talconfig.yaml` with the new extension image digest and apply to `nv1`:
+Then update the install image digest in `provision/talos/templates/worker.yaml` and apply to `nv1`:
 
 ```bash
 task talos:generate
@@ -323,7 +331,7 @@ task talos:apply NODE=192.168.48.5
 
 ## Quick decision tree
 
-```
+```text
 New Talos version released
           │
           ▼
@@ -362,18 +370,18 @@ Done ✓       Check OE4T patches-r36.5 for new commits
 ## Files reference
 
 | What | File | Repo |
-|---|---|---|
+| --- | --- | --- |
 | NV_* macro shims | `nvgpu-driver/files/nv_compat.h` | `mmalyska/siderolabs-pkgs` |
 | L4T file stubs | `nvgpu-driver/files/nvgpu-kernel-compat.patch` | `mmalyska/siderolabs-pkgs` |
 | Source ref + checksums | `Pkgfile` — search `jetson_nvgpu_ref` / `jetson_nvmap_ref` (branch: `patches-r36.5`) | `mmalyska/siderolabs-pkgs` |
 | Extension version string | `nvidia-gpu/nvgpu/vars.yaml` | `mmalyska/siderolabs-extensions` |
-| talconfig node config | `provision/talos/talconfig.yaml` | `home-ops` |
+| Worker install image | `provision/talos/templates/worker.yaml` | `home-ops` |
 
 ---
 
 ## Known pre-existing warnings (non-fatal)
 
-```
+```text
 WARNING: modpost: nvgpu: section mismatch in reference: gk20a_driver+0x8 (section: .data)
          -> gk20a_remove_wrapper (section: .exit.text)
 ```
@@ -389,7 +397,7 @@ module from loading.
 These are the macros currently defined in `nv_compat.h` and the kernel version each one covers:
 
 | Macro | Since kernel | API change |
-|---|---|---|
+| --- | --- | --- |
 | `NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS` | 6.3 | `vm_flags_set()`/`vm_flags_clear()` instead of `\|=`/`&=~` |
 | `NV_CLASS_CREATE_HAS_NO_OWNER_ARG` | 6.4 | `class_create(name)` — `THIS_MODULE` arg removed |
 | `NV_CLASS_STRUCT_DEVNODE_HAS_CONST_DEV_ARG` | 6.2 | `const struct device *` in devnode callback |

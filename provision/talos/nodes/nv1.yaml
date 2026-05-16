@@ -1,0 +1,11 @@
+machine:
+  network:
+    hostname: nv1
+    interfaces:
+      - interface: enP8p1s0
+        addresses:
+          - 192.168.48.5/22
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.50.1

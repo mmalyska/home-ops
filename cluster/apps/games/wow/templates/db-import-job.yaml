@@ -53,4 +53,4 @@ spec:
                   name: wow-mysql-secret
                   key: AC_CHARACTER_DATABASE_INFO_ROOT
             - name: AC_REALM_ADDRESS
-              value: {{ .Values.realmAddress | quote }}
+              value: {{.Values.realmAddress | quote}}

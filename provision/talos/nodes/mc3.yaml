@@ -1,0 +1,13 @@
+machine:
+  network:
+    hostname: mc3
+    interfaces:
+      - interface: eth0
+        addresses:
+          - 192.168.48.4/22
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.50.1
+        vip:
+          ip: 192.168.48.1

@@ -8,7 +8,7 @@ of deliberate manual gates for destructive or interactive operations.
 
 Before running bootstrap:
 
-- Talos machine configs generated: `task talos:init` (runs `talhelper genconfig`)
+- Talos machine configs generated: `task talos:init` (runs `task talos:generate` via `talosctl` + `envsubst`)
 - `.envrc` sourced via `direnv` — the following env vars must be set:
   - `BWS_TOKEN` — Bitwarden Secrets Manager machine account token
   - `KUBECONFIG` — path to the kubeconfig file
