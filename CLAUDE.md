@@ -1,8 +1,11 @@
+# Claude Code Instructions
+
 ## Core Principles
 
 **Skills-first**: Every request — load relevant skills before gathering context or executing.
 
-**Framework improvement**: Update a skill when a workaround was needed or a better approach was found. Create a new skill when the same domain context is needed across 2+ sessions. Prompt user: "This pattern seems reusable — should I update [skill] or create a new one?"
+**Framework improvement**: Update a skill when a workaround was needed or a better approach was found. Create a new skill when the same domain context is needed across
+2+ sessions. Prompt user: "This pattern seems reusable — should I update [skill] or create a new one?"
 
 ## Project Overview
 
@@ -15,7 +18,7 @@ Personal home-lab running self-hosted services (media, home automation, observab
 
 ## Repository Structure
 
-```
+```text
 cluster/
   bootstrap-application.yaml   # Root app-of-apps entry point
   projects/                    # ArgoCD AppProject definitions
@@ -33,7 +36,7 @@ docs/                          # MkDocs documentation
 
 Each app lives at `cluster/apps/{category}/{app-name}/`:
 
-```
+```text
 app-name/
 ├── app-config.yaml      # ArgoCD ApplicationSet config (enabled: "true|false")
 ├── Chart.yaml           # Helm chart + external dependencies
@@ -43,7 +46,8 @@ app-name/
 
 Kustomize-based apps use `kustomization.yaml` instead of `Chart.yaml`. Multi-component apps use `appSubfolder` in `app-config.yaml`.
 
-Key `app-config.yaml` fields: `enabled`, `namespace`, `appSubfolder` (multi-component), `syncWave` (lower deploys first), `syncPolicy` (selfHeal/prune), and `plugin.env` with `SECRET_PROVIDER: cluster-secrets` to enable `<secret:key>` token substitution. For full YAML templates use the **add-app skill**.
+Key `app-config.yaml` fields: `enabled`, `namespace`, `appSubfolder` (multi-component), `syncWave` (lower deploys first), `syncPolicy` (selfHeal/prune),
+and `plugin.env` with `SECRET_PROVIDER: cluster-secrets` to enable `<secret:key>` token substitution. For full YAML templates use the **add-app skill**.
 
 ## Secrets Management
 

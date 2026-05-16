@@ -15,7 +15,7 @@ when_to_use: >
 ## Core Infrastructure
 
 | Component | Purpose |
-|-----------|---------|
+| --- | --- |
 | **Cilium** | CNI, kube-proxy replacement, L2 announcements for LoadBalancer IPs |
 | **Envoy Gateway** | Kubernetes Gateway API — `envoy-external` (.20, internet via Cloudflare Tunnel) and `envoy-internal` (.21, home network only) |
 | **Cloudflared** | Cloudflare Tunnel client |
@@ -51,7 +51,7 @@ Full IP allocation and gateway architecture: `@docs/src/general/network.md`.
 ## Do Not Edit (Generated/Auto-managed Files)
 
 | File/Directory | Managed By | How to Update |
-|----------------|-----------|---------------|
+| --- | --- | --- |
 | `provision/talos/clusterconfig/` | `talosctl` + `envsubst` | `task talos:generate` |
 | Lines prefixed `# renovate: datasource=...` | Renovate bot | Do not manually bump |
 | `.terraform.lock.hcl` | Terraform | `task terraform:init:cloudflare` |
