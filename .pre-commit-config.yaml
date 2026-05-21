@@ -14,10 +14,14 @@ repos:
           - --config-file
           - .github/linters/.yamllint.yaml
         id: yamllint
-  - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.30
+  - repo: local
     hooks:
       - id: helmlint
+        name: helm lint
+        language: system
+        entry: bash -c 'for chart in "$@"; do dir=$(dirname "$chart"); helm dependency update "$dir" --quiet 2>/dev/null || true; helm lint "$dir"; done' --
+        files: Chart\.yaml$
+        pass_filenames: true
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
