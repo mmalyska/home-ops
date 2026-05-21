@@ -6,4 +6,4 @@
 echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc
 echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc
 
-/home/linuxbrew/.linuxbrew/bin/npm install -g @anthropic-ai/claude-code
+PATH="/home/linuxbrew/.linuxbrew/bin:$PATH" /home/linuxbrew/.linuxbrew/bin/npm install -g @anthropic-ai/claude-code
