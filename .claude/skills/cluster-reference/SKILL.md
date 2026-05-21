@@ -7,7 +7,7 @@ description: >
 when_to_use: >
   Trigger phrases: "talos", "upgrade", "which version", "infrastructure", "what does X do",
   "network", "IP pool", "LB IP", "egctl", "renovate", "extensions", "do not edit",
-  "clusterconfig", "component".
+  "clusterconfig", "component", "shutdown node", "power off node", "bring node back", "node maintenance".
 ---
 
 # Cluster Reference
@@ -47,6 +47,53 @@ Node subnet: `192.168.48.0/22` · Pod network: `10.244.0.0/16` · Service networ
 LB IP pool: `192.168.48.20–50` (annotate new services with `lbipam.cilium.io/ips: "192.168.48.XX"`)
 
 Full IP allocation and gateway architecture: `@docs/src/general/network.md`.
+
+## Node Maintenance — Shutdown
+
+To cleanly shut down a node (e.g. mc3 at `192.168.48.4`):
+
+```sh
+# 1. Cordon — prevent new pods scheduling
+kubectl cordon <node-name>
+
+# 2. Drain — evict running pods
+kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+
+# 3. Pause Ceph rebalancing (prevents unnecessary data movement during downtime)
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph osd set noout
+
+# 4. Verify Ceph is healthy before proceeding
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
+
+# 5. Shut down via talosctl
+TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig \
+  talosctl shutdown --nodes <node-ip>
+```
+
+Node IPs: mc1=`192.168.48.2`, mc2=`192.168.48.3`, mc3=`192.168.48.4`
+
+## Node Maintenance — Power On / Bring Back
+
+```sh
+# 1. Power on the machine physically (or WoL)
+
+# 2. Wait for node to become Ready
+kubectl get node <node-name> -w
+
+# 3. Uncordon FIRST — Rook OSD pods need to schedule before Ceph can see the OSD back
+kubectl uncordon <node-name>
+
+# 4. Wait for OSD pod to start and Ceph to register it
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
+
+# 5. Once OSDs are back up, unset noout
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph osd unset noout
+
+# 6. Verify HEALTH_OK
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
+```
+
+> **Order matters**: uncordon before unsetting `noout` — the OSD pod must be running on the node before Ceph can mark it `up`.
 
 ## Do Not Edit (Generated/Auto-managed Files)
 
