@@ -8,3 +8,19 @@
     env:
       - name: SECRET_PROVIDER
         value: cluster-secrets
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: wow-authserver
+      jsonPointers:
+        - /spec/replicas
+    - group: apps
+      kind: Deployment
+      name: wow-worldserver
+      jsonPointers:
+        - /spec/replicas
+    - group: apps
+      kind: Deployment
+      name: wow-adminer
+      jsonPointers:
+        - /spec/replicas

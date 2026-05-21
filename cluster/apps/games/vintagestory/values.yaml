@@ -10,7 +10,7 @@ controllers:
   main:
     type: statefulset
     strategy: RollingUpdate
-    replicas: 0
+    replicas: 1
     initContainers:
       init:
         image:
