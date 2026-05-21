@@ -39,7 +39,8 @@
       "Bash(git status*)",
       "Bash(git log *)",
       "Bash(git diff *)",
-      "Bash(git branch*)"
+      "Bash(git branch*)",
+      "Bash(gh run *)"
     ],
     "deny": [
       "Bash(kubectl get secret*)",
