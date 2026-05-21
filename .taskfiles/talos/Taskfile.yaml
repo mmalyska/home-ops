@@ -158,13 +158,6 @@ tasks:
           envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
           mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
       - rm -f /tmp/talos-base.yaml
-    sources:
-      - templates/*.yaml
-      - nodes/*.yaml
-      - nodes.yaml
-    generates:
-      - clusterconfig/*.yaml
-      - clusterconfig/talosconfig
     preconditions:
       - which envsubst
       - which talosctl
