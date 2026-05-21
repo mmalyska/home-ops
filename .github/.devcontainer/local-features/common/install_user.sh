@@ -5,3 +5,5 @@
 
 echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc
 echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc
+
+npm install -g @anthropic-ai/claude-code
