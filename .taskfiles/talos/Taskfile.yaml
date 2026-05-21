@@ -40,6 +40,11 @@ tasks:
     status:
       - talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
 
+  version:
+    desc: Show Talos version on all nodes (task talos:version)
+    cmds:
+      - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig version --short
+
   dashboard:
     desc: Show talos dashboard for N node (task talos:dashboard N=mc1)
     vars:
@@ -214,7 +219,7 @@ tasks:
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
-      - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }}
+      - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }} --wait=false
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
 
   wait_for_health:
