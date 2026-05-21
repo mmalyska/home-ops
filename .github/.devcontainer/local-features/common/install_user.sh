@@ -1,9 +1,11 @@
 #!/bin/bash
 
+export PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH"
+
 /home/linuxbrew/.linuxbrew/bin/brew update
 /home/linuxbrew/.linuxbrew/bin/brew bundle install --file=Brewfile && /home/linuxbrew/.linuxbrew/bin/brew bundle upgrade --file=Brewfile
 
 echo 'eval "$(direnv hook zsh)"' >> /home/vscode/.zshrc
 echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc
 
-PATH="/home/linuxbrew/.linuxbrew/bin:$PATH" /home/linuxbrew/.linuxbrew/bin/npm install -g @anthropic-ai/claude-code
+npm install -g @anthropic-ai/claude-code
