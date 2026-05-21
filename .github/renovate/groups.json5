@@ -79,7 +79,7 @@
       ],
       "groupName": "azerothcore",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "schedule": ["before 5am on monday"],
+      "automergeSchedule": ["before 5am on monday"],
       "minimumReleaseAge": "6 hours"
     }
   ]
