@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+  namespace: hermes-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hermes-agent
+  template:
+    metadata:
+      labels:
+        app: hermes-agent
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      initContainers:
+        - name: config-seeder
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command:
+            - sh
+            - -c
+            - "[ -f /opt/data/config.yaml ] || cp /config-template/config.yaml /opt/data/config.yaml"
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: config-template
+              mountPath: /config-template
+      containers:
+        - name: gateway
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          args:
+            - gateway
+            - run
+          env:
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
+            - name: SIGNAL_HTTP_URL
+              value: "http://signal-cli:8080"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: ANTHROPIC_API_KEY
+            - name: SIGNAL_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: SIGNAL_ACCOUNT
+            - name: SIGNAL_ALLOWED_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: SIGNAL_ALLOWED_USERS
+          resources: {{toYaml .Values.hermes.gateway.resources | nindent 12}}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+        - name: dashboard
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          args:
+            - dashboard
+            - --host
+            - "0.0.0.0"
+            - --no-open
+          ports:
+            - name: http
+              containerPort: 9119
+              protocol: TCP
+          env:
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
+            - name: SIGNAL_HTTP_URL
+              value: "http://signal-cli:8080"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: ANTHROPIC_API_KEY
+            - name: SIGNAL_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: SIGNAL_ACCOUNT
+            - name: SIGNAL_ALLOWED_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: SIGNAL_ALLOWED_USERS
+          resources: {{toYaml .Values.hermes.dashboard.resources | nindent 12}}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-agent-data
+        - name: config-template
+          configMap:
+            name: hermes-agent-config
