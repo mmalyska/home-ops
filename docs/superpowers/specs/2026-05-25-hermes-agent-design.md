@@ -19,7 +19,9 @@ ingress only, and Signal messenger as a chat interaction channel.
 
 ### Deployment model
 
-Single Deployment in namespace `hermes-agent` with **three containers + one init container**, sharing RWO PVCs.
+Two Deployments in namespace `hermes-agent`, each with its own PVC.
+
+**Deployment: hermes-agent** — two containers + one init container:
 
 ```text
 Pod
@@ -30,24 +32,27 @@ Pod
 │     image: nousresearch/hermes-agent
 │     command: ["gateway", "run"]
 │     mount: /opt/data → hermes-data PVC
-├── container: dashboard
-│     image: nousresearch/hermes-agent
-│     command: ["dashboard", "--host", "0.0.0.0", "--no-open"]
-│     port: 9119
-│     mount: /opt/data → hermes-data PVC
+└── container: dashboard
+      image: nousresearch/hermes-agent
+      command: ["dashboard", "--host", "0.0.0.0", "--no-open"]
+      port: 9119
+      mount: /opt/data → hermes-data PVC
+```
+
+**Deployment: signal-cli** — single container:
+
+```text
+Pod
 └── container: signal-cli
       image: bbernhard/signal-cli-rest-api:0.99
       env: MODE=json-rpc
-      port: 8080 (localhost only — no K8s Service)
+      port: 8080
       mount: /home/.local/share/signal-cli → signal-data PVC
 ```
 
-Key changes from docker-compose:
-
-- Dashboard uses `--host 0.0.0.0` (not `127.0.0.1`) so the K8s Service can reach it.
-- `signal-cli` runs as a sidecar in `MODE=json-rpc`, which exposes signal-cli's native
-  JSON-RPC/SSE HTTP daemon on port 8080 — exactly the interface hermes-agent's Signal adapter
-  expects. Gateway reaches it via `http://localhost:8080`.
+Key change from docker-compose: dashboard uses `--host 0.0.0.0` (not `127.0.0.1`) so the K8s
+Service can reach it. The hermes-agent gateway reaches signal-cli via its ClusterIP Service at
+`http://signal-cli:8080` (same namespace).
 
 ---
 
@@ -55,17 +60,19 @@ Key changes from docker-compose:
 
 ```text
 cluster/apps/default/hermes-agent/
-├── app-config.yaml           # ArgoCD ApplicationSet entry
-├── Chart.yaml                # Local chart, no upstream dependency
-├── values.yaml               # Image tags, resources, hostname token
+├── app-config.yaml                # ArgoCD ApplicationSet entry
+├── Chart.yaml                     # Local chart, no upstream dependency
+├── values.yaml                    # Image tags, resources, hostname token
 └── templates/
-    ├── deployment.yaml       # Three-container pod + init container
-    ├── service.yaml          # ClusterIP, port 9119
-    ├── pvc.yaml              # 1Gi RWO for /opt/data (hermes)
-    ├── signal-pvc.yaml       # 1Gi RWO for signal-cli account data
-    ├── configmap.yaml        # Seed config.yaml
-    ├── externalsecret.yaml   # API keys + Signal secrets
-    └── httproute.yaml        # envoy-internal → service:9119
+    ├── deployment.yaml            # Two-container pod + init container
+    ├── service.yaml               # ClusterIP, port 9119 (dashboard)
+    ├── pvc.yaml                   # 1Gi RWO for /opt/data (hermes)
+    ├── configmap.yaml             # Seed config.yaml
+    ├── externalsecret.yaml        # API keys + Signal secrets
+    ├── httproute.yaml             # envoy-internal → service:9119
+    ├── signal-deployment.yaml     # signal-cli Deployment
+    ├── signal-service.yaml        # ClusterIP, port 8080 (signal-cli)
+    └── signal-pvc.yaml            # 1Gi RWO for signal-cli account data
 ```
 
 ---
@@ -94,7 +101,7 @@ The user can switch providers (to Anthropic or OpenRouter) via the dashboard. Sw
 | `ANTHROPIC_API_KEY`   | ExternalSecret                 | Same Bitwarden UUID as litellm  |
 | `OPENROUTER_API_KEY`  | ExternalSecret (commented out) | Add Bitwarden UUID to enable    |
 | `OLLAMA_BASE_URL`     | Plain env var                  | In-cluster Ollama endpoint      |
-| `SIGNAL_HTTP_URL`     | Plain env var                  | `http://localhost:8080`         |
+| `SIGNAL_HTTP_URL`     | Plain env var                  | `http://signal-cli:8080`        |
 | `SIGNAL_ACCOUNT`      | ExternalSecret                 | Phone number in E.164 format    |
 | `SIGNAL_ALLOWED_USERS`| ExternalSecret                 | Comma-separated E.164 numbers   |
 
@@ -155,8 +162,9 @@ Dashboard is internal-only (no `envoy-external` parent ref).
 ### How it works
 
 hermes-agent's Signal adapter connects to `signal-cli` running in HTTP daemon mode. It streams
-incoming messages via SSE and sends responses via JSON-RPC. The sidecar makes signal-cli available
-at `http://localhost:8080` — no K8s Service or NetworkPolicy needed.
+incoming messages via SSE and sends responses via JSON-RPC. The separate signal-cli Deployment
+exposes port 8080 via a ClusterIP Service named `signal-cli`; the hermes-agent gateway reaches it
+at `http://signal-cli:8080` within the same namespace.
 
 ### One-time account linking (manual, run once before first deploy)
 
