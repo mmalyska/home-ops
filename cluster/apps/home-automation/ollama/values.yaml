@@ -3,7 +3,8 @@ ollama:
     models:
       pull:
         - deepcoder:14b
-        - llama3.2:3b
+        - qwen3.5:9b
+        - gemma4:26b
   extraEnv:
     - name: OLLAMA_NUM_PARALLEL
       value: "2"
@@ -25,4 +26,4 @@ ollama:
     requests:
       gpu.intel.com/i915: 1
       cpu: 100m
-      memory: 512Mi
+      memory: 8Gi
