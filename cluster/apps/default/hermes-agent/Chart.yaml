@@ -1,0 +1,4 @@
+apiVersion: v2
+name: hermes-agent
+type: application
+version: 1.0.0
