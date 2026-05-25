@@ -15,10 +15,10 @@ spec:
     template:
       engineVersion: v2
       data:
-        RESTIC_REPOSITORY: '{{`{{ .REPOSITORY_TEMPLATE }}`}}/wow-mysql'
-        RESTIC_PASSWORD: '{{`{{ .RESTIC_PASSWORD }}`}}'
-        AWS_ACCESS_KEY_ID: '{{`{{ .AWS_ACCESS_KEY_ID }}`}}'
-        AWS_SECRET_ACCESS_KEY: '{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}'
+        RESTIC_REPOSITORY: "{{`{{ .REPOSITORY_TEMPLATE }}`}}/wow-mysql"
+        RESTIC_PASSWORD: "{{`{{ .RESTIC_PASSWORD }}`}}"
+        AWS_ACCESS_KEY_ID: "{{`{{ .AWS_ACCESS_KEY_ID }}`}}"
+        AWS_SECRET_ACCESS_KEY: "{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}"
   data:
     - secretKey: REPOSITORY_TEMPLATE
       remoteRef:
@@ -98,4 +98,4 @@ spec:
                   cpu: 50m
                   memory: 128Mi
                 limits:
-                  memory: 256Mi
+                  memory: 512Mi
