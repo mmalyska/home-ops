@@ -6,8 +6,16 @@ ollama:
         - qwen3.5:9b
         - gemma4:26b
   extraEnv:
+    - name: OLLAMA_KV_CACHE_TYPE
+      value: "q4_0"
     - name: OLLAMA_NUM_PARALLEL
-      value: "2"
+      value: "1"
+    - name: OLLAMA_NUM_GPU
+      value: "-1"
+    - name: OLLAMA_FLASH_ATTENTION
+      value: "1"
+    - name: OLLAMA_CONTEXT_LENGTH
+      value: "131072"
   service:
     annotations:
       lbipam.cilium.io/sharing-key: "voice-pipeline"
