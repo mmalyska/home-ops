@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: signal-cli
+  namespace: hermes-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: signal-cli
+  template:
+    metadata:
+      labels:
+        app: signal-cli
+    spec:
+      containers:
+        - name: signal-cli
+          image: "{{ .Values.signalCli.image.repository }}:{{ .Values.signalCli.image.tag }}"
+          env:
+            - name: MODE
+              value: json-rpc
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources: {{ toYaml .Values.signalCli.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /home/.local/share/signal-cli
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-signal-data
