@@ -58,6 +58,11 @@ spec:
                 secretKeyRef:
                   name: hermes-agent-secrets
                   key: SIGNAL_ALLOWED_USERS
+            - name: SIGNAL_HOME_CHANNEL
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: SIGNAL_HOME_CHANNEL
           ports:
             - name: http
               containerPort: 9119
