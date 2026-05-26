@@ -15,7 +15,7 @@ ollama:
     - name: OLLAMA_FLASH_ATTENTION
       value: "1"
     - name: OLLAMA_CONTEXT_LENGTH
-      value: "16384"
+      value: "8192"
     - name: OLLAMA_VULKAN
       value: "1"
   service:
