@@ -96,6 +96,16 @@ spec:
                 secretKeyRef:
                   name: hermes-agent-secrets
                   key: SIGNAL_HOME_CHANNEL
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: DISCORD_BOT_TOKEN
+            - name: DISCORD_ALLOWED_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: DISCORD_ALLOWED_USERS
           ports:
             - name: http
               containerPort: 9119
