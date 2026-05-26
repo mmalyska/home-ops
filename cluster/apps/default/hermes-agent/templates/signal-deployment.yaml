@@ -23,7 +23,7 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          resources: {{ toYaml .Values.signalCli.resources | nindent 12 }}
+          resources: {{toYaml .Values.signalCli.resources | nindent 12}}
           volumeMounts:
             - name: data
               mountPath: /home/.local/share/signal-cli

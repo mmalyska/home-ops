@@ -13,7 +13,12 @@ spec:
       labels:
         app: hermes-agent
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/config:
+          {
+            {
+              include (print $.Template.BasePath "/configmap.yaml") . | sha256sum,
+            },
+          }
     spec:
       initContainers:
         - name: config-seeder
@@ -63,6 +68,7 @@ spec:
             - dashboard
             - --host
             - "0.0.0.0"
+            - --insecure
             - --no-open
           ports:
             - name: http
