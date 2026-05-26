@@ -35,6 +35,8 @@ spec:
             - gateway
             - run
           env:
+            - name: HOME
+              value: /opt/data
             - name: HERMES_DASHBOARD
               value: "true"
             - name: OLLAMA_BASE_URL
