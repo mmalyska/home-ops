@@ -60,3 +60,45 @@ jobs:
           YAML_YAMLLINT_CONFIG_FILE: .github/linters/.yamllint.yaml
           YAML_PRETTIER_CONFIG_FILE: .github/linters/.prettierrc.yaml
           YAML_PRETTIER_FILTER_REGEX_EXCLUDE: "(.*\\.sops\\.ya?ml)"
+
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: mmalyska/action-setup-kube-tools@releases/v0.12.0
+        with:
+          setup-tools: |
+            helm
+          # renovate: datasource=github-releases depName=helm/helm
+          helm: "4.2.0"
+
+      - name: Lint Changed Charts
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            chart_dirs=$(find cluster charts -name "Chart.yaml" -exec dirname {} \;)
+          else
+            chart_dirs=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | while read -r file; do
+              dir=$(dirname "$file")
+              while [ "$dir" != "." ]; do
+                if [ -f "$dir/Chart.yaml" ]; then
+                  echo "$dir"
+                  break
+                fi
+                dir=$(dirname "$dir")
+              done
+            done | sort -u)
+          fi
+          if [ -z "$chart_dirs" ]; then
+            echo "No charts changed, skipping"
+            exit 0
+          fi
+          echo "$chart_dirs" | while read -r dir; do
+            helm dependency update "$dir" --quiet 2>/dev/null || true
+            helm lint "$dir"
+          done
