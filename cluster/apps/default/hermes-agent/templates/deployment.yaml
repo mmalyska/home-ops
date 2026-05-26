@@ -43,11 +43,16 @@ spec:
               value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
             - name: SIGNAL_HTTP_URL
               value: "http://signal-cli:8080"
-            - name: ANTHROPIC_API_KEY
+            - name: ANTHROPIC_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: hermes-agent-secrets
-                  key: ANTHROPIC_API_KEY
+                  key: ANTHROPIC_TOKEN
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: OPENROUTER_API_KEY
             - name: SIGNAL_ACCOUNT
               valueFrom:
                 secretKeyRef:
