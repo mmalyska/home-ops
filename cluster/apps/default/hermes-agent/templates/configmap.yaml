@@ -6,6 +6,5 @@ metadata:
 data:
   config.yaml: |
     model:
-      provider: "ollama"
-      default: "qwen3.5:9b"
-      base_url: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
+      provider: "anthropic"
+      default: "claude-sonnet-4-6"
