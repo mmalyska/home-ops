@@ -20,9 +20,37 @@ spec:
         - name: config-seeder
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           command:
-            - sh
+            - python3
             - -c
-            - "[ -f /opt/data/config.yaml ] || cp /config-template/config.yaml /opt/data/config.yaml; printf '{\"gateway_state\":\"running\"}' > /opt/data/gateway_state.json"
+            - |
+              import yaml, json, os
+
+              template_path = '/config-template/config.yaml'
+              config_path = '/opt/data/config.yaml'
+
+              with open(template_path) as f:
+                  overrides = yaml.safe_load(f)
+
+              if os.path.exists(config_path):
+                  with open(config_path) as f:
+                      config = yaml.safe_load(f) or {}
+
+                  def deep_merge(base, src):
+                      for k, v in src.items():
+                          if isinstance(v, dict) and isinstance(base.get(k), dict):
+                              deep_merge(base[k], v)
+                          else:
+                              base[k] = v
+
+                  deep_merge(config, overrides)
+              else:
+                  config = overrides
+
+              with open(config_path, 'w') as f:
+                  yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+              with open('/opt/data/gateway_state.json', 'w') as f:
+                  json.dump({'gateway_state': 'running'}, f)
           volumeMounts:
             - name: data
               mountPath: /opt/data
