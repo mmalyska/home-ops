@@ -15,7 +15,9 @@ ollama:
     - name: OLLAMA_FLASH_ATTENTION
       value: "1"
     - name: OLLAMA_CONTEXT_LENGTH
-      value: "131072"
+      value: "16384"
+    - name: OLLAMA_VULKAN
+      value: "1"
   service:
     annotations:
       lbipam.cilium.io/sharing-key: "voice-pipeline"
