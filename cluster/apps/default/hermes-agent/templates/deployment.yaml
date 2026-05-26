@@ -29,12 +29,14 @@ spec:
             - name: config-template
               mountPath: /config-template
       containers:
-        - name: gateway
+        - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           args:
             - gateway
             - run
           env:
+            - name: HERMES_DASHBOARD
+              value: "true"
             - name: OLLAMA_BASE_URL
               value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
             - name: SIGNAL_HTTP_URL
@@ -54,43 +56,11 @@ spec:
                 secretKeyRef:
                   name: hermes-agent-secrets
                   key: SIGNAL_ALLOWED_USERS
-          resources: {{toYaml .Values.hermes.gateway.resources | nindent 12}}
-          volumeMounts:
-            - name: data
-              mountPath: /opt/data
-        - name: dashboard
-          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
-          args:
-            - dashboard
-            - --host
-            - "0.0.0.0"
-            - --insecure
-            - --no-open
           ports:
             - name: http
               containerPort: 9119
               protocol: TCP
-          env:
-            - name: OLLAMA_BASE_URL
-              value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
-            - name: SIGNAL_HTTP_URL
-              value: "http://signal-cli:8080"
-            - name: ANTHROPIC_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: ANTHROPIC_API_KEY
-            - name: SIGNAL_ACCOUNT
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: SIGNAL_ACCOUNT
-            - name: SIGNAL_ALLOWED_USERS
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: SIGNAL_ALLOWED_USERS
-          resources: {{toYaml .Values.hermes.dashboard.resources | nindent 12}}
+          resources: {{toYaml .Values.hermes.resources | nindent 12}}
           volumeMounts:
             - name: data
               mountPath: /opt/data
