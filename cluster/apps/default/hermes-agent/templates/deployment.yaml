@@ -14,7 +14,7 @@ spec:
         app: hermes-agent
       annotations:
         checksum/config:
-          {{include (print $.Template.BasePath "/configmap.yaml") . | sha256sum,}}
+          {{include (print $.Template.BasePath "/configmap.yaml") . | sha256sum}}
     spec:
       initContainers:
         - name: config-seeder
