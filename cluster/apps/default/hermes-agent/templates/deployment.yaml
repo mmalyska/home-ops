@@ -22,7 +22,7 @@ spec:
           command:
             - sh
             - -c
-            - "[ -f /opt/data/config.yaml ] || cp /config-template/config.yaml /opt/data/config.yaml"
+            - "[ -f /opt/data/config.yaml ] || cp /config-template/config.yaml /opt/data/config.yaml; printf '{\"gateway_state\":\"running\"}' > /opt/data/gateway_state.json"
           volumeMounts:
             - name: data
               mountPath: /opt/data
