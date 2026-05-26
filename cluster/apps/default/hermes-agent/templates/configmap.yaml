@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-config
+  namespace: hermes-agent
+data:
+  config.yaml: |
+    model:
+      provider: "ollama"
+      default: "qwen3.5:9b"
+      base_url: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"

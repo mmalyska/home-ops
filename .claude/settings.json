@@ -65,13 +65,6 @@
     "command": "npx -y ccstatusline@latest --config ./.claude/statusline/settings.json",
     "padding": 0
   },
-  "enabledPlugins": {
-    "claude-md-management@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "context7@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false
-  },
-  "extraKnownMarketplaces": {},
   "alwaysThinkingEnabled": true,
   "preferences": {
     "tmuxSplitPanes": true

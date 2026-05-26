@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes-agent
+  namespace: hermes-agent
+spec:
+  type: ClusterIP
+  selector:
+    app: hermes-agent
+  ports:
+    - name: http
+      port: 9119
+      targetPort: 9119
+      protocol: TCP
