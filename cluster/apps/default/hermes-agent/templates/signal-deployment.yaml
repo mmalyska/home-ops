@@ -13,12 +13,20 @@ spec:
       labels:
         app: signal-cli
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: signal-cli
           image: "{{ .Values.signalCli.image.repository }}:{{ .Values.signalCli.image.tag }}"
-          env:
-            - name: MODE
-              value: json-rpc
+          command: ["/usr/bin/signal-cli"]
+          args:
+            - "--config"
+            - "/home/.local/share/signal-cli"
+            - "daemon"
+            - "--http"
+            - "0.0.0.0:8080"
           ports:
             - name: http
               containerPort: 8080
