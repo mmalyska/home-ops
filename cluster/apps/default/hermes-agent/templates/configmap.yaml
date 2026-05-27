@@ -5,6 +5,4 @@ metadata:
   namespace: hermes-agent
 data:
   config.yaml: |
-    model:
-      provider: "anthropic"
-      default: "claude-sonnet-4-6"
+{{ .Values.hermes.config | toYaml | indent 4 }}
