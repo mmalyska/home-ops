@@ -67,6 +67,10 @@ spec:
               value: "true"
             - name: HERMES_DASHBOARD_TUI
               value: "1"
+            - name: HERMES_DASHBOARD_HOST
+              value: "127.0.0.1"
+            - name: HERMES_DASHBOARD_PORT
+              value: "9120"
             - name: OLLAMA_BASE_URL
               value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
             - name: SIGNAL_HTTP_URL
@@ -80,12 +84,28 @@ spec:
             {{- end }}
           ports:
             - name: http
-              containerPort: 9119
+              containerPort: 9120
               protocol: TCP
           resources: {{toYaml .Values.hermes.resources | nindent 12}}
           volumeMounts:
             - name: data
               mountPath: /opt/data
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - name: http
+              containerPort: 9119
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -93,3 +113,6 @@ spec:
         - name: config-template
           configMap:
             name: hermes-agent-config
+        - name: nginx-config
+          configMap:
+            name: hermes-agent-nginx
