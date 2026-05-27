@@ -65,6 +65,8 @@ spec:
               value: /opt/data
             - name: HERMES_DASHBOARD
               value: "true"
+            - name: HERMES_DASHBOARD_TUI
+              value: "true"
             - name: OLLAMA_BASE_URL
               value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
             - name: SIGNAL_HTTP_URL
