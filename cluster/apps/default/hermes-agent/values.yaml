@@ -68,7 +68,7 @@ hermes:
         command: "npx"
         args: ["-y", "@modelcontextprotocol/server-github"]
         env:
-          GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN}
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_TOKEN}
 
 signalCli:
   image:
@@ -98,6 +98,7 @@ externalSecrets:
     bwsId: "17384da9-0339-44a9-b322-b45600eaaf2b" #gitleaks:allow #HERMES_DISCORD_ALLOWED_USERS
   - secretName: GITHUB_PERSONAL_ACCESS_TOKEN
     bwsId: "6eda6fc7-6ecf-4b73-b075-b45700db9d2b" #gitleaks:allow #HERMES_GITHUB_PERSONAL_ACCESS_TOKEN
+    envName: GITHUB_TOKEN
 
 backup:
   schedule: "0 */6 * * *"
