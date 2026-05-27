@@ -49,8 +49,6 @@ spec:
               with open(config_path, 'w') as f:
                   yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
-              with open('/opt/data/gateway_state.json', 'w') as f:
-                  json.dump({'gateway_state': 'running'}, f)
           volumeMounts:
             - name: data
               mountPath: /opt/data
