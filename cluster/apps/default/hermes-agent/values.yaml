@@ -10,10 +10,22 @@ hermes:
       memory: 1Gi
   config:
     model:
-      provider: "anthropic"
-      default: "claude-sonnet-4-6"
+      provider: openrouter
     display:
       show_cost: true
+    dashboard:
+      show_token_analytics: true
+    timezone: "CEST"
+    discord:
+      require_mention: true
+      free_response_channels: "881886312574107758"
+      auto_thread: true
+    provider_routing:
+      sort: "price"
+      data_collection: "deny"
+    fallback_providers:
+      - provider: anthropic
+        model: claude-sonnet-4-6
 
 signalCli:
   image:
