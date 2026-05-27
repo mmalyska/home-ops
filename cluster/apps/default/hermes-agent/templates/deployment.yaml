@@ -71,41 +71,13 @@ spec:
               value: "http://ollama.ha-ollama.svc.cluster.local:11434/v1"
             - name: SIGNAL_HTTP_URL
               value: "http://signal-cli:8080"
-            - name: ANTHROPIC_TOKEN
+            {{- range .Values.externalSecrets }}
+            - name: {{ if .envName }}{{ .envName }}{{ else }}{{ .secretName }}{{ end }}
               valueFrom:
                 secretKeyRef:
                   name: hermes-agent-secrets
-                  key: ANTHROPIC_TOKEN
-            - name: OPENROUTER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: OPENROUTER_API_KEY
-            - name: SIGNAL_ACCOUNT
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: SIGNAL_ACCOUNT
-            - name: SIGNAL_ALLOWED_USERS
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: SIGNAL_ALLOWED_USERS
-            - name: SIGNAL_HOME_CHANNEL
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: SIGNAL_HOME_CHANNEL
-            - name: DISCORD_BOT_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: DISCORD_BOT_TOKEN
-            - name: DISCORD_ALLOWED_USERS
-              valueFrom:
-                secretKeyRef:
-                  name: hermes-agent-secrets
-                  key: DISCORD_ALLOWED_USERS
+                  key: {{ .secretName }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 9119
