@@ -99,6 +99,6 @@ jobs:
             exit 0
           fi
           echo "$chart_dirs" | while read -r dir; do
-            helm dependency update "$dir" --quiet 2>/dev/null || true
+            helm dependency update "$dir"
             helm lint "$dir"
           done
