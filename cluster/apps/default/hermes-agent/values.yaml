@@ -11,6 +11,9 @@ hermes:
   config:
     model:
       provider: openrouter
+      default: "deepseek/deepseek-v4-pro"
+    approvals:
+      mode: smart
     display:
       show_cost: true
     dashboard:
@@ -26,6 +29,46 @@ hermes:
     fallback_providers:
       - provider: anthropic
         model: claude-sonnet-4-6
+    auxiliary:
+      vision:
+        provider: openrouter
+        model: "google/gemini-2.5-flash-lite"
+      web_extract:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      compression:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      skills_hub:
+        provider: auto
+        model: ""
+      approval:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      mcp:
+        provider: auto
+        model: ""
+      title_generation:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      triage_specifier:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      kanban_decomposer:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      profile_describer:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+      curator:
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+    mcp_servers:
+      github:
+        command: "npx"
+        args: ["-y", "@modelcontextprotocol/server-github"]
+        env:
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN}
 
 signalCli:
   image:
@@ -53,6 +96,8 @@ externalSecrets:
     bwsId: "be7ed9dc-3301-4c8b-adcd-b45600ea8816" #gitleaks:allow #HERMES_DISCORD_BOT_TOKEN
   - secretName: DISCORD_ALLOWED_USERS
     bwsId: "17384da9-0339-44a9-b322-b45600eaaf2b" #gitleaks:allow #HERMES_DISCORD_ALLOWED_USERS
+  - secretName: GITHUB_PERSONAL_ACCESS_TOKEN
+    bwsId: "6eda6fc7-6ecf-4b73-b075-b45700db9d2b" #gitleaks:allow #HERMES_GITHUB_PERSONAL_ACCESS_TOKEN
 
 backup:
   schedule: "0 */6 * * *"
