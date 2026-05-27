@@ -18,7 +18,7 @@ hermes:
       show_cost: true
     dashboard:
       show_token_analytics: true
-    timezone: "CEST"
+    timezone: "Europe/Warsaw"
     discord:
       require_mention: true
       free_response_channels: "881886312574107758"
