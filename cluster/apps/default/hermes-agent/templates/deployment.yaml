@@ -54,6 +54,45 @@ spec:
               mountPath: /opt/data
             - name: config-template
               mountPath: /config-template
+        - name: honcho-seeder
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command:
+            - python3
+            - -c
+            - |
+              import json, os
+
+              template_path = '/honcho-config/honcho.json'
+              target_path = '/opt/data/.hermes/honcho.json'
+
+              with open(template_path) as f:
+                  overrides = json.load(f)
+
+              os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
+              if os.path.exists(target_path):
+                  with open(target_path) as f:
+                      config = json.load(f) or {}
+
+                  def deep_merge(base, src):
+                      for k, v in src.items():
+                          if isinstance(v, dict) and isinstance(base.get(k), dict):
+                              deep_merge(base[k], v)
+                          else:
+                              base[k] = v
+
+                  deep_merge(config, overrides)
+              else:
+                  config = overrides
+
+              with open(target_path, 'w') as f:
+                  json.dump(config, f, indent=2)
+
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: honcho-config
+              mountPath: /honcho-config
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
@@ -116,3 +155,6 @@ spec:
         - name: nginx-config
           configMap:
             name: hermes-agent-nginx
+        - name: honcho-config
+          configMap:
+            name: hermes-agent-honcho
