@@ -111,9 +111,9 @@ spec:
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command: ["sh", "-c"]
           args:
-            - gateway
-            - run
+            - "VIRTUAL_ENV=/opt/hermes/.venv uv pip install honcho-ai && exec /opt/hermes/.venv/bin/hermes gateway run"
           env:
             - name: HOME
               value: /opt/data
