@@ -11,7 +11,7 @@ hermes:
   config:
     model:
       provider: openrouter
-      default: "deepseek/deepseek-v4-flash:free"
+      default: "deepseek/deepseek-v4-pro"
     approvals:
       mode: smart
     display:
@@ -30,7 +30,7 @@ hermes:
       data_collection: "deny"
     fallback_providers:
       - provider: openrouter
-        model: "deepseek/deepseek-v4-pro"
+        model: "deepseek/deepseek-v4-flash"
       - provider: anthropic
         model: claude-sonnet-4-6
     auxiliary:
