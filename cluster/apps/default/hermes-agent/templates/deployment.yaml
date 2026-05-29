@@ -57,12 +57,9 @@ spec:
         - name: honcho-seeder
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           command:
-            - sh
+            - python3
             - -c
             - |
-              pip install honcho-ai
-
-              python3 -c "
               import json, os
 
               template_path = '/honcho-config/honcho.json'
@@ -108,7 +105,6 @@ spec:
               symlink_target = os.path.join(honcho_config_dir, 'config.json')
               if not os.path.exists(symlink_target):
                   os.symlink(target_path, symlink_target)
-              "
 
           volumeMounts:
             - name: data
@@ -118,9 +114,9 @@ spec:
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command: ["sh", "-c"]
           args:
-            - gateway
-            - run
+            - "/opt/hermes/.venv/bin/pip install honcho-ai && exec /opt/hermes/.venv/bin/hermes gateway run"
           env:
             - name: HOME
               value: /opt/data
