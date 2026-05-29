@@ -5,6 +5,7 @@ ollama:
         - deepcoder:14b
         - qwen3.5:9b
         - gemma4:26b
+        - nomic-embed-text
   extraEnv:
     - name: OLLAMA_KV_CACHE_TYPE
       value: "q4_0"
