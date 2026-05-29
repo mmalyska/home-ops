@@ -63,12 +63,13 @@ spec:
               import json, os
 
               template_path = '/honcho-config/honcho.json'
-              target_path = '/opt/data/.hermes/honcho.json'
 
               with open(template_path) as f:
                   overrides = json.load(f)
 
-              os.makedirs(os.path.dirname(target_path), exist_ok=True)
+              # Write to $HERMES_HOME/honcho.json (primary read path for default profile)
+              hermes_home = os.environ.get('HERMES_HOME', '/opt/data')
+              target_path = os.path.join(hermes_home, 'honcho.json')
 
               if os.path.exists(target_path):
                   with open(target_path) as f:
@@ -89,12 +90,12 @@ spec:
                   json.dump(config, f, indent=2)
 
               # Seed honcho.json to worker profile directories
-              profiles_dir = '/opt/data/profiles'
+              # Worker profiles read from $HERMES_HOME/honcho.json
+              # which resolves to /opt/data/profiles/<name>/honcho.json
+              profiles_dir = os.path.join(hermes_home, 'profiles')
               if os.path.isdir(profiles_dir):
                   for profile in os.listdir(profiles_dir):
-                      profile_hermes = os.path.join(profiles_dir, profile, '.hermes')
-                      os.makedirs(profile_hermes, exist_ok=True)
-                      profile_target = os.path.join(profile_hermes, 'honcho.json')
+                      profile_target = os.path.join(profiles_dir, profile, 'honcho.json')
                       if not os.path.exists(profile_target):
                           with open(profile_target, 'w') as f:
                               json.dump(config, f, indent=2)
@@ -104,12 +105,15 @@ spec:
               mountPath: /opt/data
             - name: honcho-config
               mountPath: /honcho-config
+          env:
+            - name: HERMES_HOME
+              value: /opt/data
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command: ["sh", "-c"]
           args:
-            - gateway
-            - run
+            - "/opt/hermes/.venv/bin/pip install honcho-ai && exec /opt/hermes/.venv/bin/hermes gateway run"
           env:
             - name: HOME
               value: /opt/data
