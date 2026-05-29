@@ -57,9 +57,12 @@ spec:
         - name: honcho-seeder
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           command:
-            - python3
+            - sh
             - -c
             - |
+              pip install honcho-ai
+
+              python3 -c "
               import json, os
 
               template_path = '/honcho-config/honcho.json'
@@ -98,6 +101,14 @@ spec:
                       if not os.path.exists(profile_target):
                           with open(profile_target, 'w') as f:
                               json.dump(config, f, indent=2)
+
+              # Symlink for honcho-ai client (~/.honcho/config.json -> ~/.hermes/honcho.json)
+              honcho_config_dir = os.path.expanduser('~/.honcho')
+              os.makedirs(hocho_config_dir, exist_ok=True)
+              symlink_target = os.path.join(honcho_config_dir, 'config.json')
+              if not os.path.exists(symlink_target):
+                  os.symlink(target_path, symlink_target)
+              "
 
           volumeMounts:
             - name: data
