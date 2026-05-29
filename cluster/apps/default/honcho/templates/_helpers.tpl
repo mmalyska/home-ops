@@ -25,14 +25,26 @@
 - name: DERIVER_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DERIVER_MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-lite-001
+  value: deepseek/deepseek-v4-flash:free
 - name: DERIVER_MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DERIVER_MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DERIVER_MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DERIVER_MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: SUMMARY_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: SUMMARY_MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-lite-001
+  value: deepseek/deepseek-v4-flash:free
 - name: SUMMARY_MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: SUMMARY_MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: SUMMARY_MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: SUMMARY_MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: EMBEDDING_VECTOR_DIMENSIONS
   value: "768"
@@ -47,43 +59,85 @@
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-lite-001
+  value: deepseek/deepseek-v4-flash:free
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-lite-001
+  value: deepseek/deepseek-v4-flash:free
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DIALECTIC_LEVELS__low__MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DIALECTIC_LEVELS__low__MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DIALECTIC_LEVELS__low__MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-001
+  value: deepseek/deepseek-v4-flash:free
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: DIALECTIC_LEVELS__high__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__high__MODEL_CONFIG__MODEL
-  value: anthropic/claude-3.5-haiku
+  value: qwen/qwen3-235b-a22b-2507
 - name: DIALECTIC_LEVELS__high__MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DIALECTIC_LEVELS__high__MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DIALECTIC_LEVELS__high__MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DIALECTIC_LEVELS__high__MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: DIALECTIC_LEVELS__max__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__max__MODEL_CONFIG__MODEL
-  value: anthropic/claude-haiku-4.5
+  value: qwen/qwen3-235b-a22b-2507
 - name: DIALECTIC_LEVELS__max__MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DIALECTIC_LEVELS__max__MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DIALECTIC_LEVELS__max__MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DIALECTIC_LEVELS__max__MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: DREAM_DEDUCTION_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DREAM_DEDUCTION_MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-lite-001
+  value: deepseek/deepseek-v4-flash:free
 - name: DREAM_DEDUCTION_MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DREAM_DEDUCTION_MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DREAM_DEDUCTION_MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DREAM_DEDUCTION_MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 - name: DREAM_INDUCTION_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DREAM_INDUCTION_MODEL_CONFIG__MODEL
-  value: google/gemini-2.0-flash-lite-001
+  value: deepseek/deepseek-v4-flash:free
 - name: DREAM_INDUCTION_MODEL_CONFIG__OVERRIDES__BASE_URL
+  value: https://openrouter.ai/api/v1
+- name: DREAM_INDUCTION_MODEL_CONFIG__FALLBACK__TRANSPORT
+  value: openai
+- name: DREAM_INDUCTION_MODEL_CONFIG__FALLBACK__MODEL
+  value: deepseek/deepseek-v4-flash
+- name: DREAM_INDUCTION_MODEL_CONFIG__FALLBACK__OVERRIDES__BASE_URL
   value: https://openrouter.ai/api/v1
 {{- end -}}
