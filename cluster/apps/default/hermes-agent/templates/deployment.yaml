@@ -104,7 +104,7 @@ spec:
 
               # Symlink for honcho-ai client (~/.honcho/config.json -> ~/.hermes/honcho.json)
               honcho_config_dir = os.path.expanduser('~/.honcho')
-              os.makedirs(hocho_config_dir, exist_ok=True)
+              os.makedirs(honcho_config_dir, exist_ok=True)
               symlink_target = os.path.join(honcho_config_dir, 'config.json')
               if not os.path.exists(symlink_target):
                   os.symlink(target_path, symlink_target)
