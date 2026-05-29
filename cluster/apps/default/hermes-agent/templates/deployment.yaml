@@ -88,6 +88,17 @@ spec:
               with open(target_path, 'w') as f:
                   json.dump(config, f, indent=2)
 
+              # Seed honcho.json to worker profile directories
+              profiles_dir = '/opt/data/profiles'
+              if os.path.isdir(profiles_dir):
+                  for profile in os.listdir(profiles_dir):
+                      profile_hermes = os.path.join(profiles_dir, profile, '.hermes')
+                      os.makedirs(profile_hermes, exist_ok=True)
+                      profile_target = os.path.join(profile_hermes, 'honcho.json')
+                      if not os.path.exists(profile_target):
+                          with open(profile_target, 'w') as f:
+                              json.dump(config, f, indent=2)
+
           volumeMounts:
             - name: data
               mountPath: /opt/data
