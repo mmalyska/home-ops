@@ -113,7 +113,7 @@ spec:
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           command: ["sh", "-c"]
           args:
-            - "/opt/hermes/.venv/bin/pip install honcho-ai && exec /opt/hermes/.venv/bin/hermes gateway run"
+            - "pip install honcho-ai && exec hermes gateway run"
           env:
             - name: HOME
               value: /opt/data
