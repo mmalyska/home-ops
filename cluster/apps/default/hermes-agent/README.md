@@ -17,7 +17,11 @@ Hermes Agent deployed as a single-pod application on the home Kubernetes cluster
 │  HTTPRoute     │  PVC     │    │  PVC  │      │
 │  (envoy)       │  1Gi     │    │  1Gi  │      │
 │                └─────────┘    └───────┘      │
-└──────────────────────────────────────────────┘
+└───────────────────────┬──────────────────────┘
+                        │ memory.provider: honcho
+                        ▼
+          http://honcho.honcho.svc.cluster.local:8000
+          (namespace: honcho — see ../honcho/README.md)
 ```
 
 | Component | Purpose |
@@ -29,6 +33,7 @@ Hermes Agent deployed as a single-pod application on the home Kubernetes cluster
 | **PVC `hermes-signal-data`** | Signal CLI state (registration, key material) |
 | **VolSync** | Restic backups of both PVCs to S3 (every 6 hours) |
 | **ExternalSecret** | API keys from Bitwarden → K8s Secret → env vars in pod |
+| **Honcho** | Self-hosted memory server (separate namespace) — provides persistent cross-session user memory via Theory-of-Mind reasoning and vector recall |
 
 ## Helm Values (`values.yaml`)
 
@@ -41,7 +46,10 @@ The declarative configuration lives in `values.yaml` and covers:
 - **`externalSecrets`** — Bitwarden secret references for API keys
 - **`backup`** — VolSync schedule and retention
 
-The init container merges the ConfigMap template into the existing config.yaml on the PVC — so values changed in `values.yaml` are picked up on the next restart, while runtime state (sessions, memory, kanban board) survives on the PVC.
+Two init containers run on every pod start:
+
+1. **`config-seeder`** — deep-merges the `hermes-agent-config` ConfigMap (rendered from `values.yaml`) into `/opt/data/config.yaml` on the PVC. Values changed in `values.yaml` are picked up on next restart; runtime state (sessions, kanban board) survives on the PVC.
+2. **`honcho-seeder`** — deep-merges `hermes-agent-honcho` ConfigMap into `/opt/data/.hermes/honcho.json`. Declares all 7 Hermes profiles as Honcho memory hosts. Runtime additions made by `hermes honcho sync` are preserved across restarts (deep-merge, not overwrite).
 
 ## HTTPRoute
 
@@ -160,6 +168,48 @@ This auto-discovers all profiles and registers them as valid assignees.
 │   └── gateways/
 └── voice-memos/
 ```
+
+## Memory (Honcho)
+
+Hermes uses [Honcho](../honcho/README.md) as a persistent memory backend (`memory.provider: honcho` in `config.yaml`). Memory is scoped per-profile — each of the 7 profiles maps to a distinct Honcho host with a shared workspace.
+
+### How it works
+
+- After each conversation turn, the Honcho **deriver** extracts user facts and updates the vector store in the background.
+- On the next turn, Honcho injects relevant context from past sessions before the model responds.
+- The `dialecticCadence` (default: every 2 messages) controls how often deep recall runs; `contextCadence` (default: every message) controls context injection frequency.
+
+### honcho.json
+
+Honcho configuration lives at `/opt/data/.hermes/honcho.json` on the PVC. It is seeded on each pod start by the `honcho-seeder` init container from the `hermes-agent-honcho` ConfigMap. To change Honcho settings (e.g. `dialecticDepth`, `recallMode`), edit `templates/honcho-configmap.yaml` and restart the pod.
+
+### Useful commands
+
+```bash
+# Check memory provider status (run in Discord/Signal)
+# hermes honcho status
+
+# Sync profile host registration with Honcho server
+# hermes honcho sync
+
+# Inspect the live honcho.json on the PVC
+kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
+  cat /opt/data/.hermes/honcho.json
+```
+
+### Profile → Honcho host mapping
+
+| Hermes profile | Honcho host key | aiPeer |
+|----------------|----------------|--------|
+| default | `hermes` | `hermes` |
+| orchestrator | `hermes.orchestrator` | `orchestrator` |
+| devops | `hermes.devops` | `devops` |
+| researcher | `hermes.researcher` | `researcher` |
+| dotnet-dev | `hermes.dotnet-dev` | `dotnet-dev` |
+| node-dev | `hermes.node-dev` | `node-dev` |
+| mobile-dev | `hermes.mobile-dev` | `mobile-dev` |
+
+All profiles share `peerName: mmalyska` and `workspace: hermes`.
 
 ## Maintenance Tasks
 

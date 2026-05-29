@@ -18,6 +18,8 @@ hermes:
       show_cost: true
     dashboard:
       show_token_analytics: true
+    memory:
+      provider: honcho
     timezone: "Europe/Warsaw"
     discord:
       require_mention: true
@@ -27,6 +29,8 @@ hermes:
       sort: "price"
       data_collection: "deny"
     fallback_providers:
+      - provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
       - provider: anthropic
         model: claude-sonnet-4-6
     auxiliary:
