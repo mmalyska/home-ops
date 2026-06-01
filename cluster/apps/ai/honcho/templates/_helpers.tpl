@@ -55,7 +55,7 @@
 - name: EMBEDDING_MODEL_CONFIG__DIMENSIONS_MODE
   value: never
 - name: EMBEDDING_MODEL_CONFIG__OVERRIDES__BASE_URL
-  value: http://ollama.ha-ollama.svc.cluster.local:11434/v1
+  value: http://ollama.ollama.svc.cluster.local:11434/v1
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__MODEL
