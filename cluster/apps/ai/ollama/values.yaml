@@ -20,11 +20,7 @@ ollama:
     - name: OLLAMA_VULKAN
       value: "1"
   service:
-    annotations:
-      lbipam.cilium.io/sharing-key: "voice-pipeline"
-      lbipam.cilium.io/sharing-cross-namespace: "*"
-      lbipam.cilium.io/ips: "192.168.48.27"
-    type: LoadBalancer
+    type: ClusterIP
   ingress:
     enabled: false
   persistentVolume:
