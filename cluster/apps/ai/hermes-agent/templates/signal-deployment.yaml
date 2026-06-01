@@ -4,7 +4,7 @@ metadata:
   name: signal-cli
   namespace: hermes-agent
 spec:
-  replicas: {{ .Values.signalCli.replicas | default 1 }}
+  replicas: {{ .Values.signalCli.replicas }}
   selector:
     matchLabels:
       app: signal-cli
