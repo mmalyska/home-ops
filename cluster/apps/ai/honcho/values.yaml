@@ -20,7 +20,7 @@ openrouterBwsId: "7ece641d-8f3e-42f6-b306-b45900a618ad" #gitleaks:allow #HONCHO_
 
 pgsql-cnpg:
   name: honchodb
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.6-standard-bookworm
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.6-system-bookworm
   instances: 2
   storage:
     size: 30Gi
