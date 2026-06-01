@@ -10,7 +10,7 @@ spec:
   goTemplateOptions: ["missingkey=error"]
   syncPolicy:
     applicationsSync: create-update
-    preserveResourcesOnDeletion: false # To prevent an Application's child resources from being deleted when the parent Application is deleted set this to true
+    preserveResourcesOnDeletion: true # To prevent an Application's child resources from being deleted when the parent Application is deleted set this to true
   generators:
     - git:
         repoURL: https://github.com/mmalyska/home-ops
