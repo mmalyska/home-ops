@@ -1,5 +1,5 @@
 hermes:
-  replicas: 0
+  replicas: 1
   image:
     repository: nousresearch/hermes-agent
     tag: "main@sha256:e1adf723aac48aff349d6a46b903d60c7c22bcc76367062bda9340319dde5605"
@@ -76,7 +76,7 @@ hermes:
 #          GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_TOKEN}
 
 signalCli:
-  replicas: 0
+  replicas: 1
   image:
     repository: bbernhard/signal-cli-rest-api
     tag: "0.99@sha256:96578363477d97cb1d8da303791b2ad686b374a255fce4d78c7c6f00ef56cba8"
