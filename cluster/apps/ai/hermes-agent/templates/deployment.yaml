@@ -4,7 +4,7 @@ metadata:
   name: hermes-agent
   namespace: hermes-agent
 spec:
-  replicas: 1
+  replicas: {{ .Values.hermes.replicas | default 1 }}
   selector:
     matchLabels:
       app: hermes-agent
