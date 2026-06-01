@@ -32,12 +32,17 @@ pgsql-cnpg:
       memory: 512Mi
       cpu: 500m
   bootstrap:
-    recovery:
-      source: honchodb-cnpg-backup
+    initdb:
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector
+  # Uncomment to restore from S3 backup (requires at least one successful backup to exist):
+  # bootstrap:
+  #   recovery:
+  #     source: honchodb-cnpg-backup
   externalClusters:
     - name: honchodb-cnpg-backup
       barmanObjectStore:
-        serverName: honchodb
+        serverName: honchodb-cnpg
         destinationPath: "s3://k8s-at-home-backup/cnpg/honcho"
         endpointURL: <secret:s3_endpoint>
         s3Credentials:
