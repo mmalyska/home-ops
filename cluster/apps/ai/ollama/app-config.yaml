@@ -1,5 +1,5 @@
 - enabled: "true"
-  namespace: ha-ollama
+  namespace: ollama
   syncPolicy:
     enabled: true
     selfHeal: true
