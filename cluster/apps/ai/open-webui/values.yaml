@@ -1,4 +1,6 @@
 open-webui:
+  persistence:
+    size: 5Gi
   ollama:
     enabled: false
   ingress:
