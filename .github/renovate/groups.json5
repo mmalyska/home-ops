@@ -25,14 +25,6 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Metallb image and chart",
-      "matchDatasources": ["github-tags", "helm"],
-      "matchPackagePatterns": [".*metallb.*"],
-      "groupName": "metallb",
-      "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true
-    },
-    {
       "description": "Kubernetes stack",
       "matchDatasources": ["docker", "github-releases"],
       "matchPackageNames": [
