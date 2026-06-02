@@ -21,3 +21,4 @@
 
 - [Gateway and DNS architecture](reference_gateway_dns_architecture.md) — two Envoy Gateway instances; HTTPRoute annotation rules
 - [Home network hardware](reference_home_network_hardware.md) — router/NAS/RPi IPs and roles
+- [QNAP QuObjects + barman-cloud caveat](reference_qnap_s3_barman_caveat.md) — boto3 ≥1.34 checksum fix required; set AWS_REQUEST_CHECKSUM_CALCULATION=when_required on all CNPG ObjectStores

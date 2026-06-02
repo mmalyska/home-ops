@@ -140,6 +140,35 @@ pgsql-cnpg:
 
 `cloudnative-pg` (with `plugin-barman-cloud`) must be healthy before any Cluster is updated, as the plugin webhook must be registered. ArgoCD `syncWave` handles this — `cloudnative-pg` already deploys in an earlier wave.
 
+## Known Issues & Caveats
+
+### QNAP QuObjects: InvalidDigest on multipart upload (fixed in v1.3.2)
+
+**Symptom:** `barman-cloud-backup` fails with `InvalidDigest: The Content-MD5 or checksum value that you specified is not valid` on `UploadPart` and `PutObject` operations.
+
+**Root cause:** botocore ≥ 1.34 automatically sends `x-amz-checksum-crc32` headers on multipart uploads (flexible checksums). QNAP QuObjects does not implement this extension and rejects the request.
+
+**Fix:** Set these env vars on the barman-cloud sidecar via `instanceSidecarConfiguration.env` in each ObjectStore's values:
+
+```yaml
+instanceSidecarConfiguration:
+  env:
+    - name: AWS_REQUEST_CHECKSUM_CALCULATION
+      value: when_required
+    - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+      value: when_required
+```
+
+This reverts botocore to the pre-1.34 behaviour (checksums only when the server explicitly requires them). Applied to all five clusters in pgsql-cnpg chart v1.3.2.
+
+### ObjectStore CRD schema: no barmanObjectStore wrapper (fixed in v1.3.1)
+
+**Symptom:** ArgoCD SSA validation rejects ObjectStore CR with `field not declared in schema` on `.spec.configuration.barmanObjectStore`.
+
+**Root cause:** The `barmancloud.cnpg.io/v1` ObjectStore CRD places barman config fields (`destinationPath`, `s3Credentials`, etc.) directly under `spec.configuration`, not nested under a `barmanObjectStore` sub-key. Initial chart template (v1.3.0) incorrectly added an extra nesting level.
+
+**Fix:** Template updated in v1.3.1 to render `spec.configuration` with `nindent 4` directly.
+
 ## Out of Scope
 
 - Clearing old S3 backups — done separately after migration is stable.

@@ -58,6 +58,12 @@ pgsql-cnpg:
       secretAccessKey:
         name: honcho-secrets
         key: S3_ACCESS_SECRET_KEY
+  instanceSidecarConfiguration:
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
   scheduledBackups:
     - name: honchodb-cnpg-backup
       spec:

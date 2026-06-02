@@ -58,6 +58,10 @@ spec:
   {{- if .Values.retentionPolicy }}
   retentionPolicy: {{ .Values.retentionPolicy }}
   {{- end }}
+  {{- with .Values.instanceSidecarConfiguration }}
+  instanceSidecarConfiguration:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
 {{ range $k, $v := .Values.scheduledBackups }}
 ---
