@@ -69,6 +69,7 @@ machine:
   nodeLabels:
     topology.kubernetes.io/region: home
     topology.kubernetes.io/zone: m
+    daytona-sandbox-c: "true"
 cluster:
   id: ${TALHELPER_CLUSTERNAME}
   secret: ${TALHELPER_CLUSTERSECRET}
