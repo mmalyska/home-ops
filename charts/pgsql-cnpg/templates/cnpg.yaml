@@ -1,3 +1,6 @@
+{{- if .Values.backup }}
+{{ fail "pgsql-cnpg: the 'backup' key is no longer supported. Migrate to 'objectStore' + 'retentionPolicy'. See chart v1.3.0 release notes." }}
+{{- end }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -37,10 +40,26 @@ spec:
     topologyKey: kubernetes.io/hostname
   monitoring:
     enablePodMonitor: {{ .Values.monitoring.enablePodMonitor }}
-  {{- with .Values.backup }}
-  backup:
-    {{- toYaml . | nindent 4 }}
+  {{- if .Values.objectStore }}
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: {{ printf "%s-objectstore" .Values.name }}
   {{- end }}
+{{- if .Values.objectStore }}
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ printf "%s-objectstore" .Values.name }}
+spec:
+  configuration:
+    barmanObjectStore:
+      {{- toYaml .Values.objectStore | nindent 6 }}
+  {{- if .Values.retentionPolicy }}
+  retentionPolicy: {{ .Values.retentionPolicy }}
+  {{- end }}
+{{- end }}
 {{ range $k, $v := .Values.scheduledBackups }}
 ---
 apiVersion: postgresql.cnpg.io/v1
@@ -50,7 +69,12 @@ metadata:
 spec:
   cluster:
     name: {{ printf "%s-%s" $.Values.name "cnpg" }}
+  {{- if $.Values.objectStore }}
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  {{- end }}
   {{- with $v.spec }}
-    {{- toYaml . | nindent 2 }}
+  {{- toYaml . | nindent 2 }}
   {{- end }}
 {{ end }}
