@@ -8,6 +8,7 @@ hermes:
       cpu: 200m
       memory: 512Mi
     limits:
+      cpu: 1500m
       memory: 1Gi
   config:
     model:
