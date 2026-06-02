@@ -54,8 +54,7 @@ metadata:
   name: {{ printf "%s-objectstore" .Values.name }}
 spec:
   configuration:
-    barmanObjectStore:
-      {{- toYaml .Values.objectStore | nindent 6 }}
+    {{- toYaml .Values.objectStore | nindent 4 }}
   {{- if .Values.retentionPolicy }}
   retentionPolicy: {{ .Values.retentionPolicy }}
   {{- end }}
