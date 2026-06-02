@@ -5,36 +5,28 @@ storage:
   size: 1Gi
 # # bootstrap:
 # #   recovery:
-# #     source: crunchy-cluster
+# #     source: <cluster-name>-backup
 # # externalClusters:
-# #   - name: crunchy-cluster
-# #     barmanObjectStore:
-# #       serverName: giteadb-cnpg
-# #       destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
-# #       endpointURL: <secret:s3_endpoint>
-# #       s3Credentials:
-# #         accessKeyId:
-# #           name: gitea-secrets
-# #           key: S3_ACCESS_KEY_ID
-# #         secretAccessKey:
-# #           name: gitea-secrets
-# #           key: S3_ACCESS_SECRET_KEY
+# #   - name: <cluster-name>-backup
+# #     plugin:
+# #       name: barman-cloud.cloudnative-pg.io
+# #       parameters:
+# #         barmanObjectName: <name>-objectstore
 monitoring:
   enablePodMonitor: true
-# backup:
-#   retentionPolicy: "10d"
-#   barmanObjectStore:
-#     destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
-#     endpointURL: <secret:s3_endpoint>
-#     s3Credentials:
-#       accessKeyId:
-#         name: gitea-secrets
-#         key: S3_ACCESS_KEY_ID
-#       secretAccessKey:
-#         name: gitea-secrets
-#         key: S3_ACCESS_SECRET_KEY
+# retentionPolicy: "10d"
+# objectStore:
+#   destinationPath: "s3://bucket/cnpg/<name>"
+#   endpointURL: <secret:s3_endpoint>
+#   s3Credentials:
+#     accessKeyId:
+#       name: <app>-secrets
+#       key: S3_ACCESS_KEY_ID
+#     secretAccessKey:
+#       name: <app>-secrets
+#       key: S3_ACCESS_SECRET_KEY
 # scheduledBackups:
-#   - name: giteadb-cnpg-backup
+#   - name: <name>-cnpg-backup
 #     spec:
 #       immediate: true
 #       schedule: "5 0 0 * * *"
