@@ -1,0 +1,56 @@
+harbor:
+  expose:
+    type: clusterIP
+    tls:
+      enabled: false
+  externalURL: https://harbor.<secret:private-domain>
+
+  # Admin password from cluster-secrets (substituted before Helm renders)
+  harborAdminPassword: <secret:harbor-admin-password>
+
+  persistence:
+    enabled: true
+    persistentVolumeClaim:
+      registry:
+        storageClass: ceph-block
+        size: 200Gi
+      jobservice:
+        jobLog:
+          storageClass: ceph-block
+          size: 5Gi
+      database:
+        storageClass: ceph-block
+        size: 2Gi
+      redis:
+        storageClass: ceph-block
+        size: 2Gi
+      trivy:
+        storageClass: ceph-block
+        size: 5Gi
+
+  database:
+    type: external
+    external:
+      host: harbordb-cnpg-rw
+      port: "5432"
+      username: app
+      coreDatabase: app
+      existingSecret: harbordb-cnpg-app
+      sslmode: require
+
+  redis:
+    type: internal
+
+  trivy:
+    enabled: false
+
+  notary:
+    server:
+      enabled: false
+    signer:
+      enabled: false
+
+pgsql-cnpg:
+  name: harbordb
+  storage:
+    size: 5Gi
