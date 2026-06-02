@@ -7,3 +7,6 @@
 | [ai-project](ai-project/plan.md) | Create AI ArgoCD project space and migrate AI/LLM apps into it | 2026-06-01 |
 | [honcho-integration](honcho-integration/plan.md)                                     | Deploy self-hosted Honcho + wire hermes-agent as memory provider | 2026-05-29 |
 | [cnpg-plugin-migration](cnpg-plugin-migration/plan.md)                               | Migrate CNPG clusters to standard-bookworm + plugin-barman-cloud | 2026-06-02 |
+| [hermes-agent](../docs/superpowers/plans/2026-05-25-hermes-agent.md)                 | hermes-agent initial implementation                              | 2026-05-25 |
+| [hermes-agent-discord](../docs/superpowers/plans/2026-05-26-hermes-agent-discord.md) | Add Discord messaging channel to hermes-agent                    | 2026-05-26 |
+| [hermes-agent-chart-redesign](../docs/superpowers/plans/2026-05-27-hermes-agent-chart-redesign.md) | Refactor hermes-agent Helm chart to values-driven    | 2026-05-27 |
