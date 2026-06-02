@@ -58,7 +58,7 @@ litellm-helm:
       passwordKey: password
 pgsql-cnpg:
   name: litellmdb
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.4
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4-standard-bookworm
   instances: 2
   storage:
     size: 15Gi
@@ -69,36 +69,29 @@ pgsql-cnpg:
     limits:
       memory: 512Mi
       cpu: 500m
+  # Uncomment to restore from S3 backup (requires at least one successful backup to exist):
   # bootstrap:
   #   recovery:
-  #     source: crunchy-cluster
+  #     source: litellmdb-cnpg-backup
   # externalClusters:
-  #   - name: crunchy-cluster
-  #     barmanObjectStore:
-  #       serverName: litelldb-cnpg
-  #       destinationPath: "s3://k8s-at-home-backup/cnpg/litell"
-  #       endpointURL: <secret:s3_endpoint>
-  #       s3Credentials:
-  #         accessKeyId:
-  #           name: litellm-secrets
-  #           key: S3_ACCESS_KEY_ID
-  #         secretAccessKey:
-  #           name: litellm-secrets
-  #           key: S3_ACCESS_SECRET_KEY
+  #   - name: litellmdb-cnpg-backup
+  #     plugin:
+  #       name: barman-cloud.cloudnative-pg.io
+  #       parameters:
+  #         barmanObjectName: litellmdb-objectstore
   monitoring:
     enablePodMonitor: true
-  backup:
-    retentionPolicy: "10d"
-    barmanObjectStore:
-      destinationPath: "s3://k8s-at-home-backup/cnpg/litell"
-      endpointURL: <secret:s3_endpoint>
-      s3Credentials:
-        accessKeyId:
-          name: litellm-secrets
-          key: S3_ACCESS_KEY_ID
-        secretAccessKey:
-          name: litellm-secrets
-          key: S3_ACCESS_SECRET_KEY
+  retentionPolicy: "10d"
+  objectStore:
+    destinationPath: "s3://k8s-at-home-backup/cnpg/litell"
+    endpointURL: <secret:s3_endpoint>
+    s3Credentials:
+      accessKeyId:
+        name: litellm-secrets
+        key: S3_ACCESS_KEY_ID
+      secretAccessKey:
+        name: litellm-secrets
+        key: S3_ACCESS_SECRET_KEY
   scheduledBackups:
     - name: litelldb-cnpg-backup
       spec:
