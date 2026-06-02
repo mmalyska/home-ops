@@ -3,8 +3,11 @@ apiVersion: v2
 name: cloudnative-pg-subchart
 type: application
 version: 1.0.0
-appVersion: "1.18.1"
+appVersion: "1.29.1"
 dependencies:
   - name: cloudnative-pg
     version: 0.28.2
+    repository: https://cloudnative-pg.github.io/charts
+  - name: plugin-barman-cloud
+    version: 0.6.0
     repository: https://cloudnative-pg.github.io/charts
