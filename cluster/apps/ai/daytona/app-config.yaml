@@ -1,5 +1,10 @@
 - enabled: "true"
   namespace: daytona
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: privileged
+      pod-security.kubernetes.io/warn: privileged
+      pod-security.kubernetes.io/audit: privileged
   syncPolicy:
     enabled: true
     selfHeal: true
