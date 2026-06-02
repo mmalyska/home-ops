@@ -474,6 +474,7 @@ curl -X POST "https://harbor.<private-domain>/api/v2.0/robots" \
   --user "admin:${HARBOR_PASS}" \
   -d '{
     "name": "daytona-runner",
+    "level": "project",
     "duration": -1,
     "permissions": [{
       "kind": "project",
