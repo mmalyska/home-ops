@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: daytona-api
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - daytona.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: daytona-api
+          port: 3000
