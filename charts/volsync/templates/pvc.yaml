@@ -9,10 +9,12 @@ metadata:
 spec:
   accessModes:
     - {{ .Values.pvc.accessMode }}
+  {{- if .Values.volsync.restore.bootstrap }}
   dataSourceRef:
     kind: ReplicationDestination
     apiGroup: volsync.backube
     name: {{ include "volsync.bootstrap" $ }}
+  {{- end }}
   resources:
     requests:
       storage: {{ .Values.pvc.capacity }}
