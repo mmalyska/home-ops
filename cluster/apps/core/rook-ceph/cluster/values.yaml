@@ -7,8 +7,8 @@ rook-ceph-cluster:
     [mon]
     mon_data_avail_warn = 10
   monitoring:
-    enabled: false
-    createPrometheusRules: false
+    enabled: true
+    createPrometheusRules: true
     rulesNamespaceOverride: monitoring
   toolbox:
     enabled: true

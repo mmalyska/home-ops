@@ -2,7 +2,7 @@ rook-ceph:
   crds:
     enabled: true
   monitoring:
-    enabled: false
+    enabled: true
   enableDiscoveryDaemon: true
   resources:
     requests:
