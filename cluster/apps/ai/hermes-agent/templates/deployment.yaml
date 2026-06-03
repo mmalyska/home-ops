@@ -5,6 +5,8 @@ metadata:
   namespace: hermes-agent
 spec:
   replicas: {{ .Values.hermes.replicas }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: hermes-agent
