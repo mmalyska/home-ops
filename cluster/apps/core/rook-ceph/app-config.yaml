@@ -1,6 +1,7 @@
 - enabled: "true"
   appSubfolder: operator
   namespace: rook-ceph
+  syncWave: "1"
   syncPolicy:
     enabled: false
     selfHeal: true
@@ -9,8 +10,17 @@
     labels:
       pod-security.kubernetes.io/enforce: privileged
 - enabled: "true"
+  appSubfolder: csi-drivers
+  namespace: rook-ceph
+  syncWave: "2"
+  syncPolicy:
+    enabled: false
+    selfHeal: true
+    prune: false
+- enabled: "true"
   appSubfolder: cluster
   namespace: rook-ceph
+  syncWave: "3"
   syncPolicy:
     enabled: false
     selfHeal: true

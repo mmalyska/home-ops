@@ -1,0 +1,111 @@
+ceph-csi-drivers:
+  # Disable CephConnection and ClientProfile creation - Rook manages these
+  cephConnections: []
+  clientProfiles: []
+  drivers:
+    rbd:
+      enabled: true
+      controllerPlugin:
+        resources:
+          provisioner:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          resizer:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          attacher:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          snapshotter:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          plugin:
+            requests:
+              memory: 512Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+          omapGenerator:
+            requests:
+              memory: 512Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+      nodePlugin:
+        resources:
+          plugin:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 1Gi
+          registrar:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+    cephfs:
+      enabled: true
+      controllerPlugin:
+        resources:
+          provisioner:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          resizer:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          attacher:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          snapshotter:
+            requests:
+              memory: 128Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+          plugin:
+            requests:
+              memory: 512Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+      nodePlugin:
+        resources:
+          plugin:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 1Gi
+          registrar:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+    nfs:
+      enabled: false
+    nvmeof:
+      enabled: false

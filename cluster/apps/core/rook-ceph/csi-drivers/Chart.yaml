@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: rook-ceph-csi-drivers-subchart
+type: application
+version: 1.0.0
+appVersion: "1.0.1"
+dependencies:
+  - name: ceph-csi-drivers
+    version: 1.0.1
+    repository: https://ceph.github.io/ceph-csi-operator
