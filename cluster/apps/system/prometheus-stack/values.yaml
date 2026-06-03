@@ -9,6 +9,13 @@ kube-prometheus-stack:
     enabled: true
   grafana:
     revisionHistoryLimit: 3
+    grafana.ini:
+      security:
+        allow_embedding: true
+      auth.anonymous:
+        enabled: true
+        org_name: Main Org.
+        org_role: Viewer
     route:
       main:
         enabled: true
@@ -92,13 +99,31 @@ kube-prometheus-stack:
           token: ""
       ceph:
         ceph-cluster:
-          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Cluster%20Dashboard.json
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/ceph-cluster.json
           token: ""
-        ceph-osd:
-          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20OSD%20Single%20Dashboard.json
+        ceph-cluster-advanced:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/ceph-cluster-advanced.json
           token: ""
-        ceph-pools:
-          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Pools%20Dashboard.json
+        ceph-hosts-overview:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/hosts-overview.json
+          token: ""
+        ceph-host-details:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/host-details.json
+          token: ""
+        ceph-osds-overview:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/osds-overview.json
+          token: ""
+        ceph-osd-device-details:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/osd-device-details.json
+          token: ""
+        ceph-pool-overview:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/pool-overview.json
+          token: ""
+        ceph-pool-detail:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/pool-detail.json
+          token: ""
+        ceph-cephfs-overview:
+          url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/cephfs-overview.json
           token: ""
   alertmanager:
     config:
