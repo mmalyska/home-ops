@@ -68,6 +68,8 @@ daytona:
         API_TOKEN: <secret:daytona-runner-api-token>
         SYSTEM_API_TOKEN: <secret:daytona-system-api-token>
         SSH_PUBLIC_KEY: <secret:daytona-ssh-client-public-key>
+        # Connect to DinD sidecar DaemonSet via localhost (hostNetwork: true on runner)
+        DOCKER_HOST: "tcp://127.0.0.1:2375"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -85,8 +87,7 @@ daytona:
           cpu: 1000m
           memory: 2Gi
       dockerInstaller:
-        enabled: true
-        xfsStorageSize: "50G"
+        enabled: false
 
   # Disabled subcharts
   postgresql:
