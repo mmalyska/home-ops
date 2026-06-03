@@ -6,6 +6,7 @@ ceph-csi-drivers:
     rbd:
       enabled: true
       name: rook-ceph.rbd.csi.ceph.com
+      snapshotPolicy: "volumeSnapshot"
       controllerPlugin:
         resources:
           provisioner:
