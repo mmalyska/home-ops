@@ -44,7 +44,13 @@
       "Bash(helm show *)",
       "Bash(gh api *)",
       "Bash(helm repo *)",
-      "Bash(helm search *)"
+      "Bash(helm search *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(helm template *)",
+      "Bash(task lint:*)",
+      "Bash(helm lint *)",
+      "Bash(yamllint *)"
     ],
     "deny": [
       "Bash(kubectl get secret*)",
