@@ -120,8 +120,8 @@ volsync:
         daily: 7
         weekly: 4
         monthly: 2
-    # restore:
-    #   bootstrap: true
+    restore:
+      bootstrap: false
 
 pgsql-cnpg:
   name: bookorbdb
