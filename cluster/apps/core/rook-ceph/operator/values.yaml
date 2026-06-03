@@ -3,6 +3,7 @@ rook-ceph:
     enabled: true
   monitoring:
     enabled: false
+  enableDiscoveryDaemon: true
   resources:
     requests:
       cpu: 109m

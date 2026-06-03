@@ -26,6 +26,10 @@ rook-ceph-cluster:
           namespace: envoy-gateway
           sectionName: https
   cephClusterSpec:
+    mgr:
+      modules:
+        - name: rook
+          enabled: true
     resources:
       mgr:
         requests:
