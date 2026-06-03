@@ -1,5 +1,5 @@
 ---
-enabled: "true"
+enabled: "false"
 namespace: harbor
 syncPolicy:
   enabled: true
