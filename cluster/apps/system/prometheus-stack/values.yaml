@@ -54,6 +54,14 @@ kube-prometheus-stack:
             editable: false
             options:
               path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
+          - name: "ceph"
+            orgId: 1
+            folder: "Ceph"
+            type: file
+            disableDeletion: true
+            editable: false
+            options:
+              path: /var/lib/grafana/dashboards/ceph
     dashboardsConfigMaps:
       device: "device-dashboards"
     dashboards:
@@ -81,6 +89,16 @@ kube-prometheus-stack:
           token: ""
         argocd:
           url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
+          token: ""
+      ceph:
+        ceph-cluster:
+          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Cluster%20Dashboard.json
+          token: ""
+        ceph-osd:
+          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20OSD%20Single%20Dashboard.json
+          token: ""
+        ceph-pools:
+          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Pools%20Dashboard.json
           token: ""
   alertmanager:
     config:
