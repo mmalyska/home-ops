@@ -16,7 +16,7 @@ spec:
     server: qnap.<secret:private-domain>
     path: "/ebooks"
   mountOptions:
-    - nfsvers=4.2
+    - nfsvers=4.1
     - tcp
     - intr
     - hard
