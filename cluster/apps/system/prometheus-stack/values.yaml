@@ -125,6 +125,15 @@ kube-prometheus-stack:
         ceph-cephfs-overview:
           url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/cephfs-overview.json
           token: ""
+        rook-ceph-cluster:
+          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Cluster%20Dashboard.json
+          token: ""
+        rook-ceph-osd:
+          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20OSD%20Single%20Dashboard.json
+          token: ""
+        rook-ceph-pools:
+          url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Pools%20Dashboard.json
+          token: ""
   alertmanager:
     config:
       global:
