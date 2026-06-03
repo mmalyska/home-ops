@@ -44,7 +44,9 @@
       "Bash(helm show *)",
       "Bash(gh api *)",
       "Bash(helm repo *)",
-      "Bash(helm search *)"
+      "Bash(helm search *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ],
     "deny": [
       "Bash(kubectl get secret*)",
