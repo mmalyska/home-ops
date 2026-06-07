@@ -13,7 +13,7 @@ AzerothCore 3.3.5a private server with mods:
 1. WoW version required: **3.3.5a (build 12340)**
 2. Edit `Data/enUS/realmlist.wtf`:
    ```
-   set realmlist wow.mmalyska.cloud
+   set realmlist wow.<private-domain>
    ```
    Or use `192.168.48.29` directly.
 3. External access: connect to home router VPN first, then launch WoW.
@@ -61,7 +61,7 @@ kubectl attach -it -n wow deploy/wow-worldserver -c worldserver
 | Stop worldserver | `kubectl scale -n wow deploy/wow-worldserver --replicas=0` |
 | Start worldserver | `kubectl scale -n wow deploy/wow-worldserver --replicas=1` |
 | Worldserver console | `kubectl attach -it -n wow deploy/wow-worldserver -c worldserver` (detach: Ctrl+P Ctrl+Q) |
-| DB admin UI | `https://wow-adminer.mmalyska.cloud` (internal network only) |
+| DB admin UI | `https://wow-adminer.<private-domain>` (internal network only) |
 | View worldserver logs | `kubectl logs -n wow deploy/wow-worldserver -f` |
 | View worldserver errors | `kubectl exec -n wow deploy/wow-worldserver -c worldserver -- cat /azerothcore/env/dist/logs/Errors.log` |
 
