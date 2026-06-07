@@ -107,15 +107,15 @@ externalSecrets:
     bwsId: "6eda6fc7-6ecf-4b73-b075-b45700db9d2b" #gitleaks:allow #HERMES_GITHUB_PERSONAL_ACCESS_TOKEN
     envName: GITHUB_TOKEN
   - secretName: SANDBOX_DEVOPS_SSH_KEY
-    bwsId: "REPLACE_WITH_BWS_ID" #gitleaks:allow #SANDBOX_DEVOPS_SSH_PRIVATE_KEY
+    bwsId: "5bae28c2-8722-422b-8263-b46201453181" #gitleaks:allow #SANDBOX_DEVOPS_SSH_PRIVATE_KEY
   - secretName: SANDBOX_DOTNET_DEV_SSH_KEY
-    bwsId: "REPLACE_WITH_BWS_ID" #gitleaks:allow #SANDBOX_DOTNET_DEV_SSH_PRIVATE_KEY
+    bwsId: "ffc623a1-237b-4760-9379-b46201453ee2" #gitleaks:allow #SANDBOX_DOTNET_DEV_SSH_PRIVATE_KEY
   - secretName: SANDBOX_NODE_DEV_SSH_KEY
-    bwsId: "REPLACE_WITH_BWS_ID" #gitleaks:allow #SANDBOX_NODE_DEV_SSH_PRIVATE_KEY
+    bwsId: "c1ee8d5c-4839-4684-8a9e-b46201454a84" #gitleaks:allow #SANDBOX_NODE_DEV_SSH_PRIVATE_KEY
   - secretName: SANDBOX_MOBILE_DEV_SSH_KEY
-    bwsId: "REPLACE_WITH_BWS_ID" #gitleaks:allow #SANDBOX_MOBILE_DEV_SSH_PRIVATE_KEY
+    bwsId: "f44fd29e-43fb-4502-b21b-b46201455472" #gitleaks:allow #SANDBOX_MOBILE_DEV_SSH_PRIVATE_KEY
   - secretName: SANDBOX_RESEARCHER_SSH_KEY
-    bwsId: "REPLACE_WITH_BWS_ID" #gitleaks:allow #SANDBOX_RESEARCHER_SSH_PRIVATE_KEY
+    bwsId: "e1741b3f-fc61-4907-b7aa-b462014560d1" #gitleaks:allow #SANDBOX_RESEARCHER_SSH_PRIVATE_KEY
 
 backup:
   schedule: "0 */6 * * *"
