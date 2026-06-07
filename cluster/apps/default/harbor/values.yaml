@@ -1,4 +1,12 @@
 harbor:
+  core:
+    extraEnvVars:
+      - name: CONFIG_OVERWRITE_JSON
+        valueFrom:
+          secretKeyRef:
+            name: harbor-oidc-secret
+            key: CONFIG_OVERWRITE_JSON
+
   expose:
     type: clusterIP
     tls:
