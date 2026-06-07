@@ -56,6 +56,25 @@ spec:
               mountPath: /opt/data
             - name: config-template
               mountPath: /config-template
+        - name: ssh-key-seeder
+          image: alpine:3
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /opt/data/ssh
+              cp /run/ssh-keys/SANDBOX_DEVOPS_SSH_KEY /opt/data/ssh/sandbox-devops.key
+              cp /run/ssh-keys/SANDBOX_DOTNET_DEV_SSH_KEY /opt/data/ssh/sandbox-dotnet-dev.key
+              cp /run/ssh-keys/SANDBOX_NODE_DEV_SSH_KEY /opt/data/ssh/sandbox-node-dev.key
+              cp /run/ssh-keys/SANDBOX_MOBILE_DEV_SSH_KEY /opt/data/ssh/sandbox-mobile-dev.key
+              cp /run/ssh-keys/SANDBOX_RESEARCHER_SSH_KEY /opt/data/ssh/sandbox-researcher.key
+              chmod 600 /opt/data/ssh/*.key
+              chown 0:0 /opt/data/ssh/*.key
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: sandbox-ssh-keys
+              mountPath: /run/ssh-keys
         - name: honcho-seeder
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           command:
@@ -182,3 +201,17 @@ spec:
         - name: honcho-config
           configMap:
             name: hermes-agent-honcho
+        - name: sandbox-ssh-keys
+          secret:
+            secretName: hermes-agent-secrets
+            items:
+              - key: SANDBOX_DEVOPS_SSH_KEY
+                path: SANDBOX_DEVOPS_SSH_KEY
+              - key: SANDBOX_DOTNET_DEV_SSH_KEY
+                path: SANDBOX_DOTNET_DEV_SSH_KEY
+              - key: SANDBOX_NODE_DEV_SSH_KEY
+                path: SANDBOX_NODE_DEV_SSH_KEY
+              - key: SANDBOX_MOBILE_DEV_SSH_KEY
+                path: SANDBOX_MOBILE_DEV_SSH_KEY
+              - key: SANDBOX_RESEARCHER_SSH_KEY
+                path: SANDBOX_RESEARCHER_SSH_KEY
