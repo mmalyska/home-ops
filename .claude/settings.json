@@ -72,7 +72,7 @@
   "hooks": {},
   "statusLine": {
     "type": "command",
-    "command": "npx -y ccstatusline@latest --config ./.claude/statusline/settings.json",
+    "command": "npx -y ccstatusline@latest --config /workspaces/home-ops/.claude/statusline/settings.json",
     "padding": 0
   },
   "alwaysThinkingEnabled": true,
