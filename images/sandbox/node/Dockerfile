@@ -1,4 +1,5 @@
-FROM harbor.REPLACE_PRIVATE_DOMAIN/sandbox/base:latest
+ARG REGISTRY
+FROM ${REGISTRY}/sandbox/base:latest
 
 USER root
 
