@@ -78,6 +78,7 @@ The two paths are independent — Coder server downtime does not break active di
 
 **Key environment variables (from ExternalSecret → K8s Secret):**
 
+<!-- secretlint-disable -->
 ```
 CODER_ACCESS_URL          = https://coder.<private-domain>
 CODER_PG_CONNECTION_URL   = postgres://app:<pw>@coderdb-cnpg-rw/app?sslmode=require
@@ -86,6 +87,7 @@ CODER_OIDC_CLIENT_ID      = coder
 CODER_OIDC_CLIENT_SECRET  = <from Bitwarden>
 CODER_OIDC_EMAIL_DOMAIN   = gmail.com
 ```
+<!-- secretlint-enable -->
 
 **HTTPRoute:** `coder.<private-domain>` → Coder service port 80, private Envoy Gateway. No `oauth2-proxy` wrapper — Coder handles its own auth.
 
