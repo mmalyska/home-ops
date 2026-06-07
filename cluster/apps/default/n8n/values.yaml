@@ -20,7 +20,7 @@ app-template:
         app:
           image:
             repository: ghcr.io/n8n-io/n8n
-            tag: 2.25.2@sha256:213380272bfe06f1700cdd398a6e996b496e37329c9c116d13b04811c10e7452
+            tag: 2.25.5@sha256:08862289f9e9b387d91eab66a74d40d307c0c9b74d2504866f8fe61e9063c838
           env:
             DB_SQLITE_VACUUM_ON_STARTUP: true
             EXECUTIONS_DATA_PRUNE: true
