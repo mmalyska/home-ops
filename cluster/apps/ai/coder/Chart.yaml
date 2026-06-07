@@ -1,0 +1,11 @@
+apiVersion: v2
+name: coder
+type: application
+version: 1.0.0
+dependencies:
+  - name: coder
+    version: 2.34.0
+    repository: https://helm.coder.com/v2
+  - name: pgsql-cnpg
+    version: 1.3.2
+    repository: file://../../../../charts/pgsql-cnpg/
