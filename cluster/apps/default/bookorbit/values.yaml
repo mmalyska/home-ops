@@ -11,7 +11,7 @@ app-template:
         app:
           image:
             repository: ghcr.io/bookorbit/bookorbit
-            tag: 1.8.0@sha256:97b73c06d49b071fcc2684b9d1a94775587fa3b8d56b65323bc29d118b671659
+            tag: 1.9.0@sha256:a32fd69d708db27b1dd69650569f322696e9447f9c49e29b1b730ff024d99c5e
             pullPolicy: IfNotPresent
           env:
             NODE_ENV: production
