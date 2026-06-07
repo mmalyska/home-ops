@@ -14,6 +14,10 @@ spec:
   # this is discouraged but required by ios
   commonName: cert-manager-bitwarden-tls
   isCA: true
+  # Internal CA; 90-day default causes ca.crt to go stale in bitwarden-tls-certs
+  # before the leaf cert is re-issued, breaking ESO verification every ~60 days.
+  duration: 87600h  # 10 years
+  renewBefore: 720h # 30 days
   secretName: bitwarden-ca-tls-certs
   subject:
     organizations:
