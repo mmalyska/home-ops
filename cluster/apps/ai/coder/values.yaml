@@ -1,5 +1,46 @@
 ---
-coder: {}
+coder:
+  coder:
+    service:
+      type: ClusterIP
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    env:
+      # Database — built from CNPG-managed secret using K8s env var substitution
+      - name: PGUSER
+        valueFrom:
+          secretKeyRef:
+            name: coderdb-cnpg-app
+            key: username
+      - name: PGPASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: coderdb-cnpg-app
+            key: password
+      - name: CODER_PG_CONNECTION_URL
+        value: "postgres://$(PGUSER):$(PGPASSWORD)@coderdb-cnpg-rw/app?sslmode=require"
+      # Access URL (uses cluster-secrets plugin substitution)
+      - name: CODER_ACCESS_URL
+        value: "https://coder.<secret:private-domain>"
+      # Keycloak OIDC
+      - name: CODER_OIDC_ISSUER_URL
+        value: "https://keycloak.<secret:private-domain>/realms/home"
+      - name: CODER_OIDC_CLIENT_ID
+        value: "coder"
+      - name: CODER_OIDC_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: coder-secrets
+            key: oidc-client-secret
+      - name: CODER_OIDC_EMAIL_DOMAIN
+        value: "gmail.com"
+      - name: CODER_OIDC_ALLOW_SIGNUPS
+        value: "true"
 
 pgsql-cnpg:
   name: coderdb
