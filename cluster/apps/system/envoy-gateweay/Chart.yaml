@@ -6,6 +6,6 @@ version: 1.0.0
 appVersion: "1.0.0"
 dependencies:
   - name: gateway-helm
-    version: 1.8.0
+    version: v1.8.1
     repository: oci://mirror.gcr.io/envoyproxy
     alias: eg
