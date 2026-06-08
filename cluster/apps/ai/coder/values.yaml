@@ -29,7 +29,7 @@ coder:
         value: "https://coder.<secret:private-domain>"
       # Keycloak OIDC
       - name: CODER_OIDC_ISSUER_URL
-        value: "https://keycloak.<secret:private-domain>/realms/home"
+        value: "https://l.<secret:private-domain>/realms/home"
       - name: CODER_OIDC_CLIENT_ID
         value: "coder"
       - name: CODER_OIDC_CLIENT_SECRET
