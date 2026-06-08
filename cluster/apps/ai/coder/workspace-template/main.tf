@@ -63,6 +63,8 @@ resource "coder_agent" "main" {
   startup_script = <<-EOT
     #!/bin/bash
     set -e
+    chown coder:coder /home/coder
+    chmod 755 /home/coder
     mkdir -p /home/coder/.ssh
     echo "${data.coder_parameter.authorized_key.value}" > /home/coder/.ssh/authorized_keys
     chmod 700 /home/coder/.ssh
