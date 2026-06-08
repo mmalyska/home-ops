@@ -107,6 +107,10 @@ resource "kubernetes_deployment" "workspace" {
   spec {
     replicas = data.coder_workspace.me.start_count
 
+    strategy {
+      type = "Recreate"
+    }
+
     selector {
       match_labels = {
         "app.kubernetes.io/instance" = local.workspace_id
