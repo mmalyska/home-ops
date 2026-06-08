@@ -1,8 +1,31 @@
 ---
+# Allow the Coder provisioner SA to read CRDs for kubernetes_manifest schema validation
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: coder-crd-reader
+rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: coder-crd-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: coder-crd-reader
+subjects:
+  - kind: ServiceAccount
+    name: coder
+    namespace: coder
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: coder-workspace-services
+  name: coder-workspace-extra
   namespace: coder
 rules:
   - apiGroups: [""]
@@ -16,16 +39,38 @@ rules:
       - patch
       - update
       - watch
+  - apiGroups: ["external-secrets.io"]
+    resources: ["externalsecrets"]
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups: ["volsync.backube"]
+    resources: ["replicationsources"]
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: coder-workspace-services
+  name: coder-workspace-extra
   namespace: coder
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: coder-workspace-services
+  name: coder-workspace-extra
 subjects:
   - kind: ServiceAccount
     name: coder

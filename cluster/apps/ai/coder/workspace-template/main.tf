@@ -197,3 +197,86 @@ resource "kubernetes_service" "ssh" {
     }
   }
 }
+
+resource "kubernetes_manifest" "volsync_es" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "coder-${local.workspace_id}-restic"
+      namespace = "coder"
+    }
+    spec = {
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = "bitwarden"
+      }
+      refreshInterval = "1h"
+      target = {
+        name           = "coder-${local.workspace_id}-restic-secret"
+        creationPolicy = "Owner"
+        template = {
+          engineVersion = "v2"
+          data = {
+            RESTIC_REPOSITORY     = "{{ .REPOSITORY_TEMPLATE }}/coder-${data.coder_workspace.me.name}"
+            RESTIC_PASSWORD       = "{{ .RESTIC_PASSWORD }}"
+            AWS_ACCESS_KEY_ID     = "{{ .AWS_ACCESS_KEY_ID }}"
+            AWS_SECRET_ACCESS_KEY = "{{ .AWS_SECRET_ACCESS_KEY }}"
+          }
+        }
+      }
+      data = [
+        {
+          secretKey = "REPOSITORY_TEMPLATE"
+          remoteRef = { key = "39b92426-09c4-4a74-8285-b40a00d62b4d" } #gitleaks:allow
+        },
+        {
+          secretKey = "RESTIC_PASSWORD"
+          remoteRef = { key = "07d70a7a-a6d9-4b0b-af1f-b40a00d649a9" } #gitleaks:allow
+        },
+        {
+          secretKey = "AWS_ACCESS_KEY_ID"
+          remoteRef = { key = "adb66319-d083-4379-afd5-b40a00d66963" } #gitleaks:allow
+        },
+        {
+          secretKey = "AWS_SECRET_ACCESS_KEY"
+          remoteRef = { key = "70ebd8f2-8270-46d8-8953-b40a00d6854f" } #gitleaks:allow
+        },
+      ]
+    }
+  }
+}
+
+resource "kubernetes_manifest" "volsync_rs" {
+  manifest = {
+    apiVersion = "volsync.backube/v1alpha1"
+    kind       = "ReplicationSource"
+    metadata = {
+      name      = "coder-${local.workspace_id}"
+      namespace = "coder"
+    }
+    spec = {
+      sourcePVC = kubernetes_persistent_volume_claim.home.metadata[0].name
+      trigger = {
+        schedule = "0 */6 * * *"
+      }
+      restic = {
+        copyMethod        = "Snapshot"
+        pruneIntervalDays = 14
+        repository        = "coder-${local.workspace_id}-restic-secret"
+        retain = {
+          daily   = 6
+          weekly  = 4
+          monthly = 2
+        }
+        moverSecurityContext = {
+          runAsUser  = 0
+          runAsGroup = 0
+          fsGroup    = 0
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_manifest.volsync_es]
+}
