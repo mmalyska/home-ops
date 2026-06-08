@@ -7,7 +7,7 @@ metadata:
 
 ## QNAP QuObjects + barman-cloud: InvalidDigest workaround
 
-**S3 endpoint:** `https://s3.mmalyska.cloud` (QNAP QuObjects)
+**S3 endpoint:** `https://s3.<private-domain>` (QNAP QuObjects)
 
 **Problem:** botocore ≥ 1.34 automatically sends `x-amz-checksum-crc32` headers on multipart uploads. QNAP QuObjects rejects these with `InvalidDigest: The Content-MD5 or checksum value that you specified is not valid`.
 
