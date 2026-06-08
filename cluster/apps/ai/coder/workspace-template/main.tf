@@ -120,10 +120,6 @@ resource "kubernetes_deployment" "workspace" {
           }
         }
 
-        image_pull_secrets {
-          name = "coder-harbor-pull-secret"
-        }
-
         volume {
           name = "home"
           persistent_volume_claim {

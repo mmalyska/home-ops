@@ -1,6 +1,7 @@
 variable "workspace_image" {
-  description = "Full image reference for this workspace (Harbor path)"
+  description = "Full image reference for this workspace"
   type        = string
+  default     = "ghcr.io/mmalyska/sandbox-devops:rolling"
 }
 
 variable "lb_ip" {
