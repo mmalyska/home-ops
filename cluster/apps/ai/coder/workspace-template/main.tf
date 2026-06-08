@@ -68,7 +68,7 @@ resource "coder_agent" "main" {
     chmod 700 /home/coder/.ssh
     chmod 600 /home/coder/.ssh/authorized_keys
     chown -R coder:coder /home/coder/.ssh
-    /usr/sbin/sshd -D &
+    /usr/sbin/sshd -D >/dev/null 2>&1 &
   EOT
 }
 
