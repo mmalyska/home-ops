@@ -14,6 +14,44 @@ terraform {
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
+data "coder_parameter" "workspace_image" {
+  name        = "workspace_image"
+  display_name = "Workspace Image"
+  description = "Full image reference for this workspace"
+  type        = "string"
+  default     = "ghcr.io/mmalyska/sandbox-devops:rolling"
+  mutable     = false
+  order       = 1
+}
+
+data "coder_parameter" "lb_ip" {
+  name        = "lb_ip"
+  display_name = "LoadBalancer IP"
+  description = "Fixed IP from coder-pool (192.168.48.51-70) for direct SSH access"
+  type        = "string"
+  mutable     = false
+  order       = 2
+}
+
+data "coder_parameter" "authorized_key" {
+  name        = "authorized_key"
+  display_name = "SSH Public Key"
+  description = "SSH public key installed in the workspace for direct SSH access"
+  type        = "string"
+  mutable     = false
+  order       = 3
+}
+
+data "coder_parameter" "storage_size" {
+  name        = "storage_size"
+  display_name = "Storage Size"
+  description = "Home directory PVC size"
+  type        = "string"
+  default     = "20Gi"
+  mutable     = false
+  order       = 4
+}
+
 locals {
   workspace_id = "${data.coder_workspace_owner.me.name}-${data.coder_workspace.me.name}"
 }
@@ -26,7 +64,7 @@ resource "coder_agent" "main" {
     #!/bin/bash
     set -e
     mkdir -p /home/coder/.ssh
-    echo "${var.authorized_key}" > /home/coder/.ssh/authorized_keys
+    echo "${data.coder_parameter.authorized_key.value}" > /home/coder/.ssh/authorized_keys
     chmod 700 /home/coder/.ssh
     chmod 600 /home/coder/.ssh/authorized_keys
     chown -R coder:coder /home/coder/.ssh
@@ -48,7 +86,7 @@ resource "kubernetes_persistent_volume_claim" "home" {
     storage_class_name = "ceph-block"
     resources {
       requests = {
-        storage = var.storage_size
+        storage = data.coder_parameter.storage_size.value
       }
     }
   }
@@ -91,7 +129,7 @@ resource "kubernetes_deployment" "workspace" {
 
         container {
           name    = "workspace"
-          image   = var.workspace_image
+          image   = data.coder_parameter.workspace_image.value
           command = ["sh", "-c", coder_agent.main.init_script]
 
           security_context {
@@ -138,7 +176,7 @@ resource "kubernetes_service" "ssh" {
     name      = "coder-${local.workspace_id}-ssh"
     namespace = "coder"
     annotations = {
-      "lbipam.cilium.io/ips" = var.lb_ip
+      "lbipam.cilium.io/ips" = data.coder_parameter.lb_ip.value
     }
   }
 
