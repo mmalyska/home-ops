@@ -23,9 +23,6 @@ jellyfin:
       - name: envoy-internal
         namespace: envoy-gateway
         sectionName: https
-      - name: envoy-external
-        namespace: envoy-gateway
-        sectionName: https
     hostnames:
       - jellyfin.<secret:private-domain>
 
