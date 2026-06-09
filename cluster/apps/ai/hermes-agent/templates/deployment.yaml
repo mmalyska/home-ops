@@ -19,6 +19,18 @@ spec:
           {{include (print $.Template.BasePath "/configmap.yaml") . | sha256sum}}
     spec:
       initContainers:
+        - name: fix-kanban-db-permissions
+          image: alpine:3
+          command:
+            - sh
+            - -c
+            - |
+              find /opt/data -name 'kanban.db*' | while read f; do
+                chown 10000:10000 "$f" && chmod 644 "$f" || true
+              done
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
         - name: config-seeder
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
           command:
