@@ -1,0 +1,25 @@
+---
+# Adds DERP to Envoy's upgrade_configs so Coder's DERP relay protocol passes
+# through the internal gateway instead of falling back to WebSocket.
+# websocket is included explicitly to preserve its behaviour once the key exists.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyPatchPolicy
+metadata:
+  name: coder-derp-upgrade
+  namespace: envoy-gateway
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: envoy-internal
+    namespace: envoy-gateway
+  type: JSONPatch
+  jsonPatches:
+    - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
+      name: "envoy-gateway/envoy-internal/https"
+      operation:
+        op: add
+        path: "/filter_chains/0/filters/0/typed_config/upgrade_configs"
+        value:
+          - upgrade_type: "websocket"
+          - upgrade_type: "DERP"
