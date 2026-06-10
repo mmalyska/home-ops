@@ -32,11 +32,13 @@ spec:
                       name: talos-backup-doppler
                       key: CUSTOM_S3_ENDPOINT
                 - name: BUCKET
-                  value: "k8s-etcd"
+                  value: "talos-backup"
                 - name: AGE_X25519_PUBLIC_KEY
                   value: "age1nvkwdu3fnsy3r2ajw36d858hmgrw4nkg2e2t5p4n90zyvdnlffzqp3fxpf"
                 - name: S3_PREFIX
-                  value: "talos"
+                  value: "etcd"
+                - name: ENABLE_COMPRESSION
+                  value: "true"
               securityContext:
                 runAsUser: 1000
                 runAsGroup: 1000

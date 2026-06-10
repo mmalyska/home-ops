@@ -31,9 +31,9 @@ spec:
                       name: talos-backup-doppler
                       key: CUSTOM_S3_ENDPOINT
                 - name: BUCKET
-                  value: "k8s-etcd"
+                  value: "talos-backup"
                 - name: S3_PREFIX
-                  value: "talos"
+                  value: "etcd"
                 - name: OLDER_THAN
                   value: "7 days ago"
               resources:
