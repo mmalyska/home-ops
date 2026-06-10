@@ -65,6 +65,9 @@ jellyfin:
     - name: movies
       persistentVolumeClaim:
         claimName: jellyfin-movies
+    - name: music
+      persistentVolumeClaim:
+        claimName: jellyfin-music
     - name: transcoding
       emptyDir: {}
 
@@ -73,6 +76,8 @@ jellyfin:
       mountPath: /data/tvshows
     - name: movies
       mountPath: /data/movies
+    - name: music
+      mountPath: /data/music
     - name: transcoding
       mountPath: /transcoding
 
@@ -114,4 +119,7 @@ nfsMounts:
     nfsServer: qnap.<secret:private-domain>
   - name: movies
     nfsPath: /movies
+    nfsServer: qnap.<secret:private-domain>
+  - name: music
+    nfsPath: /music
     nfsServer: qnap.<secret:private-domain>
