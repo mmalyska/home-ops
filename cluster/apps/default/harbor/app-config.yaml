@@ -1,9 +1,9 @@
 ---
-enabled: "true"
+enabled: "false"
 namespace: harbor
 syncPolicy:
   enabled: true
-  selfHeal: true
+  selfHeal: true∂
   prune: false
 plugin:
   env:
