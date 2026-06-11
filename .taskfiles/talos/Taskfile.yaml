@@ -151,6 +151,7 @@ tasks:
             --patch @nodes/{{.ITEM}}.yaml \
             -o /tmp/talos-patched.yaml
           envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
+          cat templates/ethernet-rings.yaml >> /tmp/talos-patched.yaml
           mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
       - for:
           var: WORKER_LIST
