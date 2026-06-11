@@ -13,7 +13,7 @@ app-template:
             - /custom
           resources:
             requests:
-              cpu: 500m
+              cpu: 50m
               memory: 200Mi
             limits:
               cpu: 2000m
