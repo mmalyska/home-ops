@@ -7,6 +7,15 @@ app-template:
           runAsGroup: 1001
           fsGroup: 1001
           fsGroupChangePolicy: OnRootMismatch
+      initContainers:
+        wait-db:
+          image:
+            repository: busybox
+            tag: latest
+          command:
+            - sh
+            - -c
+            - until nc -z bookorbdb-cnpg-rw 5432; do sleep 2; done
       containers:
         app:
           image:
