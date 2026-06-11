@@ -2,6 +2,7 @@ prometheus-smartctl-exporter:
   config:
     devices:
       - /dev/sda
+      - /dev/nvme0n1
 
   serviceMonitor:
     enabled: true
@@ -24,3 +25,23 @@ prometheus-smartctl-exporter:
     limits:
       cpu: 50m
       memory: 64Mi
+
+  extraInstances:
+    - config:
+        devices:
+          - /dev/nvme0n1
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [nv1]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
