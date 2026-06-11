@@ -8,34 +8,14 @@ prometheus-smartctl-exporter:
     interval: 60s
     scrapeTimeout: 30s
 
-  nodeSelector:
-    kubernetes.io/hostname: mc1
-
-  extraInstances:
-    - config:
-        devices:
-          - /dev/sda
-      nodeSelector:
-        kubernetes.io/hostname: mc2
-      resources:
-        requests:
-          cpu: 10m
-          memory: 32Mi
-        limits:
-          cpu: 50m
-          memory: 64Mi
-    - config:
-        devices:
-          - /dev/sda
-      nodeSelector:
-        kubernetes.io/hostname: mc3
-      resources:
-        requests:
-          cpu: 10m
-          memory: 32Mi
-        limits:
-          cpu: 50m
-          memory: 64Mi
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [mc1, mc2, mc3]
 
   resources:
     requests:
