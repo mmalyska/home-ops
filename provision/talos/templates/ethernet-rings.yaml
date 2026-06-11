@@ -1,0 +1,7 @@
+---
+apiVersion: v1alpha1
+kind: EthernetConfig
+name: eth0
+rings:
+  rx: 4096
+  tx: 4096
