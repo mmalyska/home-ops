@@ -1,0 +1,76 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: smart-disk-health
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: smart.nvme
+      interval: 5m
+      rules:
+        - alert: NVMeTemperatureHigh
+          expr: node_nvme_temperature_celsius > 70
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'NVMe temperature high on {{`{{ $labels.instance }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is at {{`{{ $value }}`}}°C'
+        - alert: NVMeTemperatureCritical
+          expr: node_nvme_temperature_celsius > 80
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'NVMe temperature critical on {{`{{ $labels.instance }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is at {{`{{ $value }}`}}°C'
+        - alert: NVMeWearHigh
+          expr: node_nvme_percentage_used_ratio > 0.8
+          labels:
+            severity: warning
+          annotations:
+            summary: 'NVMe wear high on {{`{{ $labels.instance }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value | humanizePercentage }}`}} worn'
+        - alert: NVMeWearCritical
+          expr: node_nvme_percentage_used_ratio > 0.95
+          labels:
+            severity: critical
+          annotations:
+            summary: 'NVMe wear critical on {{`{{ $labels.instance }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value | humanizePercentage }}`}} worn'
+        - alert: NVMeMediaErrors
+          expr: increase(node_nvme_media_errors_total[1h]) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: 'NVMe media errors detected on {{`{{ $labels.instance }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} has new media errors'
+    - name: smart.sata
+      interval: 5m
+      rules:
+        - alert: SATASmartHealthFailed
+          expr: smartctl_device_smart_status != 1
+          labels:
+            severity: critical
+          annotations:
+            summary: 'SATA drive SMART health failed on {{`{{ $labels.hostname }}`}}'
+            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.hostname }}`}} reports SMART failure'
+        - alert: SATATemperatureHigh
+          expr: smartctl_device_temperature_celsius > 70
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'SATA drive temperature high on {{`{{ $labels.hostname }}`}}'
+            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.hostname }}`}} is at {{`{{ $value }}`}}°C'
+        - alert: SATAWearHigh
+          expr: smartctl_device_percentage_used > 80
+          labels:
+            severity: warning
+          annotations:
+            summary: 'SATA drive wear high on {{`{{ $labels.hostname }}`}}'
+            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.hostname }}`}} is {{`{{ $value }}`}}% worn'
