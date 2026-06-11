@@ -40,6 +40,7 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 - 3 control plane nodes (scheduling enabled on control plane, no dedicated workers)
 - Custom extensions: `siderolabs/i915`, `siderolabs/intel-ucode`, `siderolabs/nut-client`
 - OIDC on kube-apiserver pointing to Keycloak
+- **To make config changes**: use the `talos-config-editing` skill — it has the edit decision map, patch semantics, and how to add new config documents.
 
 ## Network Topology
 

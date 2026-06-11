@@ -11,6 +11,8 @@ when_to_use: >
 
 # Talos EthernetConfig
 
+> `EthernetConfig` is a specific case of the general Talos multi-document config pattern. For the full picture (edit decision map, strategic merge patches, adding any document kind), see the `talos-config-editing` skill.
+
 ## The Trap
 
 `ethernetConfig` does **not** nest under `machine.network.interfaces[]`. This fails:
