@@ -11,3 +11,4 @@
 | [hermes-agent-discord](../docs/superpowers/plans/2026-05-26-hermes-agent-discord.md) | Add Discord messaging channel to hermes-agent                    | 2026-05-26 |
 | [hermes-agent-chart-redesign](../docs/superpowers/plans/2026-05-27-hermes-agent-chart-redesign.md) | Refactor hermes-agent Helm chart to values-driven    | 2026-05-27 |
 | [bookorbit-deployment](../docs/superpowers/archive/2026-06-03-bookorbit-deployment.md) | Deploy Bookorbit book tracking app to cluster        | 2026-06-07 |
+| [smart-monitoring](smart-monitoring/plan.md) | Enable SMART disk health monitoring for NVMe and SATA drives on cluster nodes | 2026-06-11 |
