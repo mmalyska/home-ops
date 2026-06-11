@@ -74,7 +74,7 @@ resource "coder_agent" "main" {
   EOT
 }
 
-resource "kubernetes_persistent_volume_claim" "home" {
+resource "kubernetes_persistent_volume_claim_v1" "home" {
   metadata {
     name      = "coder-${local.workspace_id}-home"
     namespace = "coder"
@@ -95,7 +95,7 @@ resource "kubernetes_persistent_volume_claim" "home" {
   wait_until_bound = false
 }
 
-resource "kubernetes_deployment" "workspace" {
+resource "kubernetes_deployment_v1" "workspace" {
   metadata {
     name      = "coder-${local.workspace_id}"
     namespace = "coder"
@@ -167,17 +167,17 @@ resource "kubernetes_deployment" "workspace" {
         volume {
           name = "home"
           persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.home.metadata[0].name
+            claim_name = kubernetes_persistent_volume_claim_v1.home.metadata[0].name
           }
         }
       }
     }
   }
 
-  depends_on = [kubernetes_persistent_volume_claim.home]
+  depends_on = [kubernetes_persistent_volume_claim_v1.home]
 }
 
-resource "kubernetes_service" "ssh" {
+resource "kubernetes_service_v1" "ssh" {
   metadata {
     name      = "coder-${local.workspace_id}-ssh"
     namespace = "coder"
@@ -258,7 +258,7 @@ resource "kubernetes_manifest" "volsync_rs" {
       namespace = "coder"
     }
     spec = {
-      sourcePVC = kubernetes_persistent_volume_claim.home.metadata[0].name
+      sourcePVC = kubernetes_persistent_volume_claim_v1.home.metadata[0].name
       trigger = {
         schedule = "0 */6 * * *"
       }
