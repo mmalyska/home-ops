@@ -4,7 +4,7 @@ kube-prometheus-stack:
   kubeEtcd:
     enabled: true
   kubeProxy:
-    enabled: true
+    enabled: false
   kubeScheduler:
     enabled: true
   grafana:
