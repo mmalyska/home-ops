@@ -85,12 +85,12 @@ curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=ceph_cluster_total_used_bytes / ceph_cluster_total_bytes * 100'
 ```
 
-### Step 4 — NVMe SMART data (Jaskinia only)
+### Step 4 — NVMe SMART (all nodes)
 
-SMART metrics (`node_nvme_*`) are only scraped from Jaskinia (`192.168.50.8`). The cluster nodes expose NVMe device identity via `node_nvme_info` but **not** wear/temperature.
+These metrics are available after ArgoCD syncs the node-exporter DaemonSet with `--collector.nvme`. Covers all 4 cluster nodes (mc1/mc2/mc3 at 192.168.48.2–4 and the 4th node at 192.168.48.5) AND Jaskinia (192.168.50.8).
 
 ```bash
-# Available SMART metrics on Jaskinia
+# Check which nodes expose NVMe SMART
 for metric in node_nvme_percentage_used_ratio node_nvme_available_spare_ratio \
               node_nvme_media_errors_total node_nvme_temperature_celsius \
               node_nvme_power_on_hours_total node_nvme_unsafe_shutdowns_total; do
@@ -100,7 +100,30 @@ for metric in node_nvme_percentage_used_ratio node_nvme_available_spare_ratio \
 done
 ```
 
-### Step 5 — 7-day growth trend (for nodes near threshold)
+### Step 5 — SATA SMART via smartctl-exporter (mc1/mc2/mc3 `sda` only)
+
+The `smartmon-exporter` DaemonSet runs `smartctl -a` on each drive. After sync, metrics are in the `monitoring` namespace scraped by Prometheus.
+
+```bash
+# SATA device overall health (1=PASSED, 0=FAILED)
+curl -s 'http://localhost:9090/api/v1/query' \
+  --data-urlencode 'query=smartctl_device_smart_status{device="sda"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  healthy={r[\"value\"][1]}') for r in d['data']['result']]"
+
+# SATA temperature (Celsius)
+curl -s 'http://localhost:9090/api/v1/query' \
+  --data-urlencode 'query=smartctl_device_temperature{device="sda"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  temp={r[\"value\"][1]}°C') for r in d['data']['result']]"
+
+# SATA wear indicator (Wear_Leveling_Count — lower = more worn)
+curl -s 'http://localhost:9090/api/v1/query' \
+  --data-urlencode 'query=smartctl_device_attribute{attribute_name="Wear_Leveling_Count",device="sda"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  wear_level={r[\"value\"][1]}') for r in d['data']['result']]"
+```
+
+Note: `smartctl_device_*` metrics have an `instance` label matching the node-exporter instance (e.g., `192.168.48.2:9100`), not a separate port. Confirm exact labels after first sync.
+
+### Step 6 — 7-day growth trend (for nodes near threshold)
 
 ```bash
 WEEK_AGO=$(date -d '7 days ago' +%s)
@@ -121,8 +144,6 @@ curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
 
 ## Known Gaps
 
-- **No SMART for Crucial MX500 (`sda`)** — SATA SSDs; `node_nvme_*` only covers NVMe. Need `smartctl -a /dev/sda` via a privileged DaemonSet.
-- **No SMART wear/temp for mc node NVMes** — `node_nvme_info` is scraped but not the health metrics. Adding `--collector.nvme` to node-exporter args would fix this.
 - **mc3 `/var` filling** — historically at 82% (2026-06-11), growing ~2.7 pp/week. Suspected cause: Ceph logs/crash dumps at `/var/log/ceph` and `/var/lib/ceph/crash`. Investigate with `du -sh /var/log/ceph /var/lib/ceph/crash /var/lib/containers` on mc3.
 
 ## Drive Identity Reference
