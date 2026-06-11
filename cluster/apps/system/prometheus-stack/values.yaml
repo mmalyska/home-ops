@@ -185,3 +185,4 @@ kube-prometheus-stack:
       - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
       # disable thermal zone for stuck exporter on jetson platform REF: https://github.com/prometheus/node_exporter/issues/3071
       - --no-collector.thermal_zone
+      - --collector.nvme
