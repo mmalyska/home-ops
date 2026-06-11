@@ -12,6 +12,7 @@ Comprehensive audit using Prometheus + kubectl. Produces a per-app summary with 
 **REQUIRED SUB-SKILLS:** Load these before starting:
 - `prometheus-portforward-session` — port-forward lifecycle across Bash calls
 - `prometheus-historical-queries` — point-in-time snapshots for trend comparison
+- `node-disk-health` — disk topology, raw block device trap, and disk-specific queries
 
 ## Query Sequence
 
