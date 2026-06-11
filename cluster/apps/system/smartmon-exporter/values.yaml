@@ -38,6 +38,11 @@ prometheus-smartctl-exporter:
                   - key: kubernetes.io/hostname
                     operator: In
                     values: [nv1]
+      tolerations:
+        - key: nv
+          operator: Equal
+          value: NoSchedule
+          effect: NoSchedule
       resources:
         requests:
           cpu: 10m
