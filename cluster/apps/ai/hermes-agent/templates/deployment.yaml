@@ -147,6 +147,7 @@ spec:
           args:
             - gateway
             - run
+            - --replace
           lifecycle:
             postStart:
               exec:
