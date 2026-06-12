@@ -13,7 +13,7 @@ spec:
       interval: 5m
       rules:
         - alert: NVMeTemperatureHigh
-          expr: node_nvme_temperature_celsius > 70
+          expr: smartctl_device_temperature{device="nvme0n1"} > 70
           for: 5m
           labels:
             severity: warning
@@ -21,7 +21,7 @@ spec:
             summary: 'NVMe temperature high on {{`{{ $labels.instance }}`}}'
             description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is at {{`{{ $value }}`}}°C'
         - alert: NVMeTemperatureCritical
-          expr: node_nvme_temperature_celsius > 80
+          expr: smartctl_device_temperature{device="nvme0n1"} > 80
           for: 5m
           labels:
             severity: critical
@@ -29,21 +29,21 @@ spec:
             summary: 'NVMe temperature critical on {{`{{ $labels.instance }}`}}'
             description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is at {{`{{ $value }}`}}°C'
         - alert: NVMeWearHigh
-          expr: node_nvme_percentage_used_ratio > 0.8
+          expr: smartctl_device_percentage_used{device="nvme0n1"} > 80
           labels:
             severity: warning
           annotations:
             summary: 'NVMe wear high on {{`{{ $labels.instance }}`}}'
-            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value | humanizePercentage }}`}} worn'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value }}`}}% worn'
         - alert: NVMeWearCritical
-          expr: node_nvme_percentage_used_ratio > 0.95
+          expr: smartctl_device_percentage_used{device="nvme0n1"} > 95
           labels:
             severity: critical
           annotations:
             summary: 'NVMe wear critical on {{`{{ $labels.instance }}`}}'
-            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value | humanizePercentage }}`}} worn'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value }}`}}% worn'
         - alert: NVMeMediaErrors
-          expr: increase(node_nvme_media_errors_total[1h]) > 0
+          expr: increase(smartctl_device_media_errors{device="nvme0n1"}[1h]) > 0
           labels:
             severity: critical
           annotations:
@@ -53,24 +53,24 @@ spec:
       interval: 5m
       rules:
         - alert: SATASmartHealthFailed
-          expr: smartctl_device_smart_status != 1
+          expr: smartctl_device_smart_status{device="sda"} != 1
           labels:
             severity: critical
           annotations:
-            summary: 'SATA drive SMART health failed on {{`{{ $labels.hostname }}`}}'
-            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.hostname }}`}} reports SMART failure'
+            summary: 'SATA drive SMART health failed on {{`{{ $labels.instance }}`}}'
+            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} reports SMART failure'
         - alert: SATATemperatureHigh
-          expr: smartctl_device_temperature_celsius > 70
+          expr: smartctl_device_temperature{device="sda"} > 70
           for: 5m
           labels:
             severity: warning
           annotations:
-            summary: 'SATA drive temperature high on {{`{{ $labels.hostname }}`}}'
-            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.hostname }}`}} is at {{`{{ $value }}`}}°C'
+            summary: 'SATA drive temperature high on {{`{{ $labels.instance }}`}}'
+            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is at {{`{{ $value }}`}}°C'
         - alert: SATAWearHigh
-          expr: smartctl_device_percentage_used > 80
+          expr: smartctl_device_percentage_used{device="sda"} > 80
           labels:
             severity: warning
           annotations:
-            summary: 'SATA drive wear high on {{`{{ $labels.hostname }}`}}'
-            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.hostname }}`}} is {{`{{ $value }}`}}% worn'
+            summary: 'SATA drive wear high on {{`{{ $labels.instance }}`}}'
+            description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.instance }}`}} is {{`{{ $value }}`}}% worn'
