@@ -115,13 +115,14 @@ curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=smartctl_device_temperature{device="sda"}' \
   | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  temp={r[\"value\"][1]}°C') for r in d['data']['result']]"
 
-# SATA wear indicator (Wear_Leveling_Count — lower = more worn)
+# SATA wear — Crucial MX500 uses attribute 202 "Percent_Lifetime_Remain" (raw value = % remaining)
+# smartctl_device_percentage_used is NVMe-only and returns NO DATA for SATA drives
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=smartctl_device_attribute{attribute_name="Wear_Leveling_Count",device="sda"}' \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  wear_level={r[\"value\"][1]}') for r in d['data']['result']]"
+  --data-urlencode 'query=100 - smartctl_device_attribute{device="sda", attribute_name="Percent_Lifetime_Remain", value_type="raw"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  wear%={r[\"value\"][1]}') for r in d['data']['result']]"
 ```
 
-Note: `smartctl_device_*` metrics have an `instance` label matching the node-exporter instance (e.g., `192.168.48.2:9100`), not a separate port. Confirm exact labels after first sync.
+Note: `smartctl_device_*` metrics include a `node` label (set via ServiceMonitor relabeling from `__meta_kubernetes_pod_node_name`) in addition to the pod IP `instance` label.
 
 ### Step 6 — 7-day growth trend (for nodes near threshold)
 
@@ -140,6 +141,7 @@ curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
 | SSD busy % | >30% | >50% | >80% |
 | Ceph cluster used | >60% | >75% | >85% |
 | NVMe wear (`percentage_used`) | >50% | >80% | >95% |
+| SATA wear (Crucial MX500, `100 - Percent_Lifetime_Remain`) | >50% | >80% | >95% |
 | NVMe temperature | >60°C | >70°C | >80°C |
 
 ## Known Gaps
