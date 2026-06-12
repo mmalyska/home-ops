@@ -1,4 +1,8 @@
 prometheus-smartctl-exporter:
+  image:
+    repository: ghcr.io/home-operations/smartctl-exporter
+    tag: "0.14.0"
+
   config:
     devices:
       - /dev/sda
@@ -25,3 +29,28 @@ prometheus-smartctl-exporter:
     limits:
       cpu: 50m
       memory: 64Mi
+
+  extraInstances:
+    - config:
+        devices:
+          - /dev/nvme0n1
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [nv1]
+      tolerations:
+        - key: nv
+          operator: Equal
+          value: NoSchedule
+          effect: NoSchedule
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
