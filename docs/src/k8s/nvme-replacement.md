@@ -44,35 +44,27 @@ kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph osd out <osd-id>
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph status
 ```
 
-### Step 2 — Drain the node
+### Step 2 — Reset the node
+
+`talosctl reset` automatically cordons and drains the node, leaves etcd, erases the disk, and powers off the machine:
 
 ```bash
-kubectl cordon <node>
-kubectl drain <node> --ignore-daemonsets --delete-emptydir-data
+talosctl -n <node-ip> reset
 ```
 
-### Step 3 — Remove from etcd
+### Step 3 — Delete from Kubernetes
 
-Do this **before** shutdown. Skipping this step causes the new node to fail rejoining.
-
-```bash
-talosctl -n <node-ip> etcd remove-member <node>
-# Verify 2 members remain
-talosctl -n <other-node-ip> etcd members
-```
-
-### Step 4 — Delete from Kubernetes and shut down
+The reset does not remove the node object from Kubernetes — do that manually:
 
 ```bash
 kubectl delete node <node>
-talosctl -n <node-ip> shutdown
 ```
 
-### Step 5 — Swap the NVMe
+### Step 4 — Swap the NVMe
 
-Power off, open the M720q, replace `nvme0n1`. Leave `sda` untouched.
+The machine is already off after the reset. Open the M720q, replace `nvme0n1`. Leave `sda` untouched.
 
-### Step 6 — Reinstall Talos
+### Step 5 — Reinstall Talos
 
 Boot from Talos ISO (USB or PXE) — same version as the running cluster.
 
@@ -91,14 +83,14 @@ talosctl apply-config --insecure -n <node-ip> \
 
 Talos installs itself onto the new drive and rejoins etcd automatically.
 
-### Step 7 — Verify node is back
+### Step 6 — Verify node is back
 
 ```bash
 kubectl get node <node>                        # should reach Ready
 talosctl -n <node-ip> etcd members            # should show 3 members
 ```
 
-### Step 8 — Re-add Ceph OSD
+### Step 7 — Re-add Ceph OSD
 
 The OSD on `sda` should auto-rejoin once the node is back. If it doesn't:
 
@@ -106,12 +98,6 @@ The OSD on `sda` should auto-rejoin once the node is back. If it doesn't:
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph osd in <osd-id>
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph status
 # Wait for HEALTH_OK before moving to the next node
-```
-
-### Step 9 — Uncordon
-
-```bash
-kubectl uncordon <node>
 ```
 
 ## Node Reference
@@ -126,7 +112,7 @@ kubectl uncordon <node>
 
 | Risk | Mitigation |
 |------|-----------|
-| etcd split brain | Always remove-member before shutdown; never take 2 nodes down at once |
+| etcd split brain | `talosctl reset` leaves etcd automatically; never take 2 nodes down at once |
 | Ceph data loss | Mark OSD out and wait for rebalancing to start before powering off |
 | Wrong Talos version | Check `talosctl version` on a running node before applying config |
 | Config drift | Machine configs live in `provision/talos/clusterconfig/` — always use those, never regenerate |
