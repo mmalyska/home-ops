@@ -68,9 +68,52 @@ spec:
             summary: 'SATA drive temperature high on {{`{{ $labels.node }}`}}'
             description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is at {{`{{ $value }}`}}°C'
         - alert: SATAWearHigh
-          expr: smartctl_device_percentage_used{device="sda"} > 80
+          expr: (100 - smartctl_device_attribute{device="sda", attribute_name="Percent_Lifetime_Remain", value_type="raw"}) > 80
           labels:
             severity: warning
           annotations:
             summary: 'SATA drive wear high on {{`{{ $labels.node }}`}}'
             description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is {{`{{ $value }}`}}% worn'
+    - name: smart.qnap.nvme
+      interval: 5m
+      rules:
+        - alert: QNAPNVMeWearHigh
+          expr: node_nvme_percentage_used_ratio{job="qnap"} * 100 > 80
+          labels:
+            severity: warning
+          annotations:
+            summary: 'QNAP NVMe wear high on {{`{{ $labels.node }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is {{`{{ $value }}`}}% worn'
+        - alert: QNAPNVMeWearCritical
+          expr: node_nvme_percentage_used_ratio{job="qnap"} * 100 > 95
+          labels:
+            severity: critical
+          annotations:
+            summary: 'QNAP NVMe wear critical on {{`{{ $labels.node }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is {{`{{ $value }}`}}% worn'
+        - alert: QNAPNVMeTemperatureHigh
+          expr: node_nvme_temperature_celsius{job="qnap"} > 70
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'QNAP NVMe temperature high on {{`{{ $labels.node }}`}}'
+            description: 'NVMe device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is at {{`{{ $value }}`}}°C'
+    - name: smart.qnap.hdd
+      interval: 5m
+      rules:
+        - alert: QNAPHDDSmartFailed
+          expr: count by (hd, node) (node_hdtmp_C{job="qnap", smart!="GOOD"}) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: 'QNAP HDD SMART health failed on {{`{{ $labels.node }}`}}'
+            description: 'HDD {{`{{ $labels.hd }}`}} on {{`{{ $labels.node }}`}} reports SMART failure'
+        - alert: QNAPHDDTemperatureHigh
+          expr: node_hdtmp_C{job="qnap"} > 50
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'QNAP HDD temperature high on {{`{{ $labels.node }}`}}'
+            description: 'HDD {{`{{ $labels.hd }}`}} on {{`{{ $labels.node }}`}} is at {{`{{ $value }}`}}°C'
