@@ -81,7 +81,7 @@
             "uid": "prometheus"
           },
           "expr": "smartctl_device_temperature{device=\"nvme0n1\"}",
-          "legendFormat": "{{instance}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
@@ -144,7 +144,7 @@
             "uid": "prometheus"
           },
           "expr": "smartctl_device_percentage_used{device=\"nvme0n1\"}",
-          "legendFormat": "{{instance}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
@@ -207,7 +207,7 @@
             "uid": "prometheus"
           },
           "expr": "smartctl_device_available_spare{device=\"nvme0n1\"}",
-          "legendFormat": "{{instance}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
@@ -270,7 +270,7 @@
             "uid": "prometheus"
           },
           "expr": "sum by (instance, device) (smartctl_device_media_errors{device=\"nvme0n1\"})",
-          "legendFormat": "{{instance}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
@@ -331,7 +331,7 @@
             "uid": "prometheus"
           },
           "expr": "smartctl_device_temperature{device=\"sda\"}",
-          "legendFormat": "{{hostname}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
@@ -410,7 +410,7 @@
             "uid": "prometheus"
           },
           "expr": "smartctl_device_smart_status{device=\"sda\"}",
-          "legendFormat": "{{hostname}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
@@ -473,7 +473,7 @@
             "uid": "prometheus"
           },
           "expr": "smartctl_device_percentage_used{device=\"sda\"}",
-          "legendFormat": "{{hostname}} {{device}}",
+          "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
       ],
