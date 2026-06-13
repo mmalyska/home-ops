@@ -15,10 +15,10 @@ Each mc node (mc1/mc2/mc3) has **two drives with different visibility in Prometh
 |------|----|--------|-------|----------|------|------|--------------------------------|
 | mc1 | 192.168.48.2 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HBHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
 | mc1 | 192.168.48.2 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-1 (raw block) | ❌ No |
-| mc3 | 192.168.48.3 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HBHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
-| mc3 | 192.168.48.3 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-2 (raw block) | ❌ No |
-| mc2 | 192.168.48.4 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HAHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
-| mc2 | 192.168.48.4 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-0 (raw block) | ❌ No |
+| mc2 | 192.168.48.3 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HBHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
+| mc2 | 192.168.48.3 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-2 (raw block) | ❌ No |
+| mc3 | 192.168.48.4 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HAHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
+| mc3 | 192.168.48.4 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-0 (raw block) | ❌ No |
 | (4th node) | 192.168.48.5 | `nvme0n1` | FORESEE XP1000F256G | NVMe | 236 GiB | OS + `/var` | ✅ Yes |
 | Jaskinia | 192.168.50.8 | `nvme0n1`, `nvme1n1` | — | NVMe | — | QNAP storage | ✅ SMART available |
 
@@ -130,7 +130,7 @@ Note: `smartctl_device_*` metrics include a `node` label (set via ServiceMonitor
 WEEK_AGO=$(date -d '7 days ago' +%s)
 # Replace instance value as needed
 curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
-  --data-urlencode 'query=(1 - node_filesystem_avail_bytes{instance="192.168.48.3:9100",mountpoint="/var"} / node_filesystem_size_bytes{instance="192.168.48.3:9100",mountpoint="/var"}) * 100'
+  --data-urlencode 'query=(1 - node_filesystem_avail_bytes{instance="192.168.48.4:9100",mountpoint="/var"} / node_filesystem_size_bytes{instance="192.168.48.4:9100",mountpoint="/var"}) * 100'
 ```
 
 ## Thresholds
@@ -146,7 +146,7 @@ curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
 
 ## Known Gaps
 
-- **mc3 `/var` filling** — historically at 82% (2026-06-11), growing ~2.7 pp/week. Suspected cause: Ceph logs/crash dumps at `/var/log/ceph` and `/var/lib/ceph/crash`. Investigate with `du -sh /var/log/ceph /var/lib/ceph/crash /var/lib/containers` on mc3.
+- **mc3 `/var` filling** (192.168.48.4) — historically at 82% (2026-06-11), growing ~2.7 pp/week. Suspected cause: Ceph logs/crash dumps at `/var/log/ceph` and `/var/lib/ceph/crash`. Investigate with `du -sh /var/log/ceph /var/lib/ceph/crash /var/lib/containers` on mc3.
 
 ## Drive Identity Reference
 
@@ -156,8 +156,8 @@ Use `node_disk_info{device!~"rbd.*|loop.*|zram.*",job="node-exporter"}` to re-qu
 |------|--------|-------|--------|----------|----------|
 | mc1 (48.2) | nvme0n1 | Samsung MZVLB256HBHQ-000L7 | S4ELNF0M695054 | 3L2QEXH7 | NVMe |
 | mc1 (48.2) | sda | Crucial CT500MX500SSD1 | 2147E5E7AB2E | M3CR043 | SATA |
-| mc3 (48.3) | nvme0n1 | Samsung MZVLB256HBHQ-000L7 | S4ELNF0M694879 | 3L2QEXH7 | NVMe |
-| mc3 (48.3) | sda | Crucial CT500MX500SSD1 | 2147E5E7B554 | M3CR043 | SATA |
-| mc2 (48.4) | nvme0n1 | Samsung MZVLB256HAHQ-000L7 | S41GNX0N202586 | 1L2QEXD7 | NVMe |
-| mc2 (48.4) | sda | Crucial CT500MX500SSD1 | 2147E5E7B557 | M3CR043 | SATA |
+| mc2 (48.3) | nvme0n1 | Samsung MZVLB256HBHQ-000L7 | S4ELNF0M694879 | 3L2QEXH7 | NVMe |
+| mc2 (48.3) | sda | Crucial CT500MX500SSD1 | 2147E5E7B554 | M3CR043 | SATA |
+| mc3 (48.4) | nvme0n1 | Samsung MZVLB256HAHQ-000L7 | S41GNX0N202586 | 1L2QEXD7 | NVMe |
+| mc3 (48.4) | sda | Crucial CT500MX500SSD1 | 2147E5E7B557 | M3CR043 | SATA |
 | 192.168.48.5 | nvme0n1 | FORESEE XP1000F256G | PED265Q000146 | V1.28 | NVMe |
