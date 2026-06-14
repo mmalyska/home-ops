@@ -53,14 +53,14 @@ spec:
       interval: 5m
       rules:
         - alert: SATASmartHealthFailed
-          expr: smartctl_device_smart_status{device="sda"} != 1
+          expr: smartctl_device_smart_status{device=~"sda|sdb"} != 1
           labels:
             severity: critical
           annotations:
             summary: 'SATA drive SMART health failed on {{`{{ $labels.node }}`}}'
             description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} reports SMART failure'
         - alert: SATATemperatureHigh
-          expr: smartctl_device_temperature{device="sda"} > 70
+          expr: smartctl_device_temperature{device=~"sda|sdb"} > 70
           for: 5m
           labels:
             severity: warning
@@ -68,7 +68,7 @@ spec:
             summary: 'SATA drive temperature high on {{`{{ $labels.node }}`}}'
             description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is at {{`{{ $value }}`}}°C'
         - alert: SATAWearHigh
-          expr: (100 - smartctl_device_attribute{device="sda", attribute_name="Percent_Lifetime_Remain", value_type="raw"}) > 80
+          expr: (100 - smartctl_device_attribute{device=~"sda|sdb", attribute_name="Percent_Lifetime_Remain", value_type="raw"}) > 80
           labels:
             severity: warning
           annotations:
