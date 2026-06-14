@@ -330,7 +330,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "smartctl_device_temperature{device=\"sda\"}",
+          "expr": "smartctl_device_temperature{device=~\"sda|sdb\"}",
           "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
@@ -409,7 +409,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "smartctl_device_smart_status{device=\"sda\"}",
+          "expr": "smartctl_device_smart_status{device=~\"sda|sdb\"}",
           "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
@@ -472,7 +472,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 - smartctl_device_attribute{device=\"sda\", attribute_name=\"Percent_Lifetime_Remain\", value_type=\"raw\"}",
+          "expr": "100 - smartctl_device_attribute{device=~\"sda|sdb\", attribute_name=\"Percent_Lifetime_Remain\", value_type=\"raw\"}",
           "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
