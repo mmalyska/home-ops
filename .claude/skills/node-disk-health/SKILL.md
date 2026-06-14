@@ -22,9 +22,7 @@ Each mc node (mc1/mc2/mc3) has **two drives with different visibility in Prometh
 | (4th node) | 192.168.48.5 | `nvme0n1` | FORESEE XP1000F256G | NVMe | 236 GiB | OS + `/var` | ✅ Yes |
 | Jaskinia | 192.168.50.8 | `nvme0n1`, `nvme1n1` | — | NVMe | — | QNAP storage | ✅ SMART available |
 
-> **⚠️ mc1 Ceph drive is `sdb`, not `sda`** — After NVMe replacement (2026-06-14), the Crucial MX500 on mc1 was detected as `sdb` instead of `sda`. Ceph is unaffected (uses device by-id). `smartmon-exporter` currently only covers `sda` — mc1's SATA drive has no SMART coverage until the exporter is updated to discover all block devices dynamically.
-
-> **⚠️ NVMe drives not covered by smartmon-exporter on mc nodes** — `smartctl` can query NVMe drives just as well as SATA. The exporter should be configured to cover all SSDs (`nvme0n1` + SATA data drive) per node, not just `sda`.
+> **Note — mc1 Ceph drive is `sdb`, not `sda`** — After NVMe replacement (2026-06-14), the Crucial MX500 on mc1 was detected as `sdb` instead of `sda`. Ceph is unaffected (uses device by-id). `smartmon-exporter` covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0n1` on all mc nodes (fixed 2026-06-14), so all drives have SMART coverage.
 
 **The trap:** `node_filesystem_size_bytes` only returns mounted filesystems. Ceph OSDs have no mountpoint — they are raw block devices. Always use `node_disk_io_time_seconds_total` to discover all block devices first, because device names (`sda` vs `sdb`) can shift after hardware replacement.
 
@@ -105,25 +103,32 @@ done
 
 ### Step 5 — SATA/NVMe SMART via smartmon-exporter
 
-The `smartmon-exporter` DaemonSet runs `smartctl -a` on drives and exposes `smartctl_device_*` metrics scraped by Prometheus. `smartctl` covers both SATA and NVMe — the exporter should be configured to discover all non-rbd block devices per node.
-
-**Current gap (as of 2026-06-14):** exporter only queries `sda`. mc1's Ceph drive is on `sdb` (no coverage). NVMe drives (`nvme0n1`) not covered on any mc node.
+The `smartmon-exporter` DaemonSet runs `smartctl -a` on drives and exposes `smartctl_device_*` metrics scraped by Prometheus. Configured devices on mc1/mc2/mc3: `/dev/sda`, `/dev/sdb`, `/dev/nvme0n1`. On nodes where a device doesn't exist, smartctl skips it gracefully.
 
 ```bash
-# SATA device overall health (1=PASSED, 0=FAILED)
+# SATA health (1=PASSED, 0=FAILED) — mc1 uses sdb, mc2/mc3 use sda
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=smartctl_device_smart_status{device="sda"}' \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  healthy={r[\"value\"][1]}') for r in d['data']['result']]"
+  --data-urlencode 'query=smartctl_device_smart_status{device=~"sda|sdb"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  {r[\"metric\"][\"device\"]}  healthy={r[\"value\"][1]}') for r in d['data']['result']]"
 
 # SATA temperature (Celsius)
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=smartctl_device_temperature{device="sda"}' \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"instance\")}  temp={r[\"value\"][1]}°C') for r in d['data']['result']]"
+  --data-urlencode 'query=smartctl_device_temperature{device=~"sda|sdb"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  {r[\"metric\"][\"device\"]}  temp={r[\"value\"][1]}°C') for r in d['data']['result']]"
 
 # SATA wear — Crucial MX500 uses attribute 202 "Percent_Lifetime_Remain" (raw value = % remaining)
 # smartctl_device_percentage_used is NVMe-only and returns NO DATA for SATA drives
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=100 - smartctl_device_attribute{device="sda", attribute_name="Percent_Lifetime_Remain", value_type="raw"}' \
+  --data-urlencode 'query=100 - smartctl_device_attribute{device=~"sda|sdb", attribute_name="Percent_Lifetime_Remain", value_type="raw"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  wear%={r[\"value\"][1]}') for r in d['data']['result']]"
+
+# NVMe health and wear (ADATA SX8200PNP on mc1/mc2/mc3)
+curl -s 'http://localhost:9090/api/v1/query' \
+  --data-urlencode 'query=smartctl_device_smart_status{device="nvme0n1"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  healthy={r[\"value\"][1]}') for r in d['data']['result']]"
+
+curl -s 'http://localhost:9090/api/v1/query' \
+  --data-urlencode 'query=smartctl_device_percentage_used{device="nvme0n1"}' \
   | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  wear%={r[\"value\"][1]}') for r in d['data']['result']]"
 ```
 
@@ -151,7 +156,7 @@ curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
 
 ## Known Gaps
 
-- **smartmon-exporter coverage incomplete** — currently monitors `sda` only. mc1's Ceph drive moved to `sdb` after NVMe replacement (2026-06-14), so mc1 SATA SMART is dark. NVMe drives (`nvme0n1`) on all mc nodes are also not covered. Exporter should be updated to discover all non-rbd block devices per node.
+None currently. smartmon-exporter covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0n1` on mc1/mc2/mc3 as of 2026-06-14.
 
 ## Drive Identity Reference
 
