@@ -6,6 +6,7 @@ prometheus-smartctl-exporter:
   config:
     devices:
       - /dev/sda
+      - /dev/sdb
       - /dev/nvme0n1
 
   serviceMonitor:

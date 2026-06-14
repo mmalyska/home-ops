@@ -13,18 +13,20 @@ Each mc node (mc1/mc2/mc3) has **two drives with different visibility in Prometh
 
 | Node | IP | Device | Model | Protocol | Size | Role | Visible in `node_filesystem_*`? |
 |------|----|--------|-------|----------|------|------|--------------------------------|
-| mc1 | 192.168.48.2 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HBHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
-| mc1 | 192.168.48.2 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-1 (raw block) | ❌ No |
-| mc2 | 192.168.48.3 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HBHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
+| mc1 | 192.168.48.2 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
+| mc1 | 192.168.48.2 | `sdb` ⚠️ | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-1 (raw block) | ❌ No |
+| mc2 | 192.168.48.3 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
 | mc2 | 192.168.48.3 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-2 (raw block) | ❌ No |
-| mc3 | 192.168.48.4 | `nvme0n1` → `nvme0n1p4` | Samsung MZVLB256HAHQ | NVMe | 238.5 GiB | OS + `/var` | ✅ Yes |
+| mc3 | 192.168.48.4 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
 | mc3 | 192.168.48.4 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-0 (raw block) | ❌ No |
 | (4th node) | 192.168.48.5 | `nvme0n1` | FORESEE XP1000F256G | NVMe | 236 GiB | OS + `/var` | ✅ Yes |
 | Jaskinia | 192.168.50.8 | `nvme0n1`, `nvme1n1` | — | NVMe | — | QNAP storage | ✅ SMART available |
 
-**`sda` SMART note:** The Crucial MX500 is a **SATA SSD** — `node_nvme_*` metrics do not cover it (NVMe protocol only). SMART for `sda` requires `smartctl -a /dev/sda` via a privileged DaemonSet or job.
+> **⚠️ mc1 Ceph drive is `sdb`, not `sda`** — After NVMe replacement (2026-06-14), the Crucial MX500 on mc1 was detected as `sdb` instead of `sda`. Ceph is unaffected (uses device by-id). `smartmon-exporter` currently only covers `sda` — mc1's SATA drive has no SMART coverage until the exporter is updated to discover all block devices dynamically.
 
-**The trap:** `node_filesystem_size_bytes` only returns mounted filesystems. Ceph OSDs (`sda`) have no mountpoint — they are raw block devices. Use `node_disk_io_time_seconds_total` to discover all block devices first.
+> **⚠️ NVMe drives not covered by smartmon-exporter on mc nodes** — `smartctl` can query NVMe drives just as well as SATA. The exporter should be configured to cover all SSDs (`nvme0n1` + SATA data drive) per node, not just `sda`.
+
+**The trap:** `node_filesystem_size_bytes` only returns mounted filesystems. Ceph OSDs have no mountpoint — they are raw block devices. Always use `node_disk_io_time_seconds_total` to discover all block devices first, because device names (`sda` vs `sdb`) can shift after hardware replacement.
 
 ## Query Reference
 
@@ -73,12 +75,13 @@ Capacity is tracked at the Ceph cluster level, not per-device. Use these for I/O
 
 ```bash
 # Busy % — flag if sustained >50%
+# mc2/mc3 use sda; mc1 uses sdb (shifted after NVMe replacement 2026-06-14)
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=rate(node_disk_io_time_seconds_total{device="sda",job="node-exporter"}[5m]) * 100'
+  --data-urlencode 'query=rate(node_disk_io_time_seconds_total{device=~"sda|sdb",job="node-exporter",instance=~"192.168.48.*"}[5m]) * 100'
 
 # Write throughput MiB/s
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=rate(node_disk_written_bytes_total{device="sda",job="node-exporter"}[5m]) / 1024 / 1024'
+  --data-urlencode 'query=rate(node_disk_written_bytes_total{device=~"sda|sdb",job="node-exporter",instance=~"192.168.48.*"}[5m]) / 1024 / 1024'
 
 # Ceph cluster fill level (authoritative capacity metric for sda drives)
 curl -s 'http://localhost:9090/api/v1/query' \
@@ -100,9 +103,11 @@ for metric in node_nvme_percentage_used_ratio node_nvme_available_spare_ratio \
 done
 ```
 
-### Step 5 — SATA SMART via smartctl-exporter (mc1/mc2/mc3 `sda` only)
+### Step 5 — SATA/NVMe SMART via smartmon-exporter
 
-The `smartmon-exporter` DaemonSet runs `smartctl -a` on each drive. After sync, metrics are in the `monitoring` namespace scraped by Prometheus.
+The `smartmon-exporter` DaemonSet runs `smartctl -a` on drives and exposes `smartctl_device_*` metrics scraped by Prometheus. `smartctl` covers both SATA and NVMe — the exporter should be configured to discover all non-rbd block devices per node.
+
+**Current gap (as of 2026-06-14):** exporter only queries `sda`. mc1's Ceph drive is on `sdb` (no coverage). NVMe drives (`nvme0n1`) not covered on any mc node.
 
 ```bash
 # SATA device overall health (1=PASSED, 0=FAILED)
@@ -146,18 +151,18 @@ curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
 
 ## Known Gaps
 
-- **mc3 `/var` filling** (192.168.48.4) — historically at 82% (2026-06-11), growing ~2.7 pp/week. Suspected cause: Ceph logs/crash dumps at `/var/log/ceph` and `/var/lib/ceph/crash`. Investigate with `du -sh /var/log/ceph /var/lib/ceph/crash /var/lib/containers` on mc3.
+- **smartmon-exporter coverage incomplete** — currently monitors `sda` only. mc1's Ceph drive moved to `sdb` after NVMe replacement (2026-06-14), so mc1 SATA SMART is dark. NVMe drives (`nvme0n1`) on all mc nodes are also not covered. Exporter should be updated to discover all non-rbd block devices per node.
 
 ## Drive Identity Reference
 
 Use `node_disk_info{device!~"rbd.*|loop.*|zram.*",job="node-exporter"}` to re-query. Key labels: `model`, `serial`, `rotational` (0=SSD, 1=HDD), `path` (contains `ata` for SATA, `nvme` for NVMe).
 
-| Node | Device | Model | Serial | Firmware | Protocol |
-|------|--------|-------|--------|----------|----------|
-| mc1 (48.2) | nvme0n1 | Samsung MZVLB256HBHQ-000L7 | S4ELNF0M695054 | 3L2QEXH7 | NVMe |
-| mc1 (48.2) | sda | Crucial CT500MX500SSD1 | 2147E5E7AB2E | M3CR043 | SATA |
-| mc2 (48.3) | nvme0n1 | Samsung MZVLB256HBHQ-000L7 | S4ELNF0M694879 | 3L2QEXH7 | NVMe |
-| mc2 (48.3) | sda | Crucial CT500MX500SSD1 | 2147E5E7B554 | M3CR043 | SATA |
-| mc3 (48.4) | nvme0n1 | Samsung MZVLB256HAHQ-000L7 | S41GNX0N202586 | 1L2QEXD7 | NVMe |
-| mc3 (48.4) | sda | Crucial CT500MX500SSD1 | 2147E5E7B557 | M3CR043 | SATA |
-| 192.168.48.5 | nvme0n1 | FORESEE XP1000F256G | PED265Q000146 | V1.28 | NVMe |
+| Node | Device | Model | Serial | Protocol | Replaced |
+|------|--------|-------|--------|----------|---------|
+| mc1 (48.2) | nvme0n1 | ADATA SX8200PNP | 2Q022LANGSER | NVMe | 2026-06-14 |
+| mc1 (48.2) | **sdb** | Crucial CT500MX500SSD1 | 2147E5E7AB2E | SATA | (original) |
+| mc2 (48.3) | nvme0n1 | ADATA SX8200PNP | 2Q0229AHA2JU | NVMe | 2026-06-14 |
+| mc2 (48.3) | sda | Crucial CT500MX500SSD1 | 2147E5E7B554 | SATA | (original) |
+| mc3 (48.4) | nvme0n1 | ADATA SX8200PNP | 2Q02291HEGRP | NVMe | 2026-06-14 |
+| mc3 (48.4) | sda | Crucial CT500MX500SSD1 | 2147E5E7B557 | SATA | (original) |
+| 192.168.48.5 | nvme0n1 | FORESEE XP1000F256G | PED265Q000146 | NVMe | (original) |
