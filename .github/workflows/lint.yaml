@@ -76,7 +76,7 @@ jobs:
           setup-tools: |
             helm
           # renovate: datasource=github-releases depName=helm/helm
-          helm: "4.2.0"
+          helm: "4.2.2"
 
       - name: Lint Changed Charts
         run: |
