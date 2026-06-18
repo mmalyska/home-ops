@@ -2,7 +2,7 @@ hermes:
   replicas: 1
   image:
     repository: nousresearch/hermes-agent
-    tag: "main@sha256:f1a50ed16468d45e5dc61c91b49eae0c445c3035853cdc4084c4cdc235a6fcd9"
+    tag: "main@sha256:69243f12ac7132233143711304af27177682bc38448efe0fc5a49fadef81ed61"
   resources:
     requests:
       cpu: 200m
