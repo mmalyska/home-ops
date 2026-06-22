@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: any-sync-consensusnode
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: any-sync-consensusnode
+  template:
+    metadata:
+      labels:
+        app: any-sync-consensusnode
+    spec:
+      initContainers:
+        - name: wait-for-coordinator
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - until nc -z any-sync-coordinator.{{ .Values.namespace }}.svc.cluster.local {{ .Values.coordinator.ports.tcp }}; do sleep 2; done
+      containers:
+        - name: consensusnode
+          image: {{ printf "%s:%s" .Values.consensusnode.image.repository .Values.consensusnode.image.tag }}
+          ports:
+            - containerPort: {{ .Values.consensusnode.ports.tcp }}
+              protocol: TCP
+            - containerPort: {{ .Values.consensusnode.ports.quic }}
+              protocol: UDP
+          resources:
+            limits:
+              memory: {{ .Values.daemonMemoryLimit }}
+          volumeMounts:
+            - name: consensus-config
+              mountPath: /etc/any-sync-consensusnode
+            - name: networkstore
+              mountPath: /networkStore
+      volumes:
+        - name: consensus-config
+          secret:
+            secretName: anytype-consensus-config
+        - name: networkstore
+          persistentVolumeClaim:
+            claimName: consensusnode-networkstore
