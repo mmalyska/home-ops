@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: any-sync-node
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: any-sync-node
+  template:
+    metadata:
+      labels:
+        app: any-sync-node
+    spec:
+      initContainers:
+        - name: wait-for-coordinator
+          image: busybox:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - until nc -z any-sync-coordinator.{{ .Values.namespace }}.svc.cluster.local {{ .Values.coordinator.ports.tcp }}; do sleep 2; done
+      containers:
+        - name: syncnode
+          image: {{ .Values.syncnode.image.repository }}:{{ .Values.syncnode.image.tag }}
+          ports:
+            - containerPort: {{ .Values.syncnode.ports.tcp }}
+              protocol: TCP
+            - containerPort: {{ .Values.syncnode.ports.quic }}
+              protocol: UDP
+          resources:
+            limits:
+              memory: {{ .Values.daemonMemoryLimit }}
+          volumeMounts:
+            - name: syncnode-config
+              mountPath: /etc/any-sync-node
+            - name: data
+              mountPath: /storage
+              subPath: storage
+            - name: data
+              mountPath: /anyStorage
+              subPath: anyStorage
+            - name: data
+              mountPath: /networkStore
+              subPath: networkStore
+      volumes:
+        - name: syncnode-config
+          secret:
+            secretName: anytype-syncnode-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: syncnode-data

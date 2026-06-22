@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncnode-data
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.syncnode.storage.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.syncnode.storage.size }}
