@@ -39,7 +39,7 @@ spec:
                       | grep -q 1; do
                       sleep 2
                     done
-                    host='mongo-1.{{.Values.namespace}}.svc.cluster.local'
+                    host='mongo-1-0.mongo-1.{{.Values.namespace}}.svc.cluster.local'
                     port={{.Values.mongodb.port}}
                     rsid={{.Values.mongodb.replicaSetName}}
                     mongosh --port {{.Values.mongodb.port}} --quiet --eval \
