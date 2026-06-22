@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: any-sync-coordinator
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: any-sync-coordinator
+  template:
+    metadata:
+      labels:
+        app: any-sync-coordinator
+    spec:
+      initContainers:
+        - name: wait-for-mongo
+          image: {{ printf "%s:%s" .Values.mongodb.image.repository .Values.mongodb.image.tag }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until mongosh \
+                "mongodb://mongo-1.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.mongodb.port }}/?replicaSet={{ .Values.mongodb.replicaSetName }}" \
+                --quiet --eval "db.adminCommand('ping').ok" 2>/dev/null | grep -q 1; do
+                sleep 2
+              done
+        - name: confapply
+          image: {{ printf "%s:%s" .Values.coordinator.image.repository .Values.coordinator.image.tag }}
+          command:
+            - /bin/any-sync-confapply
+            - -c
+            - /etc/any-sync-coordinator/config.yml
+            - -n
+            - /etc/any-sync-coordinator/network.yml
+            - -e
+          volumeMounts:
+            - name: coordinator-config
+              mountPath: /etc/any-sync-coordinator
+      containers:
+        - name: coordinator
+          image: {{ printf "%s:%s" .Values.coordinator.image.repository .Values.coordinator.image.tag }}
+          ports:
+            - containerPort: {{ .Values.coordinator.ports.tcp }}
+              protocol: TCP
+            - containerPort: {{ .Values.coordinator.ports.quic }}
+              protocol: UDP
+          resources:
+            limits:
+              memory: {{ .Values.daemonMemoryLimit }}
+          volumeMounts:
+            - name: coordinator-config
+              mountPath: /etc/any-sync-coordinator
+            - name: networkstore
+              mountPath: /networkStore
+      volumes:
+        - name: coordinator-config
+          secret:
+            secretName: anytype-coordinator-config
+        - name: networkstore
+          persistentVolumeClaim:
+            claimName: coordinator-networkstore
