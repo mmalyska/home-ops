@@ -29,3 +29,4 @@ Chart.lock
 .claude/settings.local.json
 # Zed
 .zed/
+.superpowers/
