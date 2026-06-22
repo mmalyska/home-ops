@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-1
+  namespace: {{.Values.namespace}}
+spec:
+  serviceName: mongo-1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-1
+  template:
+    metadata:
+      labels:
+        app: mongo-1
+    spec:
+      containers:
+        - name: mongo
+          image: {{printf "%s:%s" .Values.mongodb.image.repository
+            .Values.mongodb.image.tag}}
+          args:
+            - --replSet
+            - {{.Values.mongodb.replicaSetName}}
+            - --port
+            - {{.Values.mongodb.port | quote}}
+            - --bind_ip_all
+          ports:
+            - containerPort: {{.Values.mongodb.port}}
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    until mongosh --port {{.Values.mongodb.port}} --quiet \
+                      --eval "db.adminCommand('ping').ok" 2>/dev/null \
+                      | grep -q 1; do
+                      sleep 2
+                    done
+                    host='mongo-1.{{.Values.namespace}}.svc.cluster.local'
+                    port={{.Values.mongodb.port}}
+                    rsid={{.Values.mongodb.replicaSetName}}
+                    mongosh --port {{.Values.mongodb.port}} --quiet --eval \
+                      "try{rs.initiate({_id:'$rsid',members:[{_id:0,\
+                      host:'$host:$port'}]})}catch(e){}" || true
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  mongosh --port {{.Values.mongodb.port}} --quiet \
+                    --eval "rs.status().ok" 2>/dev/null | grep -q 1
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - --port
+                - {{.Values.mongodb.port | quote}}
+                - --quiet
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: {{.Values.mongodb.storage.storageClass}}
+        resources:
+          requests:
+            storage: {{.Values.mongodb.storage.size}}
