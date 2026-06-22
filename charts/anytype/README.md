@@ -55,16 +55,39 @@ python3 -m venv /tmp/venv && /tmp/venv/bin/pip install pyyaml -q
 ETC = "./etc"  # adjust if running from a different directory
 COORD_PEER = "<coordinator-peerId-from-config>"  # fill in from any-sync-coordinator/config.yml
 MONGO_URI  = "mongodb://mongo-1.anytype.svc.cluster.local:27001/?replicaSet=rs0"
+NS         = "anytype"
+
+# any-sync-tools generates loopback addresses for single-host dev mode.
+# Replace them with K8s internal DNS so pods reach each other via ClusterIP,
+# not via the LB IP (which Cilium doesn't hairpin intra-cluster).
+LOOPBACK_TO_K8S = {
+    "127.0.0.1:4830":       f"any-sync-coordinator.{NS}.svc.cluster.local:1004",
+    "quic://127.0.0.1:5830":f"quic://any-sync-coordinator.{NS}.svc.cluster.local:1014",
+    "127.0.0.1:4530":       f"any-sync-consensusnode.{NS}.svc.cluster.local:1006",
+    "quic://127.0.0.1:5530":f"quic://any-sync-consensusnode.{NS}.svc.cluster.local:1016",
+    "127.0.0.1:4430":       f"any-sync-node.{NS}.svc.cluster.local:1001",
+    "quic://127.0.0.1:5430":f"quic://any-sync-node.{NS}.svc.cluster.local:1011",
+    "127.0.0.1:4730":       f"any-sync-filenode.{NS}.svc.cluster.local:1005",
+    "quic://127.0.0.1:5730":f"quic://any-sync-filenode.{NS}.svc.cluster.local:1015",
+}
 
 def fix_coord_addrs(addrs):
     return [a.replace("192.168.48.30:1006","192.168.48.30:1004")
              .replace("quic://192.168.48.30:1016","quic://192.168.48.30:1014")
             for a in addrs]
 
-def patch_nodes(nodes):
+def replace_loopback(addrs):
+    return [LOOPBACK_TO_K8S.get(a, a) for a in addrs]
+
+def patch_nodes(nodes, for_client=False):
     for n in nodes:
         if COORD_PEER in n.get("peerId",""):
             n["addresses"] = fix_coord_addrs(n["addresses"])
+        if for_client:
+            # Client connects from outside K8s — strip internal addresses
+            n["addresses"] = [a for a in n["addresses"] if "127." not in a and "cluster.local" not in a]
+        else:
+            n["addresses"] = replace_loopback(n["addresses"])
     return nodes
 
 import yaml
@@ -108,7 +131,7 @@ for name in ["any-sync-filenode/config.yml"]:
     save(p, d)
 
 for name in ["client.yml"]:
-    p = f"{ETC}/{name}"; d = load(p); d["nodes"] = patch_nodes(d["nodes"]); save(p, d)
+    p = f"{ETC}/{name}"; d = load(p); d["nodes"] = patch_nodes(d["nodes"], for_client=True); save(p, d)
 
 # filenode: fix Redis and S3
 p = f"{ETC}/any-sync-filenode/config.yml"; d = load(p)
