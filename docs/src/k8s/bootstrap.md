@@ -6,6 +6,63 @@ of deliberate manual gates for destructive or interactive operations.
 
 ## Prerequisites
 
+### Cloudflare setup (one-time, before first bootstrap)
+
+#### 1. Create a Cloudflare API token
+
+Go to [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) and create a token
+using the **Edit zone DNS** template:
+
+- Name: `kubernetes`
+- Permissions:
+  - Zone → DNS → Edit
+  - Account → Cloudflare Tunnel → Read
+- Scope: limit to your account and zone
+
+#### 2. Create the Cloudflare Tunnel
+
+```sh
+cloudflared tunnel login
+cloudflared tunnel create --credentials-file cloudflare-tunnel.json kubernetes
+```
+
+The credentials file contains `AccountTag`, `TunnelID`, and `TunnelSecret`.
+
+#### 3. Build the cloudflared ingress config
+
+Create a `config.yaml` for `cloudflared` that routes tunnel traffic to the internal gateway.
+See `cluster/apps/system/cloudflared/values.yaml` for the expected structure — the file is
+stored verbatim as the `CLOUDFLARE_TUNNEL_INGRESS` secret.
+
+#### 4. Create Bitwarden Secrets Manager entries
+
+Create each secret in BWS and note its UUID. Then update the UUID in the referenced file.
+
+| Secret name | Value | Referenced in (UUID) |
+|---|---|---|
+| `cloudflare-email` | Cloudflare account email | `bitwarden_secrets.tf` (`22151db9-…`) |
+| `cloudflare-apikey` | API token from step 1 | `bitwarden_secrets.tf` (`b89913d7-…`) |
+| `cloudflare-domain` | Domain name (e.g. `example.com`) | `bitwarden_secrets.tf` (`3080c3a1-…`) |
+| `cloudflare-tunnel-id` | `TunnelID` from credentials JSON | `bitwarden_secrets.tf`, `cluster-secrets-externalsecret.yaml`, `cloudflared/externalsecret.yaml` (`50908d50-…`) |
+| `cloudflare-account-tag` | `AccountTag` from credentials JSON | `cloudflared/externalsecret.yaml` (`46669c66-…`) |
+| `cloudflare-tunnel-secret` | `TunnelSecret` from credentials JSON | `cloudflared/externalsecret.yaml` (`95af22e2-…`) |
+| `cloudflare-tunnel-ingress` | Full `config.yaml` content from step 3 | `cloudflared/externalsecret.yaml` (`8f4d213f-…`) |
+
+After creating each secret in BWS, replace the placeholder UUID in the referenced file with
+the UUID BWS assigned.
+
+#### 5. Run Terraform
+
+```sh
+cd provision/terraform/cloudflare
+terraform init
+terraform apply
+```
+
+This configures DNS records, WAF rules, and WARP private network routes.
+
+---
+
 Before running bootstrap:
 
 - Talos machine configs generated: `task talos:init` (runs `task talos:generate` via `talosctl` + `envsubst`)
