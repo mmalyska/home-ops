@@ -26,7 +26,7 @@ coordinator:
   ports:
     tcp: 1004
     quic: 1014
-  lbIP: "192.168.48.29"
+  lbIP: "192.168.48.30"
   storage:
     size: 1Gi
     storageClass: ceph-block
@@ -38,7 +38,7 @@ consensusnode:
   ports:
     tcp: 1006
     quic: 1016
-  lbIP: "192.168.48.29"
+  lbIP: "192.168.48.30"
   storage:
     size: 1Gi
     storageClass: ceph-block
@@ -50,7 +50,7 @@ syncnode:
   ports:
     tcp: 1001
     quic: 1011
-  lbIP: "192.168.48.29"
+  lbIP: "192.168.48.30"
   storage:
     size: 10Gi
     storageClass: ceph-block
@@ -62,7 +62,7 @@ filenode:
   ports:
     tcp: 1005
     quic: 1015
-  lbIP: "192.168.48.29"
+  lbIP: "192.168.48.30"
   storage:
     size: 2Gi
     storageClass: ceph-block

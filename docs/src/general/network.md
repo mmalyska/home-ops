@@ -91,5 +91,7 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.27` | Home automation (Ollama, Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
+| `192.168.48.29` | WoW (auth + world server) |
+| `192.168.48.30` | anytype any-sync services |
 | `192.168.50.8` | QNAP NAS |
 | `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon |

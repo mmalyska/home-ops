@@ -4,7 +4,7 @@ Self-hosted [Anytype](https://anytype.io) sync network (`any-sync`) running on K
 
 ## Architecture
 
-Four any-sync services share a single LoadBalancer IP (`192.168.48.29`) on separate ports:
+Four any-sync services share a single LoadBalancer IP (`192.168.48.30`) on separate ports:
 
 | Service | TCP port | QUIC/UDP port |
 |---|---|---|
@@ -28,7 +28,7 @@ go run . create
 ```
 
 When prompted:
-- External host for all services: `192.168.48.29`
+- External host for all services: `192.168.48.30`
 - Coordinator TCP/QUIC: `1004` / `1014`
 - Consensus TCP/QUIC: `1006` / `1016`
 - Sync node TCP/QUIC: `1001` / `1011`
@@ -57,8 +57,8 @@ COORD_PEER = "<coordinator-peerId-from-config>"  # fill in from any-sync-coordin
 MONGO_URI  = "mongodb://mongo-1.anytype.svc.cluster.local:27001/?replicaSet=rs0"
 
 def fix_coord_addrs(addrs):
-    return [a.replace("192.168.48.29:1006","192.168.48.29:1004")
-             .replace("quic://192.168.48.29:1016","quic://192.168.48.29:1014")
+    return [a.replace("192.168.48.30:1006","192.168.48.30:1004")
+             .replace("quic://192.168.48.30:1016","quic://192.168.48.30:1014")
             for a in addrs]
 
 def patch_nodes(nodes):
@@ -145,8 +145,8 @@ Edit `cluster/apps/default/anytype/templates/externalsecrets.yaml` and replace e
 ### 5. Pre-deploy checklist
 
 - [ ] QNAP QuObjects bucket `anytype` created
-- [ ] `192.168.48.29` is free (`ping 192.168.48.29` times out)
-- [ ] Cloudflare WARP private network route `192.168.48.29/32` applied via Terraform (`provision/terraform/cloudflare/warp.tf`)
+- [ ] `192.168.48.30` is free (`ping 192.168.48.30` times out)
+- [ ] Cloudflare WARP private network route `192.168.48.30/32` applied via Terraform (`provision/terraform/cloudflare/warp.tf`)
 - [ ] All UUIDs filled in `externalsecrets.yaml`
 
 ### 6. Enable and deploy
@@ -175,7 +175,7 @@ kubectl get externalsecrets -n anytype
 # All five should show READY: True
 
 kubectl get svc -n anytype
-# All four LoadBalancer services show EXTERNAL-IP: 192.168.48.29
+# All four LoadBalancer services show EXTERNAL-IP: 192.168.48.30
 ```
 
 ### 8. Connect the Anytype client
