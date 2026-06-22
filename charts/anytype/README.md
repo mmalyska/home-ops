@@ -136,7 +136,7 @@ Edit `cluster/apps/default/anytype/templates/externalsecrets.yaml` and replace e
 
 - [ ] QNAP QuObjects bucket `anytype` created
 - [ ] `192.168.48.29` is free (`ping 192.168.48.29` times out)
-- [ ] Cloudflare WARP private network route `192.168.48.29/32` added (Zero Trust → Networks → Tunnels → your tunnel → Private Networks)
+- [ ] Cloudflare WARP private network route `192.168.48.29/32` applied via Terraform (`provision/terraform/cloudflare/warp.tf`)
 - [ ] All UUIDs filled in `externalsecrets.yaml`
 
 ### 6. Enable and deploy
