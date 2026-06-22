@@ -5,6 +5,8 @@ metadata:
   namespace: {{ .Values.namespace }}
   annotations:
     lbipam.cilium.io/ips: {{ .Values.coordinator.lbIP | quote }}
+    lbipam.cilium.io/sharing-key: "anytype"
+    lbipam.cilium.io/sharing-cross-namespace: "*"
 spec:
   type: LoadBalancer
   selector:
