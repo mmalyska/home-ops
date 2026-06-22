@@ -76,8 +76,8 @@ def save(p, d):
 
 p = f"{ETC}/any-sync-coordinator/config.yml"
 d = load(p)
-d["yamux"]["listenAddrs"] = ["192.168.48.29:1004"]
-d["quic"]["listenAddrs"]  = ["192.168.48.29:1014"]
+d["yamux"]["listenAddrs"] = ["0.0.0.0:1004"]  # pod binds 0.0.0.0; LB IP is in network.nodes
+d["quic"]["listenAddrs"]  = ["0.0.0.0:1014"]
 d["mongo"]["connect"]     = MONGO_URI
 d["network"]["nodes"]     = patch_nodes(d["network"]["nodes"])
 save(p, d)
@@ -87,18 +87,28 @@ for name in ["any-sync-coordinator/network.yml"]:
 
 for name in ["any-sync-consensusnode/config.yml"]:
     p = f"{ETC}/{name}"; d = load(p)
+    d["yamux"]["listenAddrs"] = ["0.0.0.0:1006"]
+    d["quic"]["listenAddrs"]  = ["0.0.0.0:1016"]
     d["mongo"]["connect"] = MONGO_URI
     d["network"]["nodes"] = patch_nodes(d["network"]["nodes"])
     save(p, d)
 
-for name in ["any-sync-node-1/config.yml", "any-sync-filenode/config.yml", "client.yml"]:
+for name in ["any-sync-node-1/config.yml"]:
     p = f"{ETC}/{name}"; d = load(p)
-    key = "nodes" if name == "client.yml" else "network"
-    if name == "client.yml":
-        d["nodes"] = patch_nodes(d["nodes"])
-    else:
-        d["network"]["nodes"] = patch_nodes(d["network"]["nodes"])
+    d["yamux"]["listenAddrs"] = ["0.0.0.0:1001"]
+    d["quic"]["listenAddrs"]  = ["0.0.0.0:1011"]
+    d["network"]["nodes"] = patch_nodes(d["network"]["nodes"])
     save(p, d)
+
+for name in ["any-sync-filenode/config.yml"]:
+    p = f"{ETC}/{name}"; d = load(p)
+    d["yamux"]["listenAddrs"] = ["0.0.0.0:1005"]
+    d["quic"]["listenAddrs"]  = ["0.0.0.0:1015"]
+    d["network"]["nodes"] = patch_nodes(d["network"]["nodes"])
+    save(p, d)
+
+for name in ["client.yml"]:
+    p = f"{ETC}/{name}"; d = load(p); d["nodes"] = patch_nodes(d["nodes"]); save(p, d)
 
 # filenode: fix Redis and S3
 p = f"{ETC}/any-sync-filenode/config.yml"; d = load(p)
