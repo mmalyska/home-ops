@@ -1,0 +1,123 @@
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: anytype-restic
+  namespace: anytype
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  target:
+    name: anytype-restic-secret
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        RESTIC_REPOSITORY: '{{`{{ .REPOSITORY_TEMPLATE }}`}}/anytype'
+        RESTIC_PASSWORD: '{{`{{ .RESTIC_PASSWORD }}`}}'
+        AWS_ACCESS_KEY_ID: '{{`{{ .AWS_ACCESS_KEY_ID }}`}}'
+        AWS_SECRET_ACCESS_KEY: '{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}'
+  data:
+    - secretKey: REPOSITORY_TEMPLATE
+      remoteRef:
+        key: "39b92426-09c4-4a74-8285-b40a00d62b4d" #gitleaks:allow #VOLSYNC_RESTIC_REPOSITORY_TEMPLATE
+    - secretKey: RESTIC_PASSWORD
+      remoteRef:
+        key: "07d70a7a-a6d9-4b0b-af1f-b40a00d649a9" #gitleaks:allow #VOLSYNC_RESTIC_PASSWORD
+    - secretKey: AWS_ACCESS_KEY_ID
+      remoteRef:
+        key: "adb66319-d083-4379-afd5-b40a00d66963" #gitleaks:allow #VOLSYNC_RESTIC_AWS_ACCESS_KEY_ID
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      remoteRef:
+        key: "70ebd8f2-8270-46d8-8953-b40a00d6854f" #gitleaks:allow #VOLSYNC_RESTIC_AWS_SECRET_ACCESS_KEY
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: anytype-mongodb
+  namespace: anytype
+spec:
+  sourcePVC: data-mongo-1-0
+  trigger:
+    schedule: "0 2 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: anytype-restic-secret
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 2
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: anytype-coordinator
+  namespace: anytype
+spec:
+  sourcePVC: coordinator-networkstore
+  trigger:
+    schedule: "15 2 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: anytype-restic-secret
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 2
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: anytype-consensusnode
+  namespace: anytype
+spec:
+  sourcePVC: consensusnode-networkstore
+  trigger:
+    schedule: "30 2 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: anytype-restic-secret
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 2
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: anytype-syncnode
+  namespace: anytype
+spec:
+  sourcePVC: syncnode-data
+  trigger:
+    schedule: "45 2 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: anytype-restic-secret
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 2
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: anytype-filenode
+  namespace: anytype
+spec:
+  sourcePVC: filenode-networkstore
+  trigger:
+    schedule: "0 3 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: anytype-restic-secret
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 2

@@ -3,7 +3,7 @@
 Self-hosted developer workspaces running on Kubernetes, managed by [Coder OSS](https://coder.com/).
 Each workspace is a long-lived pod backed by a persistent home directory, exposed via a fixed LoadBalancer IP for direct SSH access.
 
-Coder URL: `https://coder.mmalyska.cloud`
+Coder URL: `https://coder.<private-domain>`
 
 ## Architecture
 
@@ -49,7 +49,7 @@ After editing `workspace-template/main.tf`:
 
 ```bash
 cd cluster/apps/ai/coder/workspace-template
-coder --url https://coder.mmalyska.cloud templates push sandbox --directory . --yes
+coder --url https://coder.<private-domain> templates push sandbox --directory . --yes
 ```
 
 Existing workspaces are **not** automatically rebuilt — they will show `OUTDATED: true` in `coder list`.
@@ -60,7 +60,7 @@ Rebuild all workspaces one by one (stops → reprovisioned → starts):
 
 ```bash
 for ws in devops dotnet node mobile researcher; do
-  coder --url https://coder.mmalyska.cloud start --yes mmalyska/$ws
+  coder --url https://coder.<private-domain> start --yes mmalyska/$ws
 done
 ```
 
@@ -75,26 +75,26 @@ To force all workspaces to pick up a new image immediately:
 
 ```bash
 for ws in devops dotnet node mobile researcher; do
-  coder --url https://coder.mmalyska.cloud restart --yes mmalyska/$ws
+  coder --url https://coder.<private-domain> restart --yes mmalyska/$ws
 done
 ```
 
 To update a single workspace:
 ```bash
-coder --url https://coder.mmalyska.cloud restart --yes mmalyska/devops
+coder --url https://coder.<private-domain> restart --yes mmalyska/devops
 ```
 
 ### Check workspace status
 
 ```bash
-coder --url https://coder.mmalyska.cloud list
+coder --url https://coder.<private-domain> list
 ```
 
 ### Open a shell in a workspace
 
 Via Coder agent (no SSH key needed):
 ```bash
-coder --url https://coder.mmalyska.cloud ssh mmalyska/devops
+coder --url https://coder.<private-domain> ssh mmalyska/devops
 ```
 
 Via direct SSH (from any host with the private key):
@@ -105,7 +105,7 @@ ssh -i <sandbox-devops-private-key> coder@192.168.48.51
 ### Create a new workspace
 
 ```bash
-coder --url https://coder.mmalyska.cloud create <name> \
+coder --url https://coder.<private-domain> create <name> \
   --template sandbox \
   --parameter workspace_image=ghcr.io/mmalyska/sandbox-devops:rolling \
   --parameter lb_ip=192.168.48.XX \

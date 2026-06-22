@@ -1,0 +1,71 @@
+namespace: anytype
+
+mongodb:
+  image:
+    repository: mongo
+    tag: "7.0"
+  replicaSetName: rs0
+  port: 27001
+  storage:
+    size: 5Gi
+    storageClass: ceph-block
+
+redis:
+  image:
+    repository: redis/redis-stack-server
+    tag: 7.2.0-v6
+  port: 6379
+  storage:
+    size: 1Gi
+    storageClass: ceph-block
+
+coordinator:
+  image:
+    repository: ghcr.io/anyproto/any-sync-coordinator
+    tag: v0.9.1
+  ports:
+    tcp: 1004
+    quic: 1014
+  lbIP: "192.168.48.29"
+  storage:
+    size: 1Gi
+    storageClass: ceph-block
+
+consensusnode:
+  image:
+    repository: ghcr.io/anyproto/any-sync-consensusnode
+    tag: v0.7.2
+  ports:
+    tcp: 1006
+    quic: 1016
+  lbIP: "192.168.48.29"
+  storage:
+    size: 1Gi
+    storageClass: ceph-block
+
+syncnode:
+  image:
+    repository: ghcr.io/anyproto/any-sync-node
+    tag: v0.11.1
+  ports:
+    tcp: 1001
+    quic: 1011
+  lbIP: "192.168.48.29"
+  storage:
+    size: 10Gi
+    storageClass: ceph-block
+
+filenode:
+  image:
+    repository: ghcr.io/anyproto/any-sync-filenode
+    tag: v0.11.1
+  ports:
+    tcp: 1005
+    quic: 1015
+  lbIP: "192.168.48.29"
+  storage:
+    size: 2Gi
+    storageClass: ceph-block
+  defaultLimit: "1099511627776"
+
+daemonMemoryLimit: "500Mi"
