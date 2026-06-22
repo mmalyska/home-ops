@@ -20,13 +20,13 @@ spec:
           args:
             - until nc -z any-sync-coordinator.{{ .Values.namespace }}.svc.cluster.local {{ .Values.coordinator.ports.tcp }}; do sleep 2; done
         - name: wait-for-redis
-          image: {{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
+          image: {{ printf "%s:%s" .Values.redis.image.repository .Values.redis.image.tag }}
           command: ["/bin/sh", "-c"]
           args:
             - until redis-cli -h redis.{{ .Values.namespace }}.svc.cluster.local -p {{ .Values.redis.port }} ping 2>/dev/null | grep -q PONG; do sleep 2; done
       containers:
         - name: filenode
-          image: {{ .Values.filenode.image.repository }}:{{ .Values.filenode.image.tag }}
+          image: {{ printf "%s:%s" .Values.filenode.image.repository .Values.filenode.image.tag }}
           ports:
             - containerPort: {{ .Values.filenode.ports.tcp }}
               protocol: TCP
