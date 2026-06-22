@@ -104,7 +104,7 @@ for name in ["any-sync-node-1/config.yml", "any-sync-filenode/config.yml", "clie
 p = f"{ETC}/any-sync-filenode/config.yml"; d = load(p)
 d["redis"]["isCluster"] = False
 d["redis"]["url"]       = "redis://redis.anytype.svc.cluster.local:6379"
-d["s3Store"]["endpoint"]    = "https://s3.mmalyska.cloud"   # QNAP QuObjects endpoint
+d["s3Store"]["endpoint"]    = "https://s3.<private-domain>"   # QNAP QuObjects endpoint
 d["s3Store"]["bucket"]      = "anytype"
 d["s3Store"]["indexBucket"] = "anytype"
 save(p, d)
@@ -188,7 +188,7 @@ VolSync restic backups run nightly via `cluster/apps/default/anytype/templates/v
 | `syncnode-data` | 02:45 |
 | `filenode-networkstore` | 03:00 |
 
-Redis is excluded (reconstructed on restart). Backups go to `s3.mmalyska.cloud` under the path defined by `VOLSYNC_RESTIC_REPOSITORY_TEMPLATE` + `/anytype`.
+Redis is excluded (reconstructed on restart). Backups go to `s3.<private-domain>` under the path defined by `VOLSYNC_RESTIC_REPOSITORY_TEMPLATE` + `/anytype`.
 
 ## Values
 
