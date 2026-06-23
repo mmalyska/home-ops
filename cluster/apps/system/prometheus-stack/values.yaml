@@ -183,6 +183,9 @@ kube-prometheus-stack:
     extraArgs:
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
       - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
-      # disable thermal zone for stuck exporter on jetson platform REF: https://github.com/prometheus/node_exporter/issues/3071
-      - --no-collector.thermal_zone
+      # thermal_zone: filter to known-good Tegra (Orin) zones; excludes gpu-thermal which returns empty on nv1
+      # REF: https://github.com/prometheus/node_exporter/issues/3071
+      - --collector.thermal_zone.type-regexp=cpu-thermal|cv[0-9]+-thermal|soc[0-9]+-thermal|tj-thermal
       - --collector.nvme
+      # drm: Intel GPU frequency/engine metrics on mc nodes; nv1 has no DRM card, collector is a no-op there
+      - --collector.drm
