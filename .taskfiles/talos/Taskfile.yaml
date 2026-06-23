@@ -10,7 +10,7 @@ vars:
   WORKER_LIST:
     sh: yq '.nodes[] | select(.type == "worker") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
   # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: "v1.13.4"
+  TALOS_VERSION: "v1.13.5"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.35.6"
   TALOS_CONTROLLER:
