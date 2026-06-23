@@ -11,7 +11,7 @@ prometheus-smartctl-exporter:
 
   serviceMonitor:
     enabled: true
-    interval: 60s
+    interval: 10m
     scrapeTimeout: 30s
     relabelings:
       - sourceLabels: [__meta_kubernetes_pod_node_name]
@@ -32,7 +32,7 @@ prometheus-smartctl-exporter:
       cpu: 10m
       memory: 32Mi
     limits:
-      cpu: 50m
+      cpu: 200m
       memory: 64Mi
 
   extraInstances:
@@ -57,5 +57,5 @@ prometheus-smartctl-exporter:
           cpu: 10m
           memory: 32Mi
         limits:
-          cpu: 50m
+          cpu: 200m
           memory: 64Mi

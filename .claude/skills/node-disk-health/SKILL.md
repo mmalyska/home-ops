@@ -116,10 +116,12 @@ curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=smartctl_device_temperature{device=~"sda|sdb"}' \
   | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  {r[\"metric\"][\"device\"]}  temp={r[\"value\"][1]}°C') for r in d['data']['result']]"
 
-# SATA wear — Crucial MX500 uses attribute 202 "Percent_Lifetime_Remain" (raw value = % remaining)
-# smartctl_device_percentage_used is NVMe-only and returns NO DATA for SATA drives
+# SATA wear — Crucial MX500 uses attribute 202 "Percent_Lifetime_Remain"
+# Use attribute_value_type="value" (normalized 0-100 = % remaining).
+# TRAP: label is "attribute_value_type", NOT "value_type" — value_type="raw" returns no data.
+# smartctl_device_percentage_used is NVMe-only and returns NO DATA for SATA drives.
 curl -s 'http://localhost:9090/api/v1/query' \
-  --data-urlencode 'query=100 - smartctl_device_attribute{device=~"sda|sdb", attribute_name="Percent_Lifetime_Remain", value_type="raw"}' \
+  --data-urlencode 'query=100 - smartctl_device_attribute{device=~"sda|sdb", attribute_name="Percent_Lifetime_Remain", attribute_value_type="value"}' \
   | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  wear%={r[\"value\"][1]}') for r in d['data']['result']]"
 
 # NVMe health and wear (ADATA SX8200PNP on mc1/mc2/mc3)
@@ -157,6 +159,13 @@ curl -s "http://localhost:9090/api/v1/query?time=${WEEK_AGO}" \
 ## Known Gaps
 
 None currently. smartmon-exporter covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0n1` on mc1/mc2/mc3 as of 2026-06-14.
+
+## Gotchas
+
+| Trap | Reality |
+|------|---------|
+| `smartctl_device_attribute{..., value_type="raw"}` returns no data for SATA | The correct label name is `attribute_value_type`, not `value_type`. Use `attribute_value_type="value"` for the normalized % remaining. |
+| `smartctl_device_percentage_used` returns no data for SATA | This metric is NVMe-only. SATA wear comes from attribute 202 via `smartctl_device_attribute`. |
 
 ## Drive Identity Reference
 

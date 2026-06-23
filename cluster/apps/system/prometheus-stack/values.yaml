@@ -152,6 +152,8 @@ kube-prometheus-stack:
     revisionHistoryLimit: 3
   prometheus:
     prometheusSpec:
+      retention: 10d
+      retentionSize: 20GiB
       storageSpec:
         volumeClaimTemplate:
           spec:

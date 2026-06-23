@@ -472,7 +472,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 - smartctl_device_attribute{device=~\"sda|sdb\", attribute_name=\"Percent_Lifetime_Remain\", value_type=\"raw\"}",
+          "expr": "100 - smartctl_device_attribute{device=~\"sda|sdb\", attribute_name=\"Percent_Lifetime_Remain\", attribute_value_type=\"value\"}",
           "legendFormat": "{{node}} {{device}}",
           "refId": "A"
         }
