@@ -180,12 +180,19 @@ kube-prometheus-stack:
           static_configs:
             - targets: ["192.168.50.8:9094"]
   prometheus-node-exporter:
+    # pinned master build 2026-06-23 — includes EINVAL graceful-skip fix (upstream PR #3657)
+    # REF: https://github.com/prometheus/node_exporter/issues/3071
+    # TODO: switch back to quay.io release once v1.11.2+ ships
+    version: "1.11.1"
+    image:
+      registry: ghcr.io
+      repository: prometheus/node-exporter
+      tag: master
+      distroless: true
+      digest: sha256:1f980cd31932379b37aefec13f5883bc3827403ffaebb55c8bec7340d960427c
     extraArgs:
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
       - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
-      # thermal_zone: filter to known-good Tegra (Orin) zones; excludes gpu-thermal which returns empty on nv1
-      # REF: https://github.com/prometheus/node_exporter/issues/3071
-      - --collector.thermal_zone.type-regexp=cpu-thermal|cv[0-9]+-thermal|soc[0-9]+-thermal|tj-thermal
       - --collector.nvme
       # drm: Intel GPU frequency/engine metrics on mc nodes; nv1 has no DRM card, collector is a no-op there
       - --collector.drm
