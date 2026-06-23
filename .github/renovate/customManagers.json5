@@ -10,6 +10,16 @@
       "registryUrlTemplate": "https://docker.gitea.com",
       "datasourceTemplate": "docker",
       "autoReplaceStringTemplate": "{{indentation}}tag: {{newValue}}\n{{indentation}}digest: {{#if newDigest}}{{{newDigest}}}{{else}}{{{currentDigest}}}{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "description": "Apply an explicit prometheus node-exporter digest field match (tag and digest are separated by distroless field)",
+      "fileMatch": ["cluster/apps/system/prometheus-stack/values\\.yaml"],
+      "matchStrings": ["(?<indentation>[ \\t]+)tag: (?<currentValue>[^@\\n]+)\\n[ \\t]+distroless: true\\n[ \\t]+digest: (?<currentDigest>sha256:[a-f0-9]+)"],
+      "depNameTemplate": "prometheus/node-exporter",
+      "registryUrlTemplate": "https://ghcr.io",
+      "datasourceTemplate": "docker",
+      "autoReplaceStringTemplate": "{{indentation}}tag: {{newValue}}\n{{indentation}}distroless: true\n{{indentation}}digest: {{#if newDigest}}{{{newDigest}}}{{else}}{{{currentDigest}}}{{/if}}"
     }
   ]
 }

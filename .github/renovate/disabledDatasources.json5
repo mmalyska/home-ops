@@ -14,6 +14,13 @@
       "enabled": false
     },
     {
+      "description": "Disable default manager for prometheus node-exporter (custom regex manager handles tag+distroless+digest fields separately)",
+      "matchManagers": ["helm-values"],
+      "matchPackageNames": ["ghcr.io/prometheus/node-exporter"],
+      "matchFileNames": ["cluster/apps/system/prometheus-stack/values.yaml"],
+      "enabled": false
+    },
+    {
       "description": "Disable pinDigests for talconfig.yaml and Taskfile.yaml (talosVersion/kubernetesVersion format is incompatible with @sha256 suffixes)",
       "matchFileNames": ["provision/talos/talconfig.yaml", ".taskfiles/talos/Taskfile.yaml"],
       "pinDigests": false
