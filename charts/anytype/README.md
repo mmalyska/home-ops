@@ -137,7 +137,7 @@ for name in ["client.yml"]:
 p = f"{ETC}/any-sync-filenode/config.yml"; d = load(p)
 d["redis"]["isCluster"] = False
 d["redis"]["url"]       = "redis://redis.anytype.svc.cluster.local:6379"
-d["s3Store"]["endpoint"]    = "https://s3.<private-domain>"   # QNAP QuObjects endpoint
+d["s3Store"]["endpoint"]    = "<secret:s3_endpoint>"   # same value as the cluster s3_endpoint BWS secret
 d["s3Store"]["bucket"]      = "anytype"
 d["s3Store"]["indexBucket"] = "anytype"
 save(p, d)
