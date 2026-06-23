@@ -2,7 +2,7 @@ anytype:
   mongodb:
     image:
       repository: mongo
-      tag: "7.0"
+      tag: "7.0@sha256:8ecb514b00bdcc0bde67ef4e6c330385377a9dc68e24ee94e28c07c891647348"
   redis:
     image:
       repository: redis/redis-stack-server
@@ -10,16 +10,16 @@ anytype:
   coordinator:
     image:
       repository: ghcr.io/anyproto/any-sync-coordinator
-      tag: v0.9.1
+      tag: v0.9.1@sha256:2715a3ee080e4d9f6dd6504687f969928d1ddb206984445181b0b8d01d3b2821
   consensusnode:
     image:
       repository: ghcr.io/anyproto/any-sync-consensusnode
-      tag: v0.7.2
+      tag: v0.7.2@sha256:8d37863a616383c62aaf135954f8f42b39913b2ac4e5c3694ec15f6f83721e70
   syncnode:
     image:
       repository: ghcr.io/anyproto/any-sync-node
-      tag: v0.11.1
+      tag: v0.11.1@sha256:7025b56fc28c565430f986a055106042e09fa2f74cf8a880d7671ffc8f708d51
   filenode:
     image:
       repository: ghcr.io/anyproto/any-sync-filenode
-      tag: v0.11.1
+      tag: v0.11.1@sha256:9e1861588d5695ac9331678db5472723375b29dc231c233e14025a41050e27ce
