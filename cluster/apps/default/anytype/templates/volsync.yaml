@@ -49,6 +49,10 @@ spec:
       daily: 7
       weekly: 4
       monthly: 2
+    moverSecurityContext:
+      runAsUser: 999
+      runAsGroup: 999
+      fsGroup: 999
 ---
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
