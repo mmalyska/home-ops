@@ -15,6 +15,15 @@ spec:
   loadBalancerIPs: true
   interfaces:
     - ^(eth0|enP8p1s0)$
+  # nv1 (Jetson Tegra ARM64) wins lease elections but its eBPF ARP responder
+  # does not deliver replies to other nodes — kernel/NIC quirk on enP8p1s0.
+  # Restrict L2 announcements to the x86 mc nodes only.
+  nodeSelector:
+    matchExpressions:
+      - key: kubernetes.io/hostname
+        operator: NotIn
+        values:
+          - nv1
 ---
 apiVersion: "cilium.io/v2alpha1"
 kind: CiliumLoadBalancerIPPool
