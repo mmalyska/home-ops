@@ -191,7 +191,7 @@ kube-prometheus-stack:
       repository: prometheus/node-exporter
       tag: master
       distroless: true
-      digest: sha256:91e7b86dafd103a8539e0121f6850dba5bcf03b602b658d16f532211139c2543
+      digest: sha256:14369a704fa331517838869e24d5df2f60ef5c7d2091a74ac24c56674c8224dc
     extraArgs:
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
       - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
