@@ -4,7 +4,7 @@ type: application
 version: 1.0.0
 dependencies:
   - name: coder
-    version: 2.34.4
+    version: 2.34.5
     repository: https://helm.coder.com/v2
   - name: pgsql-cnpg
     version: 1.3.2
