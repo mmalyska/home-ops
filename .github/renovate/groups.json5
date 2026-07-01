@@ -61,6 +61,13 @@
       "separateMinorPatch": true
     },
     {
+      "description": "Hermes agent — weekly digest updates only (frequent main builds cause excessive pod restarts)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["nousresearch/hermes-agent"],
+      "matchUpdateTypes": ["digest"],
+      "automergeSchedule": ["before 5am on monday"]
+    },
+    {
       "description": "AzerothCore WoW server images",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
