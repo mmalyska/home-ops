@@ -30,9 +30,9 @@ metadata:
   namespace: bookorbit
 spec:
   volumeName: bookorbit-ebooks-pv
+  storageClassName: nfs-qnap
   accessModes:
     - ReadWriteMany
-  storageClassName: ebooks
   resources:
     requests:
       storage: 50Gi
