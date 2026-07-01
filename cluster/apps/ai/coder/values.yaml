@@ -47,7 +47,7 @@ pgsql-cnpg:
   imageName: ghcr.io/cloudnative-pg/postgresql:17.6-standard-bookworm
   instances: 2
   storage:
-    size: 5Gi
+    size: 10Gi
   resources:
     requests:
       memory: 256Mi
