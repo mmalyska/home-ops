@@ -25,7 +25,7 @@ ollama:
     enabled: false
   persistentVolume:
     enabled: true
-    size: "100Gi"
+    size: "40Gi"
   resources:
     limits:
       gpu.intel.com/i915: 1
