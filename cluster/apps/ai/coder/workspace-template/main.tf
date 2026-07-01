@@ -47,7 +47,7 @@ data "coder_parameter" "storage_size" {
   display_name = "Storage Size"
   description = "Home directory PVC size"
   type        = "string"
-  default     = "20Gi"
+  default     = "2Gi"
   mutable     = false
   order       = 4
 }
