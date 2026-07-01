@@ -100,10 +100,15 @@ jobs:
         run: |
           hr_live_path="live/${{ matrix.file }}"
           hr_pr_path="pr/${{ matrix.file }}"
-          resources_live=$(helm template "$hr_live_path" --dependency-update --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
+          # helm dependency update prints progress/status messages to stdout; running it
+          # separately from `helm template` keeps that noise out of the captured YAML
+          # (mixing them in caused intermittent "bad file '-': yaml: ..." failures below).
+          helm dependency update "$hr_live_path" > /dev/null || true
+          helm dependency update "$hr_pr_path" > /dev/null || true
+          resources_live=$(helm template "$hr_live_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
           # echo "$resources_live"
           # echo "#####################################################"
-          resources_pr=$(helm template "$hr_pr_path" --dependency-update --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
+          resources_pr=$(helm template "$hr_pr_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
           # echo "$resources_pr"
           # echo "#####################################################"
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
