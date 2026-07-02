@@ -1,0 +1,6 @@
+apiVersion: v2
+name: onlyoffice-documentserver
+description: OnlyOffice Document Server (Community Edition)
+type: application
+version: 1.0.0
+appVersion: "9.0.0"
