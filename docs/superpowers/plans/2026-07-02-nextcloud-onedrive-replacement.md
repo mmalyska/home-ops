@@ -836,7 +836,7 @@ Do not proceed past this point without the user explicitly confirming. Merging t
 gh pr merge --squash
 kubectl -n argocd get applications nextcloud-onlyoffice nextcloud-app -w
 ```
-Expected: both Applications reach `Synced`/`Healthy` within a few minutes. If `nextcloud-app` fails health checks, check `kubectl -n nextcloud get pods` and `kubectl -n nextcloud logs deploy/nextcloud -c nextcloud` first — most likely causes at this stage are the Redis env mismatch flagged in Task 5 Step 3, or the CNPG cluster not yet reporting ready (`kubectl -n nextcloud get cluster nextclouddb-cnpg`).
+Expected: both Applications reach `Synced`/`Healthy` within a few minutes. If `nextcloud-app` fails health checks, check `kubectl -n nextcloud get pods` and `kubectl -n nextcloud logs deploy/nextcloud-app -c nextcloud` first — most likely causes at this stage are the Redis env mismatch flagged in Task 5 Step 3, or the CNPG cluster not yet reporting ready (`kubectl -n nextcloud get cluster nextclouddb-cnpg`).
 
 ---
 
@@ -854,8 +854,8 @@ These are live `kubectl exec` commands that change application state (enable app
 - [ ] **Step 2: Enable the required Nextcloud apps**
 
 ```bash
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ app:enable user_oidc
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ app:enable onlyoffice
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ app:enable user_oidc
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ app:enable onlyoffice
 ```
 Expected: both commands print `<app> enabled`.
 
@@ -863,23 +863,23 @@ Expected: both commands print `<app> enabled`.
 
 ```bash
 CLIENT_SECRET=$(kubectl -n nextcloud get secret nextcloud-oidc-secret -o jsonpath='{.data.client_secret}' | base64 -d)
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ user_oidc:provider keycloak \
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ user_oidc:provider keycloak \
   --clientid="nextcloud" \
   --clientsecret="$CLIENT_SECRET" \
   --discoveryuri="https://l.<private-domain>/realms/home/.well-known/openid-configuration" \
   --unique-uid=0 \
   --scope="openid email profile"
 ```
-Expected: prints the created provider's identifier and ID. Verify: `kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ user_oidc:provider:list` shows the `keycloak` provider.
+Expected: prints the created provider's identifier and ID. Verify: `kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ user_oidc:provider:list` shows the `keycloak` provider.
 
 - [ ] **Step 4: Wire the OnlyOffice connector**
 
 ```bash
 JWT_SECRET=$(kubectl -n nextcloud get secret onlyoffice-jwt-secret -o jsonpath='{.data.JWT_SECRET}' | base64 -d)
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ config:app:set onlyoffice DocumentServerInternalUrl --value="http://onlyoffice.nextcloud.svc.cluster.local/"
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ config:app:set onlyoffice StorageUrl --value="https://nextcloud.<private-domain>/"
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ config:app:set onlyoffice jwt_secret --value="$JWT_SECRET"
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ config:app:set onlyoffice jwt_header --value="Authorization"
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ config:app:set onlyoffice DocumentServerInternalUrl --value="http://onlyoffice.nextcloud.svc.cluster.local/"
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ config:app:set onlyoffice StorageUrl --value="https://nextcloud.<private-domain>/"
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ config:app:set onlyoffice jwt_secret --value="$JWT_SECRET"
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ config:app:set onlyoffice jwt_header --value="Authorization"
 ```
 Expected: each `config:app:set` prints confirmation of the value set.
 
@@ -912,7 +912,7 @@ sudo mount -t nfs -o nfsvers=4.2 qnap.<private-domain>:/nextcloud-data /mnt/next
 Have them log in once via Keycloak SSO (Task 9 Step 5) so their Nextcloud user + home folder (`/mnt/nextcloud-data/<username>/`) is provisioned, then confirm:
 
 ```bash
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ user:list | grep <username>
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ user:list | grep <username>
 ls -la /mnt/nextcloud-data/<username>/files/
 ```
 Expected: user appears in `occ user:list`; `files/` directory exists (auto-created on first login).
@@ -927,7 +927,7 @@ Expected: completes without `rclone` errors. Re-run once more (idempotent) to co
 - [ ] **Step 4: Index the synced files into Nextcloud**
 
 ```bash
-kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- php occ files:scan --path="/<username>/files"
+kubectl -n nextcloud exec deploy/nextcloud-app -c nextcloud -- php occ files:scan --path="/<username>/files"
 ```
 Expected: prints a summary (`X folders / Y files`) with no errors.
 
