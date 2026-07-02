@@ -1,0 +1,9 @@
+apiVersion: v2
+name: onlyoffice-subchart
+type: application
+version: 1.0.0
+appVersion: "9.0.0"
+dependencies:
+  - name: onlyoffice-documentserver
+    version: 1.0.0
+    repository: file://../../../../../charts/onlyoffice-documentserver/

@@ -1,0 +1,16 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: nextcloud
+spec:
+  sourcePVC: nextcloud-app-nextcloud
+  trigger:
+    schedule: "40 */12 * * *"
+  restic:
+    copyMethod: Snapshot
+    pruneIntervalDays: 14
+    repository: nextcloud-restic-secret
+    retain:
+      daily: 6
+      weekly: 4
+      monthly: 2

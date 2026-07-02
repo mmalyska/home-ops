@@ -1,0 +1,39 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nextcloud-data-pv
+spec:
+  storageClassName: nextcloud-data
+  claimRef:
+    name: nextcloud-data-pvc
+    namespace: nextcloud
+  capacity:
+    storage: 2000Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: qnap.<secret:private-domain>
+    path: "/nextcloud-data"
+  mountOptions:
+    - nfsvers=4.2
+    - tcp
+    - intr
+    - hard
+    - noatime
+    - nodiratime
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-data-pvc
+  namespace: nextcloud
+spec:
+  volumeName: nextcloud-data-pv
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nextcloud-data
+  resources:
+    requests:
+      storage: 2000Gi
