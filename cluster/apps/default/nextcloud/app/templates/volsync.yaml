@@ -3,7 +3,7 @@ kind: ReplicationSource
 metadata:
   name: nextcloud
 spec:
-  sourcePVC: nextcloud-nextcloud
+  sourcePVC: nextcloud-app-nextcloud
   trigger:
     schedule: "40 */12 * * *"
   restic:
