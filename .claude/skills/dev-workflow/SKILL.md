@@ -28,7 +28,7 @@ task bootstrap:rook-sync              # Post-bootstrap: sync Rook Ceph (run afte
 
 # ArgoCD
 task argocd:login                     # Login (--sso; use local admin on first bootstrap)
-task argocd:sync                      # Sync ArgoCD applications
+task argocd:sync                      # Sync ArgoCD applications          # See local file:// chart gotcha below
 
 # Terraform
 task terraform:plan:cloudflare
@@ -61,6 +61,12 @@ export TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN"
 Without this, `terraform init` fails with "Required token could not be found."
 
 **Gotcha:** `.terraform.lock.hcl` is gitignored (local-only) and its init state is per-directory — each git worktree has its own, independent of the main checkout. If `main.tf`'s provider version constraint was bumped (e.g. by a Renovate PR) since you last ran `terraform init` *in that specific working directory*, you'll get "locked provider ... does not match configured version constraint" on both local and remote (CLI-driven) runs. Fix: `TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN" terraform init -upgrade` from `provision/terraform/cloudflare/` in the worktree you're actually working in.
+
+### Local `file://` Helm chart dependencies (ArgoCD stale-cache gotcha)
+
+Several apps depend on local charts via `repository: file://../../.../charts/<name>/` (`pgsql-cnpg`, `anytype`, `onlyoffice-documentserver`, etc.). ArgoCD's repo-server caches these by `name@version` from `Chart.yaml`. **Editing a local chart's `values.yaml` or templates without bumping its `Chart.yaml` `version` field will not actually take effect through ArgoCD** — the repo-server keeps serving a stale packaged copy from before your edit, even though `git diff`, `helm template` locally, and ArgoCD's own "Synced" status all look correct. This was hit twice in a row while tuning `onlyoffice-documentserver`'s memory limits: the live Deployment kept the old values from an earlier PR despite a newer PR merging and syncing cleanly.
+
+**Rule:** any change to a local `file://` chart's content requires bumping its `Chart.yaml` `version` *and* the matching `version:` in every parent chart's `dependencies:` entry that references it, or the change silently won't apply in the cluster. Always verify with `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'` (or the relevant field) after a sync that should have changed a local-chart-sourced value — don't trust ArgoCD's Synced/Healthy status alone for these.
 
 ## CI/CD
 
