@@ -69,6 +69,8 @@ nextcloud:
   phpClientHttpsFix:
     enabled: true
     protocol: https
+  internalDatabase:
+    enabled: false
   externalDatabase:
     enabled: true
     type: postgresql
