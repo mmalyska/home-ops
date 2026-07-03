@@ -6,6 +6,14 @@ port: 80
 jwt:
   secretName: onlyoffice-jwt-secret
   secretKey: JWT_SECRET
+database:
+  host: onlyofficedb-cnpg-rw
+  port: 5432
+  name: app
+  existingSecret:
+    name: onlyofficedb-cnpg-app
+    usernameKey: username
+    passwordKey: password
 storage:
   storageClass: ceph-block
   size: 5Gi
