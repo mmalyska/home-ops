@@ -32,7 +32,7 @@ task argocd:sync                      # Sync ArgoCD applications
 
 # Terraform
 task terraform:plan:cloudflare
-task terraform:apply:cloudflare
+task terraform:apply:cloudflare          # Local/manual only -- see note below
 
 # Lint / Format
 task lint:all
@@ -49,6 +49,18 @@ Uses a devcontainer (`ghcr.io/mmalyska/home-ops-devcontainer:main`). On containe
 3. Task subtasks are initialized
 
 Required secrets for devcontainer: `TERRAFORM_TOKEN`
+
+### HCP Terraform (Cloudflare workspace)
+
+The `provision/terraform/cloudflare` workspace is VCS-connected to this repo in HCP Terraform (app.terraform.io) with **auto-apply enabled** — merging a PR that touches `provision/terraform/cloudflare/**` to `main` triggers the apply automatically. `task terraform:apply:cloudflare` is only needed for local/manual runs (e.g. testing before opening a PR); don't run it after merging, HCP Terraform already handles it.
+
+To run `task terraform:plan:cloudflare` (or any local terraform command) against this workspace, the CLI needs a token even though `TERRAFORM_TOKEN` is already set as an env var — export it under the name Terraform's credential lookup expects:
+```sh
+export TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN"
+```
+Without this, `terraform init` fails with "Required token could not be found."
+
+**Gotcha:** `.terraform.lock.hcl` is gitignored (local-only) and its init state is per-directory — each git worktree has its own, independent of the main checkout. If `main.tf`'s provider version constraint was bumped (e.g. by a Renovate PR) since you last ran `terraform init` *in that specific working directory*, you'll get "locked provider ... does not match configured version constraint" on both local and remote (CLI-driven) runs. Fix: `TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN" terraform init -upgrade` from `provision/terraform/cloudflare/` in the worktree you're actually working in.
 
 ## CI/CD
 
