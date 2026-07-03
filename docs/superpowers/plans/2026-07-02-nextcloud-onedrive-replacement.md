@@ -343,6 +343,8 @@ resources:
     memory: 1Gi
 ```
 
+**Update from Task 8 (post-deploy):** the 1Gi memory limit was too low — the OnlyOffice container was OOMKilled repeatedly during startup (exit 137). Document Server runs ~10 internal processes (docservice, converter, spellchecker, its own nginx/redis/rabbitmq, etc.) and needs more headroom than initially estimated. Bumped to `requests: {cpu: 250m, memory: 1Gi}` / `limits: {cpu: "2", memory: 3Gi}` in `charts/onlyoffice-documentserver/values.yaml` — cluster nodes had ample free memory to absorb this.
+
 - [ ] **Step 3: Write the Deployment template**
 
 Create `charts/onlyoffice-documentserver/templates/deployment.yaml`:
