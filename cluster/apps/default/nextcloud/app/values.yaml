@@ -1,0 +1,133 @@
+pgsql-cnpg:
+  name: nextclouddb
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.10-standard-bookworm
+  instances: 2
+  storage:
+    size: 10Gi
+  resources:
+    requests:
+      memory: 200Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  monitoring:
+    enablePodMonitor: true
+  retentionPolicy: "10d"
+  objectStore:
+    destinationPath: "s3://k8s-at-home-backup/cnpg/nextcloud"
+    endpointURL: <secret:s3_endpoint>
+    s3Credentials:
+      accessKeyId:
+        name: nextcloud-s3-secret
+        key: S3_ACCESS_KEY_ID
+      secretAccessKey:
+        name: nextcloud-s3-secret
+        key: S3_ACCESS_SECRET_KEY
+  instanceSidecarConfiguration:
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
+  scheduledBackups:
+    - name: nextclouddb-cnpg-backup
+      spec:
+        immediate: true
+        schedule: "15 0 0 * * *"
+        backupOwnerReference: self
+
+nextcloud:
+  image:
+    flavor: fpm-alpine
+  nextcloud:
+    host: nextcloud.<secret:private-domain>
+    existingSecret:
+      enabled: true
+      secretName: nextcloud-admin-secret
+      usernameKey: nextcloud-username
+      passwordKey: nextcloud-password
+    trustedDomains:
+      - nextcloud.<secret:private-domain>
+    datadir: /var/www/html/data
+    persistence:
+      subPath:
+    mail:
+      enabled: false
+    configs:
+      proxy.config.php: |-
+        <?php
+        $CONFIG = array (
+          'check_data_directory_permissions' => false,
+          'forwarded_for_headers' => array('HTTP_X_FORWARDED_FOR'),
+          'mail_smtpmode' => 'null',
+          'trusted_proxies' => array(
+            0 => '127.0.0.1',
+            1 => '10.244.0.0/16',
+          ),
+        ); ?>
+  phpClientHttpsFix:
+    enabled: true
+    protocol: https
+  externalDatabase:
+    enabled: true
+    type: postgresql
+    host: nextclouddb-cnpg-rw
+    database: app
+    existingSecret:
+      enabled: true
+      secretName: nextclouddb-cnpg-app
+      usernameKey: username
+      passwordKey: password
+  # NOTE: chart 9.2.0's templates/_helpers.tpl `nextcloud.env.redis` takes the
+  # `redis.enabled` branch whenever it is true, completely ignoring `externalRedis.*`
+  # (that block only applies when `redis.enabled: false`). So there is no
+  # `externalRedis` section here — it would be dead configuration that misleadingly
+  # implies a secretKeyRef-based password lookup that never happens.
+  #
+  # With `redis.enabled: true`, the bundled Bitnami Redis subchart deploys its own
+  # in-cluster, ClusterIP-only Redis (service `nextcloud-redis-master`). Setting
+  # `auth.existingSecret` below (verified via `helm template` against the subchart's
+  # templates/secret.yaml + _helpers.tpl `redis.secretName`/`redis.secretPasswordKey`)
+  # suppresses the subchart's own auto-generated Secret and makes both the Redis
+  # server (StatefulSet) and the Nextcloud app container's REDIS_HOST_PASSWORD env var
+  # read the password from the same ExternalSecret-managed Secret below, so no
+  # plaintext credential is committed here.
+  redis:
+    enabled: true
+    auth:
+      enabled: true
+      existingSecret: nextcloud-redis-auth
+      existingSecretPasswordKey: redis-password
+  nginx:
+    enabled: true
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: ceph-block
+    nextcloudData:
+      enabled: true
+      existingClaim: nextcloud-data-pvc
+  cronjob:
+    enabled: true
+    type: sidecar
+  httpRoute:
+    enabled: true
+    hostnames:
+      - nextcloud.<secret:private-domain>
+    parentRefs:
+      - name: envoy-external
+        namespace: envoy-gateway
+        sectionName: https
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: "/"
+        filters:
+          - type: ResponseHeaderModifier
+            responseHeaderModifier:
+              add:
+                - name: strict-transport-security
+                  value: max-age=31536000

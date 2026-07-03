@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: onlyoffice
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: onlyoffice
+  ports:
+    - port: 80
+      targetPort: {{ .Values.port }}

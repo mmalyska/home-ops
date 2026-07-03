@@ -1,0 +1,24 @@
+- enabled: "true"
+  appSubfolder: onlyoffice
+  namespace: nextcloud
+  syncWave: "1"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
+- enabled: "true"
+  appSubfolder: app
+  namespace: nextcloud
+  syncWave: "2"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets

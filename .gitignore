@@ -30,3 +30,4 @@ Chart.lock
 # Zed
 .zed/
 .superpowers/
+.worktrees/

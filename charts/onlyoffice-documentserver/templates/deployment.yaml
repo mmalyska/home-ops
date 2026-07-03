@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onlyoffice
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: onlyoffice
+  template:
+    metadata:
+      labels:
+        app: onlyoffice
+    spec:
+      containers:
+        - name: onlyoffice
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.port }}
+          env:
+            - name: JWT_ENABLED
+              value: "true"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.jwt.secretName }}
+                  key: {{ .Values.jwt.secretKey }}
+            - name: JWT_HEADER
+              value: "Authorization"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - name: data
+              mountPath: /var/www/onlyoffice/Data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: onlyoffice-data
