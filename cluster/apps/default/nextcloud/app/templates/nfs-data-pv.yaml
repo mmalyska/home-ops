@@ -17,7 +17,7 @@ spec:
     server: qnap.<secret:private-domain>
     path: "/nextcloud-data"
   mountOptions:
-    - nfsvers=4.2
+    - nfsvers=4.1
     - tcp
     - intr
     - hard
