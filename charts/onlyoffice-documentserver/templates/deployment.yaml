@@ -30,6 +30,8 @@ spec:
                   key: {{ .Values.jwt.secretKey }}
             - name: JWT_HEADER
               value: "Authorization"
+            - name: PLUGINS_ENABLED
+              value: "false"
             - name: DB_TYPE
               value: "postgres"
             - name: DB_HOST
