@@ -10,7 +10,7 @@ anytype:
   coordinator:
     image:
       repository: ghcr.io/anyproto/any-sync-coordinator
-      tag: v0.9.1@sha256:2715a3ee080e4d9f6dd6504687f969928d1ddb206984445181b0b8d01d3b2821
+      tag: v0.10.0@sha256:b244e292191c6a6146a3b565ed610e0b2d7c1b39ed2df420a7eaee236f0bbcfa
   consensusnode:
     image:
       repository: ghcr.io/anyproto/any-sync-consensusnode
