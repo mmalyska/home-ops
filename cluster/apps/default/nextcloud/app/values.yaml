@@ -114,6 +114,8 @@ nextcloud:
     type: sidecar
   httpRoute:
     enabled: true
+    annotations:
+      external-dns.alpha.kubernetes.io/controller: dns-controller
     hostnames:
       - nextcloud.<secret:private-domain>
     parentRefs:
