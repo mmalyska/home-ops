@@ -115,11 +115,11 @@ In Bitwarden Secrets Manager, create these entries and note each UUID — they'r
 |---|---|
 | `nextcloud-admin-username` | Task 5 (Nextcloud admin bootstrap user) |
 | `nextcloud-admin-password` | Task 5 (Nextcloud admin bootstrap user) |
-| `nextcloud-s3-access-key-id` | Task 3 (CNPG backup to QNAP S3) |
-| `nextcloud-s3-secret-access-key` | Task 3 (CNPG backup to QNAP S3) |
 | `nextcloud-onlyoffice-jwt-secret` | Task 4 + Task 9 (shared JWT between OnlyOffice and the connector app) |
 | `nextcloud-oidc-client-secret` | Task 6 (Keycloak client secret) |
 | `nextcloud-redis-password` | Task 5 (discovered during implementation — see below) |
+
+**Update from Task 8:** no new `nextcloud-s3-*` entries were created — all CNPG apps in this cluster (gitea, harbor, now nextcloud) share one S3 backup credential, so `s3-externalsecret.yaml` reuses gitea's existing UUIDs (`e00e1e38-ae37-479a-8b46-b409016331eb` / `4d5a418c-82ed-4b8e-bfbf-b40901634ea4`) instead of the two entries originally listed here.
 
 **Update from Task 5 implementation:** the brief's original approach of pointing `externalRedis.existingSecret` at the bundled Redis subchart's auto-generated secret doesn't work as assumed — chart 9.2.0 prioritizes `redis.auth.*` over `externalRedis.*` for the app container's own env vars whenever `redis.enabled: true`, which would have put a literal plaintext password (`redis.auth.password`) into `values.yaml` and git. Task 5 fixed this by using `redis.auth.existingSecret: nextcloud-redis-auth` / `existingSecretPasswordKey: redis-password`, backed by a new `templates/redis-externalsecret.yaml` — hence this seventh Bitwarden entry. Verified via independent `helm template` render and chart source inspection during Task 5's review.
 
