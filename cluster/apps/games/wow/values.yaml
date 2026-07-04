@@ -46,7 +46,7 @@ controllers:
       patch-ahbot-config:
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: rolling@sha256:6eac246cbc6d8a8a434e2f01897eacbaf0da0f2dd0365dbcf0c8fd8437e4f964
+          tag: rolling@sha256:c9203f49584c863ad01722312c22281d8fb87039a909786558f5ba832f6962fa
         command:
           - /patches/patch.sh
     containers:
@@ -55,7 +55,7 @@ controllers:
         stdin: true
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: rolling@sha256:6eac246cbc6d8a8a434e2f01897eacbaf0da0f2dd0365dbcf0c8fd8437e4f964
+          tag: rolling@sha256:c9203f49584c863ad01722312c22281d8fb87039a909786558f5ba832f6962fa
         env:
           AC_DATA_DIR: /azerothcore/env/dist/data
           AC_LOGS_DIR: /azerothcore/env/dist/logs
