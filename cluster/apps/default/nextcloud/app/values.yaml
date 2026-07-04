@@ -65,6 +65,11 @@ nextcloud:
             0 => '127.0.0.1',
             1 => '10.244.0.0/16',
           ),
+          // The Keycloak OIDC provider hostname resolves to an in-cluster/LAN
+          // IP, which Nextcloud's SSRF protection blocks by default
+          // (LocalServerException: "violates local access rules") when the
+          // user_oidc app fetches the OIDC discovery document server-side.
+          'allow_local_remote_servers' => true,
         ); ?>
   phpClientHttpsFix:
     enabled: true
