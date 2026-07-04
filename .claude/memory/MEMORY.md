@@ -12,6 +12,7 @@
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
 - [Non-interactive shell flags](feedback_noninteractive_shell.md) — always use -f/-rf for cp/mv/rm (aliased to -i in devcontainer)
 - [Always push and open PR after branch work](feedback_push_and_pr_after_branch.md) — push + gh pr create immediately after committing on a feature branch
+- [Never write the private domain literally](feedback_no_domain_in_comments.md) — not in comments, not in memory files; grep before writing
 
 ## Project Context
 
