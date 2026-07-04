@@ -71,6 +71,20 @@ nextcloud:
           // user_oidc app fetches the OIDC discovery document server-side.
           'allow_local_remote_servers' => true,
         ); ?>
+    # Default pm.max_children (5) is too small for real browsing load (Files
+    # app fires many parallel requests per page: previews, notifications,
+    # activity). Under load the pool saturates, the nginx sidecar's own
+    # /status.php liveness probe queues behind it, times out, and kubelet
+    # kills nginx -- surfacing to users as "upstream connect error ... remote
+    # connection failure" after a few minutes of normal use.
+    phpConfigs:
+      zz-pool-size.conf: |-
+        [www]
+        pm = dynamic
+        pm.max_children = 20
+        pm.start_servers = 4
+        pm.min_spare_servers = 2
+        pm.max_spare_servers = 8
   phpClientHttpsFix:
     enabled: true
     protocol: https
