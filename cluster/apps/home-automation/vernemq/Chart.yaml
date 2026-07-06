@@ -1,9 +1,0 @@
----
-apiVersion: v2
-name: vernemq-subchart
-type: application
-version: 1.0.0
-dependencies:
-  - name: vernemq
-    version: 2.1.2
-    repository: https://vernemq.github.io/docker-vernemq
