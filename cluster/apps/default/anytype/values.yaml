@@ -22,4 +22,4 @@ anytype:
   filenode:
     image:
       repository: ghcr.io/anyproto/any-sync-filenode
-      tag: v0.11.1@sha256:9e1861588d5695ac9331678db5472723375b29dc231c233e14025a41050e27ce
+      tag: v0.11.2@sha256:9d8bbb42fd04a9ccae7ff2597f6cb8759cb773e63f89ce6d4522e22e08bcf399
