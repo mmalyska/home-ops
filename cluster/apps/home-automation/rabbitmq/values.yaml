@@ -4,6 +4,13 @@ rabbitmq-cluster:
     - rabbitmq_mqtt
   additionalConfig: |
     load_definitions = /etc/rabbitmq-definitions/definitions.json
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
   override:
     statefulSet:
       spec:
