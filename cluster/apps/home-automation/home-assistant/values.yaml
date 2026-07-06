@@ -7,15 +7,15 @@ pgsql-cnpg:
   monitoring:
     enablePodMonitor: true
   retentionPolicy: "10d"
-  bootstrap:
-    recovery:
-      source: home-assistant-cnpg-backup
-  externalClusters:
-    - name: home-assistant-cnpg-backup
-      plugin:
-        name: barman-cloud.cloudnative-pg.io
-        parameters:
-          barmanObjectName: home-assistant-objectstore
+  # bootstrap:
+  #   recovery:
+  #     source: home-assistant-cnpg-backup
+  # externalClusters:
+  #   - name: home-assistant-cnpg-backup
+  #     plugin:
+  #       name: barman-cloud.cloudnative-pg.io
+  #       parameters:
+  #         barmanObjectName: home-assistant-objectstore
   objectStore:
     destinationPath: "s3://k8s-at-home-backup/cnpg/home-assistant"
     endpointURL: <secret:s3_endpoint>
