@@ -1,6 +1,0 @@
-- enabled: "true"
-  namespace: ha-vernemq
-  syncPolicy:
-    enabled: true
-    selfHeal: true
-    prune: false
