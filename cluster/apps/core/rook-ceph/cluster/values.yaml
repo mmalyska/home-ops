@@ -30,6 +30,8 @@ rook-ceph-cluster:
       modules:
         - name: rook
           enabled: true
+    logCollector:
+      enabled: false
     resources:
       mgr:
         requests:

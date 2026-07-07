@@ -149,8 +149,8 @@ resource "kubernetes_deployment_v1" "workspace" {
 
           resources {
             requests = {
-              cpu    = "500m"
-              memory = "1Gi"
+              cpu    = "100m"
+              memory = "128Mi"
             }
             limits = {
               cpu    = "1000m"
