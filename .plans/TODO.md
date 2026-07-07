@@ -13,6 +13,13 @@ General backlog items not tied to a specific migration plan.
   - Other clusters (`litellm`, `gitea`, `keycloak`) use the deprecated plain `17.X` rolling tags — should also migrate to `standard` + plugin
   - Ref: https://github.com/cloudnative-pg/plugin-barman-cloud
 
+## Infrastructure — Logging
+
+- [ ] **No centralized log aggregation exists** — `monitoring` namespace is metrics-only (kube-prometheus-stack + smartctl-exporter), no Loki/Promtail/Fluent Bit/Vector anywhere in the cluster
+  - Surfaced while disabling rook-ceph's `logCollector` (PR #4468) to reclaim ~1.3 cores/1.3Gi of idle reservation — without it, Ceph component logs are `kubectl logs`-only (ephemeral, lost on restart/rotation)
+  - Accepted as a tradeoff for now; revisit if Ceph log history is ever needed for debugging a real incident
+  - If pursued, a lightweight option (e.g. Grafana Loki + Promtail/Alloy) would also benefit every other app in the cluster, not just rook-ceph
+
 ## Apps — Chart Upgrades
 
 - [ ] **Jellyfin** — migrate from local custom chart to official `jellyfin/jellyfin` Helm chart
