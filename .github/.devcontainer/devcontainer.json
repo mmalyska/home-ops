@@ -12,6 +12,7 @@
         "ghcr.io/devcontainers/features/go": {},
         "./local-features/homebrew": {},
         "./local-features/common": {},
-        "./local-features/bws-cli": {}
+        "./local-features/bws-cli": {},
+        "./local-features/coder-cli": {}
     }
 }

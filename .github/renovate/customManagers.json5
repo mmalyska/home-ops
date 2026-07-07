@@ -3,6 +3,13 @@
   "customManagers": [
     {
       "customType": "regex",
+      "description": "Process pinned VERSION vars in devcontainer local-feature install scripts",
+      "fileMatch": ["\\.github/\\.devcontainer/local-features/.+/install\\.sh$"],
+      "matchStrings": ["# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*=?))?\\n.*[:=] ?(\"?(?<currentValue>[^\"\\n]+=?)\"?)"],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
       "description": "Apply an explicit gitea digest field match",
       "fileMatch": ["cluster/apps/default/gitea/values\\.yaml"],
       "matchStrings": ["(?<indentation>[ \\t]+)tag: (?<currentValue>[^@\\n]+)\\n[ \\t]+digest: (?<currentDigest>sha256:[a-f0-9]+)"],
