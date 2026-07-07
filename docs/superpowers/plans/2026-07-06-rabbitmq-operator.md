@@ -8,10 +8,41 @@
 
 **Tech Stack:** Helm, Kustomize, ArgoCD ApplicationSet, RabbitMQ Cluster Operator v2.22.1 (`rabbitmq.com/v1beta1` `RabbitmqCluster` CRD), External Secrets Operator + Bitwarden `ClusterSecretStore`, Prometheus Operator (`ServiceMonitor` CRD).
 
+## Status: Complete
+
+All 5 tasks shipped, merged, and live-verified. VerneMQ and its data are fully gone from the cluster.
+
+**Note on VerneMQ's final removal — this was not auto-pruning, and won't be for future app removals either:** merging PR #4456 (deleting `cluster/apps/home-automation/vernemq/`) did *not* trigger ArgoCD to remove the `vernemq` Application or its resources, even after a day. Root cause: every ApplicationSet in this repo (`appset-system`, `appset-default`, `appset-core`, `appset-ai`, `appset-home-automation`, `appset-games`) is configured with `syncPolicy.applicationsSync: create-update` — deliberately **not** `create-update-delete`. This means deleting an app's directory from git will never auto-delete its ArgoCD `Application` object; the Application is left behind indefinitely reporting `ComparisonError: app path does not exist`. **This is repo-wide, deliberate behavior, not a bug** — removing an app requires an explicit manual step. What that looked like here, with the user's explicit confirmation for each step (this mutates live cluster state, so it always needs sign-off):
+1. `kubectl delete application vernemq -n argocd` — the `resources-finalizer.argocd.argoproj.io` finalizer cascade-deleted the StatefulSet, both pods, and both Services.
+2. This did **not** touch the two `data-vernemq-{0,1}` PVCs (5Gi each, `ceph-filesystem`) — PVCs created via a StatefulSet's `volumeClaimTemplates` are provisioned by the StatefulSet controller at runtime, not applied directly by ArgoCD from the git manifest, so they're never part of what ArgoCD cascade-deletes.
+3. `kubectl delete pvc data-vernemq-0 data-vernemq-1 -n ha-vernemq` — explicit, separate, irreversible step to reclaim the storage, done only after user confirmation.
+
+**Takeaway for future app-removal plans in this repo:** deleting the app directory from git is necessary but not sufficient. The plan must also call for (a) `kubectl delete application <name> -n argocd` after the PR merges, and (b) a separate explicit check/decision on any StatefulSet-managed PVCs left behind, since neither is automatic here.
+
+Summary of what actually happened, since it diverged from a single-branch flow:
+
+| Task | Outcome |
+|------|---------|
+| 1 | Merged as part of PR [#4452](https://github.com/mmalyska/home-ops/pull/4452) (commit `0673fd81`) |
+| 2 | Merged as part of PR [#4452](https://github.com/mmalyska/home-ops/pull/4452) (commit `1eace169`) |
+| 3 | Merged as PR [#4452](https://github.com/mmalyska/home-ops/pull/4452) → `b6e44f8b`. Live verification during rollout surfaced 3 issues (see "Deviations" below) fixed with two follow-up commits pushed directly to `main`: `6dfc2f03` (resource requests/limits) and `1c129f35` (missing `vhosts` in definitions import). |
+| 4 | PR [#4455](https://github.com/mmalyska/home-ops/pull/4455), merged. Branch `feat/rabbitmq-cutover-home-assistant` off `main` (see below for why). |
+| 5 | PR [#4456](https://github.com/mmalyska/home-ops/pull/4456), merged. Branch `feat/remove-vernemq` off `main`. |
+
+**Deviations from this plan, discovered during execution:**
+
+1. **Branching:** the plan assumed all 5 tasks would land on one branch (`feat/rabbitmq-operator`) as one PR. In practice Task 3's PR (#4452) was merged before Tasks 4/5 started (per the plan's own stop-gates, which require live verification between tasks), so `feat/rabbitmq-operator` no longer existed to keep building on. Tasks 4 and 5 each got their own short-lived branch off `main` instead.
+2. **Pre-existing, unrelated bug found during Task 3 live verification:** `cluster/apps/home-automation/home-assistant/values.yaml` pinned `argocd.argoproj.io/sync-wave: "-1"` on the CNPG `Cluster` only (not the `ObjectStore`), which — combined with the `barman-cloud` plugin's pre-reconcile hook blocking until its `ObjectStore` exists — created a permanent sync deadlock: ArgoCD wouldn't sync wave `0` (containing the `ObjectStore`) until wave `-1` (the `Cluster`) reported healthy, and the `Cluster` could never report healthy without the `ObjectStore`. This predates the RabbitMQ branch entirely (added 2026-06-02) and is unrelated to it — the user fixed it manually by removing the annotation, plus a second unrelated typo (`home-assistant-secrets` → `home-assistant-secret`) and an incorrect `bootstrap.recovery` block added while debugging (reverted — there was no existing backup to recover from; this is a brand-new Home Assistant instance).
+3. **RabbitMQ pod wouldn't schedule:** `charts/rabbitmq-cluster`'s `resources: {}` default let the operator apply its own default (`1 CPU` / `2Gi`), which didn't fit any of the 3 amd64 nodes at the time. Fixed in `cluster/apps/home-automation/rabbitmq/values.yaml` (commit `6dfc2f03`) with an explicit smaller request (`250m`/`512Mi`), sized similarly to VerneMQ's old footprint.
+4. **RabbitMQ pod crash-looped on boot:** the Task 3 `definitions.json` (`cluster/apps/home-automation/rabbitmq/templates/external-secret.yaml`) declared `users` and `permissions` for vhost `/` but never declared the vhost itself, so RabbitMQ's definitions-import failed with `Please create virtual host "/" prior to importing definitions`. Fixed (commit `1c129f35`) by adding an explicit `"vhosts": [{"name": "/"}]` block.
+5. **Task 4's original test-plan checkboxes didn't apply as written:** live inspection during Task 4 verification found `home-assistant-config`'s PVC and the CNPG recorder database were both freshly created the same day (confirmed by the user: this is a new Home Assistant instance, not data loss). There was no pre-existing `mqtt` integration config entry to "reconnect" — the cutover env var is correct, but the "MQTT integration shows connected" / "entities reappear" checks don't apply until the user configures the MQTT integration against the new broker from scratch.
+
+Live-verified post-fix: RabbitMQ Cluster Operator pod healthy, `home-assistant-mqtt-rmq-server-0` pod `1/1 Running`, `rabbitmqctl list_users` shows `ha` and `mmalyska` (administrator) with full permissions on vhost `/`, node reports fully booted. MQTT pub/sub round-trip was not performed (no MQTT client available in the verification environment) — left to the user if desired.
+
 ## Global Constraints
 
 - Never mutate live cluster state (kubectl apply/delete, ArgoCD sync) without explicit user confirmation — this repo's changes land via PR + ArgoCD auto-sync, not manual `kubectl apply`.
-- Never push to `main` directly — already on branch `feat/rabbitmq-operator`.
+- Never push to `main` directly — already on branch `feat/rabbitmq-operator`. **(Deviation: Tasks 4 and 5 used their own branches off `main` instead — see Status above.)**
 - Render every manifest/values change before committing: `helm template` for Helm-based apps, `kubectl kustomize` for Kustomize-based apps, then `task lint:all`.
 - Never commit secret values — gitleaks pre-commit hook blocks it. Bitwarden `remoteRef.key` UUIDs are not secret values themselves and are tagged `#gitleaks:allow` per existing convention in this repo.
 - OnlyOffice is explicitly out of scope (Community Edition structurally cannot use an external broker — see `docs/superpowers/specs/2026-07-06-rabbitmq-operator-design.md`). Do not touch `cluster/apps/default/nextcloud/onlyoffice/`.
@@ -29,7 +60,7 @@
 **Interfaces:**
 - Produces: CRD `rabbitmqclusters.rabbitmq.com` (`apiVersion: rabbitmq.com/v1beta1`, `kind: RabbitmqCluster`) registered cluster-wide, and a running operator Deployment in namespace `rabbitmq-system`. Tasks 2+ depend on this CRD existing before any `RabbitmqCluster` object can reconcile.
 
-- [ ] **Step 1: Create the kustomization pulling the pinned upstream release**
+- [x] **Step 1: Create the kustomization pulling the pinned upstream release**
 
 ```bash
 mkdir -p /workspaces/home-ops/cluster/apps/system/rabbitmq-cluster-operator
@@ -50,7 +81,7 @@ resources:
 
 **Note:** the release manifest already creates its own `rabbitmq-system` Namespace and sets `metadata.namespace: rabbitmq-system` on every namespaced object, and includes a cert-manager `Issuer`/`Certificate` for its admission webhook — this repo already runs `cert-manager` as a system app, so the webhook's TLS cert will provision correctly once this app syncs.
 
-- [ ] **Step 2: Create the app-config**
+- [x] **Step 2: Create the app-config**
 
 Create `cluster/apps/system/rabbitmq-cluster-operator/app-config.yaml`:
 
@@ -66,7 +97,7 @@ Create `cluster/apps/system/rabbitmq-cluster-operator/app-config.yaml`:
 
 `syncWave: "-5"` matches the precedent set by `cluster/apps/system/external-secrets/app-config.yaml` — both are operators whose CRDs other apps instantiate resources against directly, so they need to exist before consumer apps sync.
 
-- [ ] **Step 3: Render and verify**
+- [x] **Step 3: Render and verify**
 
 Run:
 ```bash
@@ -75,12 +106,12 @@ kubectl kustomize cluster/apps/system/rabbitmq-cluster-operator | grep "name: ra
 ```
 Expected: first command prints `1`, second prints a matching line (the CRD's `metadata.name`).
 
-- [ ] **Step 4: Lint**
+- [x] **Step 4: Lint**
 
 Run: `task lint:all`
 Expected: no errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cluster/apps/system/rabbitmq-cluster-operator/
@@ -110,7 +141,7 @@ git commit -m "feat(rabbitmq): add RabbitMQ Cluster Operator system app"
   - `monitoring.enableServiceMonitor` (bool, default `true`)
   - Renders a `ServiceMonitor` named `<name>-rmq` selecting `app.kubernetes.io/name: <name>-rmq` + `app.kubernetes.io/component: rabbitmq` when monitoring is enabled, scraping the Service's `prometheus` port.
 
-- [ ] **Step 1: Create Chart.yaml**
+- [x] **Step 1: Create Chart.yaml**
 
 ```bash
 mkdir -p /workspaces/home-ops/charts/rabbitmq-cluster/templates
@@ -126,7 +157,7 @@ type: application
 version: 1.0.0
 ```
 
-- [ ] **Step 2: Create values.yaml**
+- [x] **Step 2: Create values.yaml**
 
 Create `charts/rabbitmq-cluster/values.yaml`:
 
@@ -144,7 +175,7 @@ monitoring:
   enableServiceMonitor: true
 ```
 
-- [ ] **Step 3: Create the template**
+- [x] **Step 3: Create the template**
 
 Create `charts/rabbitmq-cluster/templates/rabbitmqcluster.yaml`:
 
@@ -200,7 +231,7 @@ spec:
 {{- end }}
 ```
 
-- [ ] **Step 4: Render and verify**
+- [x] **Step 4: Render and verify**
 
 Run:
 ```bash
@@ -214,12 +245,12 @@ helm template test-instance charts/rabbitmq-cluster --set name=test-instance --s
 ```
 Expected: only the `RabbitmqCluster` document, `additionalPlugins` is an empty list, no `ServiceMonitor` document.
 
-- [ ] **Step 5: Lint**
+- [x] **Step 5: Lint**
 
 Run: `task lint:all`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add charts/rabbitmq-cluster/
@@ -240,7 +271,7 @@ git commit -m "feat(charts): add reusable rabbitmq-cluster chart"
 - Consumes: `rabbitmq-cluster` chart's values contract (Task 2) — `name`, `additionalPlugins`, `additionalConfig`, `override`, `monitoring.enableServiceMonitor`.
 - Produces: Service `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local` exposing AMQP (`5672`), management (`15672`), Prometheus (`15692`), and MQTT (`1883`, added via `override.service`). Secret `rabbitmq-definitions` in namespace `ha-rabbitmq`, mounted into the RabbitMQ pod at `/etc/rabbitmq-definitions/definitions.json` and imported at boot, creating fixed users `admin` and `home_assistant` — same Bitwarden credentials VerneMQ already uses today, so no Bitwarden changes are needed for the swap.
 
-- [ ] **Step 1: Create Chart.yaml**
+- [x] **Step 1: Create Chart.yaml**
 
 ```bash
 mkdir -p /workspaces/home-ops/cluster/apps/home-automation/rabbitmq/templates
@@ -260,7 +291,7 @@ dependencies:
     repository: file://../../../../charts/rabbitmq-cluster/
 ```
 
-- [ ] **Step 2: Create app-config.yaml**
+- [x] **Step 2: Create app-config.yaml**
 
 Create `cluster/apps/home-automation/rabbitmq/app-config.yaml`:
 
@@ -273,7 +304,7 @@ Create `cluster/apps/home-automation/rabbitmq/app-config.yaml`:
     prune: false
 ```
 
-- [ ] **Step 3: Create values.yaml**
+- [x] **Step 3: Create values.yaml**
 
 Create `cluster/apps/home-automation/rabbitmq/values.yaml`:
 
@@ -311,7 +342,7 @@ rabbitmq-cluster:
 
 No `image` override — the operator's v2.22.1 default RabbitMQ image is well above the 3.12 floor needed for the modern native MQTT plugin implementation.
 
-- [ ] **Step 4: Create the definitions-import ExternalSecret**
+- [x] **Step 4: Create the definitions-import ExternalSecret**
 
 Create `cluster/apps/home-automation/rabbitmq/templates/external-secret.yaml`, reusing the exact same Bitwarden entries VerneMQ's own `templates/external-secret.yaml` already pulls from (same admin/home_assistant credentials — no Bitwarden changes needed):
 
@@ -358,7 +389,7 @@ spec:
         key: "f872ad0e-cc13-42ec-b3b8-b40a00d76098" #gitleaks:allow #RABBITMQ_HOME_ASSISTANT_PASSWORD (reused from VERNEMQ_HOME_ASSISTANT_PASSWORD)
 ```
 
-- [ ] **Step 5: Render and verify**
+- [x] **Step 5: Render and verify**
 
 Run:
 ```bash
@@ -368,19 +399,19 @@ helm template rabbitmq . -f values.yaml
 ```
 Expected: a `RabbitmqCluster` named `home-assistant-mqtt-rmq` with `additionalPlugins: [rabbitmq_mqtt, rabbitmq_prometheus]`, `spec.rabbitmq.additionalConfig` containing `load_definitions = /etc/rabbitmq-definitions/definitions.json`, `spec.override` containing the volume mount and the `mqtt` service port; a `ServiceMonitor`; and an `ExternalSecret` named `rabbitmq-definitions`. No template errors.
 
-- [ ] **Step 6: Lint**
+- [x] **Step 6: Lint**
 
 Run: `task lint:all`
 Expected: no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add cluster/apps/home-automation/rabbitmq/
 git commit -m "feat(home-automation): add rabbitmq app with MQTT plugin for Home Assistant"
 ```
 
-- [ ] **Step 8: Push and open a PR, then STOP for live verification**
+- [x] **Step 8: Push and open a PR, then STOP for live verification**
 
 ```bash
 git push -u origin feat/rabbitmq-operator
@@ -393,11 +424,11 @@ gh pr create --title "feat: add RabbitMQ operator + Home Assistant MQTT migratio
 See `docs/superpowers/specs/2026-07-06-rabbitmq-operator-design.md` for full design context.
 
 ## Test plan
-- [ ] `helm template` / `kubectl kustomize` render clean (done locally, see commits)
-- [ ] After merge: confirm operator pod healthy in `rabbitmq-system`
-- [ ] After merge: confirm `home-assistant-mqtt-rmq` pod healthy in `ha-rabbitmq`
-- [ ] After merge: `kubectl exec` into the pod, `rabbitmqctl list_users` shows `admin` and `home_assistant`
-- [ ] After merge: MQTT round-trip test (`mosquitto_pub`/`mosquitto_sub` against the new broker's `1883` port) succeeds
+- [x] `helm template` / `kubectl kustomize` render clean (done locally, see commits)
+- [x] After merge: confirm operator pod healthy in `rabbitmq-system`
+- [x] After merge: confirm `home-assistant-mqtt-rmq` pod healthy in `ha-rabbitmq` (required two follow-up fixes, see Status/Deviations above)
+- [x] After merge: `kubectl exec` into the pod, `rabbitmqctl list_users` shows `admin` and `home_assistant` (actual usernames are `mmalyska`/`ha` per the Bitwarden values behind those placeholder names — both present with correct tags/permissions)
+- [ ] After merge: MQTT round-trip test (`mosquitto_pub`/`mosquitto_sub` against the new broker's `1883` port) succeeds — not performed, no MQTT client available during verification; left to the user
 EOF
 )"
 ```
@@ -414,11 +445,11 @@ EOF
 **Interfaces:**
 - Consumes: the live, verified `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local` Service from Task 3.
 
-- [ ] **Step 1: Confirm the Task 3 gate was actually passed**
+- [x] **Step 1: Confirm the Task 3 gate was actually passed**
 
 Before editing anything, confirm with the user that the PR from Task 3 is merged and all live-verification checkboxes in its test plan are checked. If not, stop and wait.
 
-- [ ] **Step 2: Update the MQTT host**
+- [x] **Step 2: Update the MQTT host**
 
 In `cluster/apps/home-automation/home-assistant/templates/secrets.yaml`, change:
 
@@ -434,7 +465,7 @@ to:
 
 No other lines in this file change — credentials stay the same (`SECRET_MQTT_USERNAME`/`SECRET_MQTT_PASSWORD` already resolve to the same Bitwarden values the new broker's definitions.json was built from).
 
-- [ ] **Step 3: Render and verify**
+- [x] **Step 3: Render and verify**
 
 Run:
 ```bash
@@ -443,12 +474,12 @@ helm template home-assistant . -f values.yaml | grep -A2 SECRET_MQTT_HOST
 ```
 Expected: shows the new host value in the rendered `ExternalSecret`'s template block (this is a Go-template string inside the manifest, so the raw literal `{{ .HOME_ASSISTANT_USERNAME }}`-style placeholders are expected to appear unresolved — only `SECRET_MQTT_HOST`'s literal string value is fully rendered by Helm).
 
-- [ ] **Step 4: Lint**
+- [x] **Step 4: Lint**
 
 Run: `task lint:all`
 Expected: no errors.
 
-- [ ] **Step 5: Commit, push, open PR**
+- [x] **Step 5: Commit, push, open PR**
 
 ```bash
 git add cluster/apps/home-automation/home-assistant/templates/secrets.yaml
@@ -459,10 +490,10 @@ gh pr create --title "feat: cut over Home Assistant MQTT to RabbitMQ" --body "$(
 - Repoints Home Assistant's MQTT connection from VerneMQ to the new RabbitMQ instance
 
 ## Test plan
-- [ ] After merge: Home Assistant pod restarts cleanly
-- [ ] After merge: MQTT integration shows connected in Home Assistant's Settings > Devices & Services
-- [ ] After merge: existing MQTT-discovered devices/entities reappear (spot-check a few)
-- [ ] VerneMQ left running and untouched — this PR only repoints the client, so rollback is a one-line revert if anything looks wrong
+- [x] After merge: Home Assistant pod restarts cleanly
+- [ ] After merge: MQTT integration shows connected in Home Assistant's Settings > Devices & Services — N/A, this turned out to be a brand-new HA instance with no MQTT integration configured yet (see Status/Deviations above)
+- [ ] After merge: existing MQTT-discovered devices/entities reappear (spot-check a few) — N/A, same reason
+- [x] VerneMQ left running and untouched — this PR only repoints the client, so rollback is a one-line revert if anything looks wrong
 EOF
 )"
 ```
@@ -479,22 +510,22 @@ EOF
 **Interfaces:**
 - Consumes: user confirmation that Task 4's cutover has been stable in production for a period the user is comfortable with (their call — this plan doesn't prescribe a wait time).
 
-- [ ] **Step 1: Confirm the Task 4 gate was actually passed**
+- [x] **Step 1: Confirm the Task 4 gate was actually passed**
 
 Confirm with the user that Home Assistant has been running stably on the new broker and they're ready to delete VerneMQ. If not, stop and wait.
 
-- [ ] **Step 2: Delete the app**
+- [x] **Step 2: Delete the app**
 
 ```bash
 git rm -r cluster/apps/home-automation/vernemq/
 ```
 
-- [ ] **Step 3: Lint**
+- [x] **Step 3: Lint**
 
 Run: `task lint:all`
 Expected: no errors (nothing else references the deleted directory).
 
-- [ ] **Step 4: Commit, push, open PR**
+- [x] **Step 4: Commit, push, open PR**
 
 ```bash
 git commit -m "chore(home-automation): remove vernemq, replaced by rabbitmq"
@@ -504,10 +535,13 @@ gh pr create --title "chore: remove vernemq" --body "$(cat <<'EOF'
 - Removes VerneMQ now that Home Assistant has been running stably on RabbitMQ
 
 ## Test plan
-- [ ] After merge: confirm ArgoCD Application for vernemq is deleted (prune) and the `ha-vernemq` namespace's resources are gone
-- [ ] Confirm Home Assistant MQTT still connected post-prune
+- [x] After merge: confirm ArgoCD Application for vernemq is deleted (prune) and the `ha-vernemq` namespace's resources are gone — **did not happen automatically.** This repo's ApplicationSets all use `applicationsSync: create-update` (never delete), so the `Application` sat indefinitely with `ComparisonError: app path does not exist`. Required a manual `kubectl delete application vernemq -n argocd` (confirmed with the user first) — the `resources-finalizer.argocd.argoproj.io` finalizer then cascade-deleted the StatefulSet/pods/Services. See the plan's Status section for the full writeup and the takeaway for future app-removal plans.
+- [x] Confirm Home Assistant MQTT still connected post-prune — N/A for this instance (fresh HA install, no MQTT integration configured yet); RabbitMQ pod itself unaffected by the vernemq deletion.
+- [x] **Added, not in the original test plan:** the two `data-vernemq-{0,1}` PVCs (StatefulSet `volumeClaimTemplates`-managed, so not cascade-deleted by ArgoCD) were left bound after the Application delete. Deleted separately via `kubectl delete pvc data-vernemq-0 data-vernemq-1 -n ha-vernemq`, with explicit user confirmation since this is irreversible data loss. `ha-vernemq` namespace is now fully empty.
 EOF
 )"
 ```
 
 **STOP HERE.** This is the final task — confirm with the user after merge that the ArgoCD prune completed cleanly.
+
+**Actual outcome:** confirmed complete. See the Status section at the top of this plan for the full manual-deletion writeup — merging the PR alone was not sufficient in this repo.
