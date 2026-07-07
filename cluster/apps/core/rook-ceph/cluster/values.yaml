@@ -35,26 +35,26 @@ rook-ceph-cluster:
     resources:
       mgr:
         requests:
-          cpu: "125m"
-          memory: "549M"
+          cpu: "50m"
+          memory: "800M"
         limits:
           memory: "1219M"
       mon:
         requests:
           cpu: "49m"
-          memory: "477M"
+          memory: "700M"
         limits:
           memory: "1059M"
       osd:
         requests:
-          cpu: "442m"
+          cpu: "150m"
           memory: "2678M"
         limits:
           memory: "5944M"
       mgr-sidecar:
         requests:
-          cpu: "49m"
-          memory: "94M"
+          cpu: "40m"
+          memory: "32M"
         limits:
           memory: "208M"
       crashcollector:
