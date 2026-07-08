@@ -47,7 +47,10 @@ harbor:
       sslmode: require
 
   redis:
-    type: internal
+    type: external
+    external:
+      addr: "harbor-dragonfly:6379"
+      existingSecret: harbor-dragonfly-auth
 
   trivy:
     enabled: false
@@ -88,3 +91,9 @@ pgsql-cnpg:
         immediate: true
         schedule: "5 0 0 * * *"
         backupOwnerReference: self
+
+dragonfly:
+  name: harbor
+  authentication:
+    existingSecret: harbor-dragonfly-auth
+    existingSecretKey: password
