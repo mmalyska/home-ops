@@ -17,6 +17,7 @@
 ## Project Context
 
 - [Secrets architecture (post-2026-03-11)](project_secrets_architecture.md) — three mechanisms; when to use each
+- [Plans location convention](project_plans_location_convention.md) — actual practice is docs/superpowers/, not CLAUDE.md's documented .plans/
 
 ## Reference
 
