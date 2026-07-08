@@ -10,3 +10,6 @@ dependencies:
   - name: pgsql-cnpg
     version: 1.3.2
     repository: file://../../../../charts/pgsql-cnpg/
+  - name: dragonfly
+    version: 1.0.1
+    repository: file://../../../../charts/dragonfly/
