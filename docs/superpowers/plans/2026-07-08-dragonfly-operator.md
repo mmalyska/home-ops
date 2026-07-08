@@ -8,6 +8,14 @@
 
 **Tech Stack:** Helm (OCI dependency), Dragonfly Operator v1.6.1 (`dragonflydb.io/v1alpha1` `Dragonfly` CRD), External Secrets Operator + Bitwarden `ClusterSecretStore`, ArgoCD ApplicationSet.
 
+## Status: In Progress
+
+Tasks 1-3 merged (PR [#4482](https://github.com/mmalyska/home-ops/pull/4482)). Task 4 in progress.
+
+**Deviation, found during Task 3 live verification (systematic-debugging):** `oauth2-proxy-dragonfly-0` crash-looped in production after #4482 merged. Root cause, confirmed directly from its logs (`There are 1 threads, so 256.00MiB are required. Exiting...`): Dragonfly hard-exits at boot when `maxmemory < threads * 256MB`; its default heuristic sets `maxmemory` to 80% of the container's memory *limit*; `charts/dragonfly`'s original default limit of `256Mi` (Task 2) produced `204.8Mi` — below the floor for even 1 thread. This is a chart-level defect affecting every instance, not just oauth2-proxy — oauth2-proxy's own pod crash-loop was purely downstream (`no route to host`, no ready Service endpoints). Fixed in PR [#4484](https://github.com/mmalyska/home-ops/pull/4484): bumped `charts/dragonfly`'s default `resources.limits.memory` to `512Mi`, and bumped the chart's own version `1.0.0` → `1.0.1` (propagated to every consumer's pinned dependency version below) so a cached local chart tarball can't silently mask the fix — same pinning convention this repo already uses for `pgsql-cnpg`. Live-verified healthy post-merge.
+
+**Takeaway applied going forward:** the `dragonfly` dependency version below reads `1.0.1`, not the `1.0.0` originally written for this plan — already corrected in Tasks 4-6's text.
+
 ## Global Constraints
 
 - Never mutate live cluster state (kubectl apply/delete, ArgoCD sync) without explicit user confirmation — changes land via PR + ArgoCD auto-sync, not manual `kubectl apply`.
@@ -339,7 +347,7 @@ dependencies:
     version: 1.3.2
     repository: file://../../../../../charts/pgsql-cnpg/
   - name: dragonfly
-    version: 1.0.0
+    version: 1.0.1
     repository: file://../../../../../charts/dragonfly/
 ```
 
@@ -479,7 +487,7 @@ dependencies:
     version: 1.3.2
     repository: file://../../../../charts/pgsql-cnpg/
   - name: dragonfly
-    version: 1.0.0
+    version: 1.0.1
     repository: file://../../../../charts/dragonfly/
 ```
 
@@ -612,7 +620,7 @@ dependencies:
     version: 1.3.2
     repository: file://../../../../charts/pgsql-cnpg/
   - name: dragonfly
-    version: 1.0.0
+    version: 1.0.1
     repository: file://../../../../charts/dragonfly/
 ```
 

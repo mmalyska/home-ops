@@ -100,26 +100,21 @@ nextcloud:
       secretName: nextclouddb-cnpg-app
       usernameKey: username
       passwordKey: password
-  # NOTE: chart 9.2.0's templates/_helpers.tpl `nextcloud.env.redis` takes the
-  # `redis.enabled` branch whenever it is true, completely ignoring `externalRedis.*`
-  # (that block only applies when `redis.enabled: false`). So there is no
-  # `externalRedis` section here — it would be dead configuration that misleadingly
-  # implies a secretKeyRef-based password lookup that never happens.
-  #
-  # With `redis.enabled: true`, the bundled Bitnami Redis subchart deploys its own
-  # in-cluster, ClusterIP-only Redis (service `nextcloud-redis-master`). Setting
-  # `auth.existingSecret` below (verified via `helm template` against the subchart's
-  # templates/secret.yaml + _helpers.tpl `redis.secretName`/`redis.secretPasswordKey`)
-  # suppresses the subchart's own auto-generated Secret and makes both the Redis
-  # server (StatefulSet) and the Nextcloud app container's REDIS_HOST_PASSWORD env var
-  # read the password from the same ExternalSecret-managed Secret below, so no
-  # plaintext credential is committed here.
+  # Redis is now provided by a per-app Dragonfly instance (see `dragonfly:` block
+  # below), not the bundled Bitnami subchart. Setting `redis.enabled: false` makes
+  # `nextcloud.env.redis` take the `externalRedis` branch instead (confirmed via
+  # the chart's templates/_helpers.tpl) so REDIS_HOST/REDIS_HOST_PORT/REDIS_HOST_PASSWORD
+  # get wired to the Dragonfly service below.
   redis:
+    enabled: false
+  externalRedis:
     enabled: true
-    auth:
+    host: nextcloud-dragonfly
+    port: 6379
+    existingSecret:
       enabled: true
-      existingSecret: nextcloud-redis-auth
-      existingSecretPasswordKey: redis-password
+      secretName: nextcloud-redis-auth
+      passwordKey: redis-password
   nginx:
     enabled: true
   persistence:
@@ -154,3 +149,9 @@ nextcloud:
               add:
                 - name: strict-transport-security
                   value: max-age=31536000
+
+dragonfly:
+  name: nextcloud
+  authentication:
+    existingSecret: nextcloud-redis-auth
+    existingSecretKey: redis-password
