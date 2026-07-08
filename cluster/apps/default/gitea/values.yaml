@@ -51,15 +51,15 @@ gitea:
         MAX_AGE: 10m
         ALLOW_CREDENTIALS: false
       session:
-        PROVIDER: redis-cluster
-        PROVIDER_CONFIG: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+        PROVIDER: redis
+        PROVIDER_CONFIG: redis://:<secret:gitea-dragonfly-password>@gitea-dragonfly.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
       cache:
         ENABLED: true
-        ADAPTER: redis-cluster
-        HOST: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+        ADAPTER: redis
+        HOST: redis://:<secret:gitea-dragonfly-password>@gitea-dragonfly.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
       queue:
         TYPE: redis
-        CONN_STR: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+        CONN_STR: redis://:<secret:gitea-dragonfly-password>@gitea-dragonfly.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
   ingress:
     enabled: false
   postgresql:
@@ -67,7 +67,7 @@ gitea:
   valkey-cluster:
     enabled: false
   valkey:
-    enabled: true
+    enabled: false
   postgresql-ha:
     enabled: false
   persistence:
@@ -139,3 +139,8 @@ pgsql-cnpg:
   #       name: barman-cloud.cloudnative-pg.io
   #       parameters:
   #         barmanObjectName: giteadb-objectstore
+dragonfly:
+  name: gitea
+  authentication:
+    existingSecret: gitea-dragonfly-auth
+    existingSecretKey: redis-password
