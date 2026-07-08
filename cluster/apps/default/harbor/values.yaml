@@ -46,11 +46,18 @@ harbor:
       existingSecret: harbordb-cnpg-app
       sslmode: require
 
+  # No password: Harbor's chart routes any external.password/existingSecret
+  # through Helm's `urlquery` + `lookup` (templates/_helpers.tpl
+  # harbor.redis.cred/pwdfromsecret) - `lookup` returns empty under this
+  # repo's CMP plugin (a plain `helm template`, no live cluster API access;
+  # see cluster/apps/core/argocd/resources/sops-replacer-plugin.yaml), and
+  # urlquery mangles a `<secret:key>` token before the secret-replacer ever
+  # sees it. Harbor's redis is a ClusterIP-only cache with no data worth
+  # protecting, so this instance runs without auth instead of fighting that.
   redis:
     type: external
     external:
       addr: "harbor-dragonfly:6379"
-      existingSecret: harbor-dragonfly-auth
 
   trivy:
     enabled: false
@@ -94,6 +101,3 @@ pgsql-cnpg:
 
 dragonfly:
   name: harbor
-  authentication:
-    existingSecret: harbor-dragonfly-auth
-    existingSecretKey: password
