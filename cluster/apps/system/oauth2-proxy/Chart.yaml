@@ -9,5 +9,5 @@ dependencies:
     version: 10.7.0
     repository: https://oauth2-proxy.github.io/manifests
   - name: dragonfly
-    version: 1.0.0
+    version: 1.0.1
     repository: file://../../../../charts/dragonfly/
