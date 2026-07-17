@@ -5,4 +5,4 @@ metadata:
 
 resources:
   # renovate-raw: datasource=github-releases depName=rabbitmq/cluster-operator
-  - https://github.com/rabbitmq/cluster-operator/releases/download/v2.22.2/cluster-operator.yml
+  - https://github.com/rabbitmq/cluster-operator/releases/download/v2.22.3/cluster-operator.yml
