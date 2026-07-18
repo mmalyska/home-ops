@@ -40,7 +40,7 @@ controllers:
       client-data:
         image:
           repository: acore/ac-wotlk-client-data
-          tag: master@sha256:75867f3ec6f712d2c1843f0fa184e207c81e9df3b2f2571dc1e18d904c850e60
+          tag: master@sha256:251acaf748bdc37a48ffbeb7b0217094df272dfcbf6c373935b6b660aa9cde43
         env:
           DATAPATH: /azerothcore/env/dist/data
       patch-ahbot-config:
