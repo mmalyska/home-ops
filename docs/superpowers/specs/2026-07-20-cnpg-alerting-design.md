@@ -118,11 +118,28 @@ Metric names below were confirmed live against the cluster's Prometheus
 
 ### 2. Alertmanager Discord receiver + route
 
+**Correction made during implementation planning (2026-07-20):** the
+original draft of this section used a `<secret:discord_alertmanager_webhook>`
+token directly in `alertmanager.config.receivers[].discord_configs[].webhook_url`,
+following the `cluster-secrets` pattern botkube uses. This was tested against
+a real render and found broken: unlike botkube's chart (which puts secrets in
+a plain `stringData` block), kube-prometheus-stack's `alertmanager.config`
+gets marshalled into **base64-encoded** `data.alertmanager.yaml` inside a
+chart-managed Secret. The `argocd-secret-replacer` CMP plugin does literal
+text substitution on the rendered manifest stream (confirmed via
+`docs/superpowers/plans/2026-07-08-dragonfly-operator.md`'s prior encounter
+with the same plugin missing a `urlquery`-mangled token) — a token trapped
+inside base64 can never match. The corrected design below avoids the problem
+entirely by keeping the webhook URL out of `alertmanager.config` altogether.
+
 Added to `alertmanager.config` in `cluster/apps/system/prometheus-stack/values.yaml`
 (currently only sets `global.resolve_timeout`):
 
 ```yaml
 alertmanager:
+  alertmanagerSpec:
+    secrets:
+      - alertmanager-discord-webhook
   config:
     global:
       resolve_timeout: 5m
@@ -133,7 +150,7 @@ alertmanager:
     receivers:
       - name: discord
         discord_configs:
-          - webhook_url: <secret:discord_alertmanager_webhook>
+          - webhook_url_file: /etc/alertmanager/secrets/alertmanager-discord-webhook/url
             title: '{{ .CommonAnnotations.summary }}'
             message: |
               {{ if eq .CommonLabels.severity "critical" }}@here {{ end }}{{ .CommonAnnotations.description }}
@@ -145,23 +162,21 @@ alertmanager:
 - New Discord **channel webhook** (Discord's native webhook mechanism,
   distinct from botkube's bot-token/bot-ID integration — a new webhook must
   be created in the target Discord channel's settings).
-- New Bitwarden secret `discord_alertmanager_webhook`, added as an entry in
-  `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
-  (same list as the existing `discord_botid`/`discord_token`/`discord_channel`
-  entries) and substituted via the `cluster-secrets` mount + `<secret:...>`
-  token, matching the established pattern already used for botkube's
-  Discord credentials.
-  - Rationale for `cluster-secrets` over a per-app `ExternalSecret`: kube-prometheus-stack's
-    `alertmanager.config` values.yaml block is transformed by the chart into
-    a Secret internally as a single opaque blob — there's no clean way to
-    inject one field of it from a separately-managed K8s `Secret`. This
-    mirrors why botkube's `discord_botid`/`discord_token` already use
-    `cluster-secrets` substitution rather than a dedicated `ExternalSecret`,
-    despite CLAUDE.md's general rule favoring `ExternalSecret` for
-    `Secret data/stringData` fields.
-- `cluster/apps/system/prometheus-stack/app-config.yaml` needs
-  `SECRET_PROVIDER: cluster-secrets` set (to be confirmed/added during
-  implementation — not currently present).
+- The webhook URL itself never enters `values.yaml` or any `<secret:...>`
+  token. Instead: a new `ExternalSecret` (`cluster/apps/system/prometheus-stack/templates/alertmanager-discord-webhook-externalsecret.yaml`)
+  pulls a new Bitwarden Secrets Manager item into a plain K8s `Secret` named
+  `alertmanager-discord-webhook` with key `url` — the standard per-app
+  `ExternalSecret` + `ClusterSecretStore bitwarden` mechanism, matching
+  `harbor-oidc-secret`/`headlamp-oidc` precedent, and the mechanism CLAUDE.md
+  already prescribes for tokens that land in `Secret data/stringData`.
+  `alertmanagerSpec.secrets: [alertmanager-discord-webhook]` (Prometheus
+  Operator field, mounts arbitrary named Secrets into the Alertmanager pod at
+  `/etc/alertmanager/secrets/<name>/`) makes that Secret's `url` key
+  available to Alertmanager as a file, which `webhook_url_file` reads.
+- `cluster/apps/system/prometheus-stack/app-config.yaml` already has
+  `SECRET_PROVIDER: cluster-secrets` set — no longer strictly required for
+  this feature since no `<secret:...>` token is used here, but left as-is
+  since other values in the file may still depend on it.
 
 ### 3. Verification plan
 
