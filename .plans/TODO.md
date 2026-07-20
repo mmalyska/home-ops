@@ -11,18 +11,20 @@ General backlog items not tied to a specific migration plan.
 
 ## Infrastructure — Monitoring & Alerting
 
-- [ ] **Alert on CNPG `ContinuousArchivingFailing`**
+- [x] **Alert on CNPG `ContinuousArchivingFailing`** — added `CNPGArchivingStalled` and `CNPGBackupFailing` to a new `PrometheusRule`, based on metric names confirmed live against the cluster (not guessed from docs). Applies to all CNPG clusters via the existing per-cluster PodMonitor labels, not just keycloak. Done via `fbe72147` on branch `feat/cnpg-alerting-notifications`.
   - Surfaced 2026-07-20: `identity/keycloakdb-cnpg` had `ContinuousArchivingFailing` (`barman-cloud-wal-archive: exit status 4`) for ~2 days before its PVC actually filled and the cluster crash-looped
   - Only the generic `KubePersistentVolumeFillingUp` alert caught this, and only once disk was already critical — a last-resort signal, not an early one
   - CNPG pods already expose Prometheus metrics on port 9187 (auto-scraped via per-cluster PodMonitor), but no `PrometheusRule` is built on top of them
   - Add a rule alerting when a `Cluster`'s `ContinuousArchiving` condition is `False` for some sustained window (e.g. 30-60m), and ideally one for failed/incomplete `Backup` CRs too
   - Applies to all CNPG clusters, not just keycloak
 
-- [ ] **Enable Discord + email notifications for Prometheus alerts** — `botkube` is `enabled: "false"` in `cluster/apps/default/botkube/app-config.yaml`, so its half-wired Discord integration (a `prometheus` source plugin exists in `values.yaml` but was never bound to the channel's `sources` list) isn't even running
+- [x] **Enable Discord + email notifications for Prometheus alerts** — configured Alertmanager with a Discord webhook receiver/route for `critical`/`warning` alerts (`@here` on critical), webhook URL delivered via a dedicated `ExternalSecret` + `webhook_url_file` rather than a `<secret:...>` token (the token-substitution path is broken for this chart's Secret shape — see design doc). Email/SMTP receiver and botkube re-enablement deferred, not part of this pass. Done via `84994974` + `c850c1f5` on branch `feat/cnpg-alerting-notifications`.
   - Alertmanager itself has zero receivers configured (`cluster/apps/system/prometheus-stack/values.yaml` only sets `global.resolve_timeout`) — alerts fire and sit with nowhere to go
   - Surfaced 2026-07-20: the `KubePersistentVolumeFillingUp` critical alert fired correctly for `identity/keycloakdb-cnpg` ~6h before the outage was noticed, but nobody was notified — QNAP's own out-of-band alert was the first signal
   - Configure Alertmanager receivers/routes directly: a Discord webhook receiver, plus an email/SMTP receiver, at minimum for `severity: critical`
   - Decide whether to also re-enable botkube (and bind its `prometheus` source) as a second channel, or keep notification ownership solely in Alertmanager to avoid duplicate/half-wired paths
+
+- [ ] **Investigate CNPG archiving/backup anomalies found while building the new alerts (2026-07-20)** — `bookorbdb-cnpg` (bookorbit) has failed every scheduled backup for 5+ consecutive days (`rpc error: code = Unknown desc = exit status 1`); `giteadb-cnpg` (gitea) has gone ~21 days without a successful WAL archive despite `archive_timeout: 30min` being live, while CNPG's own `ContinuousArchiving` condition still reports `True` — could be a genuinely idle database (low `archived_count` supports this) or a real stall the condition isn't catching. The new `CNPGArchivingStalled`/`CNPGBackupFailing` alerts (this PR) will fire on both immediately on merge — expected, not a bug.
 
 ## Infrastructure — CNPG Backup Storage (QNAP S3 bloat)
 
