@@ -138,7 +138,28 @@ kube-prometheus-stack:
     config:
       global:
         resolve_timeout: 5m
+      route:
+        routes:
+          - matchers: ['severity=~"critical|warning"']
+            receiver: discord
+            group_by: ['namespace', 'severity']
+      receivers:
+        # kube-prometheus-stack's default route.receiver is "null" (its scalar
+        # value survives our merge), but Helm replaces list fields wholesale —
+        # without this entry, the receivers list above would silently drop the
+        # default "null" receiver, leaving that reference dangling and making
+        # Alertmanager reject the whole config on load. Keep this even though
+        # nothing here appears to reference it directly.
+        - name: "null"
+        - name: discord
+          discord_configs:
+            - webhook_url_file: /etc/alertmanager/secrets/alertmanager-discord-webhook/url
+              title: '{{ .CommonAnnotations.summary }}'
+              message: |
+                {{ if eq .CommonLabels.severity "critical" }}@here {{ end }}{{ .CommonAnnotations.description }}
     alertmanagerSpec:
+      secrets:
+        - alertmanager-discord-webhook
       storage:
         volumeClaimTemplate:
           spec:

@@ -1,0 +1,41 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cnpg-alerts
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: cnpg.archiving
+      interval: 5m
+      rules:
+        - alert: CNPGArchivingStalled
+          expr: max by (namespace, job) (cnpg_pg_stat_archiver_seconds_since_last_archival) > 3600
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'CNPG WAL archiving stalled on {{`{{ $labels.namespace }}`}}'
+            description: 'No successful WAL archive in {{`{{ $labels.namespace }}`}} for over 1h ({{`{{ $value }}`}}s) — check barman-cloud-wal-archive logs.'
+        - alert: CNPGArchivingStalled
+          expr: max by (namespace, job) (cnpg_pg_stat_archiver_seconds_since_last_archival) > 21600
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'CNPG WAL archiving critically stalled on {{`{{ $labels.namespace }}`}}'
+            description: 'No successful WAL archive in {{`{{ $labels.namespace }}`}} for over 6h ({{`{{ $value }}`}}s) — PVC will eventually fill. Check barman-cloud-wal-archive logs.'
+    - name: cnpg.backups
+      interval: 5m
+      rules:
+        - alert: CNPGBackupFailing
+          expr: max by (namespace, job) (cnpg_collector_last_failed_backup_timestamp) > max by (namespace, job) (cnpg_collector_last_available_backup_timestamp)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'CNPG backups failing on {{`{{ $labels.namespace }}`}}'
+            description: 'The most recent backup attempt in {{`{{ $labels.namespace }}`}} failed and is more recent than the last successful backup.'
