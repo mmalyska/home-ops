@@ -144,6 +144,12 @@ kube-prometheus-stack:
             receiver: discord
             group_by: ['namespace', 'severity']
       receivers:
+        # kube-prometheus-stack's default route.receiver is "null" (its scalar
+        # value survives our merge), but Helm replaces list fields wholesale —
+        # without this entry, the receivers list above would silently drop the
+        # default "null" receiver, leaving that reference dangling and making
+        # Alertmanager reject the whole config on load. Keep this even though
+        # nothing here appears to reference it directly.
         - name: "null"
         - name: discord
           discord_configs:
