@@ -135,31 +135,18 @@ kube-prometheus-stack:
           url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Pools%20Dashboard.json
           token: ""
   alertmanager:
-    config:
-      global:
-        resolve_timeout: 5m
-      route:
-        routes:
-          - matchers: ['severity=~"critical|warning"']
-            receiver: discord
-            group_by: ['namespace', 'severity']
-      receivers:
-        # kube-prometheus-stack's default route.receiver is "null" (its scalar
-        # value survives our merge), but Helm replaces list fields wholesale —
-        # without this entry, the receivers list above would silently drop the
-        # default "null" receiver, leaving that reference dangling and making
-        # Alertmanager reject the whole config on load. Keep this even though
-        # nothing here appears to reference it directly.
-        - name: "null"
-        - name: discord
-          discord_configs:
-            - webhook_url_file: /etc/alertmanager/secrets/alertmanager-discord-webhook/url
-              title: '{{ .CommonAnnotations.summary }}'
-              message: |
-                {{ if eq .CommonLabels.severity "critical" }}@here {{ end }}{{ .CommonAnnotations.description }}
+    # No `config:` block here — Alertmanager's config comes from a
+    # self-managed Secret instead (see alertmanagerSpec.useExistingSecret
+    # below and templates/alertmanager-discord-webhook-externalsecret.yaml).
+    # This chart's own config generation would need to embed the real
+    # Discord webhook URL as a `webhook_url_file` reference, which the
+    # Prometheus Operator's config parser in this environment rejects
+    # ("field webhook_url_file not found in type alertmanager.discordConfig")
+    # regardless of where the referenced secret comes from — confirmed live,
+    # not just via `helm template`, which can't catch this class of failure.
     alertmanagerSpec:
-      secrets:
-        - alertmanager-discord-webhook
+      useExistingSecret: true
+      configSecret: alertmanager-config
       storage:
         volumeClaimTemplate:
           spec:
