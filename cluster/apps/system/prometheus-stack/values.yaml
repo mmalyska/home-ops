@@ -135,18 +135,28 @@ kube-prometheus-stack:
           url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Pools%20Dashboard.json
           token: ""
   alertmanager:
-    # No `config:` block here — Alertmanager's config comes from a
-    # self-managed Secret instead (see alertmanagerSpec.useExistingSecret
-    # below and templates/alertmanager-discord-webhook-externalsecret.yaml).
-    # This chart's own config generation would need to embed the real
-    # Discord webhook URL as a `webhook_url_file` reference, which the
-    # Prometheus Operator's config parser in this environment rejects
-    # ("field webhook_url_file not found in type alertmanager.discordConfig")
-    # regardless of where the referenced secret comes from — confirmed live,
-    # not just via `helm template`, which can't catch this class of failure.
+    # No `config:` block here — deliberately left as the chart's own
+    # default (null receiver + Watchdog->null + standard inhibit_rules).
+    # Discord routing is handled entirely by the AlertmanagerConfig CRD
+    # (templates/alertmanagerconfig-discord.yaml) instead of a raw
+    # discord_configs entry in this values.yaml block, because the raw
+    # config path requires a webhook_url_file reference that the
+    # Prometheus Operator's config parser rejects in this environment
+    # ("field webhook_url_file not found in type alertmanager.discordConfig",
+    # confirmed live — prometheus-operator/prometheus-operator#7159, open
+    # upstream, fix unmerged as prometheus-operator/prometheus-operator#6346).
+    # The AlertmanagerConfig CRD's discordConfigs[].apiURL is a native
+    # SecretKeySelector, unaffected by that bug.
     alertmanagerSpec:
-      useExistingSecret: true
-      configSecret: alertmanager-config
+      # AlertmanagerConfig objects default to only matching alerts in their
+      # own namespace (the operator force-injects a namespace matcher on
+      # their first-level route). CNPG alerts span every app namespace, so
+      # routing needs None here to let alertmanagerconfig-discord.yaml's own
+      # severity matcher control matching instead of an implicit namespace
+      # scope. There's only one AlertmanagerConfig object in this cluster,
+      # so there's no multi-tenant isolation being given up by this.
+      alertmanagerConfigMatcherStrategy:
+        type: None
       storage:
         volumeClaimTemplate:
           spec:

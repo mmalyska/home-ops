@@ -1,0 +1,29 @@
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: discord
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  route:
+    receiver: discord
+    groupBy: ['namespace', 'severity']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 12h
+    matchers:
+      - name: severity
+        matchType: =~
+        value: 'critical|warning'
+  receivers:
+    - name: discord
+      discordConfigs:
+        - apiURL:
+            name: alertmanager-discord-webhook
+            key: url
+          title: '{{`{{ .CommonAnnotations.summary }}`}}'
+          message: '{{`{{ if eq .CommonLabels.severity "critical" }}@here {{ end }}{{ .CommonAnnotations.description }}`}}'
+          sendResolved: true
