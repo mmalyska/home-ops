@@ -27,6 +27,11 @@ spec:
       pgaudit.log_catalog: "off"
       pgaudit.log_parameter: "on"
       pgaudit.log_relation: "on"
+      {{- with .Values.postgresql }}
+      {{- with .parameters }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- end }}
   {{- with .Values.bootstrap }}
   bootstrap:
     {{- toYaml . | nindent 4 }}
@@ -54,7 +59,8 @@ metadata:
   name: {{ printf "%s-objectstore" .Values.name }}
 spec:
   configuration:
-    {{- toYaml .Values.objectStore | nindent 4 }}
+    {{- $compressionDefaults := dict "data" (dict "compression" "gzip") "wal" (dict "compression" "gzip") }}
+    {{- toYaml (mergeOverwrite $compressionDefaults .Values.objectStore) | nindent 4 }}
   {{- if .Values.retentionPolicy }}
   retentionPolicy: {{ .Values.retentionPolicy }}
   {{- end }}

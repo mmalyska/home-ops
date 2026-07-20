@@ -32,15 +32,15 @@ General backlog items not tied to a specific migration plan.
 
 Surfaced 2026-07-20 investigating a QNAP "storage near empty" alert. Total CNPG backup usage was ~210 GiB against <2 GiB of live data per cluster. Full breakdown/numbers are in conversation history from that date; items below are the unimplemented mitigations.
 
-- [ ] **Fix coder's malformed `ScheduledBackup` cron** — `cluster/apps/ai/coder/values.yaml:78` sets `schedule: "0 2 * * *"` (5-field), while every other CNPG app uses the required 6-field format (`sec min hour day month dow`, e.g. `"5 0 0 * * *"`). The plugin's cron parser misinterprets the missing field and runs backups **every hour** instead of daily — confirmed live (`ScheduledBackup.status.nextScheduleTime` was exactly 1h after `lastScheduleTime`). Over 10 days this produced ~240 base backups instead of 10 and is the single largest contributor to coder's 74.7 GiB S3 footprint (vs. 814 MB live DB). Fix: `"0 0 2 * * *"`.
+- [x] **Fix coder's malformed `ScheduledBackup` cron** — was a 5-field cron (`"0 2 * * *"`) misparsed as hourly instead of daily. Fixed to `"0 0 2 * * *"` on branch `fix/cnpg-backup-storage-bloat`.
 
-- [ ] **Raise `archive_timeout` from 5min on low-traffic CNPG clusters** — every `Cluster` forces a full 16 MB WAL segment to S3 every 5 minutes regardless of actual write activity (confirmed live in `nextclouddb-cnpg`'s barman-cloud sidecar logs — `Archived WAL file` firing every ~5min with near-zero app usage). At 288 segments/day × 10-day retention this alone accounts for ~45 GiB of nearly-empty WAL each for `honcho` and `nextcloud` (both <1 GiB live data). Raise to 15-30min for apps without a tight RPO; 2-instance streaming replication already covers primary durability.
+- [x] **Raise `archive_timeout` from 5min on low-traffic CNPG clusters** — set to `30min` as a chart-level default in `charts/pgsql-cnpg/values.yaml` (`postgresql.parameters.archive_timeout`), applied uniformly to all CNPG clusters rather than per-app, on branch `fix/cnpg-backup-storage-bloat`.
 
-- [ ] **Enable compression on all CNPG `ObjectStore`s** — `data.compression` and `wal.compression` are unset on every `ObjectStore` in the cluster (barman-cloud plugin supports gzip/bzip2/snappy). Free additional reduction stacked on top of the two fixes above.
+- [x] **Enable compression on all CNPG `ObjectStore`s** — `data.compression`/`wal.compression: gzip` added as a chart-level default (merged into each app's `objectStore:` block via `mergeOverwrite` in `charts/pgsql-cnpg/templates/cnpg.yaml`, app-specific values still win if ever overridden), on branch `fix/cnpg-backup-storage-bloat`. Same branch also centralized the repeated `instanceSidecarConfiguration` (AWS checksum env vars) into the chart as a default, removing it from all 10 per-app `values.yaml` files — this was the exact class of repetition bug that caused coder's cron/config to drift in the first place.
 
-- [ ] **Delete orphaned CNPG backup prefixes on QNAP S3** — `s3://k8s-at-home-backup/cnpg/{daytona,firefly,harbor,home-assistant,litellm}/` (~2.75 GiB total) have no corresponding active `Cluster` resource anywhere in the cluster — leftover from decommissioned/migrated apps. Confirm each app is genuinely gone (not just moved off CNPG) before deleting.
+- [ ] **Re-evaluate `retentionPolicy: 10d` per app** — deferred until the effect of the above fixes on actual S3 usage is visible (barman-cloud plugin has no incremental/differential backup support today, so this is a straight days-retained tradeoff).
 
-- [ ] **Re-evaluate `retentionPolicy: 10d` per app** — once the above land, decide whether 10 days of daily full backups (barman-cloud plugin has no incremental/differential support today) is still the right default everywhere, or whether lower-value apps can go shorter.
+Dropped: deleting orphaned CNPG backup prefixes on QNAP S3 (`daytona`, `firefly`, `harbor`, `home-assistant`, `litellm`) — decided against; those apps may be re-enabled and restored from those backups someday.
 
 ## Infrastructure — Logging
 
