@@ -6,11 +6,7 @@ General backlog items not tied to a specific migration plan.
 
 ## Infrastructure — CNPG
 
-- [ ] **Migrate CNPG clusters from `system` to `standard` + barman-cloud plugin**
-  - `system` images are deprecated upstream (cloudnative-pg/postgres-containers)
-  - Affected: `honchodb-cnpg` (currently `17.6-system-bookworm` as short-term fix)
-  - Long-term path: deploy [plugin-barman-cloud](https://github.com/cloudnative-pg/plugin-barman-cloud) as a system app, then switch all CNPG clusters to `standard-bookworm` images
-  - Other clusters (`litellm`, `gitea`, `keycloak`) use the deprecated plain `17.X` rolling tags — should also migrate to `standard` + plugin
+- [x] **Migrate CNPG clusters from `system` to `standard` + barman-cloud plugin** — done via `ac76d0ea` (#4041, "migrate all clusters to standard-bookworm + plugin-barman-cloud"). Verified 2026-07-20: `plugin-barman-cloud` pod running in `cnpg` ns (deployed via `cluster/apps/system/cloudnative-pg`), and every CNPG cluster live in-cluster (`bookorbdb`, `coderdb`, `giteadb`, `honchodb`, `keycloakdb`, `nextclouddb`, `onlyofficedb`) reports a `standard-bookworm` image. `charts/pgsql-cnpg` wires `objectStore` to the plugin natively. The note above about `honchodb-cnpg` still being on `system-bookworm` was stale — it's `17.6-standard-bookworm` in both git and live.
   - Ref: https://github.com/cloudnative-pg/plugin-barman-cloud
 
 ## Infrastructure — Monitoring & Alerting
