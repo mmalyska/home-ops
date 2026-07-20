@@ -32,7 +32,7 @@ spec:
       interval: 5m
       rules:
         - alert: CNPGBackupFailing
-          expr: max by (namespace, job) (cnpg_collector_last_failed_backup_timestamp) > max by (namespace, job) (cnpg_collector_last_available_backup_timestamp)
+          expr: max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp) > max by (namespace, job) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp)
           for: 30m
           labels:
             severity: warning
