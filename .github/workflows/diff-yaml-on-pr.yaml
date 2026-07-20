@@ -60,7 +60,7 @@ jobs:
       helm_files: ${{ steps.unified.outputs.helm_files }}
       kustomize_files: ${{ steps.unified.outputs.kustomize_files }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -89,11 +89,11 @@ jobs:
             yq
           # renovate: datasource=github-releases depName=helm/helm
           helm: "4.2.3"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pr
       - id: diff
@@ -179,11 +179,11 @@ jobs:
           setup-tools: |
             kubectl
             yq
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pr
       - id: diff
