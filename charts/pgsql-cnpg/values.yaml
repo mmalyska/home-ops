@@ -14,6 +14,23 @@ storage:
 # #         barmanObjectName: <name>-objectstore
 monitoring:
   enablePodMonitor: true
+# Default sidecar env for every CNPG cluster's barman-cloud plugin — required
+# for reliable S3 uploads against some S3-compatible backends. Override per
+# app only if a specific cluster needs something different.
+instanceSidecarConfiguration:
+  env:
+    - name: AWS_REQUEST_CHECKSUM_CALCULATION
+      value: when_required
+    - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+      value: when_required
+# Default archive_timeout — CNPG's own built-in default is 5min, which forces
+# a full WAL segment to S3 every 5 minutes regardless of actual write
+# activity. 30min cuts that churn substantially while still being backed by
+# 2-instance streaming replication for primary durability. Override per app
+# if a specific cluster needs a tighter RPO.
+postgresql:
+  parameters:
+    archive_timeout: "30min"
 # retentionPolicy: "10d"
 # objectStore:
 #   destinationPath: "s3://bucket/cnpg/<name>"
