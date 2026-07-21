@@ -1,4 +1,7 @@
 kube-prometheus-stack:
+  defaultRules:
+    rules:
+      kubeProxy: false
   kubeControllerManager:
     enabled: true
   kubeEtcd:
