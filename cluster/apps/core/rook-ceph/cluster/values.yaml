@@ -10,6 +10,9 @@ rook-ceph-cluster:
     enabled: true
     createPrometheusRules: true
     rulesNamespaceOverride: monitoring
+    prometheusRuleOverrides:
+      CephNodeNetworkPacketDrops:
+        for: 5m
   toolbox:
     enabled: true
   ingress:
