@@ -16,7 +16,7 @@ pgsql-cnpg:
       cpu: 500m
   monitoring:
     enablePodMonitor: true
-  retentionPolicy: "1d"
+  retentionPolicy: "10d"
   objectStore:
     destinationPath: "s3://k8s-at-home-backup/cnpg/onlyoffice"
     endpointURL: <secret:s3_endpoint>
