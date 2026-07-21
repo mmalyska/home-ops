@@ -4,48 +4,6 @@ General backlog items not tied to a specific migration plan.
 
 ---
 
-## Infrastructure — CNPG
-
-- [x] **Migrate CNPG clusters from `system` to `standard` + barman-cloud plugin** — done via `ac76d0ea` (#4041, "migrate all clusters to standard-bookworm + plugin-barman-cloud"). Verified 2026-07-20: `plugin-barman-cloud` pod running in `cnpg` ns (deployed via `cluster/apps/system/cloudnative-pg`), and every CNPG cluster live in-cluster (`bookorbdb`, `coderdb`, `giteadb`, `honchodb`, `keycloakdb`, `nextclouddb`, `onlyofficedb`) reports a `standard-bookworm` image. `charts/pgsql-cnpg` wires `objectStore` to the plugin natively. The note above about `honchodb-cnpg` still being on `system-bookworm` was stale — it's `17.6-standard-bookworm` in both git and live.
-  - Ref: https://github.com/cloudnative-pg/plugin-barman-cloud
-
-## Infrastructure — Monitoring & Alerting
-
-- [x] **Alert on CNPG `ContinuousArchivingFailing`** — added `CNPGArchivingStalled` and `CNPGBackupFailing` to a new `PrometheusRule`, based on metric names confirmed live against the cluster (not guessed from docs). Applies to all CNPG clusters via the existing per-cluster PodMonitor labels, not just keycloak. Done via `fbe72147` on branch `feat/cnpg-alerting-notifications`.
-  - Surfaced 2026-07-20: `identity/keycloakdb-cnpg` had `ContinuousArchivingFailing` (`barman-cloud-wal-archive: exit status 4`) for ~2 days before its PVC actually filled and the cluster crash-looped
-  - Only the generic `KubePersistentVolumeFillingUp` alert caught this, and only once disk was already critical — a last-resort signal, not an early one
-  - CNPG pods already expose Prometheus metrics on port 9187 (auto-scraped via per-cluster PodMonitor), but no `PrometheusRule` is built on top of them
-  - Add a rule alerting when a `Cluster`'s `ContinuousArchiving` condition is `False` for some sustained window (e.g. 30-60m), and ideally one for failed/incomplete `Backup` CRs too
-  - Applies to all CNPG clusters, not just keycloak
-
-- [x] **Enable Discord + email notifications for Prometheus alerts** — configured Alertmanager with a Discord webhook receiver/route for `critical`/`warning` alerts (`@here` on critical), webhook URL delivered via a dedicated `ExternalSecret` + `webhook_url_file` rather than a `<secret:...>` token (the token-substitution path is broken for this chart's Secret shape — see design doc). Email/SMTP receiver and botkube re-enablement deferred, not part of this pass. Done via `84994974` + `c850c1f5` on branch `feat/cnpg-alerting-notifications`.
-  - Alertmanager itself has zero receivers configured (`cluster/apps/system/prometheus-stack/values.yaml` only sets `global.resolve_timeout`) — alerts fire and sit with nowhere to go
-  - Surfaced 2026-07-20: the `KubePersistentVolumeFillingUp` critical alert fired correctly for `identity/keycloakdb-cnpg` ~6h before the outage was noticed, but nobody was notified — QNAP's own out-of-band alert was the first signal
-  - Configure Alertmanager receivers/routes directly: a Discord webhook receiver, plus an email/SMTP receiver, at minimum for `severity: critical`
-  - Decide whether to also re-enable botkube (and bind its `prometheus` source) as a second channel, or keep notification ownership solely in Alertmanager to avoid duplicate/half-wired paths
-
-- [x] **Investigate CNPG archiving/backup anomalies found while building the new alerts (2026-07-20)** — `bookorbdb-cnpg` (bookorbit) had failed every scheduled backup for 6 consecutive days (`InsufficientStorageSpace` on `PutObject`) while every other CNPG cluster recovered once PR #4622 merged. Initially suspected a per-app QNAP quota (bookorbit's live footprint was only ~467 MB, by far the smallest in the bucket, so "bucket is full" didn't seem to explain it) — that hypothesis was wrong. It was a genuinely shared/limited QNAP volume: the fleet's ~220 GiB of *within-retention* backups (see below) left too little headroom, and bookorbit's daily cron just happened to keep losing the race. Freeing ~204 GiB via a temporary retention squeeze (below) let bookorbit's `2026-07-21T00:00:05Z` backup complete successfully — first success since 07-14. `giteadb-cnpg`'s WAL-archiving-idle question turned out to be the same class of false positive fixed below, not a separate issue.
-
-- [x] **Fix `CNPGBackupFailing` false positives from stale metric** — the rule's `cnpg_collector_last_available_backup_timestamp` never updates once a `Cluster` is on the barman-cloud plugin backup method (upstream bug: [plugin-barman-cloud#380](https://github.com/cloudnative-pg/plugin-barman-cloud/issues/380)), so the alert stayed firing forever after the first plugin backup failure even when later backups succeeded. Switched to `barman_cloud_cloudnative_pg_io_last_{available,failed}_backup_timestamp` in `cluster/apps/system/prometheus-stack/templates/prometheusrule-cnpg.yaml`. Confirmed this was producing false positives for `honcho`, `identity`, `coder`, and `nextcloud` — all had genuinely healthy backups under the correct metric despite Discord alerts firing on all four. Done via `7364d70a`, pushed directly to `main` (2026-07-20).
-
-- [x] **Fix `CNPGArchivingStalled` false positives on idle databases** — `cnpg_pg_stat_archiver_seconds_since_last_archival` grows unboundedly on any quiet database, because PostgreSQL's `archive_timeout` only forces a WAL segment switch when there's been write activity to flush — a database with zero writes just sits there, and the metric climbs regardless of whether anything is actually wrong. Fired critical (`>6h`) on `bookorbdb-cnpg` and `onlyofficedb-cnpg` with zero real WAL backlog (`archive_status/*.ready` empty, last archive attempt succeeded cleanly, disk usage normal) — same root cause as the already-noted `giteadb-cnpg` case above. Switched the rule to `cnpg_collector_pg_wal_archive_status{value="ready"} > 0`, which reports the actual count of WAL segments queued but not yet archived — 0 fleet-wide at the time of the fix, including on the three "stalled" instances, confirming they were idle rather than broken. Directly reflects the PVC-fill risk the alert exists to catch, instead of a proxy idle databases trip by design. Done via `dd35908e`, pushed directly to `main` (2026-07-21).
-
-## Infrastructure — CNPG Backup Storage (QNAP S3 bloat)
-
-Surfaced 2026-07-20 investigating a QNAP "storage near empty" alert. Total CNPG backup usage was ~210 GiB against <2 GiB of live data per cluster. Full breakdown/numbers are in conversation history from that date; items below are the unimplemented mitigations.
-
-- [x] **Fix coder's malformed `ScheduledBackup` cron** — was a 5-field cron (`"0 2 * * *"`) misparsed as hourly instead of daily. Fixed to `"0 0 2 * * *"` on branch `fix/cnpg-backup-storage-bloat`.
-
-- [x] **Raise `archive_timeout` from 5min on low-traffic CNPG clusters** — set to `30min` as a chart-level default in `charts/pgsql-cnpg/values.yaml` (`postgresql.parameters.archive_timeout`), applied uniformly to all CNPG clusters rather than per-app, on branch `fix/cnpg-backup-storage-bloat`.
-
-- [x] **Enable compression on all CNPG `ObjectStore`s** — `data.compression`/`wal.compression: gzip` added as a chart-level default (merged into each app's `objectStore:` block via `mergeOverwrite` in `charts/pgsql-cnpg/templates/cnpg.yaml`, app-specific values still win if ever overridden), on branch `fix/cnpg-backup-storage-bloat`. Same branch also centralized the repeated `instanceSidecarConfiguration` (AWS checksum env vars) into the chart as a default, removing it from all 10 per-app `values.yaml` files — this was the exact class of repetition bug that caused coder's cron/config to drift in the first place.
-
-- [x] **One-time reclaim: temporary retention squeeze on the 5 largest consumers (2026-07-20/21)** — coder/honcho/nextcloud/onlyoffice/keycloak accounted for ~220 GiB combined (coder's share inflated ~24x by the malformed-cron bug above: ~230 hourly backups from 07-10/07-11 alone, all still inside the then-current 10d window). Retention policy for plugin-based backups lives on the `ObjectStore` CR (`.spec.retentionPolicy`), not the `Cluster` CR — worth remembering, easy to check the wrong resource. Dropped `retentionPolicy` to `1d` on all five (`kubectl get objectstore -n <ns> <name>` to verify, not `kubectl get cluster`), let the automatic ~30m sweep prune via barman-cloud's own dependency-aware logic, confirmed via S3 listing that usage fell to ~15 GiB (~204 GiB freed), then reverted to `10d`. User explicitly declined to make the shorter window permanent — this was a one-time reclaim only, not a retention policy change.
-
-- [x] **Re-evaluate `retentionPolicy: 10d` per app** — backed by real data (2026-07-20/21 squeeze above): dropping to `1d` freed ~93% of the fleet's backup storage, meaning the overwhelming majority of the ~220 GiB was backups aged 1-10 days that are rarely, if ever, actually needed for recovery. User decided on `7d` (2026-07-21) as the permanent value for coder/honcho/nextcloud/onlyoffice/keycloak — a middle ground between the old 10d and the 1d reclaim window.
-
-Dropped: deleting orphaned CNPG backup prefixes on QNAP S3 (`daytona`, `firefly`, `harbor`, `home-assistant`, `litellm`) — decided against; those apps may be re-enabled and restored from those backups someday.
-
 ## Infrastructure — Logging
 
 - [ ] **No centralized log aggregation exists** — `monitoring` namespace is metrics-only (kube-prometheus-stack + smartctl-exporter), no Loki/Promtail/Fluent Bit/Vector anywhere in the cluster
