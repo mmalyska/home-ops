@@ -1,6 +1,6 @@
 # TODO
 
-General backlog items not tied to a specific migration plan.
+General backlog items not tied to a specific plan.
 
 ---
 
