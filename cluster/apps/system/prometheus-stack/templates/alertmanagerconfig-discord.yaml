@@ -24,6 +24,10 @@ spec:
         - apiURL:
             name: alertmanager-discord-webhook
             key: url
-          title: '{{`{{ .CommonAnnotations.summary }}`}}'
-          message: '{{`{{ if eq .CommonLabels.severity "critical" }}@here {{ end }}{{ .CommonAnnotations.description }}`}}'
+          title: '{{`{{ if eq (len .Alerts) 1 }}{{ (index .Alerts 0).Annotations.summary }}{{ else }}{{ len .Alerts }} {{ .CommonLabels.severity }} alerts in {{ .CommonLabels.namespace }}{{ end }}`}}'
+          message: |-
+            {{`{{ if eq .CommonLabels.severity "critical" }}@here {{ end }}{{ range .Alerts }}**{{ .Annotations.summary }}**
+            {{ .Annotations.description }}
+
+            {{ end }}`}}
           sendResolved: true
