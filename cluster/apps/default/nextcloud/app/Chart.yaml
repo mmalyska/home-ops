@@ -6,7 +6,7 @@ version: 1.0.0
 appVersion: "34.0.1"
 dependencies:
   - name: nextcloud
-    version: 9.2.2
+    version: 9.2.4
     repository: https://nextcloud.github.io/helm/
   - name: pgsql-cnpg
     version: 1.4.0
