@@ -16,7 +16,7 @@ controllers:
       authserver:
         image:
           repository: ghcr.io/mmalyska/azerothcore-authserver
-          tag: rolling@sha256:7ec0b73fda8968bb56c6e8556938cc42400e05a58d769ff5e41a5ac51e262e61
+          tag: rolling@sha256:86ee53566b778f80b1077fd345eb7ae158bdfb35b7518baac2d6a413d3b5abf5
         env:
           AC_LOGS_DIR: /azerothcore/env/dist/logs
           AC_LOGIN_DATABASE_INFO:
@@ -40,7 +40,7 @@ controllers:
       client-data:
         image:
           repository: acore/ac-wotlk-client-data
-          tag: master@sha256:ed38d559c5d2c1423f2d4507dbcf29cb75d431c8f6ea537ba773882447abed8b
+          tag: master@sha256:e40f1ee793c86829cf2c7e067a03ad5336378cbe14c8c5a9ff8951fdb99cd1b0
         env:
           DATAPATH: /azerothcore/env/dist/data
       patch-ahbot-config:
