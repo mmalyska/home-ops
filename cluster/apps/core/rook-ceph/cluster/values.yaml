@@ -11,8 +11,15 @@ rook-ceph-cluster:
     createPrometheusRules: true
     rulesNamespaceOverride: monitoring
     prometheusRuleOverrides:
+      # Upstream expr has no job filter, so it also matches non-cluster
+      # node_network_* exporters (e.g. the asusrouter scrape job) and fires
+      # on router WiFi radio interfaces. Scope to job="node-exporter" like
+      # the bundled node-exporter mixin rules already do for the same check.
       CephNodeNetworkPacketDrops:
         for: 5m
+        expr: (rate(node_network_receive_drop_total{device!="lo",job="node-exporter"}[1m]) + rate(node_network_transmit_drop_total{device!="lo",job="node-exporter"}[1m])) / (rate(node_network_receive_packets_total{device!="lo",job="node-exporter"}[1m]) + rate(node_network_transmit_packets_total{device!="lo",job="node-exporter"}[1m])) >= 0.005 and (rate(node_network_receive_drop_total{device!="lo",job="node-exporter"}[1m]) + rate(node_network_transmit_drop_total{device!="lo",job="node-exporter"}[1m])) >= 10
+      CephNodeNetworkPacketErrors:
+        expr: (rate(node_network_receive_errs_total{device!="lo",job="node-exporter"}[1m]) + rate(node_network_transmit_errs_total{device!="lo",job="node-exporter"}[1m])) / (rate(node_network_receive_packets_total{device!="lo",job="node-exporter"}[1m]) + rate(node_network_transmit_packets_total{device!="lo",job="node-exporter"}[1m])) >= 0.0001 or (rate(node_network_receive_errs_total{device!="lo",job="node-exporter"}[1m]) + rate(node_network_transmit_errs_total{device!="lo",job="node-exporter"}[1m])) >= 10
   toolbox:
     enabled: true
   ingress:
