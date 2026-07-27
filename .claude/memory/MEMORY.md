@@ -25,3 +25,4 @@
 - [Home network hardware](reference_home_network_hardware.md) — router/NAS/RPi IPs and roles
 - [QNAP QuObjects + barman-cloud caveat](reference_qnap_s3_barman_caveat.md) — boto3 ≥1.34 checksum fix required; set AWS_REQUEST_CHECKSUM_CALCULATION=when_required on all CNPG ObjectStores
 - [App removal procedure](reference_app_removal_procedure.md) — deleting the app dir never auto-prunes; manual `kubectl delete application` + separate PVC check required
+- [Ceph alert job scoping gotcha](reference_ceph_alert_job_scoping.md) — Ceph-mixin PrometheusRules lack job filters, can false-positive on non-cluster targets (router); fix via prometheusRuleOverrides
