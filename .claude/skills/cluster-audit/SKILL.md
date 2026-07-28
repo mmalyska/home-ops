@@ -13,6 +13,7 @@ Comprehensive audit using Prometheus + kubectl. Produces a per-app summary with 
 - `prometheus-portforward-session` — port-forward lifecycle across Bash calls
 - `prometheus-historical-queries` — point-in-time snapshots for trend comparison
 - `node-disk-health` — disk topology, raw block device trap, and disk-specific queries
+- `loki-log-queries` — cross-namespace error sweep via Loki (aggregate-first pattern, false-positive traps)
 
 ## Query Sequence
 
@@ -148,7 +149,36 @@ curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=sum by (namespace, pod) (container_memory_working_set_bytes{container!=""}) / 1024 / 1024'
 ```
 
-### 11. Cleanup
+### 11. Cross-Namespace Error Sweep (Loki)
+
+Metrics catch resource/health problems; they don't catch things that only
+show up as log noise (permission errors, silently dropped writes, repeated
+connection failures). Follow `loki-log-queries`'s aggregate-first pattern —
+count matches by namespace first, drill into outliers, sample raw lines
+only for namespaces that don't wash out once obvious false-positive
+keywords (e.g. bare "timeout") are removed.
+
+```bash
+kubectl -n monitoring port-forward svc/loki 3100:3100 > /tmp/loki-pf.log 2>&1 &
+disown
+sleep 2
+curl -s "http://localhost:3100/loki/api/v1/query" \
+  --data-urlencode 'query=sum by (namespace) (count_over_time({namespace=~".+"} |~ "(?i)panic|fatal|exception|traceback|refused|unauthorized|forbidden" [24h]))' \
+  --data-urlencode 'time='$(date +%s) \
+  | python3 -c "
+import json,sys
+d = json.load(sys.stdin)
+for r in sorted(d['data']['result'], key=lambda x: -int(x['value'][1])):
+    print(r['metric'], r['value'][1])
+"
+pkill -f "port-forward.*loki"; true
+```
+
+Any namespace far above the rest is worth a drill-down per
+`loki-log-queries` before it goes in the report as a finding — verify with
+actual sample lines, not just the count.
+
+### 12. Cleanup
 
 ```bash
 pkill -f "port-forward.*prometheus"; true
@@ -202,3 +232,4 @@ Save to `docs/src/audits/YYYY-MM-DD.md` (use today's date). Structure:
 | PVC not appearing | Volume provisioner not exposing kubelet stats; check with `kubectl get pvc -A` instead |
 | hermes-agent CPU spikes | Check for PID collision in s6-supervise; compare to 7d ago value |
 | App looks healthy in Prometheus | Deployment may be scaled to 0 — Prometheus has no data for absent pods. Always run step 9. |
+| App looks healthy in Prometheus AND Loki error count is low | Still check for permission/auth errors specific to one app's containers — metrics-exporter grant issues (e.g. CNPG `permission denied for database`) produce healthy pod status and recurring log errors with no Prometheus alert at all. |
