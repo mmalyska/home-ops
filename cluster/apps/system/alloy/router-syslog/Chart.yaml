@@ -1,0 +1,9 @@
+apiVersion: v2
+name: alloy-router-syslog-subchart
+type: application
+version: 1.0.0
+appVersion: "v1.18.0"
+dependencies:
+  - name: alloy
+    version: 1.11.0
+    repository: https://grafana.github.io/helm-charts
