@@ -158,6 +158,22 @@ kube-prometheus-stack:
         # exits, which would hang the pod at Init:.../1 forever.
         initDatasources: true
         restartPolicy: Always
+        # restartPolicy: Always alone only guarantees the sidecar's container
+        # process has started before Grafana's container starts — it does NOT
+        # wait for the sidecar's initial ConfigMap sync to finish. Confirmed
+        # live: Grafana started 2s before the sidecar had actually finished
+        # writing datasource.yaml, so Loki was still missing after this fix
+        # alone. The sidecar's /healthz returns 503 until its initial sync
+        # completes (kiwigrid/k8s-sidecar's mark_ready()), so a startupProbe
+        # against it makes Kubernetes actually wait for real readiness, not
+        # just process start.
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 2
+          periodSeconds: 2
+          failureThreshold: 30
   alertmanager:
     # No `config:` block here — deliberately left as the chart's own
     # default (null receiver + Watchdog->null + standard inhibit_rules).
