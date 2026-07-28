@@ -1,0 +1,16 @@
+- enabled: "true"
+  appSubfolder: k8s-logs
+  namespace: monitoring
+  syncWave: "1"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+- enabled: "true"
+  appSubfolder: router-syslog
+  namespace: monitoring
+  syncWave: "1"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

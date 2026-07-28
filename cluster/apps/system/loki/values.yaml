@@ -1,0 +1,69 @@
+loki:
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    schemaConfig:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+    storage:
+      type: filesystem
+    limits_config:
+      retention_period: 720h
+    compactor:
+      retention_enabled: true
+      delete_request_store: filesystem
+  deploymentMode: SingleBinary
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      storageClass: ceph-block
+      size: 50Gi
+  # Zero out the SimpleScalable (SSD) targets — SingleBinary mode runs
+  # everything in one pod, matching this cluster's small scale.
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  ingester:
+    replicas: 0
+  querier:
+    replicas: 0
+  queryFrontend:
+    replicas: 0
+  queryScheduler:
+    replicas: 0
+  distributor:
+    replicas: 0
+  compactor:
+    replicas: 0
+  indexGateway:
+    replicas: 0
+  bloomGateway:
+    replicas: 0
+  bloomPlanner:
+    replicas: 0
+  bloomBuilder:
+    replicas: 0
+  gateway:
+    enabled: false
+  minio:
+    enabled: false
+  # Memcached-backed caches aren't worth the extra ~2Gi RAM at this log volume.
+  resultsCache:
+    enabled: false
+  chunksCache:
+    enabled: false
+  test:
+    enabled: false
+  lokiCanary:
+    enabled: false

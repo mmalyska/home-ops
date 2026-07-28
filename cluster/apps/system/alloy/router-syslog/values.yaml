@@ -1,0 +1,33 @@
+alloy:
+  alloy:
+    configMap:
+      content: |
+        loki.source.syslog "router" {
+          listener {
+            address       = "0.0.0.0:1514"
+            protocol      = "udp"
+            syslog_format = "rfc3164"
+            labels        = { source = "asus-router" }
+          }
+
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        loki.write "loki" {
+          endpoint {
+            url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+          }
+        }
+    extraPorts:
+      - name: syslog-udp
+        port: 1514
+        targetPort: 1514
+        protocol: UDP
+  controller:
+    type: deployment
+    replicas: 1
+  service:
+    enabled: true
+    type: LoadBalancer
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.24"

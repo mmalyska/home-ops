@@ -1,0 +1,54 @@
+alloy:
+  alloy:
+    configMap:
+      content: |
+        discovery.kubernetes "pod" {
+          role = "pod"
+          selectors {
+            role  = "pod"
+            field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
+          }
+        }
+
+        discovery.relabel "pod_logs" {
+          targets = discovery.kubernetes.pod.targets
+
+          rule {
+            source_labels = ["__meta_kubernetes_namespace"]
+            action        = "replace"
+            target_label  = "namespace"
+          }
+
+          rule {
+            source_labels = ["__meta_kubernetes_pod_name"]
+            action        = "replace"
+            target_label  = "pod"
+          }
+
+          rule {
+            source_labels = ["__meta_kubernetes_pod_container_name"]
+            action        = "replace"
+            target_label  = "container"
+          }
+
+          rule {
+            source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+            action        = "replace"
+            target_label  = "job"
+            separator     = "/"
+            replacement   = "$1"
+          }
+        }
+
+        loki.source.kubernetes "pod_logs" {
+          targets    = discovery.relabel.pod_logs.output
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        loki.write "loki" {
+          endpoint {
+            url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+          }
+        }
+  controller:
+    type: daemonset
