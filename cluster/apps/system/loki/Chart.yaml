@@ -1,0 +1,9 @@
+apiVersion: v2
+name: loki-subchart
+type: application
+version: 1.0.0
+appVersion: "3.6.8"
+dependencies:
+  - name: loki
+    version: 7.1.0
+    repository: https://grafana.github.io/helm-charts
