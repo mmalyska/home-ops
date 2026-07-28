@@ -143,6 +143,21 @@ kube-prometheus-stack:
         access: proxy
         url: http://loki.monitoring.svc.cluster.local:3100
         isDefault: false
+    sidecar:
+      datasources:
+        # Runs the datasources sidecar as a native Kubernetes sidecar
+        # (restartPolicy: Always on an initContainer, K8s 1.29+) so the
+        # ConfigMap-sourced datasources file is fully written before Grafana's
+        # one-shot (non-watching) datasource provisioning scan runs at boot,
+        # while still continuing to watch for future changes afterward.
+        # Without this, a race on cold start can silently drop brand-new
+        # datasources (observed: Loki missing from /api/datasources after
+        # the initial sync, confirmed not self-healing across 3+ minutes).
+        # restartPolicy: Always is required here — without it this becomes a
+        # classic init container running a perpetual WATCH loop that never
+        # exits, which would hang the pod at Init:.../1 forever.
+        initDatasources: true
+        restartPolicy: Always
   alertmanager:
     # No `config:` block here — deliberately left as the chart's own
     # default (null receiver + Watchdog->null + standard inhibit_rules).
