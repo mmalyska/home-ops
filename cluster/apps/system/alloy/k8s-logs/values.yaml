@@ -52,3 +52,13 @@ alloy:
         }
   controller:
     type: daemonset
+    # nv1 (Jetson arm64 worker) carries a custom NoSchedule taint reserved
+    # for AI/GPU workloads (same pattern as smartmon-exporter's toleration)
+    # — without this, the DaemonSet only reaches the 3 amd64 control-plane
+    # nodes and silently skips nv1 entirely (confirmed live: 3/3 ready,
+    # not 4/4).
+    tolerations:
+      - key: nv
+        operator: Equal
+        value: NoSchedule
+        effect: NoSchedule
