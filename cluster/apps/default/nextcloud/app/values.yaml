@@ -13,6 +13,21 @@ pgsql-cnpg:
       cpu: 500m
   monitoring:
     enablePodMonitor: true
+  # The `app` database's PUBLIC CONNECT grant was revoked out-of-band at
+  # some point (confirmed live: `\l+ app` shows only `app=CTc/app`, no
+  # PUBLIC entry, unlike every other CNPG database in this cluster). That
+  # silently broke cnpg_metrics_exporter (member of pg_monitor, but never
+  # had CONNECT on `app` to begin with) — confirmed via Loki: every
+  # metrics scrape failed with "permission denied for database \"app\""
+  # (SQLSTATE 42501), on both instances, continuously. Applied live via
+  # `kubectl exec ... psql -U postgres -d app -c "GRANT CONNECT ..."`.
+  # This only documents the grant for a future bootstrap (e.g. disaster
+  # recovery from backup) — postInitApplicationSQL runs once at cluster
+  # creation, not on the already-running cluster.
+  bootstrap:
+    initdb:
+      postInitApplicationSQL:
+        - GRANT CONNECT ON DATABASE app TO cnpg_metrics_exporter
   retentionPolicy: "7d"
   objectStore:
     destinationPath: "s3://k8s-at-home-backup/cnpg/nextcloud"
