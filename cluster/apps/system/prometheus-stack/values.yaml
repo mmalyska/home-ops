@@ -137,6 +137,12 @@ kube-prometheus-stack:
         rook-ceph-pools:
           url: https://raw.githubusercontent.com/rook/rook/v1.20.0/deploy/examples/monitoring/grafana/Ceph%20Pools%20Dashboard.json
           token: ""
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
+        isDefault: false
   alertmanager:
     # No `config:` block here — deliberately left as the chart's own
     # default (null receiver + Watchdog->null + standard inhibit_rules).
