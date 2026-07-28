@@ -16,6 +16,12 @@ loki:
       type: filesystem
     limits_config:
       retention_period: 720h
+      # Default (256KB) silently drops every log line rook-ceph-mgr emits
+      # above that size — confirmed live, recurring every ~15-25s
+      # ("max entry size '262144' bytes exceeded ... length '589221' bytes"
+      # for stream {container="mgr", pod="rook-ceph-mgr-a-..."}). Raised
+      # comfortably above the largest observed line (~576KiB).
+      max_line_size: 1MB
     compactor:
       retention_enabled: true
       delete_request_store: filesystem
