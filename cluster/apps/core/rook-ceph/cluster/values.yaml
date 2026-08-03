@@ -6,6 +6,12 @@ rook-ceph-cluster:
   configOverride: |
     [mon]
     mon_data_avail_warn = 10
+    [osd]
+    # Async TRIM/discard lets the SSD firmware reclaim freed blocks
+    # proactively instead of only on overwrite, reducing internal write
+    # amplification (and thus wear) on the consumer-grade Crucial MX500
+    # drives backing the OSDs. Async (not sync) avoids adding op latency.
+    bdev_async_discard = true
   monitoring:
     enabled: true
     createPrometheusRules: true
@@ -102,6 +108,12 @@ rook-ceph-cluster:
         failureDomain: host
         replicated:
           size: 3
+        # ceph-blockpool carries nearly all cluster write traffic (RBD PVCs);
+        # compression here directly cuts bytes written to the SSDs, reducing
+        # wear on the consumer-grade Crucial MX500 OSD drives.
+        parameters:
+          compression_mode: aggressive
+          compression_algorithm: lz4
       storageClass:
         enabled: true
         name: ceph-block
