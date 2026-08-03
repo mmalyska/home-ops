@@ -66,6 +66,50 @@ curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=ceph_cluster_total_used_bytes / ceph_cluster_total_bytes * 100'
 ```
 
+#### Root-causing a HEALTH_WARN (current or historical)
+
+`ceph health detail` only shows the *current* state — it's useless for "what
+caused the WARN that fired 4 hours ago and already cleared." Use the
+per-check Prometheus metric instead, at a historical timestamp:
+
+```bash
+# Which named check(s) were active (severity != OK) at a given moment?
+curl -s -G 'http://localhost:9090/api/v1/query' \
+  --data-urlencode 'query={__name__=~"ceph_health_detail.*"} == 1' \
+  --data-urlencode 'time='$(date -d '<approx incident time>' +%s) \
+  | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+for r in d['data']['result']:
+    print(r['metric'].get('name'), r['metric'].get('severity'), r['value'])
+"
+
+# Pin down exact start/clear time by scanning a range for the transition
+curl -s -G 'http://localhost:9090/api/v1/query_range' \
+  --data-urlencode 'query=ceph_health_detail{name="<CHECK_NAME>"}' \
+  --data-urlencode 'start='$(date -d '48 hours ago' +%s) \
+  --data-urlencode 'end='$(date +%s) \
+  --data-urlencode 'step=120'
+```
+
+Then correlate the exact window in Loki (`{namespace="rook-ceph"}`, mon
+`cluster` log stream has the human-readable `[WRN]`/`[INF]` lines; osd
+container logs have the underlying detail, e.g. `log_latency_fn slow
+operation observed for _txc_committed_kv, latency = ...`) and against
+`node_disk_io_time_seconds_total` for the affected OSD's node/device (see
+`node-disk-health`) to confirm a real disk-level event, e.g. a deep-scrub
+start (`grep "deep-scrub starts"` in mon logs) causing I/O contention.
+
+> **Trap — alert duration ≠ problem duration.** Several Ceph health checks
+> (e.g. `BLUESTORE_SLOW_OP_ALERT`) use a fixed decay window before clearing
+> — `bluestore_slow_ops_warn_lifetime` defaults to **86400s (24h)** after the
+> *last* slow op, regardless of whether the underlying cause (e.g. a 2-minute
+> scrub-induced latency spike) is long gone. A HEALTH_WARN that "took 24h to
+> resolve" per an external alert (Discord, PagerDuty, etc.) can mean the
+> alert just outlived a problem that self-resolved in minutes — always check
+> the underlying metric/log timeline before assuming an active, ongoing
+> issue.
+
 ### 5. PVC Usage (sort descending)
 
 ```bash
