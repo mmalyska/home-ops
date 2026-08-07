@@ -14,7 +14,7 @@ anytype:
   consensusnode:
     image:
       repository: ghcr.io/anyproto/any-sync-consensusnode
-      tag: v0.12.0@sha256:7d2c70d4c9713d013e3c9a597332f49e36935f369c6fff14ab3a0eeb68e29903
+      tag: v0.13.0@sha256:39e747c6c14ffe4eb94e1c96fbf9ffbe9aacf2289a6e02cc1fc78d7673b28f09
   syncnode:
     image:
       repository: ghcr.io/anyproto/any-sync-node
