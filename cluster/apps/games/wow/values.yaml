@@ -40,13 +40,13 @@ controllers:
       client-data:
         image:
           repository: acore/ac-wotlk-client-data
-          tag: master@sha256:f60cf1499a8e8f59a79056a7fb166419e968ad23638e19cfbbd8484adbb0eede
+          tag: master@sha256:195dd743e860ca118ef6a3cb343fa96be9c3825df1dee386a65dc60acbf165d8
         env:
           DATAPATH: /azerothcore/env/dist/data
       patch-ahbot-config:
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: rolling@sha256:58f443ed9152189eff192ea8350f26660ff176eb9f9c03fe184036ad2bfc561c
+          tag: rolling@sha256:1d4c3122d47581ba4ac16fb700d420236b4b3c6cfadf16760014a3d4f455ec64
         command:
           - /patches/patch.sh
     containers:
@@ -55,7 +55,7 @@ controllers:
         stdin: true
         image:
           repository: ghcr.io/mmalyska/azerothcore-worldserver
-          tag: rolling@sha256:58f443ed9152189eff192ea8350f26660ff176eb9f9c03fe184036ad2bfc561c
+          tag: rolling@sha256:1d4c3122d47581ba4ac16fb700d420236b4b3c6cfadf16760014a3d4f455ec64
         env:
           AC_DATA_DIR: /azerothcore/env/dist/data
           AC_LOGS_DIR: /azerothcore/env/dist/logs
