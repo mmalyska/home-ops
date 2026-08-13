@@ -283,18 +283,59 @@ NVIDIA's own GPU Operator does.
 
 ### Taint rename
 
-The current taint resolves on the node to `key=nv, value=NoSchedule,
-effect=NoSchedule` — the value appears accidental. It is renamed in
-`templates/worker.yaml` to:
+**Syntax — resolved.** Talos parses each `nodeTaints` map value with
+`labels.ParseTaint` (`pkg/machinery/labels/taints.go`):
 
-```
-nvidia.com/gpu=present:NoSchedule
+```go
+func ParseTaint(s string) (value, effect string) {
+	value, effect, found = strings.Cut(s, ":")
+	if !found { effect = value; value = "" }
+	return value, effect
+}
 ```
 
-**The Talos `nodeTaints` syntax must be verified empirically.** The existing
-`nv: :NoSchedule` did not produce the value a reading of the syntax would
-predict, so the new taint is applied and then re-read with
-`kubectl get node nv1 -o jsonpath='{.spec.taints}'` rather than assumed correct.
+So the format is `key: value:effect`, and the new taint is written in
+`templates/worker.yaml` as:
+
+```yaml
+nodeTaints:
+  nvidia.com/gpu: present:NoSchedule # -> value=present, effect=NoSchedule
+```
+
+**Pre-existing drift — must be handled by this work.** The current taint is
+inconsistent between what the repo declares and what the node carries:
+
+| Source                                      | key  | value          | effect       |
+| ------------------------------------------- | ---- | -------------- | ------------ |
+| Repo `nv: :NoSchedule` through `ParseTaint` | `nv` | `""`           | `NoSchedule` |
+| Talos `NodeTaintSpec` on nv1 (desired)      | `nv` | `""`           | `NoSchedule` |
+| Actual `Node.spec.taints` on nv1            | `nv` | `"NoSchedule"` | `NoSchedule` |
+
+Talos wants `value=""` but the node has `value="NoSchedule"`, so **the taint
+value is not being reconciled** and the live taint is a leftover — almost
+certainly from the talhelper era (commit `f12a486a` replaced talhelper with
+talosctl + envsubst), whose list-form schema would have taken a
+`value: NoSchedule` field literally. Corroborating this, nv1's stored machine
+config still reports `install.image: …:v1.12.7` while mc1 reports `v1.13.4`:
+**nv1's config has not been applied since Talos v1.12.7**, though it runs
+v1.13.5.
+
+Two consequences:
+
+1. **Latent bug, already armed.** `smartmon-exporter`'s nv1 toleration is
+   `operator: Equal, value: NoSchedule`, which matches the _drifted_ taint, not
+   the declared one. The next `task talos:apply N=nv1` would correct the taint
+   to `value=""`, that toleration would stop matching, and the smartmon-1 pod
+   would silently fall off nv1. This exists independently of the Jetson work and
+   is fixed here as a side effect of the rename.
+2. **The stale `nv` taint must be removed explicitly.** Since Talos is
+   demonstrably not reconciling the value, it may not drop the old key either.
+   After applying the renamed taint, verify with
+   `kubectl get node nv1 -o jsonpath='{.spec.taints}'` and, if `nv` persists,
+   remove it with `kubectl taint nodes nv1 nv-`.
+
+Applying nv1's long-stale machine config is therefore a deliberate, separately
+verified step in the plan, not a side effect of the GPU work.
 
 ### Toleration changes
 
@@ -376,16 +417,18 @@ rebuilt extension leaves the node without a GPU, or unbootable.
 
 ## Risks
 
-| Risk                                           | Mitigation                                                      |
-| ---------------------------------------------- | --------------------------------------------------------------- |
-| Custom UKI fails to boot                       | USB reflash; physical access to nv1 is easy                     |
-| Talos downgrade v1.13.5 → v1.13.0 refused      | `--force`; fallback is USB install                              |
-| CUDA error 801/999                             | Gate check 7 — abandon before Layer 2/3 work                    |
-| Upstream stops publishing images               | Precisely what Phase 2 removes                                  |
-| JetPack `.deb` download fails at pod start     | Known; mirror in Phase 2                                        |
-| Talos changes its `containerd.toml` template   | Verified stable v1.13.0→v1.13.5; re-diff on every Talos upgrade |
-| Rook reverts the `Driver` CR patch             | Manage the CRs via the rook-ceph ArgoCD app                     |
-| `JETSON_JETPACK` missing → silent CPU fallback | Gate check 8 compares against the CPU baseline                  |
+| Risk                                                               | Mitigation                                                                          |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Custom UKI fails to boot                                           | USB reflash; physical access to nv1 is easy                                         |
+| Talos downgrade v1.13.5 → v1.13.0 refused                          | `--force`; fallback is USB install                                                  |
+| CUDA error 801/999                                                 | Gate check 7 — abandon before Layer 2/3 work                                        |
+| Upstream stops publishing images                                   | Precisely what Phase 2 removes                                                      |
+| JetPack `.deb` download fails at pod start                         | Known; mirror in Phase 2                                                            |
+| Talos changes its `containerd.toml` template                       | Verified stable v1.13.0→v1.13.5; re-diff on every Talos upgrade                     |
+| Rook reverts the `Driver` CR patch                                 | Manage the CRs via the rook-ceph ArgoCD app                                         |
+| Stale `nv` taint survives the rename, double-tainting nv1          | Verify `Node.spec.taints` after apply; `kubectl taint nodes nv1 nv-` if it persists |
+| Applying nv1's config (stale since v1.12.7) causes unrelated drift | Apply as its own step; diff the rendered config against the running one first       |
+| `JETSON_JETPACK` missing → silent CPU fallback                     | Gate check 8 compares against the CPU baseline                                      |
 
 ## Rollback
 
