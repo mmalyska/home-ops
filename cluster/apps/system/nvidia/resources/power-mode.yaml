@@ -1,0 +1,245 @@
+# power-mode.yaml — Jetson Orin NX Power Mode DaemonSet
+#
+# Sets GPU and CPU clock limits at node startup via sysfs.
+# Defaults to MAXN mode (GPU 918 MHz, performance governor).
+#
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │  ⚠  MAXN SUPER is PERMANENTLY BLOCKED for Orin NX 16/8GB                │
+# │     The reComputer J401 carrier board cannot dissipate the heat of        │
+# │     MAXN SUPER. Enabling it WILL damage the module.                       │
+# │     Override only if you have a custom cooling solution:                  │
+# │       POWER_MODE=MAXN_SUPER + ALLOW_MAXN_SUPER=true                       │
+# └──────────────────────────────────────────────────────────────────────────┘
+#
+# Power modes (configure via POWER_MODE env var):
+#
+#   10W      4 CPU cores, GPU 612 MHz, powersave governor
+#   15W      4 CPU cores, GPU 612 MHz, nvhost_podgov (factory default)
+#   25W      8 CPU cores, GPU 408 MHz, nvhost_podgov
+#   MAXN     8 CPU cores, GPU 918 MHz, performance governor ← DEFAULT
+#   MAXN_SUPER  ⚠ BLOCKED on reComputer J401 without ALLOW_MAXN_SUPER=true
+#
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: jetson-power-mode
+  namespace: nvidia-system
+  labels:
+    app: jetson-power-mode
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  selector:
+    matchLabels:
+      app: jetson-power-mode
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: jetson-power-mode
+    spec:
+      nodeSelector:
+        accelerator: jetson-orin
+      tolerations:
+        - operator: Exists
+      priorityClassName: system-node-critical
+      containers:
+        - name: power-mode
+          image: busybox:1.36@sha256:bd44eb136a95dcc8dc58995e43abc40a413f2e8e3d4a2aae6bccbe94686acb05
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+
+              GPU_DEVFREQ=/sys/bus/platform/devices/17000000.gpu/devfreq/17000000.gpu
+              CPU_BASE=/sys/devices/system/cpu
+
+              POWER_MODE="${POWER_MODE:-MAXN}"
+              ALLOW_MAXN_SUPER="${ALLOW_MAXN_SUPER:-false}"
+
+              echo "[power-mode] Starting. POWER_MODE=${POWER_MODE}"
+
+              # ── MAXN SUPER guard ──────────────────────────────────────────
+              if [ "${POWER_MODE}" = "MAXN_SUPER" ] && [ "${ALLOW_MAXN_SUPER}" != "true" ]; then
+                echo "[power-mode] ⛔ MAXN_SUPER blocked — reComputer J401 cannot cool Orin NX 16/8GB at this TDP"
+                echo "[power-mode]    Falling back to MAXN. Set ALLOW_MAXN_SUPER=true only with custom cooling."
+                POWER_MODE=MAXN
+              fi
+
+              # ── Map mode → frequencies, governor, EMC ────────────────────
+              # GPU freq in Hz, CPU max_freq in kHz
+              # EMC_LOCK: whether to pin LPDDR5 to max rate (3199 MHz → ~68 GB/s)
+              #   true  → MAXN / MAXN_SUPER: full memory bandwidth for inference
+              #   false → 10W / 15W / 25W: let BPMP scale EMC freely (power saving)
+              case "${POWER_MODE}" in
+                10W)
+                  GPU_FREQ=612000000;  GPU_GOV=powersave
+                  CPU_MAX=1190400;     CORES=4;  EMC_LOCK=false ;;
+                15W)
+                  GPU_FREQ=612000000;  GPU_GOV=nvhost_podgov
+                  CPU_MAX=1420800;     CORES=4;  EMC_LOCK=false ;;
+                25W)
+                  GPU_FREQ=408000000;  GPU_GOV=nvhost_podgov
+                  CPU_MAX=1497600;     CORES=8;  EMC_LOCK=false ;;
+                MAXN)
+                  GPU_FREQ=918000000;  GPU_GOV=performance
+                  CPU_MAX=1984000;     CORES=8;  EMC_LOCK=true  ;;
+                MAXN_SUPER)
+                  # ALLOW_MAXN_SUPER=true was set — user accepts risk
+                  GPU_FREQ=1173000000; GPU_GOV=performance
+                  CPU_MAX=1984000;     CORES=8;  EMC_LOCK=true  ;;
+                *)
+                  echo "[power-mode] Unknown POWER_MODE=${POWER_MODE}, defaulting to MAXN"
+                  GPU_FREQ=918000000;  GPU_GOV=performance
+                  CPU_MAX=1984000;     CORES=8;  EMC_LOCK=true  ;;
+              esac
+
+              echo "[power-mode] GPU freq=${GPU_FREQ} Hz, governor=${GPU_GOV}, EMC lock=${EMC_LOCK}"
+              echo "[power-mode] CPU max=${CPU_MAX} kHz, cores=${CORES}"
+
+              EMC_CLK=/sys/kernel/debug/bpmp/debug/clk/emc
+
+              apply_settings() {
+                # ── GPU: set freq cap BEFORE switching governor ─────────────
+                if [ -d "${GPU_DEVFREQ}" ]; then
+                  # Write max_freq first (avoid min > max), then min
+                  echo "${GPU_FREQ}"  > "${GPU_DEVFREQ}/max_freq"
+                  echo "${GPU_FREQ}"  > "${GPU_DEVFREQ}/min_freq"
+                  echo "${GPU_GOV}"   > "${GPU_DEVFREQ}/governor"
+                  # With 'performance' governor, also set userspace target freq
+                  if [ "${GPU_GOV}" = "userspace" ]; then
+                    echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/userspace/set_freq" 2>/dev/null || true
+                  fi
+                  CUR=$(cat "${GPU_DEVFREQ}/cur_freq" 2>/dev/null || echo "?")
+                  echo "[power-mode] GPU cur_freq=${CUR} Hz ✓"
+                else
+                  echo "[power-mode] ⚠ GPU devfreq not found at ${GPU_DEVFREQ}"
+                fi
+
+                # ── EMC (External Memory Controller) ───────────────────────
+                # MAXN / MAXN_SUPER: lock to 3199 MHz (full ~68 GB/s LPDDR5 bandwidth)
+                # 10W / 15W / 25W:   release lock → BPMP scales EMC freely (power saving)
+                #
+                # BPMP API (min_rate write returns EINVAL — use rate + mrq_rate_locked):
+                #   lock:    echo <max_rate> > rate && echo 1 > mrq_rate_locked
+                #   unlock:  echo 0 > mrq_rate_locked  (BPMP resumes DVFS)
+                if [ -f "${EMC_CLK}/rate" ] && [ -f "${EMC_CLK}/mrq_rate_locked" ]; then
+                  if [ "${EMC_LOCK}" = "true" ]; then
+                    EMC_MAX=$(cat "${EMC_CLK}/max_rate")
+                    echo "${EMC_MAX}" > "${EMC_CLK}/rate" 2>/dev/null && \
+                    echo 1            > "${EMC_CLK}/mrq_rate_locked" 2>/dev/null && \
+                      echo "[power-mode] EMC locked to ${EMC_MAX} Hz (max BW) ✓" || \
+                      echo "[power-mode] ⚠ EMC lock failed"
+                  else
+                    echo 0 > "${EMC_CLK}/mrq_rate_locked" 2>/dev/null && \
+                      echo "[power-mode] EMC unlocked — BPMP manages frequency (power saving)" || \
+                      echo "[power-mode] ⚠ EMC unlock failed"
+                  fi
+                else
+                  echo "[power-mode] ⚠ EMC debugfs not found"
+                fi
+
+                # ── CPU cores: hotplug ──────────────────────────────────────
+                TOTAL=$(ls -d ${CPU_BASE}/cpu[0-9]* 2>/dev/null | wc -l)
+                i=0
+                while [ $i -lt "${TOTAL}" ]; do
+                  HP="${CPU_BASE}/cpu${i}/online"
+                  if [ $i -lt "${CORES}" ]; then
+                    [ -f "${HP}" ] && echo 1 > "${HP}" 2>/dev/null || true
+                  else
+                    [ -f "${HP}" ] && echo 0 > "${HP}" 2>/dev/null || true
+                  fi
+                  i=$((i+1))
+                done
+
+                # ── CPU governor + scaling_max_freq ────────────────────────
+                # MAXN sets scaling_max_freq but leaves governor as 'schedutil'
+                # → CPU idles at 268 MHz between tokens (thread wakeup latency).
+                # 'performance' pins all cores at max_freq → eliminates wakeup
+                # latency for the Ollama server thread and CUDA callback threads.
+                for policy in $(ls -d ${CPU_BASE}/cpufreq/policy* 2>/dev/null); do
+                  echo "performance" > "${policy}/scaling_governor" 2>/dev/null || true
+                done
+                for cpu in $(ls -d ${CPU_BASE}/cpu[0-9]* 2>/dev/null); do
+                  MF="${cpu}/cpufreq/scaling_max_freq"
+                  [ -f "${MF}" ] && echo "${CPU_MAX}" > "${MF}" 2>/dev/null || true
+                done
+
+                ONLINE=$(cat "${CPU_BASE}/online" 2>/dev/null || echo "?")
+                CPU_GOV=$(cat "${CPU_BASE}/cpufreq/policy0/scaling_governor" 2>/dev/null || echo "?")
+                echo "[power-mode] CPUs online: ${ONLINE}, governor: ${CPU_GOV}"
+
+                # ── Transparent Huge Pages ──────────────────────────────────
+                # THP=always: kernel aggressively collapses 4K→2MB pages.
+                # Reduces TLB pressure for large CPU-side allocations:
+                # Go runtime (Ollama), KV cache, prompt eval buffers.
+                # GPU buffers on Jetson use nvmap (not mmap), so GPU decode
+                # is not affected — but CPU prompt eval benefits noticeably.
+                THP=/sys/kernel/mm/transparent_hugepage
+                if [ -f "${THP}/enabled" ]; then
+                  echo always > "${THP}/enabled"  2>/dev/null || true
+                  echo defer  > "${THP}/defrag"   2>/dev/null || true
+                  echo "[power-mode] THP enabled=always defrag=defer ✓"
+                fi
+              }
+
+              apply_settings
+              echo "[power-mode] Power mode ${POWER_MODE} applied ✓"
+
+              # Re-assert every 60s (governor/EMC may reset after suspend/resume)
+              while true; do
+                sleep 60
+                if [ -d "${GPU_DEVFREQ}" ]; then
+                  echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/max_freq" 2>/dev/null || true
+                  echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/min_freq" 2>/dev/null || true
+                  echo "${GPU_GOV}"  > "${GPU_DEVFREQ}/governor"  2>/dev/null || true
+                fi
+                if [ -f "${EMC_CLK}/rate" ] && [ -f "${EMC_CLK}/mrq_rate_locked" ]; then
+                  if [ "${EMC_LOCK}" = "true" ]; then
+                    EMC_MAX=$(cat "${EMC_CLK}/max_rate")
+                    echo "${EMC_MAX}" > "${EMC_CLK}/rate" 2>/dev/null || true
+                    echo 1            > "${EMC_CLK}/mrq_rate_locked" 2>/dev/null || true
+                  else
+                    echo 0 > "${EMC_CLK}/mrq_rate_locked" 2>/dev/null || true
+                  fi
+                fi
+                for policy in $(ls -d ${CPU_BASE}/cpufreq/policy* 2>/dev/null); do
+                  echo "performance" > "${policy}/scaling_governor" 2>/dev/null || true
+                done
+              done
+
+          env:
+            # ── Power mode: 10W | 15W | 25W | MAXN ─────────────────────────
+            # MAXN_SUPER is blocked unless ALLOW_MAXN_SUPER=true (see warning)
+            - name: POWER_MODE
+              value: "MAXN"
+            # ⚠ DANGER: set to "true" ONLY with custom cooling on Orin NX 16/8GB
+            - name: ALLOW_MAXN_SUPER
+              value: "false"
+
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 4Mi
+            limits:
+              cpu: 20m
+              memory: 16Mi
+          volumeMounts:
+            - name: sys
+              mountPath: /sys
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+      volumes:
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory

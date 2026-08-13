@@ -1,0 +1,72 @@
+---
+# jetson-device-plugin — exposes nvidia.com/gpu as a Kubernetes extended resource
+#
+# Custom CDI-native device plugin for Jetson Orin (nvgpu 5.x, NVHOST=n).
+# Source: plugins/jetson-device-plugin/main.go
+#
+# Device injection strategy (CDI, two-layer):
+#   1. Kubernetes resource: requests nvidia.com/gpu: 1 → kubelet calls Allocate()
+#   2. AllocateResponse returns CDIDevices: [{Name: "nvidia.com/gpu=0"}]
+#   3. kubelet passes CDI device ID to containerd via CRI CDIDevices field
+#   4. containerd reads /var/run/cdi/nvidia-jetson.yaml (written by nvidia-cdi-setup)
+#      and injects all nvgpu + nvhost device nodes, JetPack r36.5 lib bind-mount,
+#      and LD_LIBRARY_PATH automatically — no hostPath mounts needed.
+#
+# Why custom plugin and not squat/generic-device-plugin:
+#   squat/generic-device-plugin does not support CDIDevices in AllocateResponse.
+#   containerd 2.x requires CDI devices via CRI CDIDevices field (pod annotations
+#   are NOT processed in containerd 2.x). A custom plugin is the minimal solution.
+#
+# Prerequisites:
+#   - nvidia-cdi-setup DaemonSet Running (CDI spec at /var/run/cdi/nvidia-jetson.yaml)
+#   - containerd with CDI enabled (machine-patch-cdi.yaml applied)
+#   - DevicePluginCDIDevices feature gate: GA in K8s 1.35 (enabled by default)
+#
+# Apply:
+#   kubectl apply -f manifests/gpu/device-plugin.yaml
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin
+  namespace: nvidia-system
+  labels:
+    app: nvidia-device-plugin
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-device-plugin
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: nvidia-device-plugin
+    spec:
+      nodeSelector:
+        accelerator: jetson-orin
+      tolerations:
+        - operator: Exists
+      priorityClassName: system-node-critical
+      containers:
+        - name: jetson-device-plugin
+          image: ghcr.io/schwankner/jetson-device-plugin:v1.0.0@sha256:9e362878dcc57d1349a65fc7de3578d9cd861c254f45ec19f33f9c781d2bdd08
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins

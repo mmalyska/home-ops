@@ -215,8 +215,10 @@ tasks:
       TALOS_IMAGE:
         sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
       FORCE: "{{ .FORCE | default false }}"
+      NODE_TALOS_VERSION:
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .talosVersion // "{{ .TALOS_VERSION }}"' < {{.TALOS_DIR}}/nodes.yaml
     status:
-      - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .TALOS_VERSION }}' || return 1)
+      - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .NODE_TALOS_VERSION }}' || return 1)
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}

@@ -1,0 +1,10 @@
+- enabled: "true"
+  namespace: nvidia-system
+  syncWave: "2"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: privileged
