@@ -48,10 +48,6 @@ prometheus-smartctl-exporter:
                     operator: In
                     values: [nv1]
       tolerations:
-        - key: nv
-          operator: Equal
-          value: NoSchedule
-          effect: NoSchedule
         - key: nvidia.com/gpu
           operator: Equal
           value: present

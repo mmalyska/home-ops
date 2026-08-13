@@ -57,7 +57,8 @@ machine:
     topology.kubernetes.io/region: home
     topology.kubernetes.io/zone: m
   nodeTaints:
-    nv: :NoSchedule
+    # value:effect — parsed by Talos labels.ParseTaint (strings.Cut on ":")
+    nvidia.com/gpu: present:NoSchedule
 cluster:
   id: ${TALHELPER_CLUSTERNAME}
   secret: ${TALHELPER_CLUSTERSECRET}
