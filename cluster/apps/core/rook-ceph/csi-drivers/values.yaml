@@ -49,6 +49,15 @@ ceph-csi-drivers:
           logRotator: {}
           addons: {}
       nodePlugin:
+        tolerations:
+          - key: nv
+            operator: Equal
+            value: NoSchedule
+            effect: NoSchedule
+          - key: nvidia.com/gpu
+            operator: Equal
+            value: present
+            effect: NoSchedule
         resources:
           plugin:
             requests:
@@ -105,6 +114,15 @@ ceph-csi-drivers:
           logRotator: {}
           addons: {}
       nodePlugin:
+        tolerations:
+          - key: nv
+            operator: Equal
+            value: NoSchedule
+            effect: NoSchedule
+          - key: nvidia.com/gpu
+            operator: Equal
+            value: present
+            effect: NoSchedule
         resources:
           plugin:
             requests:

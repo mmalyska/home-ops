@@ -52,6 +52,10 @@ prometheus-smartctl-exporter:
           operator: Equal
           value: NoSchedule
           effect: NoSchedule
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
       resources:
         requests:
           cpu: 10m
