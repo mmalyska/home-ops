@@ -1,12 +1,14 @@
 ollama:
+  image:
+    tag: "0.20.5@sha256:8ab27f32210327a04fb98f6e53fba5d19a9d632777455389d48724028434a9f0" # >=0.20.5 for the JetPack 6 CUDA backend (upstream Bug 19)
   ollama:
     models:
       pull:
-        - deepcoder:14b
         - qwen3.5:9b
-        - gemma4:26b
         - nomic-embed-text
   extraEnv:
+    - name: JETSON_JETPACK
+      value: "6"
     - name: OLLAMA_KV_CACHE_TYPE
       value: "q4_0"
     - name: OLLAMA_NUM_PARALLEL
@@ -17,20 +19,25 @@ ollama:
       value: "1"
     - name: OLLAMA_CONTEXT_LENGTH
       value: "16384"
-    - name: OLLAMA_VULKAN
-      value: "1"
+  nodeSelector:
+    accelerator: jetson-orin
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
   service:
     type: ClusterIP
   ingress:
     enabled: false
   persistentVolume:
     enabled: true
-    size: "40Gi"
+    size: "20Gi"
   resources:
     limits:
-      gpu.intel.com/i915: 1
-      memory: 16Gi
+      nvidia.com/gpu: 1
+      memory: 13Gi
     requests:
-      gpu.intel.com/i915: 1
+      nvidia.com/gpu: 1
       cpu: 100m
       memory: 8Gi
