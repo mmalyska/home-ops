@@ -287,16 +287,17 @@ carry ~8 lines indefinitely, which is acceptable.
 
 ## Risks
 
-| Risk                                           | Mitigation                                                                         |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Signing key lost                               | Bitwarden is source of truth; recovery = regenerate + full rebuild + reinstall nv1 |
-| Signing key **changed**                        | Never rotate casually — a running node rejects modules signed with a different key |
-| Actions disabled on fork by default            | Enable explicitly; nothing runs otherwise                                          |
-| Scheduled workflows do not run on forks        | Accepted — Renovate covers version tracking                                        |
-| Upstream diverges; merges conflict             | Fork kept a near-mirror; only two files differ                                     |
-| First fork build fails for an unrelated reason | Builds are free and repeatable; nv1 keeps running v1.13.0 until an image exists    |
-| Kernel bump breaks the OE4T build              | Separate track, own gate, one-line revert                                          |
-| Dispatch fires twice (tag push + dispatch)     | Cannot happen — the tag push uses `GITHUB_TOKEN`, which never triggers runs        |
+| Risk                                                                                                                    | Mitigation                                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signing key lost                                                                                                        | Bitwarden is source of truth; recovery = regenerate + full rebuild + reinstall nv1                                                                  |
+| Signing key **changed**                                                                                                 | Never rotate casually — a running node rejects modules signed with a different key                                                                  |
+| Actions disabled on fork by default                                                                                     | Enable explicitly; nothing runs otherwise                                                                                                           |
+| **GHCR packages default to private** — nv1 pulls anonymously, so a private image fails the upgrade with no obvious clue | Set `custom-installer` (and the three supporting packages) to public, then prove it with an unauthenticated manifest fetch before touching the node |
+| Scheduled workflows do not run on forks                                                                                 | Accepted — Renovate covers version tracking                                                                                                         |
+| Upstream diverges; merges conflict                                                                                      | Fork kept a near-mirror; only two files differ                                                                                                      |
+| First fork build fails for an unrelated reason                                                                          | Builds are free and repeatable; nv1 keeps running v1.13.0 until an image exists                                                                     |
+| Kernel bump breaks the OE4T build                                                                                       | Separate track, own gate, one-line revert                                                                                                           |
+| Dispatch fires twice (tag push + dispatch)                                                                              | Cannot happen — the tag push uses `GITHUB_TOKEN`, which never triggers runs                                                                         |
 
 ## Rollback
 
