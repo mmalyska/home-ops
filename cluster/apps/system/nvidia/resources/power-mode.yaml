@@ -47,7 +47,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
         - name: power-mode
-          image: busybox:1.36@sha256:bd44eb136a95dcc8dc58995e43abc40a413f2e8e3d4a2aae6bccbe94686acb05
+          image: busybox:1.38@sha256:8f2ffdcb46f1b83e46665954ec130e497b979db766854f79ca9eee43242b7e4c
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
