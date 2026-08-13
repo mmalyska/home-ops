@@ -96,12 +96,67 @@ Layer 3 — workload            cluster/apps/ai/ollama/
 
 ### Phasing
 
-|             | Phase 1 — prove                      | Phase 2 — own                 |
-| ----------- | ------------------------------------ | ----------------------------- |
-| Installer   | upstream prebuilt                    | ours, built for current Talos |
-| nv1 Talos   | v1.13.0 (behind mc1–3)               | rejoins cluster version       |
-| Build infra | none                                 | fork + arm64 GitHub Actions   |
-| Gate        | `/dev/dri/renderD128` + CUDA + tok/s | —                             |
+|             | Phase 0 — reconcile nv1                       | Phase 1 — prove                      | Phase 2 — own                 |
+| ----------- | --------------------------------------------- | ------------------------------------ | ----------------------------- |
+| Scope       | taint rename, tolerations, apply stale config | upstream prebuilt installer          | ours, built for current Talos |
+| Installer   | unchanged (factory)                           | upstream prebuilt                    | ours                          |
+| nv1 Talos   | v1.13.5 (unchanged)                           | v1.13.0 (behind mc1–3)               | rejoins cluster version       |
+| Build infra | none                                          | none                                 | fork + arm64 GitHub Actions   |
+| Gate        | node Ready, taints correct, DS counts 3→4     | `/dev/dri/renderD128` + CUDA + tok/s | —                             |
+
+Phase 0 does **not** touch the GPU and is independently valuable: it fixes a
+pre-existing drift, gives nv1 working Ceph storage, and restores observability
+parity. It ships and can be judged on its own. It is also a prerequisite for
+Phase 1's CPU baseline measurement, which needs a schedulable, storage-capable
+nv1.
+
+## Phase 0 — reconcile nv1
+
+Ordered so that no pod is ever left unable to schedule. `NoSchedule` does not
+evict running pods, so the risk is low, but the sequence removes the window
+entirely.
+
+1. **Widen tolerations first (Git → ArgoCD).** Add tolerations covering _both_
+   the old `nv` taint and the new `nvidia.com/gpu` taint to the two ceph-csi
+   `Driver` CRs, `node-feature-discovery`, and `metrics-proxy`; update
+   `smartmon-exporter` to tolerate both. Sync and confirm the Ceph nodeplugins
+   reach nv1 (`desired` 3 → 4) while the old taint is still in place.
+2. **Rename the taint (Talos).** Change `templates/worker.yaml` to
+   `nvidia.com/gpu: present:NoSchedule`, then `task talos:generate` and
+   `task talos:apply N=nv1`. This apply also carries the unrelated staleness
+   fix (see below).
+3. **Verify the expected double-taint.** Reading `.spec.taints` on nv1 should
+   now show **both** `nv` and `nvidia.com/gpu`, and the
+   `talos.dev/owned-taints` annotation should list `nvidia.com/gpu`.
+4. **Remove the orphan.** `kubectl taint nodes nv1 nv-`, then re-read the taints
+   and confirm `nv` does not come back.
+5. **Narrow the tolerations.** Drop the transitional `nv` tolerations from Git,
+   leaving only `nvidia.com/gpu`.
+6. **Verify.** `rook-ceph.rbd`/`cephfs` nodeplugins, `node-feature-discovery`
+   and `metrics-proxy` at `desired=4`; smartmon-1 still on nv1; nv1 `Ready`;
+   `CSINode nv1` lists both ceph drivers.
+
+### The staleness fix, quantified
+
+nv1's stored machine config was last applied under Talos v1.12.7 (mc1 is at
+v1.13.4), but a full diff of running vs generated config shows the gap is
+narrow. Every semantic difference:
+
+| Difference                                                                                                       | Impact                                                                 |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `install.image` `…:v1.12.7` → `…:v1.13.5`                                                                        | config metadata only; no reinstall, no reboot                          |
+| Node has migrated `HostnameConfig` + `LinkConfig` documents; repo still uses deprecated inline `machine.network` | identical address, route, MTU and hostname; Talos re-migrates on apply |
+| `nodeTaints`                                                                                                     | **identical** in both — the drift is node-side only                    |
+
+So the apply is low-risk. It is still done as its own step with the diff
+re-checked immediately beforehand, and the node confirmed `Ready` afterwards,
+rather than folded into the GPU work.
+
+**Noted, not done:** `nodes/nv1.yaml` uses the deprecated inline
+`machine.network.interfaces` form, so each apply flips the representation and
+Talos re-migrates it. Converting the node files to `LinkConfig` /
+`HostnameConfig` documents would remove that churn, but it touches the generate
+pipeline for all nodes and is out of scope here.
 
 ## Layer 1 — Talos node
 
@@ -302,8 +357,8 @@ nodeTaints:
   nvidia.com/gpu: present:NoSchedule # -> value=present, effect=NoSchedule
 ```
 
-**Pre-existing drift — must be handled by this work.** The current taint is
-inconsistent between what the repo declares and what the node carries:
+**Pre-existing drift.** What the repo declares and what the node carries
+disagree:
 
 | Source                                      | key  | value          | effect       |
 | ------------------------------------------- | ---- | -------------- | ------------ |
@@ -311,31 +366,39 @@ inconsistent between what the repo declares and what the node carries:
 | Talos `NodeTaintSpec` on nv1 (desired)      | `nv` | `""`           | `NoSchedule` |
 | Actual `Node.spec.taints` on nv1            | `nv` | `"NoSchedule"` | `NoSchedule` |
 
-Talos wants `value=""` but the node has `value="NoSchedule"`, so **the taint
-value is not being reconciled** and the live taint is a leftover — almost
-certainly from the talhelper era (commit `f12a486a` replaced talhelper with
-talosctl + envsubst), whose list-form schema would have taken a
-`value: NoSchedule` field literally. Corroborating this, nv1's stored machine
-config still reports `install.image: …:v1.12.7` while mc1 reports `v1.13.4`:
-**nv1's config has not been applied since Talos v1.12.7**, though it runs
-v1.13.5.
+**Why it never converges.** `NodeApplyController.ApplyTaints`
+(`internal/app/machined/pkg/controllers/k8s/node_apply.go`) matches taints by
+**key** and tracks ownership in the `talos.dev/owned-taints` node annotation:
 
-Two consequences:
+- key absent → add it, mark owned
+- key present **and owned** → update value and effect
+- key present, **not owned**, value and effect already equal the spec → adopt it
+- key present, **not owned**, anything differs → **skip permanently**
+  (`"skipping taint update, taint is not owned"`)
 
-1. **Latent bug, already armed.** `smartmon-exporter`'s nv1 toleration is
-   `operator: Equal, value: NoSchedule`, which matches the _drifted_ taint, not
-   the declared one. The next `task talos:apply N=nv1` would correct the taint
-   to `value=""`, that toleration would stop matching, and the smartmon-1 pod
-   would silently fall off nv1. This exists independently of the Jetson work and
-   is fixed here as a side effect of the rename.
-2. **The stale `nv` taint must be removed explicitly.** Since Talos is
-   demonstrably not reconciling the value, it may not drop the old key either.
-   After applying the renamed taint, verify with
-   `kubectl get node nv1 -o jsonpath='{.spec.taints}'` and, if `nv` persists,
-   remove it with `kubectl taint nodes nv1 nv-`.
+and the removal pass only ever drops taints Talos **owns**.
 
-Applying nv1's long-stale machine config is therefore a deliberate, separately
-verified step in the plan, not a side effect of the GPU work.
+nv1 has **no `talos.dev/owned-taints` annotation at all** — only
+`owned-annotations` and `owned-labels` — so Talos owns zero taints there. The
+`nv` taint is unowned with a differing value, which lands it in the "skip
+permanently" branch. The value is a leftover, almost certainly from the
+talhelper era (commit `f12a486a` replaced talhelper with talosctl + envsubst),
+whose list-form schema would have taken a `value: NoSchedule` field literally.
+
+Three consequences:
+
+1. **A plain re-apply fixes nothing.** The running config already yields
+   `value=""` and the node has ignored it. Applying the same config again
+   changes no taint state.
+2. **The rename leaves nv1 double-tainted.** `nvidia.com/gpu` is a new key, so
+   Talos adds it and takes ownership — but `nv` remains unowned, so the removal
+   pass keeps it. Without intervention nv1 ends up carrying **both** taints.
+3. **`kubectl taint nodes nv1 nv-` is required, and will stick.** Once `nv` is
+   absent from the spec, Talos has no path that re-adds it.
+
+`smartmon-exporter`'s nv1 toleration (`operator: Equal, value: NoSchedule`)
+matches the drifted taint, so it breaks at the **rename**, not at a plain
+apply — which is why the toleration updates must land before the taint changes.
 
 ### Toleration changes
 
@@ -417,18 +480,19 @@ rebuilt extension leaves the node without a GPU, or unbootable.
 
 ## Risks
 
-| Risk                                                               | Mitigation                                                                          |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Custom UKI fails to boot                                           | USB reflash; physical access to nv1 is easy                                         |
-| Talos downgrade v1.13.5 → v1.13.0 refused                          | `--force`; fallback is USB install                                                  |
-| CUDA error 801/999                                                 | Gate check 7 — abandon before Layer 2/3 work                                        |
-| Upstream stops publishing images                                   | Precisely what Phase 2 removes                                                      |
-| JetPack `.deb` download fails at pod start                         | Known; mirror in Phase 2                                                            |
-| Talos changes its `containerd.toml` template                       | Verified stable v1.13.0→v1.13.5; re-diff on every Talos upgrade                     |
-| Rook reverts the `Driver` CR patch                                 | Manage the CRs via the rook-ceph ArgoCD app                                         |
-| Stale `nv` taint survives the rename, double-tainting nv1          | Verify `Node.spec.taints` after apply; `kubectl taint nodes nv1 nv-` if it persists |
-| Applying nv1's config (stale since v1.12.7) causes unrelated drift | Apply as its own step; diff the rendered config against the running one first       |
-| `JETSON_JETPACK` missing → silent CPU fallback                     | Gate check 8 compares against the CPU baseline                                      |
+| Risk                                                               | Mitigation                                                                                                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Custom UKI fails to boot                                           | USB reflash; physical access to nv1 is easy                                                                                     |
+| Talos downgrade v1.13.5 → v1.13.0 refused                          | `--force`; fallback is USB install                                                                                              |
+| CUDA error 801/999                                                 | Gate check 7 — abandon before Layer 2/3 work                                                                                    |
+| Upstream stops publishing images                                   | Precisely what Phase 2 removes                                                                                                  |
+| JetPack `.deb` download fails at pod start                         | Known; mirror in Phase 2                                                                                                        |
+| Talos changes its `containerd.toml` template                       | Verified stable v1.13.0→v1.13.5; re-diff on every Talos upgrade                                                                 |
+| Rook reverts the `Driver` CR patch                                 | Manage the CRs via the rook-ceph ArgoCD app                                                                                     |
+| Stale `nv` taint survives the rename, double-tainting nv1          | Expected, not hypothetical — Talos cannot remove an unowned taint. Phase 0 step 4 removes it with `kubectl taint nodes nv1 nv-` |
+| Rename breaks smartmon's `value: NoSchedule` toleration            | Phase 0 widens tolerations (step 1) before renaming (step 2)                                                                    |
+| Applying nv1's config (stale since v1.12.7) causes unrelated drift | Full diff taken; only `install.image` metadata and a network representation re-migration. Re-diff immediately before applying   |
+| `JETSON_JETPACK` missing → silent CPU fallback                     | Gate check 8 compares against the CPU baseline                                                                                  |
 
 ## Rollback
 
