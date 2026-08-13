@@ -9,6 +9,15 @@ node-feature-discovery:
       limits:
         memory: 33M
   worker:
+    tolerations:
+      - key: nv
+        operator: Equal
+        value: NoSchedule
+        effect: NoSchedule
+      - key: nvidia.com/gpu
+        operator: Equal
+        value: present
+        effect: NoSchedule
     resources:
       requests:
         cpu: 5m
