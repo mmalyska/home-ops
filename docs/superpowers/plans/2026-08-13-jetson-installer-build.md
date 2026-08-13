@@ -21,6 +21,7 @@
 - Build cost: **~90 min cold cache, ~5 min cache hit** for extensions, plus ~30 min USB/UKI assembly. The first build in a fresh namespace is always cold.
 - `TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig` for all `talosctl` calls.
 - Non-interactive shell: use `-f`/`-rf` with `cp`/`mv`/`rm`.
+- **Two steps need a human, not the agent:** storing the signing key in Bitwarden (Task 1 Step 5) and making the GHCR packages public (Task 2 Step 4) — the devcontainer's `gh` token has no package scopes. Stop and hand back at both.
 - Run `npx prettier --write <file>` on any Markdown/YAML touched in home-ops before committing.
 - **YAML snippets below render at column 0.** Prettier normalizes fenced YAML, so indentation does not reflect nesting depth. Place each at the depth the prose describes and confirm with the verify step that follows.
 
@@ -156,9 +157,21 @@ Expected to include `1.13.8-6.18.24-nvgpu5.11.1-drm-noshim`.
 
 **This is the step most likely to be missed.** GHCR packages default to **private**, and nv1 pulls its installer anonymously — a private image means the upgrade fails to pull with no obvious clue.
 
-Set visibility to public for `custom-installer` (required) and the three supporting packages (`kernel-modules-clang`, `nvidia-tegra-nvgpu`, `nvidia-firmware-ext`), via the package settings UI or:
+Set visibility to public for `custom-installer` (required) and the three supporting packages (`kernel-modules-clang`, `nvidia-tegra-nvgpu`, `nvidia-firmware-ext`).
+
+**This is a human step — the devcontainer's `gh` token cannot do it.** Verified: `gh api user/packages?package_type=container` returns `403 Resource not accessible by personal access token`. Managing package visibility needs `write:packages`, which this token lacks.
+
+Do it in the web UI, per package:
+
+```
+https://github.com/users/mmalyska/packages/container/<package>/settings
+  → Danger Zone → Change visibility → Public
+```
+
+Or, if you would rather script it, first authorise a token that carries the scope:
 
 ```bash
+gh auth refresh -h github.com -s write:packages,read:packages
 for p in custom-installer kernel-modules-clang nvidia-tegra-nvgpu nvidia-firmware-ext; do
   gh api -X PATCH "user/packages/container/$p" -f visibility=public 2>&1 | head -2
 done
