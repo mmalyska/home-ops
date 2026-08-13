@@ -22,6 +22,7 @@
 - `TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig` for all `talosctl` calls.
 - Non-interactive shell: always use `-f`/`-rf` with `cp`/`mv`/`rm` (aliased to `-i` in this devcontainer).
 - Run `npx prettier --write <file>` on any Markdown or YAML touched, before committing.
+- **YAML snippets in this plan are shown at column 0.** Prettier normalizes fenced YAML, so the indentation below does **not** reflect nesting depth. Place each snippet at the depth the surrounding prose describes, then confirm with the render/verify step that follows it. Never paste a snippet literally without checking its indentation.
 
 ---
 
