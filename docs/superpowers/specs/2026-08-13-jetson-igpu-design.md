@@ -548,3 +548,58 @@ Revert `nodes/nv1.yaml` to the factory installer image, `talosctl upgrade`, and
 set the nvidia app `enabled: "false"`. nv1 returns to its current state: an
 idle, tainted arm64 node. The taint rename and toleration changes are
 independent of the GPU work and can be kept or reverted separately.
+
+## Outcome (2026-08-13)
+
+Both phases executed and all eight gate checks passed. Summary:
+
+| #   | Check              | Result                                                        |
+| --- | ------------------ | ------------------------------------------------------------- |
+| 1   | Talos version/boot | v1.13.0, kernel `6.18.24-talos`, node `Ready`                 |
+| 2   | `nvgpu` loaded     | pass — alongside `host1x`, `tegra_drm`, `nvmap`               |
+| 3   | `/dev/dri`         | `renderD128` present                                          |
+| 4   | CDI in containerd  | `enable_cdi = true` present, customization drop-in intact     |
+| 5   | CDI spec written   | `/var/run/cdi/nvidia-jetson.yaml`, 15 device nodes            |
+| 6   | GPU advertised     | `nvidia.com/gpu: "1"` allocatable                             |
+| 7   | CUDA smoke test    | pass — JetPack6 backend, no error 801/999, non-privileged pod |
+| 8   | ollama tok/s       | **2.75x** eval rate, **12.36x** prompt eval rate — see below  |
+
+Full CPU/GPU figures: `docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`.
+`qwen3.5:9b`, `--think=false`, same prompt both runs: CPU eval rate 3.21
+tok/s → GPU eval rate 8.84 tok/s (2.75x, clears the required >=2x).
+
+**Go/no-go on Phase 2: GO.** The measured ratio comfortably clears the 2x
+threshold this design set as the bar for justifying a bespoke off-cluster
+Talos build. Phase 2 (forking upstream, building on GitHub Actions runners,
+publishing a self-hosted installer image) is worth designing as a follow-up.
+
+### Deviation from design: Talos cannot re-taint an already-registered node
+
+Phase 0 Task 4 assumed Talos would apply the renamed `nvidia.com/gpu` taint
+to nv1 via its ordinary machine-config reconciliation, the same way it had
+apparently applied the original `nv` taint. That assumption was wrong for an
+**already-registered** node: Kubernetes' `NodeRestriction` admission
+controller only allows a kubelet to set `.spec.taints` on its own Node object
+at initial registration (a `CREATE`); once the Node exists, any later
+`UPDATE` to its own taints is rejected, regardless of how the change was
+sourced. `talosctl dmesg` showed `k8s.NodeApplyController` retrying and
+failing every ~15s with `"nv1" is forbidden: node "nv1" is not allowed to
+modify taints`, even though `talosctl get nodetaintspecs` showed Talos had
+already computed the correct desired state internally.
+
+**Resolution:** the taint was added by hand (`kubectl taint nodes nv1
+nvidia.com/gpu=present:NoSchedule`, run with cluster-admin credentials, which
+are not subject to `NodeRestriction`). Re-running `task talos:apply` afterward
+confirmed no further drift: once the live taint matched Talos's
+`NodeTaintSpec`, the controller found nothing to patch and the error loop
+stopped, and `talos.dev/owned-taints` was written correctly. Task 5's removal
+of the orphaned `nv` taint was unaffected — it was already a manual `kubectl
+taint ... nv-` command, independent of Talos ownership.
+
+**Implication for future taint changes on already-registered nodes:** this is
+not a one-off fluke of this cluster; it is Kubernetes' documented
+`NodeRestriction` behavior, so it will recur for any future taint rename or
+addition on a node that already exists. A `.plans/TODO.md` item tracks
+investigating whether Talos has an official supported path around this, or
+whether a small skill documenting the manual-taint-then-reapply-to-confirm
+procedure is the right long-term fix.

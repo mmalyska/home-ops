@@ -64,6 +64,33 @@ kustomize build cluster/apps/core/argocd | argocd-secret-replacer sops -f cluste
 3. Run `task talos:generate`
 4. For non-standard config (different disk, sysctls), add extra merge patch keys to `nodes/<name>.yaml`
 
+### Pinning a node to a non-default Talos version
+
+`nodes.yaml` supports an optional per-node `talosVersion` key, e.g.:
+
+```yaml
+nodes:
+  - name: nv1
+    ip: 192.168.48.5
+    type: worker
+    talosVersion: v1.13.0
+```
+
+When set, `task talos:upgrade N=<name>` (and therefore `task
+talos:upgrade:all`) checks that node's installed version against
+`talosVersion` instead of the global `TALOS_VERSION` in
+`.taskfiles/talos/Taskfile.yaml`. Without this, a pinned node would look
+"out of date" against the global version on every run and get reinstalled
+every time `upgrade:all` executes.
+
+Use this only when the node needs a version the fleet default doesn't carry —
+for example nv1 is pinned because its GPU kernel extension is ABI-bound to a
+specific kernel build shipped only in that Talos version's custom installer
+image (see `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md`).
+Removing the pin requires the node to already be compatible with (or ready to
+move to) the global `TALOS_VERSION` — never remove it as a way to force an
+upgrade without first confirming the new version has a matching installer.
+
 ## Secrets
 
 All secrets use `TALHELPER_*` environment variables populated from Bitwarden via `.envrc`.
