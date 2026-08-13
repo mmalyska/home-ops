@@ -42,3 +42,26 @@ ultimately uses (Task 13 pins `JETSON_JETPACK=6` but does not disable
 thinking), the CPU baseline for thinking-enabled generation should be
 treated as "impractically slow / effectively unusable," not as a specific
 number to beat.
+
+## GPU result (Phase 1 Task 13, gate check 8)
+
+Same prompt, same model (`qwen3.5:9b`, `--think=false`), run against the
+production `ollama` deployment on nv1 after the Jetson iGPU cutover —
+CUDA backend confirmed active (`library=CUDA`, `libdirs=cuda_jetpack6`,
+`type=iGPU`) at server startup.
+
+| Metric            | CPU (baseline) | GPU (nv1 iGPU) | Ratio      |
+| ----------------- | -------------- | -------------- | ---------- |
+| eval rate         | 3.21 tokens/s  | 8.84 tokens/s  | **2.75x**  |
+| prompt eval rate  | 6.00 tokens/s  | 74.18 tokens/s | **12.36x** |
+| eval count        | 19 tokens      | 20 tokens      | —          |
+| prompt eval count | 19 tokens      | 19 tokens      | —          |
+
+**Gate check 8 result: PASS.** Eval rate clears the required >=2x threshold
+(2.75x); prompt eval rate clears it by a wide margin (12.36x). Phase 1
+succeeds — Phase 2 is worth designing.
+
+Load duration on this run was 59.6s (cold model load, first load of this
+model since the pod's most recent start) — excluded from the eval/prompt
+eval rate figures above, which measure only generation/prompt-processing
+throughput once the model is resident.
