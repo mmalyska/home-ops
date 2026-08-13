@@ -465,8 +465,12 @@ ceph-csi-drivers:
             }
 ```
 
-Verified by rendering the chart locally: the values above produce
-`spec.nodePlugin.tolerations` on the `Driver` CR exactly as intended.
+**Verified** against `ceph-csi-drivers` **1.0.4** — the version `Chart.yaml`
+declares and the one ArgoCD resolves, pulled fresh rather than taken from the
+local `charts/` cache, which is a gitignored build artifact stale at 1.0.1.
+Rendering with the repo's values plus the block above produces exactly two
+`Driver` CRs, `rook-ceph.rbd.csi.ceph.com` and `rook-ceph.cephfs.csi.ceph.com`,
+each carrying the toleration, with `nfs` and `nvmeof` correctly absent.
 
 Two operational notes:
 
@@ -477,10 +481,6 @@ Two operational notes:
   mounts survive a nodeplugin restart, but new attach/mount operations fail
   briefly, so this is done as its own Phase 0 step with the rollout watched to
   completion rather than bundled with other changes.
-
-**Unrelated observation:** `csi-drivers/Chart.yaml` requests `ceph-csi-drivers`
-`1.0.4` while `Chart.lock` and the vendored tgz are `1.0.1`. Not touched by this
-work, but worth a follow-up.
 
 ## Verification — the go/no-go gate
 
