@@ -1,0 +1,302 @@
+---
+# nvidia-cdi-setup — one-time GPU system setup + CDI spec writer
+#
+# Runs on every node at system-node-critical priority and handles all setup
+# required before CUDA containers can start:
+#
+#   1. Restores JetPack r36.5 userspace libraries to /var/lib/nvidia-tegra-libs/tegra/
+#      (replaces gpu-libs-restore DaemonSet + the libs initContainer in the legacy manifest)
+#
+#   2. Copies GPU firmware from the read-only rootfs to NVMe /var/fw-fresh and
+#      redirects firmware_class.path to avoid -ETXTBSY on squashfs inodes
+#
+#   3. Creates /dev/nvhost-ctrl symlink → /dev/nvgpu/igpu0/ctrl
+#      (JetPack 6 libcuda.so.1.1 requires this during cuInit)
+#
+#   4. Writes /var/run/cdi/nvidia-jetson.yaml — the CDI spec containerd reads
+#      when a pod requests nvidia.com/gpu.  The spec is generated dynamically
+#      so it only lists device nodes that actually exist on this host.
+#
+#
+# Apply:
+#   kubectl apply -f manifests/gpu/cdi-setup.yaml
+#   (called automatically by scripts/10-setup-cdi.sh)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nvidia-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+---
+# Shell scripts are stored in a ConfigMap to keep the DaemonSet YAML readable
+# and avoid any YAML escaping issues with complex heredocs / multi-line strings.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nvidia-cdi-setup-scripts
+  namespace: nvidia-system
+data:
+  # ── restore-libs.sh ───────────────────────────────────────────────────────
+  # Downloads real JetPack r36.5 userspace libs from NVIDIA APT into
+  # /var/lib/nvidia-tegra-libs/tegra/ if missing or stale.
+  restore-libs.sh: |
+    #!/bin/sh
+    set -e
+    DEST=/nvidia-libs/tegra
+    CUDA_LIB="${DEST}/libcuda.so.1.1"
+    MIN_SIZE=1000000   # real libcuda.so.1.1 is ~41 MB; 0-byte stubs are 0
+
+    if [ -f "${CUDA_LIB}" ] && \
+       [ "$(stat -c%s "${CUDA_LIB}" 2>/dev/null || echo 0)" -gt "${MIN_SIZE}" ]; then
+      echo "JetPack r36.5 libs already present ($(ls "${DEST}" | wc -l) files). Skipping."
+      exit 0
+    fi
+
+    echo "JetPack libs missing or stale — installing from NVIDIA APT r36.5..."
+    apt-get update -qq && apt-get install -y -qq curl dpkg
+
+    rm -rf "${DEST}" && mkdir -p "${DEST}"
+    cd /tmp
+
+    BASE="https://repo.download.nvidia.com/jetson/t234/pool/main/n"
+    VER="36.5.0-20260115194252"
+
+    curl -fsSL -o l4t-core.deb \
+      "${BASE}/nvidia-l4t-core/nvidia-l4t-core_${VER}_arm64.deb"
+    curl -fsSL -o l4t-cuda.deb \
+      "${BASE}/nvidia-l4t-cuda/nvidia-l4t-cuda_${VER}_arm64.deb"
+    curl -fsSL -o l4t-3d.deb \
+      "${BASE}/nvidia-l4t-3d-core/nvidia-l4t-3d-core_${VER}_arm64.deb"
+
+    for pkg in l4t-core.deb l4t-cuda.deb l4t-3d.deb; do
+      dpkg-deb -x "${pkg}" "/tmp/extract-${pkg}/"
+      find "/tmp/extract-${pkg}" \
+        \( -path '*/aarch64-linux-gnu/tegra/*' \
+        -o -path '*/aarch64-linux-gnu/nvidia/*' \) \
+        -type f -exec cp {} "${DEST}/" \;
+      rm -rf "/tmp/extract-${pkg}/" "${pkg}"
+    done
+
+    # Ensure libcuda.so.1 symlink exists
+    ln -sf libcuda.so.1.1 "${DEST}/libcuda.so.1" 2>/dev/null || true
+
+    echo "Done. $(ls "${DEST}" | wc -l) libs installed."
+    echo "  libcuda.so.1.1 : $(stat -c%s "${DEST}/libcuda.so.1.1" 2>/dev/null || echo MISSING) bytes"
+    echo "  libnvrm_gpu.so : $(stat -c%s "${DEST}/libnvrm_gpu.so"  2>/dev/null || echo MISSING) bytes"
+
+  # ── cdi-writer.sh ─────────────────────────────────────────────────────────
+  # Runs in the long-lived container: sets up firmware, device symlinks, device
+  # permissions, and writes the CDI spec.  Loops every 60 s to regenerate the
+  # spec if /var/run is cleared (tmpfs reset after host reboot).
+  cdi-writer.sh: |
+    #!/bin/sh
+    set -e
+
+    CDI_DIR=/var/run/cdi
+    CDI_SPEC="${CDI_DIR}/nvidia-jetson.yaml"
+    FW_SRC=/host-firmware/ga10b
+    FW_DEST=/host-var/fw-fresh/ga10b
+
+    write_cdi_spec() {
+      mkdir -p "${CDI_DIR}"
+
+      # Open the spec file and write each section with echo/printf.
+      # We avoid heredocs because the YAML-in-YAML nesting makes indentation
+      # tricky; individual echo statements are unambiguous.
+
+      {
+        echo 'cdiVersion: "0.5.0"'
+        echo 'kind: "nvidia.com/gpu"'
+        echo 'devices:'
+        echo '  - name: "0"'
+        echo '    containerEdits:'
+        echo '      deviceNodes:'
+        # Device strategy: inject all nvgpu/* devices + /dev/dri/renderD128.
+        #
+        # /dev/dri/renderD128 is the DRM render node created by tegra-drm.ko (OE4T build).
+        # JetPack 6 libcuda.so opens this node during cuInit to enumerate the iGPU.
+        # Without it, cuInit returns 801 (CUDA_ERROR_NOT_SUPPORTED).
+        #
+        # /dev/nvhost-ctrl is only injected when a real char device exists (shim loaded).
+        # The fallback symlink (→ /dev/nvgpu/igpu0/ctrl) is excluded: CDI rejects symlinks.
+
+        # All /dev/nvgpu/igpu0/* char devices
+        for dev in $(find /dev/nvgpu/igpu0/ -type c 2>/dev/null | sort); do
+          printf '        - path: %s\n          permissions: rw\n' "${dev}"
+        done
+
+        # /dev/nvmap — required for GPU memory allocation
+        if [ -c /dev/nvmap ]; then
+          printf '        - path: /dev/nvmap\n          permissions: rw\n'
+        fi
+
+        # /dev/nvhost-ctrl: only inject when it is a real char device (shim loaded).
+        # The fallback symlink created when shim is absent (→ /dev/nvgpu/igpu0/ctrl)
+        # must NOT be injected: CDI rejects symlinks with "not a device node".
+        # /dev/nvgpu/igpu0/ctrl is already in the spec above, so nothing is lost.
+        if [ -c /dev/nvhost-ctrl ] && [ ! -L /dev/nvhost-ctrl ]; then
+          printf '        - path: /dev/nvhost-ctrl\n          permissions: rw\n'
+        fi
+
+        # /dev/dri/renderD128: DRM render node created by tegra-drm.ko (OE4T build).
+        # Required by JetPack 6 libcuda.so for GPU enumeration on Tegra (cuInit).
+        # Inject only when the node actually exists (requires tegra-drm extension).
+        if [ -c /dev/dri/renderD128 ]; then
+          printf '        - path: /dev/dri/renderD128\n          permissions: rw\n'
+        fi
+        echo '      mounts:'
+        echo '        # Bind-mount the entire JetPack r36.5 library directory.'
+        echo '        # Replaces all individual hostPath lib mounts in the legacy manifest.'
+        echo '        - hostPath: /var/lib/nvidia-tegra-libs/tegra'
+        echo '          containerPath: /usr/lib/aarch64-linux-gnu/nvidia'
+        echo '          options: [ro, bind]'
+        echo '      env:'
+        echo '        # Prepend r36.5 libs so they shadow any 0-byte stubs in the image.'
+        echo '        - "LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/nvidia:/usr/local/cuda/lib:/usr/local/cuda/lib64:/usr/local/cuda/compat"'
+        # containerEdits at spec root must be an object (ContainerEdits), not an
+        # array.  Omit it entirely — it is optional and defaults to empty.
+        # (Writing 'containerEdits: []' causes containerd to reject the spec with
+        #  "cannot unmarshal array into Go struct field Spec.containerEdits")
+      } > "${CDI_SPEC}"
+
+      DEV_COUNT=$(grep -c 'path: /dev/' "${CDI_SPEC}" 2>/dev/null || echo 0)
+      echo "[cdi-setup] CDI spec written: ${CDI_SPEC} (${DEV_COUNT} device nodes)"
+    }
+
+    # ── Firmware copy (idempotent) ─────────────────────────────────────────
+    if [ ! -f "${FW_DEST}/gpmu_ucode_next_prod_image.bin" ]; then
+      echo "[cdi-setup] Copying GPU firmware to NVMe /var/fw-fresh..."
+      mkdir -p "${FW_DEST}"
+      cp "${FW_SRC}/"* "${FW_DEST}/" 2>/dev/null || true
+    fi
+    echo "[cdi-setup] Redirecting firmware_class.path -> /var/fw-fresh"
+    echo -n '/var/fw-fresh' > /sys/module/firmware_class/parameters/path
+
+    # ── Device symlink (legacy compat only) ───────────────────────────────
+    # Create /dev/nvhost-ctrl symlink → /dev/nvgpu/igpu0/ctrl for any legacy
+    # code that still opens /dev/nvhost-ctrl. Does not affect CUDA (which uses
+    # /dev/dri/renderD128 via tegra-drm). CDI does not inject this symlink.
+    if [ ! -c /dev/nvhost-ctrl ] && [ ! -L /dev/nvhost-ctrl ]; then
+      if [ -e /dev/nvgpu/igpu0/ctrl ]; then
+        ln -sf /dev/nvgpu/igpu0/ctrl /dev/nvhost-ctrl
+        echo "[cdi-setup] created /dev/nvhost-ctrl symlink (legacy compat)"
+      fi
+    fi
+
+    # ── Device permissions (dynamic — covers NVHOST=n and NVHOST=y) ───────
+    for dev in \
+        $(find /dev/nvgpu/ -type c 2>/dev/null) \
+        $(find /dev/ -maxdepth 1 -name 'nvhost-*' 2>/dev/null) \
+        /dev/nvmap; do
+      if [ -e "${dev}" ]; then chmod 666 "${dev}" 2>/dev/null || true; fi
+    done
+
+    # ── Initial CDI spec write ─────────────────────────────────────────────
+    write_cdi_spec
+    echo "[cdi-setup] Setup complete — entering watch loop (60 s interval)"
+
+    # ── Watch loop: regenerate spec if /var/run is cleared ─────────────────
+    while true; do
+      sleep 60
+      if [ ! -f "${CDI_SPEC}" ]; then
+        echo "[cdi-setup] CDI spec missing — regenerating..."
+        write_cdi_spec
+      fi
+    done
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-cdi-setup
+  namespace: nvidia-system
+  labels:
+    app: nvidia-cdi-setup
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-cdi-setup
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: nvidia-cdi-setup
+    spec:
+      nodeSelector:
+        accelerator: jetson-orin
+      tolerations:
+        - operator: Exists
+      priorityClassName: system-node-critical
+      hostPID: true
+
+      # ── Step 1: Restore JetPack r36.5 libs (once per boot) ──────────────
+      initContainers:
+        - name: restore-libs
+          image: ubuntu:22.04@sha256:a8cdd2158a73d7e5c02aa351fe269f48f57cf710a241db86e9ede371fc150149
+          command: ["/bin/bash", "/scripts/restore-libs.sh"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: nvidia-libs
+              mountPath: /nvidia-libs
+            - name: scripts
+              mountPath: /scripts
+
+      # ── Step 2: Firmware + device setup + CDI spec ──────────────────────
+      containers:
+        - name: cdi-writer
+          image: busybox:1.36@sha256:bd44eb136a95dcc8dc58995e43abc40a413f2e8e3d4a2aae6bccbe94686acb05
+          command: ["/bin/sh", "/scripts/cdi-writer.sh"]
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          volumeMounts:
+            - name: dev
+              mountPath: /dev
+            - name: sys
+              mountPath: /sys
+            - name: host-firmware
+              mountPath: /host-firmware
+              readOnly: true
+            - name: host-var
+              mountPath: /host-var
+            - name: cdi-dir
+              mountPath: /var/run/cdi
+            - name: scripts
+              mountPath: /scripts
+
+      volumes:
+        - name: nvidia-libs
+          hostPath:
+            path: /var/lib/nvidia-tegra-libs
+            type: DirectoryOrCreate
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: host-firmware
+          hostPath:
+            path: /usr/lib/firmware
+        - name: host-var
+          hostPath:
+            path: /var
+        - name: cdi-dir
+          hostPath:
+            path: /var/run/cdi
+            type: DirectoryOrCreate
+        - name: scripts
+          configMap:
+            name: nvidia-cdi-setup-scripts
+            defaultMode: 0755
