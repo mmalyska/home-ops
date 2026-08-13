@@ -10,10 +10,6 @@ node-feature-discovery:
         memory: 33M
   worker:
     tolerations:
-      - key: nv
-        operator: Equal
-        value: NoSchedule
-        effect: NoSchedule
       - key: nvidia.com/gpu
         operator: Equal
         value: present
