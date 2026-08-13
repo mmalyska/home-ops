@@ -429,10 +429,58 @@ requires a nodeplugin on the scheduling node.
 `quay.io/cephcsi/cephcsi:v3.17.0` is multi-arch (linux/amd64, linux/arm64), so
 arm64 is not a concern.
 
-**Open item:** whether Rook reconciles the `Driver` CRs back after patching.
-They carry no `ownerReferences`, so the patch may persist; if it does not, the
-CRs are managed through the rook-ceph ArgoCD app instead. The implementation
-plan must verify this rather than assume.
+**Resolved — Rook does not own these CRs; ArgoCD does.** The `Driver` objects
+carry no `ownerReferences` and no `managedFields`, but they do carry:
+
+```
+argocd.argoproj.io/tracking-id: rook-ceph-csi-drivers:csi.ceph.io/Driver:rook-ceph/rook-ceph.rbd.csi.ceph.com
+```
+
+They are rendered by the `ceph-csi-drivers` Helm chart via
+`cluster/apps/core/rook-ceph/csi-drivers`, an existing ArgoCD app
+(`appSubfolder: csi-drivers`, `syncWave: "2"`). So a manual `kubectl patch`
+would be drift against Git, not against Rook — the correct change is in
+`csi-drivers/values.yaml`:
+
+```yaml
+ceph-csi-drivers:
+  drivers:
+    rbd:
+      nodePlugin:
+        tolerations:
+          - {
+              key: nvidia.com/gpu,
+              operator: Equal,
+              value: present,
+              effect: NoSchedule,
+            }
+    cephfs:
+      nodePlugin:
+        tolerations:
+          - {
+              key: nvidia.com/gpu,
+              operator: Equal,
+              value: present,
+              effect: NoSchedule,
+            }
+```
+
+Verified by rendering the chart locally: the values above produce
+`spec.nodePlugin.tolerations` on the `Driver` CR exactly as intended.
+
+Two operational notes:
+
+- The app is `syncPolicy.enabled: false` (`selfHeal: true`), so it does **not**
+  auto-sync — the change needs a deliberate ArgoCD sync.
+- Editing the `Driver` CR triggers ceph-csi-operator to update the nodeplugin
+  DaemonSets, which **rolling-restarts the CSI plugins on mc1–mc3**. Existing
+  mounts survive a nodeplugin restart, but new attach/mount operations fail
+  briefly, so this is done as its own Phase 0 step with the rollout watched to
+  completion rather than bundled with other changes.
+
+**Unrelated observation:** `csi-drivers/Chart.yaml` requests `ceph-csi-drivers`
+`1.0.4` while `Chart.lock` and the vendored tgz are `1.0.1`. Not touched by this
+work, but worth a follow-up.
 
 ## Verification — the go/no-go gate
 
@@ -488,7 +536,7 @@ rebuilt extension leaves the node without a GPU, or unbootable.
 | Upstream stops publishing images                                   | Precisely what Phase 2 removes                                                                                                  |
 | JetPack `.deb` download fails at pod start                         | Known; mirror in Phase 2                                                                                                        |
 | Talos changes its `containerd.toml` template                       | Verified stable v1.13.0→v1.13.5; re-diff on every Talos upgrade                                                                 |
-| Rook reverts the `Driver` CR patch                                 | Manage the CRs via the rook-ceph ArgoCD app                                                                                     |
+| `Driver` CR edit rolling-restarts CSI nodeplugins on mc1–mc3       | Expected. Existing mounts survive; new attach/mount briefly fails. Own Phase 0 step, rollout watched to completion              |
 | Stale `nv` taint survives the rename, double-tainting nv1          | Expected, not hypothetical — Talos cannot remove an unowned taint. Phase 0 step 4 removes it with `kubectl taint nodes nv1 nv-` |
 | Rename breaks smartmon's `value: NoSchedule` toleration            | Phase 0 widens tolerations (step 1) before renaming (step 2)                                                                    |
 | Applying nv1's config (stale since v1.12.7) causes unrelated drift | Full diff taken; only `install.image` metadata and a network representation re-migration. Re-diff immediately before applying   |
