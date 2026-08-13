@@ -9,3 +9,58 @@ machine:
         routes:
           - network: 0.0.0.0/0
             gateway: 192.168.50.1
+
+  install:
+    image: ghcr.io/schwankner/custom-installer:v1.13.0-6.18.24-nvgpu5.11.1-drm-noshim
+
+  kernel:
+    modules:
+      # OE4T host1x stack — prerequisite for all GPU modules
+      - name: host1x
+      - name: host1x_fence
+      - name: host1x_nvhost
+      # OE4T DRM stack — creates /dev/dri/renderD128, required for CUDA
+      - name: tegra_drm
+      # GPU memory + bandwidth
+      - name: nvmap
+      - name: mc_utils
+      # Main CUDA driver (GA10B / Ampere)
+      - name: nvgpu
+      # GPU frequency scaling governor
+      - name: governor_pod_scaling
+
+  nodeLabels:
+    accelerator: jetson-orin
+    nvidia.com/gpu.type: igpu
+
+  files:
+    # Talos builds containerd with CDI disabled, and op:overwrite requires the
+    # file to pre-exist — so CDI is enabled inline here rather than as a new
+    # conf.d drop-in. Content below is nv1's current containerd.toml verbatim
+    # plus the CDI block. Re-diff against the live file on every Talos upgrade.
+    - path: /etc/cri/containerd.toml
+      op: overwrite
+      permissions: 0o644
+      content: |
+        version = 3
+
+        disabled_plugins = [
+            "io.containerd.differ.v1.erofs",
+            "io.containerd.internal.v1.tracing",
+            "io.containerd.snapshotter.v1.blockfile",
+            "io.containerd.snapshotter.v1.erofs",
+            "io.containerd.ttrpc.v1.otelttrpc",
+            "io.containerd.tracing.processor.v1.otlp",
+        ]
+
+        imports = [
+            "/etc/cri/conf.d/cri.toml",
+        ]
+
+        [debug]
+        level = "info"
+        format = "json"
+
+        [plugins."io.containerd.cri.v1.runtime"]
+          enable_cdi = true
+          cdi_spec_dirs = ["/var/run/cdi"]

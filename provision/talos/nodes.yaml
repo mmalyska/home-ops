@@ -11,3 +11,6 @@ nodes:
   - name: nv1
     ip: 192.168.48.5
     type: worker
+    # Pinned: the GPU extension is ABI-bound to kernel 6.18.24.
+    # Remove this line only together with a rebuilt installer image.
+    talosVersion: v1.13.0
