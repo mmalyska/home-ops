@@ -11,6 +11,7 @@
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
 - [Always push and open PR after branch work](feedback_push_and_pr_after_branch.md) — push + gh pr create immediately after committing on a feature branch
 - [Never write the private domain literally](feedback_no_domain_in_comments.md) — not in comments, not in memory files; grep before writing
+- [Grafana: no anonymous access, ever](feedback_grafana_no_anonymous_access.md) — user's explicit call, even though Grafana route is LAN-only
 
 ## Project Context
 
