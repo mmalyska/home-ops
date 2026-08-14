@@ -12,6 +12,10 @@ General backlog items not tied to a specific plan.
   - Worth checking: is there an official Talos-supported flow for this (e.g. a documented "cordon, taint via kubectl, let Talos adopt/own it" pattern, a controller flag, elevated RBAC binding Talos is meant to have but doesn't in this cluster, or a `talosctl` subcommand that bypasses the kubelet identity)? Check Talos GitHub issues/docs for `NodeApplyController` + taints.
   - If no first-class fix exists, write a skill (e.g. `talos-taint-changes`) documenting the manual `kubectl taint` + config-reapply-to-confirm-no-drift procedure, so future taint renames/additions on already-registered nodes are a known, repeatable, low-risk operation instead of a surprise mid-plan.
 
+## Observability — Grafana Dashboards
+
+- [ ] **nv1 iGPU utilization metrics** — `node-exporter` gives free thermal-zone temps for the Jetson Orin GA10B iGPU (`node_thermal_zone_temp{type="gpu-thermal"}`, already surfaced on the "Cluster Nodes" dashboard's "Thermal Zones" panel), but there is no exporter for GPU utilization/clocks — Jetson has no `nvidia-smi`. Investigate a `jtop`/jetson-stats Prometheus exporter or a `tegrastats`-parsing textfile-collector sidecar, in the spirit of the existing `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` pattern. Scope as its own design doc given nv1's GPU stack is still mid-rollout (see `docs/superpowers/plans/2026-08-13-jetson-igpu.md`).
+
 ## Apps — Chart Upgrades
 
 - [ ] **Jellyfin** — migrate from local custom chart to official `jellyfin/jellyfin` Helm chart
