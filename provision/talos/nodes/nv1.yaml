@@ -11,7 +11,7 @@ machine:
             gateway: 192.168.50.1
 
   install:
-    image: ghcr.io/schwankner/custom-installer:v1.13.0-6.18.24-nvgpu5.11.1-drm-noshim
+    image: ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim
 
   kernel:
     modules:
