@@ -4,7 +4,18 @@
 
 **Goal:** Publish Jetson installer images from an account we control, fix the broken automation seam that stops upstream publishing them, and move nv1 off its Talos v1.13.0 pin.
 
-**Architecture:** A near-mirror fork of `schwankner/talos-jetson-orin` with exactly two divergences. Upstream's CI already builds and publishes on `ubuntu-24.04-arm` to `ghcr.io/<repository_owner>/…`, so the fork needs no new pipeline — only a fix to the `auto-tag` → `release` trigger, plus signing-key secrets. home-ops then consumes the fork's image.
+**Architecture:** A near-mirror fork of `schwankner/talos-jetson-orin`. Upstream's CI already builds and publishes on `ubuntu-24.04-arm` to `ghcr.io/<repository_owner>/…`, so the fork needs no new pipeline — only fixes plus signing-key secrets. home-ops then consumes the fork's image.
+
+> **Divergence revised 2026-08-14.** This was planned as "exactly two divergences" (`renovate.json` assignees + the `auto-tag` dispatch fix) on the assumption that upstream's build works and only its trigger is broken. Execution disproved that: upstream's publish path has **never** worked end-to-end, and four further defects had to be fixed before a single image could be produced. Current divergence:
+>
+> | File                              | Change                                                            | Upstreamable |
+> | --------------------------------- | ----------------------------------------------------------------- | ------------ |
+> | `scripts/setup-keys.sh`           | concatenate key + cert into `talos_signing_key.pem`, newline-safe | yes          |
+> | `scripts/common.sh`               | `TALOS_VERSION=v1.13.8`, `PKGS_COMMIT=f677246a`                   | yes          |
+> | `renovate.json`                   | drop `extractVersionTemplate`; assignees/reviewers (Task 7)       | yes          |
+> | `.github/workflows/auto-tag.yaml` | dispatch fix (Task 3, not yet applied)                            | yes          |
+>
+> Every divergence is a genuine upstream bug fix rather than a local workaround, so each should shrink back to zero as PRs land (Task 6). Do not treat the count as drift.
 
 **Tech Stack:** GitHub Actions (`ubuntu-24.04-arm`), ghcr.io, Talos Linux v1.13.x, `talosctl`, `gh` CLI, Renovate.
 
@@ -17,11 +28,11 @@
 - **Never commit secrets.** The signing key goes to Bitwarden and GitHub secrets only. `keys/` is gitignored upstream — keep it that way.
 - **The signing key must never change once nv1 runs modules signed with it.** A running node rejects modules signed by a different key. Generate once, store durably.
 - Fork repo: `mmalyska/talos-jetson-orin`. Image consumed by home-ops: `ghcr.io/mmalyska/custom-installer:<talos>-<kernel>-nvgpu<nvgpu>`.
-- Upstream `common.sh` currently holds `TALOS_VERSION=1.13.8` (**no `v` prefix**) and `PKGS_COMMIT=f3829f74` (kernel **6.18.24**).
+- Upstream `common.sh` holds `TALOS_VERSION=1.13.8` (**no `v` prefix**) and `PKGS_COMMIT=f3829f74` (kernel **6.18.24**). **Both values are broken and were corrected on the fork on 2026-08-14** to `v1.13.8` and `f677246a` (kernel **6.18.42**) — see Task 6 Step 2 for why each one breaks the build.
 - Build cost: **~90 min cold cache, ~5 min cache hit** for extensions, plus ~30 min USB/UKI assembly. The first build in a fresh namespace is always cold.
 - `TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig` for all `talosctl` calls.
 - Non-interactive shell: use `-f`/`-rf` with `cp`/`mv`/`rm`.
-- **Two steps need a human, not the agent:** storing the signing key in Bitwarden (Task 1 Step 5) and making the GHCR packages public (Task 2 Step 4) — the devcontainer's `gh` token has no package scopes. Stop and hand back at both.
+- **Several steps need a human, not the agent.** The devcontainer's `gh` token is a fine-grained PAT that **cannot create repositories, enable Actions, write secrets, dispatch workflows, or manage package visibility** — verified 2026-08-14, all returning `403 Resource not accessible by personal access token`. `gh auth login` does **not** help: `GITHUB_TOKEN` is injected as an environment variable (`.devcontainer/devcontainer.json`) and `gh` always prefers it over stored credentials. Hand back for: forking (Task 1 Step 1), enabling Actions (Step 3), Bitwarden storage (Step 5), setting secrets (Step 6), dispatching every build, and package visibility (Task 2 Step 4). The agent can still read runs, logs, and ghcr manifests, so it can verify and watch everything it cannot trigger.
 - Run `npx prettier --write <file>` on any Markdown/YAML touched in home-ops before committing.
 - **YAML snippets below render at column 0.** Prettier normalizes fenced YAML, so indentation does not reflect nesting depth. Place each at the depth the prose describes and confirm with the verify step that follows.
 
@@ -116,7 +127,7 @@ The key now lives in Bitwarden and GitHub secrets only.
 **Interfaces:**
 
 - Consumes: the fork and secrets from Task 1.
-- Produces: `ghcr.io/mmalyska/custom-installer:1.13.8-6.18.24-nvgpu5.11.1-drm-noshim`, **publicly pullable**. Task 4 references it.
+- Produces: `ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim`, **publicly pullable**. Task 4 references it.
 
 - [ ] **Step 1: Dispatch the release build against the existing tag**
 
@@ -143,7 +154,7 @@ Expected: success. On failure, read the logs — the most likely causes are a mi
 
 - [ ] **Step 3: Confirm the expected tag was produced**
 
-The tag is `${TALOS_VERSION}-${KERNEL_VERSION}-nvgpu${NVGPU_VERSION}`, and `TALOS_VERSION` has **no `v` prefix** in current `common.sh`.
+The tag is `${TALOS_VERSION}-${KERNEL_VERSION}-nvgpu${NVGPU_VERSION}`. After the 2026-08-14 fixes `TALOS_VERSION` **carries the `v`** (`v1.13.8`) and `KERNEL_VERSION` is **6.18.42**, so the tag is `v1.13.8-6.18.42-…`.
 
 ```bash
 TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:mmalyska/custom-installer:pull&service=ghcr.io" | jq -r .token)
@@ -151,7 +162,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   https://ghcr.io/v2/mmalyska/custom-installer/tags/list | jq -r '.tags[]?'
 ```
 
-Expected to include `1.13.8-6.18.24-nvgpu5.11.1-drm-noshim`.
+Expected to include `v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim`.
 
 - [ ] **Step 4: Make the packages public**
 
@@ -182,12 +193,12 @@ done
 This is the check that actually matters — it proves nv1 can fetch the image.
 
 ```bash
-IMG=ghcr.io/mmalyska/custom-installer:1.13.8-6.18.24-nvgpu5.11.1-drm-noshim
+IMG=ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim
 TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:mmalyska/custom-installer:pull&service=ghcr.io" | jq -r .token)
 curl -s -o /dev/null -w "manifest HTTP %{http_code}\n" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json" \
-  "https://ghcr.io/v2/mmalyska/custom-installer/manifests/1.13.8-6.18.24-nvgpu5.11.1-drm-noshim"
+  "https://ghcr.io/v2/mmalyska/custom-installer/manifests/v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim"
 ```
 
 Expected: `manifest HTTP 200`. A `401`/`403` means the package is still private — fix before Task 4.
@@ -319,10 +330,10 @@ git checkout -b feat/nv1-fork-installer
 In `provision/talos/nodes/nv1.yaml`, change `machine.install.image` to:
 
 ```yaml
-image: ghcr.io/mmalyska/custom-installer:1.13.8-6.18.24-nvgpu5.11.1-drm-noshim
+image: ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim
 ```
 
-Note the absent `v` prefix — the tag is built from `TALOS_VERSION=1.13.8` in `common.sh`.
+Note the **present** `v` prefix and the **6.18.42** kernel — the tag is built from `TALOS_VERSION=v1.13.8` and `PKGS_COMMIT=f677246a` as corrected on 2026-08-14. Confirm the tag actually published in Task 2 Step 3 rather than trusting this literal.
 
 - [ ] **Step 3: Delete the duplicated version key**
 
@@ -422,7 +433,7 @@ cd /workspaces/home-ops
 task talos:apply N=nv1
 export TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
 talosctl -n 192.168.48.5 upgrade \
-  --image ghcr.io/mmalyska/custom-installer:1.13.8-6.18.24-nvgpu5.11.1-drm-noshim \
+  --image ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim \
   --wait=false
 ```
 
@@ -433,7 +444,7 @@ talosctl -n 192.168.48.5 health --wait-timeout=15m --server=false
 kubectl get node nv1 -o wide --no-headers
 ```
 
-Pass: `Ready`, `Talos (v1.13.8)`, kernel still `6.18.24-talos` (the kernel comes from the pinned `PKGS_COMMIT`, not from the Talos version).
+Pass: `Ready`, `Talos (v1.13.8)`, kernel `6.18.42-talos` — **changed from the original plan**, which expected the kernel to stay at `6.18.24-talos` on the theory that it comes from `PKGS_COMMIT` independently of the Talos version. The imager rejects that combination (see Task 8), so the kernel moves with Talos and nv1 reaches full parity with the mc nodes.
 
 **Fail → stop.** Recovery: revert `nodes/nv1.yaml` to `ghcr.io/schwankner/custom-installer:v1.13.0-6.18.24-nvgpu5.11.1-drm-noshim` and re-upgrade, or USB reflash.
 
@@ -496,9 +507,24 @@ Fix: dispatch release.yaml explicitly after tagging. \`workflow_dispatch\` is th
 Verified equivalent to a tag push: release.yaml guards its GitHub Release step with \`startsWith(github.ref, 'refs/tags/')\`, and dispatching with \`--ref <tag>\` satisfies that."
 ```
 
-- [ ] **Step 2: Report the unrelated bug separately**
+- [ ] **Step 2: Report the other bugs separately**
 
-Do not bundle it. Comment on their issue #36, or open a new one: `check-talos.yaml` compares `TALOS_VERSION` from `common.sh` (`1.13.8`, no prefix) against the API's `tag_name` (`v1.13.8`), so the equality test never matches and it reports an update against itself.
+Do not bundle these with the dispatch PR — they are unrelated defects in different subsystems, and one contentious item should not block the others.
+
+Execution found that the dispatch seam was **not** the only reason upstream never publishes. Four further defects each independently break the build; all were hit in sequence on 2026-08-14:
+
+| #   | Defect                                                                 | Symptom                                                                                                                                                    | Fix applied on the fork                                               |
+| --- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 1   | `setup-keys.sh` copies only the private key to `talos_signing_key.pem` | `PEM routines::no start line` at the `certs/` target, ~47 s into the kernel build                                                                          | concatenate key + cert                                                |
+| 2   | Concatenating with plain `cat`                                         | `PEM routines::bad end line` — CI restores secrets with `printf '%s'` (no trailing newline), fusing `-----END PRIVATE KEY----------BEGIN CERTIFICATE-----` | `{ cat KEY_PEM; printf '\n'; cat KEY_X509; }`                         |
+| 3   | Renovate strips the `v` from `TALOS_VERSION`                           | `ghcr.io/siderolabs/installer:1.13.8: not found` (404; only `v1.13.8` exists)                                                                              | restore `v1.13.8`; drop `extractVersionTemplate` from `renovate.json` |
+| 4   | **`PKGS_COMMIT` desyncs from `TALOS_VERSION`**                         | UKI assembly fails: `copying kernel modules ... stat .../usr/lib/modules/6.18.42-talos`                                                                    | bump pin to `f677246a` (see Task 8)                                   |
+
+**Defect 3 is the same root cause as the `check-talos.yaml` bug** originally noted here — the missing `v` prefix — but it is build-breaking, not merely a cosmetic mis-report. Report both together: `check-talos.yaml` compares `TALOS_VERSION` from `common.sh` against the API's `tag_name`, so the equality test never matches and it reports an update against itself.
+
+**Defect 4 deserves its own issue — it is a design gap, not a typo.** `common.sh:20` labels the pin _"siderolabs/pkgs pin (derived from TALOS_VERSION)"_, but `PKGS_COMMIT` is hardcoded and nothing derives or updates it. Renovate bumps `TALOS_VERSION` alone, so **every automated Talos bump produces an imager/extension kernel mismatch**. Combined with defect 3, upstream's Renovate configuration cannot produce a working build at all — which explains the empty publish history more completely than the dispatch seam does.
+
+Suggested fix to propose upstream: derive the pin from the Talos release rather than hardcoding it, e.g. read `PKGS ?=` from `https://raw.githubusercontent.com/siderolabs/talos/${TALOS_VERSION}/Makefile` and take the trailing `-g<sha>`. That makes the two versions impossible to desync and matches what the comment already claims. Failing that, add a CI check that the pinned commit's `linux_version` matches the imager's kernel, so the mismatch fails fast instead of after ~90 min of extension builds.
 
 - [ ] **Step 3: Note the outcome**
 
@@ -552,9 +578,22 @@ Expected: `Auto-tag on version change` **and then** `Build USB Image`. Seeing au
 
 ---
 
-### Task 8 (optional track): Kernel parity with mainline Talos
+### Task 8 (REQUIRED — do before Task 4): Kernel parity with mainline Talos
 
-Independent of everything above. Only start when you want it; fully revertible.
+> **Reclassified 2026-08-14.** This was written as an optional, independent track. It is neither. Once `TALOS_VERSION` is `v1.13.8`, the imager (`ghcr.io/siderolabs/imager:v1.13.8`) ships kernel **6.18.42** and refuses to assemble a UKI against extensions built for **6.18.24**:
+>
+> ```
+> copying kernel modules from …/extensions/0/rootfs/usr/lib/modules failed:
+>   stat …/usr/lib/modules/6.18.42-talos: no such file or directory
+> ```
+>
+> The premise that "the kernel comes from the pinned `PKGS_COMMIT`, not from the Talos version" is wrong — the imager enforces that the two agree. `TALOS_VERSION` and `PKGS_COMMIT` must move together, so this task is a prerequisite for producing any usable image, and therefore precedes Task 4.
+>
+> Consequences: the published tag becomes `v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim`, and nv1 lands on `6.18.42-talos`. The parity outcome in Step 6 is no longer a bonus — it is the only self-consistent configuration.
+>
+> The fallback if the OE4T modules will not compile against 6.18.42 (Step 4) is to pin `TALOS_VERSION` back to `v1.13.0`, whose kernel is 6.18.24 and matches the existing extensions. That abandons the goal of moving nv1 off v1.13.0, so treat it as a last resort rather than a preference.
+
+Fully revertible.
 
 **Files:**
 
