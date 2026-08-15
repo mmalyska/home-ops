@@ -352,12 +352,16 @@ In `.taskfiles/talos/Taskfile.yaml`, replace the `NODE_TALOS_VERSION` var added 
 ```yaml
 NODE_TALOS_VERSION:
   sh: |
-    v=$(yq '.machine.install.image' {{.TALOS_DIR}}/clusterconfig/home-{{.N}}.yaml \
+    v=$(yq '.machine.install.image // ""' {{.TALOS_DIR}}/nodes/{{.N}}.yaml 2>/dev/null \
           | sed -n 's|.*custom-installer:v\{0,1\}\([0-9.]*\)-.*|v\1|p')
     echo "${v:-{{ .TALOS_VERSION }}}"
 ```
 
-Two behaviours this depends on, both verified: `sed -n …p` **exits 0 even when nothing matches**, so a `|| echo` fallback would silently produce an empty version — the fallback must test the captured value. And the `v` prefix is optional, because published tags use `v1.13.0-…` while new ones read `1.13.8-…`.
+**Read from the committed `nodes/<n>.yaml`, never from `clusterconfig/`.** Corrected 2026-08-15 — the original draft of this step used `clusterconfig/home-<n>.yaml`, which is generated and gitignored (`provision/talos/clusterconfig/.gitignore`). On a fresh clone, or any time before `talos:generate` has run, that file is absent, `yq` produces nothing, and nv1 **silently falls back to the global `TALOS_VERSION`** instead of its own — a wrong answer rather than an error, which would make the upgrade guard compare against the wrong version. `nodes/<n>.yaml` is committed, always present, and is the source `clusterconfig` is generated from anyway. Verified with `clusterconfig/` moved aside: nv1 still resolves to `v1.13.8`.
+
+Two further behaviours this depends on, both verified: `sed -n …p` **exits 0 even when nothing matches**, so a `|| echo` fallback would silently produce an empty version — the fallback must test the captured value. And the `v` prefix is optional in the match, which is what let this survive the tag format changing from `1.13.8-…` to `v1.13.8-…` mid-execution.
+
+The mc nodes have no `machine.install.image` in their committed node files (they take the factory installer from the template), so they match nothing and correctly fall back.
 
 - [ ] **Step 5: Verify version resolution for every node**
 
