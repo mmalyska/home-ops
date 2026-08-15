@@ -215,8 +215,19 @@ tasks:
       TALOS_IMAGE:
         sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
       FORCE: "{{ .FORCE | default false }}"
+      # Derived from the install image tag, which already encodes the version —
+      # one source of truth instead of two that can desync. Read from the
+      # committed nodes/*.yaml, never from clusterconfig/: those are generated
+      # and gitignored, so on a fresh clone they are absent and this would
+      # silently fall back to the global version instead of failing.
+      # Nodes on the stock factory installer have no install.image override and
+      # correctly fall back. NB: `sed -n …p` exits 0 even when nothing matches,
+      # so the fallback must test the captured value, not the exit status.
       NODE_TALOS_VERSION:
-        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .talosVersion // "{{ .TALOS_VERSION }}"' < {{.TALOS_DIR}}/nodes.yaml
+        sh: |
+          v=$(yq '.machine.install.image // ""' {{.TALOS_DIR}}/nodes/{{.N}}.yaml 2>/dev/null \
+                | sed -n 's|.*custom-installer:v\{0,1\}\([0-9.]*\)-.*|v\1|p')
+          echo "${v:-{{ .TALOS_VERSION }}}"
     status:
       - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .NODE_TALOS_VERSION }}' || return 1)
     cmds:
