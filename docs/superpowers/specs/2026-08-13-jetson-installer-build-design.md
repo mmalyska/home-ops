@@ -306,3 +306,79 @@ changes until a fork-built image exists and has been verified. To abandon Phase 
 entirely, point `nodes/nv1.yaml` back at
 `ghcr.io/schwankner/custom-installer:v1.13.0-6.18.24-nvgpu5.11.1-drm-noshim` and
 `talosctl upgrade`. The fork can be deleted without touching the cluster.
+
+## Outcome (2026-08-15)
+
+**Phase 2 succeeded.** nv1 runs an installer image we build and publish ourselves.
+
+**Image in use:** `ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim`
+(publicly pullable — anonymous manifest fetch returns HTTP 200).
+
+### Gate results — Task 5
+
+| Gate                        | Expected                   | Measured                          | Result |
+| --------------------------- | -------------------------- | --------------------------------- | ------ |
+| Node returns on new version | `Ready`, Talos v1.13.8     | `Ready`, `Talos (v1.13.8)`        | PASS   |
+| Kernel                      | `6.18.42-talos` (revised)  | `6.18.42-talos`                   | PASS   |
+| GPU modules loaded          | nvgpu + host1x + tegra_drm | all 8 loaded                      | PASS   |
+| DRM device node             | `renderD128` present       | `card0`, `renderD128`             | PASS   |
+| GPU allocatable             | `nvidia.com/gpu: 1`        | `1`                               | PASS   |
+| nvidia DaemonSets           | 3× Running on nv1          | 3/3 Running                       | PASS   |
+| ollama                      | Running                    | Running (rescheduled after drain) | PASS   |
+| Inference — eval rate       | within ~10% of 8.84 tok/s  | **8.96 tok/s** (+1.4%)            | PASS   |
+| Inference — prompt eval     | within ~10% of 74.18 tok/s | **77.66 tok/s** (+4.7%)           | PASS   |
+| Upgrade version guard       | resolves v1.13.8 and skips | matches, would skip               | PASS   |
+
+Inference measured with `qwen3.5:9b --think=false`, matching how the Phase 1 GPU
+baseline was recorded. The plan's Step 5 command omitted `--think=false`; run as
+written it would have compared thinking-mode generation against a non-thinking
+baseline and looked like a severe regression on a healthy GPU.
+
+### What the plan did not anticipate
+
+The design assumed upstream's build works and only its `auto-tag` → `release`
+trigger is broken. In fact upstream's publish path had **never** worked
+end-to-end. Five defects were found, four of them build-breaking, each hit in
+sequence over five builds:
+
+1. `setup-keys.sh` copied only the private key into `talos_signing_key.pem`,
+   so `extract-cert` failed with `PEM routines::no start line`.
+2. Concatenating key and cert with a plain `cat` fused the PEM blocks, because
+   CI restores secrets with `printf '%s'` and no trailing newline
+   (`PEM routines::bad end line`).
+3. Renovate's `extractVersionTemplate` stripped the `v` from `TALOS_VERSION`,
+   so `ghcr.io/siderolabs/installer:1.13.8` 404'd (only `v1.13.8` exists).
+4. `PKGS_COMMIT` desynced from `TALOS_VERSION`: the imager ships kernel 6.18.42
+   while the pinned pkgs commit built modules for 6.18.24, so UKI assembly
+   failed. This reclassified Task 8 from an optional track to a prerequisite.
+5. `check-talos.yaml` compares a prefix-stripped version against a `v`-prefixed
+   tag — the same root cause as (3), cosmetic rather than build-breaking.
+
+Defects 3 and 4 together mean upstream's Renovate configuration **cannot**
+produce a working build: every automated Talos bump both strips the prefix and
+desyncs the kernel pin. That explains the empty publish history more completely
+than the dispatch seam alone.
+
+### Consequences
+
+- **Kernel parity achieved** rather than deferred. nv1 is on `6.18.42-talos`;
+  once PR #4503 lands and mc1–3 upgrade, all four nodes match on Talos and
+  kernel — an outcome Phase 1 could not reach and Task 8 treated as a bonus.
+- **The OE4T modules compiled cleanly against 6.18.42**, so the risk flagged in
+  Task 8 Step 4 did not materialise. No revert was needed.
+- **Fork divergence is four files, not two**, every one a genuine upstream bug
+  fix rather than a local workaround. Each should shrink to zero as PRs land.
+- The signing key was rotated once during execution (the original was exposed in
+  a chat transcript before anything depended on it — the cheapest possible moment
+  to rotate, since no signed modules existed yet).
+
+### Still outstanding
+
+- **Task 3** — the `auto-tag` → `release` dispatch fix, not yet applied.
+- **Task 6** — upstream PRs (dispatch fix, signing-key fix, `v`-prefix fix) plus
+  issues for the `PKGS_COMMIT` design gap and `check-talos.yaml`.
+- **Task 7** — Renovate on the fork. Note the plan's instruction to leave
+  upstream's `packageRules` untouched is wrong: `extractVersionTemplate` must
+  stay removed or every future bump reintroduces defect 3.
+- **PR #4503** — Talos v1.13.8 for mc1–3, deliberately deferred so nv1's upgrade
+  stayed attributable.
