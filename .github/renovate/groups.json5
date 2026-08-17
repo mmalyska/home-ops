@@ -61,11 +61,12 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Hermes agent — weekly digest updates only (frequent main builds cause excessive pod restarts)",
+      "description": "Hermes agent — weekly digest updates only (frequent main builds cause excessive pod restarts). platformAutomerge must be disabled here: GitHub's native automerge enqueues at PR-creation time and ignores automergeSchedule entirely, which silently defeated this rule before.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["nousresearch/hermes-agent"],
       "matchUpdateTypes": ["digest"],
-      "automergeSchedule": ["before 5am on monday"]
+      "automergeSchedule": ["before 5am on monday"],
+      "platformAutomerge": false
     },
     {
       "description": "AzerothCore WoW server images",
@@ -78,7 +79,8 @@
       ],
       "groupName": "azerothcore",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "automergeSchedule": ["before 5am on monday"]
+      "automergeSchedule": ["before 5am on monday"],
+      "platformAutomerge": false
     }
   ]
 }
