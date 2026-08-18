@@ -236,7 +236,7 @@ spec:
       # ── Step 1: Restore JetPack r36.5 libs (once per boot) ──────────────
       initContainers:
         - name: restore-libs
-          image: ubuntu:22.04@sha256:a8cdd2158a73d7e5c02aa351fe269f48f57cf710a241db86e9ede371fc150149
+          image: ubuntu:22.04@sha256:8c71efb5d8170edf0965b2ac5e867cc70d3d8f73d1c9c0573d690d6203fc5866
           command: ["/bin/bash", "/scripts/restore-libs.sh"]
           securityContext:
             privileged: true
