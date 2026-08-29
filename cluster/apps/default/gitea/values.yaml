@@ -11,8 +11,8 @@ gitea:
   image:
     registry: docker.gitea.com
     repository: gitea
-    tag: 1.27.2
-    digest: sha256:d20286ca2b2e170fdf628e7231b8a31a3220ade39ff462b55041d43d1fc757dd
+    tag: 1.27.3
+    digest: sha256:87a67ee09d3ae0d1df5fda5dcda3e2a1f9236a45b0a59025d6e00e46adc43bef
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
   podSecurityContext:
