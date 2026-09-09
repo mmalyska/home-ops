@@ -69,6 +69,13 @@ allow-all, so the nodes reach the QNAP (NFS) and AdGuard (DNS) on VLAN 50
 with no explicit policy. DHCP is disabled on VLAN 48 — every node address is
 static in its Talos config.
 
+> **Every static host must use a `/24` mask.** These subnets were once one
+> flat `192.168.48.0/22`. A host left on `/22` treats `192.168.48.0`–
+> `192.168.51.255` as on-link and ARPs for off-VLAN peers instead of routing
+> to them, so traffic works one way and replies vanish — and only for peers
+> that fall inside the stale range, which makes it look like a firewall rule.
+> This bit the Talos nodes, the RPi and the QNAP during the migration.
+
 ## Gateway Architecture
 
 | Gateway | IP | Access | DNS | Entry point |

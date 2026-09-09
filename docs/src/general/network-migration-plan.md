@@ -140,6 +140,21 @@ static in a Talos config or a Cilium LB pool.
 > within VLAN 48 but could not reply to anything off-subnet.
 > Fixed in `fix/talos-vlan48-routing`: node addresses `/22`→`/24`,
 > default gateway `192.168.50.1`→`192.168.48.254`, NTP likewise.
+>
+> **The same stale `/22` was also on the RPi and the QNAP**, and it is
+> nastier there because it fails *one-way and silently*. A `/22` on
+> `192.168.50.9` covers `192.168.48.0`–`192.168.51.255`, so the RPi
+> treated cluster nodes as on-link: requests from VLAN 48 arrived
+> fine, but every reply was ARPed for on VLAN 50 and dropped. Clients
+> on VLAN 10 worked normally, because `192.168.10.x` falls outside the
+> stale `/22` and got routed correctly. Symptoms were node DNS failing
+> with `server misbehaving` and every NFS mount timing out, while the
+> same AdGuard answered VLAN 10 queries perfectly — which reads like a
+> firewall problem and is not one.
+>
+> **Check the netmask on every device that "needs no reconfiguration"
+> before blaming the firewall.** Anything carrying a mask wider than
+> its new VLAN will half-work in exactly this way.
 
 Only the switch port profiles and firewall rules reference the IDs,
 and both are being built from scratch here. Subnets are unchanged.
