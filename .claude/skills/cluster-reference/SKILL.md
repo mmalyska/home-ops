@@ -44,8 +44,11 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 
 ## Network Topology
 
-Node subnet: `192.168.48.0/22` · Pod network: `10.244.0.0/16` · Service network: `10.96.0.0/12`
+Node subnet: `192.168.48.0/24` (VLAN 48, gateway `192.168.48.254`) · Pod network: `10.244.0.0/16` · Service network: `10.96.0.0/12`
 LB IP pool: `192.168.48.20–50` (annotate new services with `lbipam.cilium.io/ips: "192.168.48.XX"`)
+
+> VLAN 48's gateway is `.254`, not `.1` — `192.168.48.1` is the Talos control-plane VIP.
+> DHCP is disabled on VLAN 48; all node addresses are static in `provision/talos/nodes/`.
 
 Full IP allocation and gateway architecture: `@docs/src/general/network.md`.
 

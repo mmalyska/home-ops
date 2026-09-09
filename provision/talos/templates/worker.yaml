@@ -41,7 +41,7 @@ machine:
   time:
     disabled: false
     servers:
-      - 192.168.50.1
+      - 192.168.48.254
   sysctls:
     net.core.bpf_jit_harden: "1"
   features:

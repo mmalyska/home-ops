@@ -4,11 +4,11 @@ machine:
     interfaces:
       - interface: enP8p1s0
         addresses:
-          - 192.168.48.5/22
+          - 192.168.48.5/24
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: 192.168.50.1
+            gateway: 192.168.48.254
 
   install:
     image: ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim
