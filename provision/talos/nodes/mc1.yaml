@@ -4,10 +4,10 @@ machine:
     interfaces:
       - interface: eth0
         addresses:
-          - 192.168.48.2/22
+          - 192.168.48.2/24
         mtu: 1500
         routes:
           - network: 0.0.0.0/0
-            gateway: 192.168.50.1
+            gateway: 192.168.48.254
         vip:
           ip: 192.168.48.1

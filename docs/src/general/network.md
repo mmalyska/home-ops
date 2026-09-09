@@ -4,37 +4,77 @@ The cluster uses a single domain (PRIVATE_DOMAIN) split across two gateways — 
 
 ## Physical Topology
 
+Two racks: a garage rack carrying the gateway, core switch and WAN, and an
+office rack carrying the cluster and NAS, joined by a single tagged trunk.
+
 ```mermaid
 flowchart TB
     ISP([ISP - fiber])
-    ONT[ONT\n1 GbE WAN]
-    Router[ASUS RT-AX58U\nAsuswrt-Merlin\n192.168.50.1]
+    ONT[ONT]
+    UCG[UCG-Max gateway\nVLAN 48 IP 192.168.48.254]
 
-    subgraph LAN[Home Network]
-        Switch[NETGEAR GS108GE\n8-port unmanaged\n1 GbE]
-        QNAP[QNAP TS-251D\n192.168.50.8]
+    subgraph GAR[Garage rack]
+        SW[USW-Pro-Max-16-PoE\ncore switch]
         RPi[Raspberry Pi 4B\nHAOS + AdGuard Home addon\n192.168.50.9]
-        Other[Other devices]
-        WiFi[WiFi devices]
+        AP1[U7 Pro - salon]
+        AP2[U7 Pro - upper floor]
+    end
 
-        subgraph K8S[Home Cluster - 192.168.48.x]
+    subgraph OFF[Office rack]
+        ToR[ToR switch]
+        QNAP[QNAP TS-251D\n192.168.50.8]
+
+        subgraph K8S[Cluster - VLAN 48]
             mc1[mc1\n192.168.48.2]
             mc2[mc2\n192.168.48.3]
             mc3[mc3\n192.168.48.4]
+            nv1[nv1 - Jetson Orin NX\n192.168.48.5]
         end
     end
 
     ISP --> ONT
-    ONT -->|1 GbE| Router
-    Router -->|1 GbE| Switch
-    Router --> RPi
-    Router --> Other
-    Router -. WiFi .- WiFi
-    Switch --> mc1
-    Switch --> mc2
-    Switch --> mc3
-    Switch --> QNAP
+    ONT -->|WAN| UCG
+    UCG -->|2.5 GbE| SW
+    SW --> RPi
+    SW --> AP1
+    SW --> AP2
+    SW -->|2.5 GbE trunk\nnative 10, tagged 48 + 50| ToR
+    ToR --> mc1
+    ToR --> mc2
+    ToR --> mc3
+    ToR --> nv1
+    ToR --> QNAP
 ```
+
+## VLANs
+
+VLAN ID always equals the third octet of the subnet. The gateway is the
+UCG-Max on every VLAN.
+
+| Network | VLAN | Subnet | Gateway | Purpose |
+|---|---|---|---|---|
+| Trusted | *untagged* | `192.168.10.0/24` | `.1` | PCs, phones, consoles, TVs |
+| IoT | 40 | `192.168.40.0/24` | `.1` | Smart home + cameras |
+| Cluster | 48 | `192.168.48.0/24` | **`.254`** | Talos nodes |
+| Servers | 50 | `192.168.50.0/24` | `.1` | QNAP, RPi |
+| Guest | 60 | `192.168.60.0/24` | `.1` | Guest WiFi |
+
+> **VLAN 48's gateway is `.254`, not `.1`.** `192.168.48.1` is the Talos
+> shared control-plane VIP (`k8s.PRIVATE_DOMAIN`, see below) and predates the
+> network build. Putting the UCG-Max on `.1` would collide with it. This is
+> the one deliberate exception to the "gateway is `.1`" convention.
+
+Cluster and Servers sit in a shared `Infra` firewall zone with intra-zone
+allow-all, so the nodes reach the QNAP (NFS) and AdGuard (DNS) on VLAN 50
+with no explicit policy. DHCP is disabled on VLAN 48 — every node address is
+static in its Talos config.
+
+> **Every static host must use a `/24` mask.** These subnets were once one
+> flat `192.168.48.0/22`. A host left on `/22` treats `192.168.48.0`–
+> `192.168.51.255` as on-link and ARPs for off-VLAN peers instead of routing
+> to them, so traffic works one way and replies vanish — and only for peers
+> that fall inside the stale range, which makes it look like a firewall rule.
+> This bit the Talos nodes, the RPi and the QNAP during the migration.
 
 ## Gateway Architecture
 
@@ -85,6 +125,10 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 | IP | Service |
 |---|---|
 | `192.168.48.1` | Cluster VIP (kube-apiserver) |
+| `192.168.48.2` | mc1 — control plane node |
+| `192.168.48.3` | mc2 — control plane node |
+| `192.168.48.4` | mc3 — control plane node |
+| `192.168.48.5` | nv1 — Jetson Orin NX worker |
 | `192.168.48.20` | `envoy-external` gateway |
 | `192.168.48.21` | `envoy-internal` gateway |
 | `192.168.48.22` | Jellyfin |
@@ -93,5 +137,6 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 | `192.168.48.28` | Vintage Story |
 | `192.168.48.29` | WoW (auth + world server) |
 | `192.168.48.30` | anytype any-sync services |
+| `192.168.48.254` | UCG-Max — VLAN 48 gateway, also the nodes' NTP source |
 | `192.168.50.8` | QNAP NAS |
 | `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon |
