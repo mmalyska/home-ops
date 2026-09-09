@@ -70,10 +70,14 @@ rook-ceph-cluster:
         # auth_allowed_ciphers, and the CRD warns it "can disrupt cluster
         # availability". Restricting it to aes256k would lock out the CSI
         # clients above, which must keep using aes.
-    mgr:
-      modules:
-        - name: rook
-          enabled: true
+    # mgr.modules is deliberately not overridden here. It used to set the
+    # `rook` module enabled: true, but from Ceph tentacle (20.2.x) the
+    # operator disables that module unconditionally — "disabling the rook mgr
+    # module for Ceph 20.2.4-0 tentacle / skipping rook mgr module
+    # configuration" — so the override asserted the opposite of what happens.
+    # Dropping it falls through to the chart default, which is
+    # `rook: enabled: false` and matches the operator's real behaviour.
+    # Do not re-add the override without checking the operator honours it.
     logCollector:
       enabled: false
     resources:
