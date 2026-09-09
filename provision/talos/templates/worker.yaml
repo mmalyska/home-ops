@@ -40,8 +40,14 @@ machine:
       op: create
   time:
     disabled: false
+    # Public anycast NTP, by IP on purpose. etcd refuses to start until time
+    # syncs, so this must not depend on DNS (nameserver is AdGuard on the RPi)
+    # or on any LAN host. The UCG-Max does not serve NTP on any interface.
     servers:
-      - 192.168.48.254
+      - 162.159.200.123
+      - 162.159.200.1
+      - 216.239.35.0
+      - 216.239.35.4
   sysctls:
     net.core.bpf_jit_harden: "1"
   features:
