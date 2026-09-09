@@ -1,0 +1,83 @@
+app-template:
+  controllers:
+    main:
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: ghcr.io/unpoller/unpoller
+            tag: v5.2.4@sha256:e1fad2c2d897cd71e3aaebe32c6fa87b1b205b6ebfde5c8fc036bc62b1930731
+            pullPolicy: IfNotPresent
+          # Env names come from the cnfg xml struct tags in
+          # unpoller/pkg/inputunifi/input.go — UP_<SECTION>_<KEY>. The
+          # defaults block is xml:"default" (singular), so the prefix is
+          # UP_UNIFI_DEFAULT_, not DEFAULTS_.
+          env:
+            UP_POLLER_DEBUG: "false"
+            UP_POLLER_QUIET: "false"
+            UP_INFLUXDB_DISABLE: "true"
+            UP_LOKI_DISABLE: "true"
+            UP_PROMETHEUS_DISABLE: "false"
+            UP_PROMETHEUS_HTTP_LISTEN: "0.0.0.0:9130"
+            UP_UNIFI_DYNAMIC: "false"
+            # UniFi OS gateways serve the controller on 443 — never :8443.
+            # .254 is the UCG-Max's VLAN 48 address, so this stays on-subnet.
+            UP_UNIFI_DEFAULT_URL: "https://192.168.48.254"
+            # Gateway presents a self-signed cert on its LAN address.
+            UP_UNIFI_DEFAULT_VERIFY_SSL: "false"
+            # API key rather than a local admin. unpoller clears User/Pass
+            # entirely when APIKey is set (pkg/inputunifi/input.go ~L415), so
+            # this is the only credential — revocable on its own, and no
+            # admin password ends up in the vault.
+            UP_UNIFI_DEFAULT_API_KEY:
+              valueFrom:
+                secretKeyRef:
+                  name: unpoller-secret
+                  key: UNIFI_API_KEY
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 9130
+                initialDelaySeconds: 15
+                periodSeconds: 30
+                timeoutSeconds: 5
+                failureThreshold: 5
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /
+                  port: 9130
+                initialDelaySeconds: 10
+                periodSeconds: 30
+                timeoutSeconds: 5
+                failureThreshold: 5
+            startup:
+              enabled: false
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 192Mi
+  service:
+    main:
+      controller: main
+      ports:
+        http:
+          port: 9130
+  serviceMonitor:
+    main:
+      enabled: true
+      serviceName: '{{ include "bjw-s.common.lib.chart.names.fullname" $ }}'
+      endpoints:
+        - port: http
+          scheme: http
+          path: /metrics
+          interval: 1m
+          scrapeTimeout: 30s

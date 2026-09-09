@@ -7,7 +7,7 @@ alloy:
             address       = "0.0.0.0:1514"
             protocol      = "udp"
             syslog_format = "rfc3164"
-            labels        = { source = "asus-router" }
+            labels        = { source = "unifi" }
           }
 
           forward_to = [loki.write.loki.receiver]
