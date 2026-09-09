@@ -2,7 +2,7 @@ anytype:
   mongodb:
     image:
       repository: mongo
-      tag: "8.3@sha256:5211c51171f57ae60842b11664bb244628971b3d35325762a97888337b9bb0db"
+      tag: "8.3@sha256:613a7cc66be5bbf1796252660b43c9b8969a5ad1dab6180c9d917b7472867e64"
   redis:
     image:
       repository: redis/redis-stack-server
