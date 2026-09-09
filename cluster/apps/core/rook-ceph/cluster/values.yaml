@@ -42,6 +42,34 @@ rook-ceph-cluster:
           namespace: envoy-gateway
           sectionName: https
   cephClusterSpec:
+    security:
+      cephx:
+        # Ceph tentacle (v20.2.x) flags `aes` cephx keys as insecure. The two
+        # halves cannot be treated the same way:
+        #
+        # CSI keys MUST stay on `aes`. aes256k needs Linux 7.0+ in the kernel
+        # RBD/CephFS client and these nodes run 6.18.42, so forcing aes256k
+        # here would break every kernel mount and take out all PVCs. This
+        # leaves AUTH_INSECURE_CLIENT_KEY_TYPE as a standing HEALTH_WARN
+        # until the fleet is on a kernel that supports it — accepted.
+        csi:
+          keyType: aes
+        # Daemons (osd/mds/mgr) are userspace Ceph processes with no kernel
+        # client involved, so they can take the stronger cipher. This is what
+        # clears AUTH_INSECURE_SERVICE_KEY_TYPE, the only [ERR] check and the
+        # reason the cluster reports HEALTH_ERR.
+        #
+        # keyType on its own is inert: per the CRD, when keyRotationPolicy is
+        # Disabled/unspecified, changing keyType never initiates rotation.
+        # Hence the explicit policy and generation.
+        daemon:
+          keyType: aes256k
+          keyRotationPolicy: KeyGeneration
+          keyGeneration: 1
+        # allowedCiphers is deliberately NOT set. It maps to
+        # auth_allowed_ciphers, and the CRD warns it "can disrupt cluster
+        # availability". Restricting it to aes256k would lock out the CSI
+        # clients above, which must keep using aes.
     mgr:
       modules:
         - name: rook
