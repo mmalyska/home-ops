@@ -1,11 +1,10 @@
-tap "go-task/tap"
 tap "hashicorp/tap"
 tap "int128/kubelogin"
 
 brew "direnv"
 brew "egctl"
 brew "gitleaks"
-cask "go-task/tap/go-task"
+brew "go-task"
 brew "helm"
 brew "ipcalc"
 brew "jq"
