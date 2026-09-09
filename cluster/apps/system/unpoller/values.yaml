@@ -25,16 +25,15 @@ app-template:
             UP_UNIFI_DEFAULT_URL: "https://192.168.48.254"
             # Gateway presents a self-signed cert on its LAN address.
             UP_UNIFI_DEFAULT_VERIFY_SSL: "false"
-            UP_UNIFI_DEFAULT_USER:
+            # API key rather than a local admin. unpoller clears User/Pass
+            # entirely when APIKey is set (pkg/inputunifi/input.go ~L415), so
+            # this is the only credential — revocable on its own, and no
+            # admin password ends up in the vault.
+            UP_UNIFI_DEFAULT_API_KEY:
               valueFrom:
                 secretKeyRef:
                   name: unpoller-secret
-                  key: UNIFI_USER
-            UP_UNIFI_DEFAULT_PASS:
-              valueFrom:
-                secretKeyRef:
-                  name: unpoller-secret
-                  key: UNIFI_PASS
+                  key: UNIFI_API_KEY
           probes:
             liveness:
               enabled: true
