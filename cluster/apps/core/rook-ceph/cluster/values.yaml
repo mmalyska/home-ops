@@ -170,12 +170,16 @@ rook-ceph-cluster:
           csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
           csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
           csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
-          # This map replaces the chart's default wholesale, so the
-          # controller-publish pair has to be restated or it is silently
-          # dropped. The driver has attachRequired: true, so ControllerPublish
-          # is invoked for these volumes.
-          csi.storage.k8s.io/controller-publish-secret-name: rook-csi-rbd-provisioner
-          csi.storage.k8s.io/controller-publish-secret-namespace: rook-ceph
+          # NOTE: do not add csi.storage.k8s.io/controller-publish-secret-name
+          # or -namespace here. Overriding this map does drop the chart's
+          # defaults for them, but StorageClass.parameters is IMMUTABLE — the
+          # API server rejects any change with "updates to parameters are
+          # forbidden", which breaks ArgoCD's server-side diff and leaves this
+          # app unable to sync at all. Adding them would require deleting and
+          # recreating both StorageClasses, and ceph-block is the cluster
+          # default, so a PVC created during that window would fail. ceph-csi's
+          # ControllerPublish does not need these credentials in practice, so
+          # the parity is not worth the disruption.
           csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
           csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
           csi.storage.k8s.io/fstype: ext4
@@ -222,10 +226,8 @@ rook-ceph-cluster:
           csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
           csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
           csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
-          # See the rbd storageClass above: overriding this map drops the
-          # chart's controller-publish pair unless it is restated here.
-          csi.storage.k8s.io/controller-publish-secret-name: rook-csi-cephfs-provisioner
-          csi.storage.k8s.io/controller-publish-secret-namespace: rook-ceph
+          # See the rbd storageClass above: the controller-publish pair is
+          # deliberately absent because StorageClass.parameters is immutable.
           csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
           csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
           csi.storage.k8s.io/fstype: ext4
