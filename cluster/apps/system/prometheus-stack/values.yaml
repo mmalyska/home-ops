@@ -98,6 +98,30 @@ kube-prometheus-stack:
         argocd:
           url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
           token: ""
+      unifi:
+        # UniFi-Poller's published dashboards (grafana.com). IDs verified
+        # against the grafana.com API — the numbering is not in the order
+        # the names suggest.
+        unifi-network-sites:
+          gnetId: 11311
+          revision: 5
+          datasource: Prometheus
+        unifi-usw-insights:
+          gnetId: 11312
+          revision: 9
+          datasource: Prometheus
+        unifi-usg-insights:
+          gnetId: 11313
+          revision: 9
+          datasource: Prometheus
+        unifi-uap-insights:
+          gnetId: 11314
+          revision: 10
+          datasource: Prometheus
+        unifi-client-insights:
+          gnetId: 11315
+          revision: 9
+          datasource: Prometheus
       ceph:
         ceph-cluster:
           url: https://raw.githubusercontent.com/ceph/ceph/v20.2.0/monitoring/ceph-mixin/dashboards_out/ceph-cluster.json
@@ -229,10 +253,9 @@ kube-prometheus-stack:
       serviceMonitorSelectorNilUsesHelmValues: false
       probeSelectorNilUsesHelmValues: false
       additionalScrapeConfigs:
-        - job_name: "asusrouter"
-          scrape_interval: 5s
-          static_configs:
-            - targets: ["192.168.50.1:9101"]
+        # The asusrouter job (192.168.50.1:9101) was removed with the house
+        # move — the RT-AX58U is retired and a UCG-Max replaced it. UniFi
+        # metrics now come from the unpoller app via its ServiceMonitor.
         - job_name: "qnap"
           scrape_interval: 10s
           static_configs:
