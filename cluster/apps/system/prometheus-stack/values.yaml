@@ -110,6 +110,21 @@ kube-prometheus-stack:
             editable: false
             options:
               path: /var/lib/grafana/dashboards/ceph
+          # Every key under `dashboards:` MUST have a provider with a matching
+          # name here. The provider is what creates
+          # /var/lib/grafana/dashboards/<name>, and the chart's
+          # download_dashboards.sh init container writes into that directory.
+          # Adding a `dashboards.unifi:` block without this entry made the
+          # init container fail with "can't create .../unifi/...json:
+          # nonexistent directory", crash-looping Grafana on startup.
+          - name: "unifi"
+            orgId: 1
+            folder: "UniFi"
+            type: file
+            disableDeletion: true
+            editable: false
+            options:
+              path: /var/lib/grafana/dashboards/unifi
     dashboardsConfigMaps:
       device: "device-dashboards"
     dashboards:
