@@ -64,32 +64,43 @@ kustomize build cluster/apps/core/argocd | argocd-secret-replacer sops -f cluste
 3. Run `task talos:generate`
 4. For non-standard config (different disk, sysctls), add extra merge patch keys to `nodes/<name>.yaml`
 
-### Pinning a node to a non-default Talos version
+### Nodes on a non-default Talos version
 
-`nodes.yaml` supports an optional per-node `talosVersion` key, e.g.:
+There is no per-node `talosVersion` key. A node's expected version is
+**derived from its own `machine.install.image` tag** in
+`nodes/<name>.yaml`, which already encodes the version — one source of
+truth instead of two that can desync.
+
+`task talos:upgrade N=<name>` (and therefore `task talos:upgrade:all`)
+parses the version out of a `custom-installer:vX.Y.Z-...` tag and compares
+the node's installed version against that. A node with no
+`machine.install.image` override is on the stock factory installer and
+falls back to the global `TALOS_VERSION` in
+`.taskfiles/talos/Taskfile.yaml`.
+
+So nv1 tracks `v1.13.8` purely because its image says so:
 
 ```yaml
-nodes:
-  - name: nv1
-    ip: 192.168.48.5
-    type: worker
-    talosVersion: v1.13.0
+# nodes/nv1.yaml
+machine:
+  install:
+    image: ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim
 ```
 
-When set, `task talos:upgrade N=<name>` (and therefore `task
-talos:upgrade:all`) checks that node's installed version against
-`talosVersion` instead of the global `TALOS_VERSION` in
-`.taskfiles/talos/Taskfile.yaml`. Without this, a pinned node would look
-"out of date" against the global version on every run and get reinstalled
-every time `upgrade:all` executes.
+To move such a node to a new Talos version, bump the tag in
+`nodes/<name>.yaml` — nothing else. **Confirm a matching custom installer
+exists first.** nv1's GPU kernel modules (`host1x`, `tegra_drm`, `nvgpu`,
+…) are ABI-bound to the exact kernel build in that image, and Talos loads
+them during the boot sequence before starting services, so a mismatched
+image can leave the node with networking up but `apid` never starting —
+reachable at the TCP level, unmanageable, and fixable only over the
+console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
+`docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
 
-Use this only when the node needs a version the fleet default doesn't carry —
-for example nv1 is pinned because its GPU kernel extension is ABI-bound to a
-specific kernel build shipped only in that Talos version's custom installer
-image (see `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md`).
-Removing the pin requires the node to already be compatible with (or ready to
-move to) the global `TALOS_VERSION` — never remove it as a way to force an
-upgrade without first confirming the new version has a matching installer.
+The version is read from the committed `nodes/*.yaml`, never from
+`clusterconfig/` — those are generated and gitignored, so on a fresh clone
+they are absent and the lookup would silently fall back to the global
+version instead of failing.
 
 ## Secrets
 
