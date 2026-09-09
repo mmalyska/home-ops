@@ -23,7 +23,14 @@ spec:
   {{- end }}
   postgresql:
     parameters:
-      pgaudit.log: "all, -misc"
+      # "ddl, write" rather than "all, -misc". "all" audited every statement
+      # including every SELECT, on every cluster using this chart. Those audit
+      # lines go to stdout -> Alloy -> Loki, and Loki's own storage is a Ceph
+      # RBD volume — so verbose auditing was amplifying writes onto the same
+      # wearing MX500 drives twice over. DDL and write statements are the ones
+      # with forensic value; reads were volume without much benefit here.
+      # Override per app if a specific database genuinely needs read auditing.
+      pgaudit.log: "ddl, write"
       pgaudit.log_catalog: "off"
       pgaudit.log_parameter: "on"
       pgaudit.log_relation: "on"

@@ -10,6 +10,46 @@ kube-prometheus-stack:
     enabled: false
   kubeScheduler:
     enabled: true
+  kubeApiServer:
+    serviceMonitor:
+      # job="apiserver" alone accounted for 129,633 of 275,451 active series
+      # (47%), almost entirely histogram buckets. Each series is sampled
+      # forever and written to Ceph, so cardinality here translates directly
+      # into wear on the MX500 OSD drives.
+      #
+      # Dropped below are buckets no bundled rule or dashboard consumes,
+      # ~42k series between them. Deliberately NOT dropped, despite being the
+      # largest of all: apiserver_request_duration_seconds_bucket,
+      # apiserver_request_sli_duration_seconds_bucket and
+      # etcd_request_duration_seconds_bucket — the kube-apiserver SLO and
+      # etcd alert rules are built on them, and dropping them would silently
+      # break alerting rather than just saving space.
+      metricRelabelings:
+        # First rule is the chart's own default, restated verbatim. Setting
+        # metricRelabelings replaces the default list rather than appending to
+        # it, so omitting this would silently re-admit the noisy le buckets on
+        # the four largest histograms — increasing cardinality, not reducing
+        # it. Keep it first, and re-check it on chart upgrades.
+        - action: drop
+          regex: (etcd_request|apiserver_request_slo|apiserver_request_sli|apiserver_request)_duration_seconds_bucket;(0\.15|0\.2|0\.3|0\.35|0\.4|0\.45|0\.6|0\.7|0\.8|0\.9|1\.25|1\.5|1\.75|2|3|3\.5|4|4\.5|6|7|8|9|15|20|40|45|50)(\.0)?
+          sourceLabels:
+            - __name__
+            - le
+        - sourceLabels: [__name__]
+          action: drop
+          regex: apiserver_request_body_size_bytes_bucket
+        - sourceLabels: [__name__]
+          action: drop
+          regex: apiserver_watch_cache_read_wait_seconds_bucket
+        - sourceLabels: [__name__]
+          action: drop
+          regex: apiserver_watch_list_duration_seconds_bucket
+        - sourceLabels: [__name__]
+          action: drop
+          regex: apiserver_response_sizes_bucket
+        - sourceLabels: [__name__]
+          action: drop
+          regex: apiserver_watch_events_sizes_bucket
   grafana:
     revisionHistoryLimit: 3
     grafana.ini:
@@ -208,6 +248,14 @@ kube-prometheus-stack:
     revisionHistoryLimit: 3
   prometheus:
     prometheusSpec:
+      # 60s rather than the 30s default. Every sample written lands on the
+      # Ceph RBD volume and, at 3x replication, on all three consumer-grade
+      # MX500 OSD drives. Those drives are at 62-70% rated life after ~4
+      # years with only ~27 TB of host writes each — they age on NAND P/E
+      # cycles, so halving the sample rate directly slows that curve.
+      # 60s resolution is ample for this cluster; raise it back if a
+      # short-lived spike ever needs to be caught.
+      scrapeInterval: 60s
       retention: 10d
       retentionSize: 20GiB
       storageSpec:

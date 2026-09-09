@@ -31,6 +31,14 @@ instanceSidecarConfiguration:
 postgresql:
   parameters:
     archive_timeout: "30min"
+    # WAL compression, off by default in PostgreSQL. Every WAL byte is
+    # written to a Ceph RBD volume and replicated 3x onto consumer-grade
+    # MX500 SSDs that are already at 62-70% rated life. Full-page writes
+    # (emitted after each checkpoint for every touched page) compress
+    # particularly well, so this cuts real bytes written for a little CPU.
+    # Safe and long-established — it compresses the WAL record payload and
+    # changes nothing about durability or replication semantics.
+    wal_compression: "on"
 # retentionPolicy: "10d"
 # objectStore:
 #   destinationPath: "s3://bucket/cnpg/<name>"
