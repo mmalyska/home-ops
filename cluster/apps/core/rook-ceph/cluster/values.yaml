@@ -12,6 +12,15 @@ rook-ceph-cluster:
     # amplification (and thus wear) on the consumer-grade Crucial MX500
     # drives backing the OSDs. Async (not sync) avoids adding op latency.
     bdev_async_discard = true
+    [mds]
+    # Ceph's default is 4 GiB, which is more than double the MDS container
+    # limit set below (2G). The cache limit is a target Ceph grows into, not
+    # a bound the container enforces, so leaving it at the default means the
+    # MDS expands until the kernel OOM-kills it. Only light CephFS use here
+    # (~35 MiB resident), so 1 GiB is ample and sits well inside the limit.
+    # If limits.memory for mds changes, revisit this — keep cache well below
+    # it, since the daemon needs headroom beyond the cache itself.
+    mds_cache_memory_limit = 1073741824
   monitoring:
     enabled: true
     createPrometheusRules: true
@@ -43,10 +52,42 @@ rook-ceph-cluster:
           namespace: envoy-gateway
           sectionName: https
   cephClusterSpec:
-    mgr:
-      modules:
-        - name: rook
-          enabled: true
+    security:
+      cephx:
+        # Ceph tentacle (v20.2.x) flags `aes` cephx keys as insecure. The two
+        # halves cannot be treated the same way:
+        #
+        # CSI keys MUST stay on `aes`. aes256k needs Linux 7.0+ in the kernel
+        # RBD/CephFS client and these nodes run 6.18.42, so forcing aes256k
+        # here would break every kernel mount and take out all PVCs. This
+        # leaves AUTH_INSECURE_CLIENT_KEY_TYPE as a standing HEALTH_WARN
+        # until the fleet is on a kernel that supports it — accepted.
+        csi:
+          keyType: aes
+        # Daemons (osd/mds/mgr) are userspace Ceph processes with no kernel
+        # client involved, so they can take the stronger cipher. This is what
+        # clears AUTH_INSECURE_SERVICE_KEY_TYPE, the only [ERR] check and the
+        # reason the cluster reports HEALTH_ERR.
+        #
+        # keyType on its own is inert: per the CRD, when keyRotationPolicy is
+        # Disabled/unspecified, changing keyType never initiates rotation.
+        # Hence the explicit policy and generation.
+        daemon:
+          keyType: aes256k
+          keyRotationPolicy: KeyGeneration
+          keyGeneration: 1
+        # allowedCiphers is deliberately NOT set. It maps to
+        # auth_allowed_ciphers, and the CRD warns it "can disrupt cluster
+        # availability". Restricting it to aes256k would lock out the CSI
+        # clients above, which must keep using aes.
+    # mgr.modules is deliberately not overridden here. It used to set the
+    # `rook` module enabled: true, but from Ceph tentacle (20.2.x) the
+    # operator disables that module unconditionally — "disabling the rook mgr
+    # module for Ceph 20.2.4-0 tentacle / skipping rook mgr module
+    # configuration" — so the override asserted the opposite of what happens.
+    # Dropping it falls through to the chart default, which is
+    # `rook: enabled: false` and matches the operator's real behaviour.
+    # Do not re-add the override without checking the operator honours it.
     logCollector:
       enabled: false
     resources:
@@ -129,14 +170,23 @@ rook-ceph-cluster:
           csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
           csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
           csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          # This map replaces the chart's default wholesale, so the
+          # controller-publish pair has to be restated or it is silently
+          # dropped. The driver has attachRequired: true, so ControllerPublish
+          # is invoked for these volumes.
+          csi.storage.k8s.io/controller-publish-secret-name: rook-csi-rbd-provisioner
+          csi.storage.k8s.io/controller-publish-secret-namespace: rook-ceph
           csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
           csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
           csi.storage.k8s.io/fstype: ext4
   cephBlockPoolsVolumeSnapshotClass:
     enabled: true
     name: csi-ceph-blockpool
+    # Neither snapshot class is default here; the cluster-wide default comes
+    # from the snapshot-controller app (csi-rbdplugin-snapclass). Stated on
+    # both classes so the pair reads consistently — the cephfs one below is a
+    # real override, since the chart defaults that one to true.
     isDefault: false
-    deletionPolicy: Delete
   cephFileSystems:
     - name: ceph-filesystem
       spec:
@@ -172,6 +222,10 @@ rook-ceph-cluster:
           csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
           csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
           csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
+          # See the rbd storageClass above: overriding this map drops the
+          # chart's controller-publish pair unless it is restated here.
+          csi.storage.k8s.io/controller-publish-secret-name: rook-csi-cephfs-provisioner
+          csi.storage.k8s.io/controller-publish-secret-namespace: rook-ceph
           csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
           csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
           csi.storage.k8s.io/fstype: ext4
@@ -179,5 +233,4 @@ rook-ceph-cluster:
     enabled: true
     name: csi-ceph-filesystem
     isDefault: false
-    deletionPolicy: Delete
   cephObjectStores: []
