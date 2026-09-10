@@ -14,3 +14,9 @@
       name: argocd-secret
       jsonPointers:
         - /data/oidc.keycloak.clientSecret
+        # ESO reconciles argocd-secret (creationPolicy: Merge) and can
+        # transiently overwrite the tracking-id annotation between the ESO
+        # refresh and the next ArgoCD sync; ignore it so the app does not
+        # flap OutOfSync. ArgoCD still tracks the secret via the
+        # app.kubernetes.io/instance label.
+        - /metadata/annotations/argocd.argoproj.io~1tracking-id
