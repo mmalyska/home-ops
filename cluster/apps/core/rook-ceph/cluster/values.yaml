@@ -65,21 +65,66 @@ rook-ceph-cluster:
         csi:
           keyType: aes
         # Daemons (osd/mds/mgr) are userspace Ceph processes with no kernel
-        # client involved, so they can take the stronger cipher. This is what
-        # clears AUTH_INSECURE_SERVICE_KEY_TYPE, the only [ERR] check and the
-        # reason the cluster reports HEALTH_ERR.
+        # client involved, so they take the stronger cipher. Rotating them is
+        # what cleared AUTH_INSECURE_SERVICE_KEY_TYPE, the only [ERR] check,
+        # and is also the CVE-2025-30156 remediation Rook documents.
         #
-        # keyType on its own is inert: per the CRD, when keyRotationPolicy is
-        # Disabled/unspecified, changing keyType never initiates rotation.
-        # Hence the explicit policy and generation.
+        # keyType is deliberately NOT set here. The Rook docs are explicit:
+        # "Rook automatically detects the best CephX key type for daemon keys.
+        # Do not set this unless required to work around an issue." The
+        # operator log confirms it selects aes256k on its own, so the override
+        # was a no-op asserting a value Rook already chose.
+        #
+        # keyRotationPolicy and keyGeneration must stay: per the CRD, with the
+        # policy Disabled/unspecified no rotation is ever initiated. Bump
+        # keyGeneration to rotate daemon keys again in future.
         daemon:
-          keyType: aes256k
           keyRotationPolicy: KeyGeneration
           keyGeneration: 1
         # allowedCiphers is deliberately NOT set. It maps to
         # auth_allowed_ciphers, and the CRD warns it "can disrupt cluster
         # availability". Restricting it to aes256k would lock out the CSI
         # clients above, which must keep using aes.
+    healthCheck:
+      # These four warnings are all consequences of one unavoidable fact: the
+      # CSI keys must stay on `aes` because aes256k needs Linux kernel 7.0+ in
+      # the RBD/CephFS client, and no Talos release ships one — Talos tracks
+      # the 6.18 longterm branch (nodes run 6.18.42; even v1.15.0-alpha is on
+      # 6.18.49). ceph-csi must also reach v3.17.1; it is on v3.17.0.
+      #
+      # The Rook docs sanction exactly this: "It is expected that Rook
+      # clusters will have constraints that prevent immediate resolution of
+      # all warnings. Warnings that cannot be resolved immediately can be
+      # ignored safely", and they document muteHealthWarning for it.
+      #
+      # Without muting, Ceph sits at HEALTH_WARN permanently, which keeps the
+      # ArgoCD app Degraded and trains everyone to ignore its health — the
+      # real cost, since a genuine future problem would look identical.
+      #
+      # NOT muted: AUTH_INSECURE_ROTATING_SERVICE_KEY_TYPE. It self-clears 2-3
+      # hours after daemon rotation (confirmed: present at +1h22m, gone by
+      # +3h41m), so muting it would hide a real transient signal.
+      #
+      # TO UNMUTE: once the fleet runs kernel 7.0+ AND ceph-csi >= v3.17.1,
+      # follow the Rook "Migrating CSI keys to a new key type" guide, then
+      # switch these to policy: unmute so stray aes keys become visible again.
+      muteHealthWarning:
+        # The 4 csi-* client keys, plus client.rbd-mirror-peer. Kernel-bound.
+        AUTH_INSECURE_CLIENT_KEY_TYPE:
+          policy: mute
+        # Mons must keep accepting aes while the CSI keys use it.
+        AUTH_INSECURE_KEYS_ALLOWED:
+          policy: mute
+        AUTH_INSECURE_KEYS_CREATABLE:
+          policy: mute
+        # Not in Rook's documented mute list, but muting the three above
+        # without this one changes nothing: Ceph stays HEALTH_WARN and the
+        # app stays Degraded. Rook itself sets
+        # mon-auth-emergency-allowed-ciphers="aes,aes256k" (see the operator
+        # log) precisely so mixed-cipher operation works, so this check is
+        # reporting a state Rook deliberately configured and we require.
+        AUTH_EMERGENCY_CIPHERS_SET:
+          policy: mute
     # mgr.modules is deliberately not overridden here. It used to set the
     # `rook` module enabled: true, but from Ceph tentacle (20.2.x) the
     # operator disables that module unconditionally — "disabling the rook mgr
