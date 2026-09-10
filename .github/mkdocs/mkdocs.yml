@@ -135,8 +135,12 @@ nav:
       - "Network": general/network.md
       - "UPS & Power": general/ups.md
       - "Network Upgrade Plan": general/network-upgrade-plan.md
+      - "Network Migration Plan": general/network-migration-plan.md
   - "Home Ops":
       - "Kubernetes":
           - "Bootstrap": k8s/bootstrap.md
           - "OIDC": k8s/oidc/Readme.md
           - "OAuth2 Proxy": k8s/oauth2-proxy.md
+          - "Rook-Ceph CephX Ciphers": k8s/rook-ceph-cephx.md
+          - "Debugging with egctl": k8s/egctl.md
+          - "NVMe Replacement": k8s/nvme-replacement.md
