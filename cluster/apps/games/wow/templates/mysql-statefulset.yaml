@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: mysql:8.4@sha256:3466ba4a4828aa8d46fb7c3bc16b67b781c98413cf4ea0fac6feaa6e881faa26
+          image: mysql:8.4@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
