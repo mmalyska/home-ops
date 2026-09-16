@@ -1,0 +1,12 @@
+apiVersion: v2
+name: onlyoffice-subchart
+type: application
+version: 1.0.0
+appVersion: "9.0.0"
+dependencies:
+  - name: onlyoffice-documentserver
+    version: 1.0.4
+    repository: file://../../../../../charts/onlyoffice-documentserver/
+  - name: pgsql-cnpg
+    version: 1.5.0
+    repository: file://../../../../../charts/pgsql-cnpg/

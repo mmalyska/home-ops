@@ -9,8 +9,10 @@ sudo git config --global pull.rebase true
 
 direnv allow
 
+/home/linuxbrew/.linuxbrew/bin/chezmoi init --apply mmalyska/dotfiles
+
 if [ -n "${CODESPACES}" ]; then
-  sudo apt-get install -y --no-install-recommends wireguard-tools
+  sudo apt-get install -y --no-install-recommends wireguard-tools iputils-ping
 fi
 
 (

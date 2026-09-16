@@ -1,0 +1,13 @@
+nodes:
+  - name: mc1
+    ip: 192.168.48.2
+    type: controlplane
+  - name: mc2
+    ip: 192.168.48.3
+    type: controlplane
+  - name: mc3
+    ip: 192.168.48.4
+    type: controlplane
+  - name: nv1
+    ip: 192.168.48.5
+    type: worker

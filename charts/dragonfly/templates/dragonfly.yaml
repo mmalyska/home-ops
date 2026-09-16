@@ -1,0 +1,20 @@
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  name: {{ printf "%s-%s" .Values.name "dragonfly" }}
+spec:
+  replicas: {{ .Values.replicas }}
+  {{- with .Values.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.authentication.existingSecret }}
+  authentication:
+    passwordFromSecret:
+      name: {{ .Values.authentication.existingSecret }}
+      key: {{ .Values.authentication.existingSecretKey }}
+  {{- end }}
+  {{- with .Values.args }}
+  args:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

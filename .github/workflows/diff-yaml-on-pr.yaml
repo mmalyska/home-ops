@@ -12,7 +12,7 @@ env:
   conf_live_branch: main
   conf_ignore_known_labels_containing_versions: true
   # renovate: datasource=github-releases depName=siderolabs/kubelet
-  kube_version: v1.35.5
+  kube_version: v1.35.8
   kube_api_versions: |
     acme.cert-manager.io/v1
     admissionregistration.k8s.io/v1
@@ -37,9 +37,6 @@ env:
     flowcontrol.apiserver.k8s.io/v1beta1
     flowcontrol.apiserver.k8s.io/v1beta2
     fpga.intel.com/v2
-    metallb.io/v1alpha1
-    metallb.io/v1beta1
-    metallb.io/v1beta2
     metrics.k8s.io/v1beta1
     monitoring.coreos.com/v1
     monitoring.coreos.com/v1alpha1
@@ -63,7 +60,7 @@ jobs:
       helm_files: ${{ steps.unified.outputs.helm_files }}
       kustomize_files: ${{ steps.unified.outputs.kustomize_files }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -91,22 +88,27 @@ jobs:
             helm
             yq
           # renovate: datasource=github-releases depName=helm/helm
-          helm: "4.2.0"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+          helm: "4.3.0"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pr
       - id: diff
         run: |
           hr_live_path="live/${{ matrix.file }}"
           hr_pr_path="pr/${{ matrix.file }}"
-          resources_live=$(helm template "$hr_live_path" --dependency-update --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
+          # helm dependency update prints progress/status messages to stdout; running it
+          # separately from `helm template` keeps that noise out of the captured YAML
+          # (mixing them in caused intermittent "bad file '-': yaml: ..." failures below).
+          helm dependency update "$hr_live_path" > /dev/null || true
+          helm dependency update "$hr_pr_path" > /dev/null || true
+          resources_live=$(helm template "$hr_live_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
           # echo "$resources_live"
           # echo "#####################################################"
-          resources_pr=$(helm template "$hr_pr_path" --dependency-update --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
+          resources_pr=$(helm template "$hr_pr_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
           # echo "$resources_pr"
           # echo "#####################################################"
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
@@ -173,15 +175,15 @@ jobs:
       - uses: mmalyska/action-setup-kube-tools@releases/v0.12.0
         with:
           # renovate: datasource=github-releases depName=siderolabs/kubelet
-          kubectl: "v1.35.5"
+          kubectl: "v1.35.8"
           setup-tools: |
             kubectl
             yq
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.conf_live_branch }}
           path: live
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pr
       - id: diff

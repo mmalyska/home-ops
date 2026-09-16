@@ -77,6 +77,32 @@ resource "cloudflare_zone_setting" "zone_setting_rocket_loader" {
   value = "on"
 }
 
+# Rocket Loader rewrites <script> tags in a way that only its own loader
+# script can execute -- but that loader script isn't nonce'd, so it's
+# blocked outright by CSPs using 'strict-dynamic' (e.g. Nextcloud's login
+# page), which silently breaks all JS on the page. Disable it per-host
+# for apps that ship a strict-dynamic CSP, instead of weakening their CSP
+# or disabling Rocket Loader zone-wide.
+resource "cloudflare_ruleset" "zone_level_config_rules" {
+  zone_id     = cloudflare_zone.domain.id
+  name        = "Configuration Rules"
+  description = "Per-host overrides of zone-level settings"
+  kind        = "zone"
+  phase       = "http_config_settings"
+
+  rules = [
+    {
+      action = "set_config"
+      action_parameters = {
+        rocket_loader = false
+      }
+      expression  = "(http.host eq \"nextcloud.${local.cloudflare_domain}\")"
+      description = "Disable Rocket Loader for Nextcloud (breaks strict-dynamic CSP login page)"
+      enabled     = true
+    }
+  ]
+}
+
 resource "cloudflare_zone_setting" "zone_setting_always_online" {
   zone_id = cloudflare_zone.domain.id
   setting_id = "always_online"

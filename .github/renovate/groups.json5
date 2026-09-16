@@ -25,14 +25,6 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Metallb image and chart",
-      "matchDatasources": ["github-tags", "helm"],
-      "matchPackagePatterns": [".*metallb.*"],
-      "groupName": "metallb",
-      "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true
-    },
-    {
       "description": "Kubernetes stack",
       "matchDatasources": ["docker", "github-releases"],
       "matchPackageNames": [
@@ -69,6 +61,15 @@
       "separateMinorPatch": true
     },
     {
+      "description": "Hermes agent — track curated v2026.x.x release tags (not the noisy rolling :main tag) and cap automerge to weekly. versioning: loose because tags are CalVer with an occasional 4th hotfix component (e.g. v2026.7.7.2) that default docker/semver versioning sorts incorrectly. platformAutomerge must be disabled here: GitHub's native automerge enqueues at PR-creation time and ignores automergeSchedule entirely, which silently defeated this rule before.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["nousresearch/hermes-agent"],
+      "versioning": "loose",
+      "matchUpdateTypes": ["patch", "minor", "digest"],
+      "automergeSchedule": ["before 5am on monday"],
+      "platformAutomerge": false
+    },
+    {
       "description": "AzerothCore WoW server images",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
@@ -78,7 +79,9 @@
         "acore/ac-wotlk-client-data"
       ],
       "groupName": "azerothcore",
-      "group": {"commitMessageTopic": "{{{groupName}}} group"}
+      "group": {"commitMessageTopic": "{{{groupName}}} group"},
+      "automergeSchedule": ["before 5am on monday"],
+      "platformAutomerge": false
     }
   ]
 }

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: honcho-api
+  namespace: honcho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: honcho-api
+  template:
+    metadata:
+      labels:
+        app: honcho-api
+    spec:
+      containers:
+        - name: honcho-api
+          image: "{{ .Values.honcho.image.repository }}:{{ .Values.honcho.image.tag }}"
+          command: ["sh", "docker/entrypoint.sh"]
+          env:
+            {{- include "honcho.llmEnv" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources: {{toYaml .Values.honcho.resources | nindent 12}}

@@ -1,0 +1,230 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+  namespace: hermes-agent
+spec:
+  replicas: {{ .Values.hermes.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hermes-agent
+  template:
+    metadata:
+      labels:
+        app: hermes-agent
+      annotations:
+        checksum/config:
+          {{include (print $.Template.BasePath "/configmap.yaml") . | sha256sum}}
+    spec:
+      initContainers:
+        - name: fix-kanban-db-permissions
+          image: alpine:3@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+          command:
+            - sh
+            - -c
+            - |
+              find /opt/data -name 'kanban.db*' | while read f; do
+                chown 10000:10000 "$f" && chmod 644 "$f" || true
+              done
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+        - name: config-seeder
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command:
+            - python3
+            - -c
+            - |
+              import yaml, json, os
+
+              template_path = '/config-template/config.yaml'
+              config_path = '/opt/data/config.yaml'
+
+              with open(template_path) as f:
+                  overrides = yaml.safe_load(f)
+
+              if os.path.exists(config_path):
+                  with open(config_path) as f:
+                      config = yaml.safe_load(f) or {}
+
+                  def deep_merge(base, src):
+                      for k, v in src.items():
+                          if isinstance(v, dict) and isinstance(base.get(k), dict):
+                              deep_merge(base[k], v)
+                          else:
+                              base[k] = v
+
+                  deep_merge(config, overrides)
+              else:
+                  config = overrides
+
+              with open(config_path, 'w') as f:
+                  yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: config-template
+              mountPath: /config-template
+        - name: ssh-key-seeder
+          image: alpine:3@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /opt/data/ssh
+              cp /run/ssh-keys/SANDBOX_DEVOPS_SSH_KEY /opt/data/ssh/sandbox-devops.key
+              cp /run/ssh-keys/SANDBOX_DOTNET_DEV_SSH_KEY /opt/data/ssh/sandbox-dotnet-dev.key
+              cp /run/ssh-keys/SANDBOX_NODE_DEV_SSH_KEY /opt/data/ssh/sandbox-node-dev.key
+              cp /run/ssh-keys/SANDBOX_MOBILE_DEV_SSH_KEY /opt/data/ssh/sandbox-mobile-dev.key
+              cp /run/ssh-keys/SANDBOX_RESEARCHER_SSH_KEY /opt/data/ssh/sandbox-researcher.key
+              chmod 600 /opt/data/ssh/*.key
+              chown 0:0 /opt/data/ssh/*.key
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: sandbox-ssh-keys
+              mountPath: /run/ssh-keys
+        - name: honcho-seeder
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command:
+            - python3
+            - -c
+            - |
+              import json, os
+
+              template_path = '/honcho-config/honcho.json'
+
+              with open(template_path) as f:
+                  overrides = json.load(f)
+
+              # Write to $HERMES_HOME/honcho.json (primary read path for default profile)
+              hermes_home = os.environ.get('HERMES_HOME', '/opt/data')
+              target_path = os.path.join(hermes_home, 'honcho.json')
+
+              if os.path.exists(target_path):
+                  with open(target_path) as f:
+                      config = json.load(f) or {}
+
+                  def deep_merge(base, src):
+                      for k, v in src.items():
+                          if isinstance(v, dict) and isinstance(base.get(k), dict):
+                              deep_merge(base[k], v)
+                          else:
+                              base[k] = v
+
+                  deep_merge(config, overrides)
+              else:
+                  config = overrides
+
+              with open(target_path, 'w') as f:
+                  json.dump(config, f, indent=2)
+
+              # Seed honcho.json to worker profile directories
+              # Worker profiles read from $HERMES_HOME/honcho.json
+              # which resolves to /opt/data/profiles/<name>/honcho.json
+              profiles_dir = os.path.join(hermes_home, 'profiles')
+              if os.path.isdir(profiles_dir):
+                  for profile in os.listdir(profiles_dir):
+                      profile_target = os.path.join(profiles_dir, profile, 'honcho.json')
+                      if not os.path.exists(profile_target):
+                          with open(profile_target, 'w') as f:
+                              json.dump(config, f, indent=2)
+
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: honcho-config
+              mountPath: /honcho-config
+          env:
+            - name: HERMES_HOME
+              value: /opt/data
+      containers:
+        - name: hermes-agent
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          args:
+            - gateway
+            - run
+            - --replace
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - "VIRTUAL_ENV=/opt/hermes/.venv uv pip install honcho-ai"
+          env:
+            - name: HOME
+              value: /opt/data
+            - name: HERMES_DASHBOARD
+              value: "true"
+            - name: HERMES_DASHBOARD_TUI
+              value: "1"
+            - name: HERMES_DASHBOARD_HOST
+              value: "127.0.0.1"
+            - name: HERMES_DASHBOARD_PORT
+              value: "9120"
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama.ollama.svc.cluster.local:11434/v1"
+            - name: SIGNAL_HTTP_URL
+              value: "http://signal-cli:8080"
+            {{- range .Values.externalSecrets }}
+            - name: {{ if .envName }}{{ .envName }}{{ else }}{{ .secretName }}{{ end }}
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent-secrets
+                  key: {{ .secretName }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 9120
+              protocol: TCP
+          resources: {{toYaml .Values.hermes.resources | nindent 12}}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+        - name: nginx
+          image: nginx:1.31-alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3
+          ports:
+            - name: http
+              containerPort: 9119
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-agent-data
+        - name: config-template
+          configMap:
+            name: hermes-agent-config
+        - name: nginx-config
+          configMap:
+            name: hermes-agent-nginx
+        - name: honcho-config
+          configMap:
+            name: hermes-agent-honcho
+        - name: sandbox-ssh-keys
+          secret:
+            secretName: hermes-agent-secrets
+            items:
+              - key: SANDBOX_DEVOPS_SSH_KEY
+                path: SANDBOX_DEVOPS_SSH_KEY
+              - key: SANDBOX_DOTNET_DEV_SSH_KEY
+                path: SANDBOX_DOTNET_DEV_SSH_KEY
+              - key: SANDBOX_NODE_DEV_SSH_KEY
+                path: SANDBOX_NODE_DEV_SSH_KEY
+              - key: SANDBOX_MOBILE_DEV_SSH_KEY
+                path: SANDBOX_MOBILE_DEV_SSH_KEY
+              - key: SANDBOX_RESEARCHER_SSH_KEY
+                path: SANDBOX_RESEARCHER_SSH_KEY

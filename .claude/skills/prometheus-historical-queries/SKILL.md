@@ -14,6 +14,19 @@ when_to_use: >
 **Extracted:** 2026-03-23
 **Context:** Comparing current metrics to a past snapshot in Prometheus
 
+## Prerequisite: Port-Forward
+
+This assumes a port-forward to Prometheus is already up. Use the correct
+service name — `prometheus-stack-kube-prom-prometheus`, not the more
+guessable `kube-prometheus-stack-prometheus` — and see
+`prometheus-portforward-session` for the correct lifecycle across multiple
+Bash tool calls (`pkill -f`, not `kill %1`).
+
+```bash
+kubectl -n monitoring port-forward svc/prometheus-stack-kube-prom-prometheus 9090:9090 &
+sleep 3
+```
+
 ## Problem
 `avg_over_time(metric[7d])` often returns errors or misleading values
 (e.g., when exporters have gaps, counters reset, or subquery syntax is rejected

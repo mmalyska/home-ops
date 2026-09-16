@@ -1,0 +1,30 @@
+open-webui:
+  persistence:
+    size: 5Gi
+  ollama:
+    enabled: false
+  ingress:
+    enabled: false
+  route:
+    enabled: true
+    annotations:
+      external-dns.alpha.kubernetes.io/controller: dns-controller
+    parentRefs:
+      - name: envoy-internal
+        namespace: envoy-gateway
+        sectionName: https
+    hostnames:
+      - chat.<secret:private-domain>
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: "v0.11.3@sha256:41daa0cf2561a5d4c8d1ff31ee2a98d93ab4d3ac2605cac69366ff6a3374a933"
+    pullPolicy: "IfNotPresent"
+  resources:
+    requests:
+      memory: 1100Mi
+      cpu: 300m
+    limits:
+      memory: 2Gi
+      cpu: "1"
+  websocket:
+    enabled: false

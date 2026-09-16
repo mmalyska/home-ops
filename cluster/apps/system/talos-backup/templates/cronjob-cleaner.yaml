@@ -3,14 +3,14 @@ kind: CronJob
 metadata:
   name: talos-backup-cleaner
 spec:
-  schedule: "0 12 * * sun"
+  schedule: "0 0 * * *"
   jobTemplate:
     spec:
       template:
         spec:
           containers:
             - name: talos-backup-cleaner
-              image: ghcr.io/mmalyska/s3-bucket-cleaner:2.34.47@sha256:6a0580ecfeb5c87d0aadc5078f1ab9d4475cd23c77e49e3a362efa540856d620
+              image: ghcr.io/mmalyska/s3-bucket-cleaner:2.36.46@sha256:fcb6f25ac973f749877f4ef965036b9802700be28fff9a24d08c8fedc6671b93
               imagePullPolicy: IfNotPresent
               env:
                 - name: AWS_ACCESS_KEY_ID
@@ -31,9 +31,9 @@ spec:
                       name: talos-backup-doppler
                       key: CUSTOM_S3_ENDPOINT
                 - name: BUCKET
-                  value: "k8s-etcd"
+                  value: "talos-backup"
                 - name: S3_PREFIX
-                  value: "talos"
+                  value: "etcd"
                 - name: OLDER_THAN
                   value: "7 days ago"
               resources:

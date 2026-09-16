@@ -6,7 +6,7 @@ app-template:
         pl:
           image:
             repository: rhasspy/wyoming-whisper
-            tag: 3.1.0@sha256:9501d2659eee83b6eead98d53842193e5fed011eda6c5b1c3ad36f3146b28fed
+            tag: 3.8.1@sha256:ba6fcb6056ebe237d15a325381763a80af2fc8fcedaa04f6a714a7375eb20d80
             pullPolicy: IfNotPresent
           args:
             - --language
@@ -19,7 +19,7 @@ app-template:
             HF_HUB_CACHE: "/model-cache"
           resources:
             requests:
-              cpu: 1000m
+              cpu: 100m
               memory: 1Gi
             limits:
               cpu: 4000m

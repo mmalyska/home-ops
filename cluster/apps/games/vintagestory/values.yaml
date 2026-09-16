@@ -10,7 +10,7 @@ controllers:
   main:
     type: statefulset
     strategy: RollingUpdate
-    replicas: 0
+    replicas: 1
     initContainers:
       init:
         image:
@@ -19,13 +19,13 @@ controllers:
         env:
           download-path: /mods
           # renovate: datasource=docker depName=ghcr.io/mmalyska/vintagestory
-          vs-version: 1.22.2
+          vs-version: 1.22.7
           config-file: mods.json
     containers:
       vintagestory:
         image:
           repository: ghcr.io/mmalyska/vintagestory
-          tag: 1.22.2@sha256:2437b69a056cbe64137b2e0bf3e90b82d7d5564cf1491963d36578680b3710b0
+          tag: 1.22.7@sha256:429c3d0671ae1fa94dcea3b80c43d403da8c1cc552dd99f7ec9e819dde9f5e70
         env:
           DATA_PATH: /config
         args:

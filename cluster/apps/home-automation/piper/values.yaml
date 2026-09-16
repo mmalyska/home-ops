@@ -6,7 +6,7 @@ app-template:
         pl:
           image:
             repository: rhasspy/wyoming-piper
-            tag: 2.2.2@sha256:c874e4a04657ae3381332ee5d0c8c70a310dae6722892840f530ac0890b44eb3
+            tag: 2.5.2@sha256:7d39aafac409c2b6b09d999ed04d84c311d632e558b35baa60fad6aac722af7a
             pullPolicy: IfNotPresent
           args:
             - --voice
@@ -14,7 +14,7 @@ app-template:
             - --update-voices
           resources:
             requests:
-              cpu: 1000m
+              cpu: 100m
               memory: 1Gi
             limits:
               cpu: 4000m

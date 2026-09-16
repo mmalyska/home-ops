@@ -1,0 +1,61 @@
+prometheus-smartctl-exporter:
+  image:
+    repository: ghcr.io/home-operations/smartctl-exporter
+    tag: "0.14.0@sha256:1ce54f6215b4e92ce600d292e6f88af100146521a8e54f449adf3c0f333a9571"
+
+  config:
+    devices:
+      - /dev/sda
+      - /dev/sdb
+      - /dev/nvme0n1
+
+  serviceMonitor:
+    enabled: true
+    interval: 10m
+    scrapeTimeout: 30s
+    relabelings:
+      - sourceLabels: [__meta_kubernetes_pod_node_name]
+        targetLabel: node
+        action: replace
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [mc1, mc2, mc3]
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
+
+  extraInstances:
+    - config:
+        devices:
+          - /dev/nvme0n1
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [nv1]
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 64Mi

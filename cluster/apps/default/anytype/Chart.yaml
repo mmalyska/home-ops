@@ -1,0 +1,8 @@
+apiVersion: v2
+name: anytype-app
+type: application
+version: 1.0.0
+dependencies:
+  - name: anytype
+    version: 0.1.0
+    repository: "file://../../../../charts/anytype"

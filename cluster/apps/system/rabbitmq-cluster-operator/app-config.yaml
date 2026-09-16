@@ -1,0 +1,7 @@
+- enabled: "true"
+  namespace: rabbitmq-system
+  syncWave: "-5"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

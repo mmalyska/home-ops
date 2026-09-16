@@ -11,8 +11,8 @@ gitea:
   image:
     registry: docker.gitea.com
     repository: gitea
-    tag: 1.26.1
-    digest: sha256:d8667667b4ccbd1f67b86a376bffcc0a17b16cf71309ed04e3918231776d47dd
+    tag: 1.27.3
+    digest: sha256:87a67ee09d3ae0d1df5fda5dcda3e2a1f9236a45b0a59025d6e00e46adc43bef
     pullPolicy: IfNotPresent
     rootless: true # only possible when running 1.14 or later
   podSecurityContext:
@@ -51,15 +51,15 @@ gitea:
         MAX_AGE: 10m
         ALLOW_CREDENTIALS: false
       session:
-        PROVIDER: redis-cluster
-        PROVIDER_CONFIG: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+        PROVIDER: redis
+        PROVIDER_CONFIG: redis://:<secret:gitea-dragonfly-password>@gitea-dragonfly.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
       cache:
         ENABLED: true
-        ADAPTER: redis-cluster
-        HOST: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+        ADAPTER: redis
+        HOST: redis://:<secret:gitea-dragonfly-password>@gitea-dragonfly.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
       queue:
         TYPE: redis
-        CONN_STR: redis+cluster://:gitea@gitea-redis-cluster-headless.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
+        CONN_STR: redis://:<secret:gitea-dragonfly-password>@gitea-dragonfly.gitea.svc.cluster.local:6379/0?pool_size=100&idle_timeout=180s&
   ingress:
     enabled: false
   postgresql:
@@ -67,7 +67,7 @@ gitea:
   valkey-cluster:
     enabled: false
   valkey:
-    enabled: true
+    enabled: false
   postgresql-ha:
     enabled: false
   persistence:
@@ -93,7 +93,7 @@ gitea:
             key: password
 pgsql-cnpg:
   name: giteadb
-  imageName: ghcr.io/cloudnative-pg/postgresql:15.10
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.10-standard-bookworm
   instances: 2
   storage:
     size: 10Gi
@@ -106,37 +106,35 @@ pgsql-cnpg:
       cpu: 500m
   monitoring:
     enablePodMonitor: true
-  backup:
-    retentionPolicy: "10d"
-    barmanObjectStore:
-      destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
-      endpointURL: <secret:s3_endpoint>
-      s3Credentials:
-        accessKeyId:
-          name: gitea-secrets
-          key: S3_ACCESS_KEY_ID
-        secretAccessKey:
-          name: gitea-secrets
-          key: S3_ACCESS_SECRET_KEY
+  retentionPolicy: "10d"
+  objectStore:
+    destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
+    endpointURL: <secret:s3_endpoint>
+    s3Credentials:
+      accessKeyId:
+        name: gitea-secrets
+        key: S3_ACCESS_KEY_ID
+      secretAccessKey:
+        name: gitea-secrets
+        key: S3_ACCESS_SECRET_KEY
   scheduledBackups:
     - name: giteadb-cnpg-backup
       spec:
         immediate: true
         schedule: "5 0 0 * * *"
         backupOwnerReference: self
+  # Uncomment to restore from S3 backup (requires at least one successful backup to exist):
   # bootstrap:
   #   recovery:
-  #     source: crunchy-cluster
+  #     source: giteadb-cnpg-backup
   # externalClusters:
-  #   - name: crunchy-cluster
-  #     barmanObjectStore:
-  #       serverName: giteadb-cnpg
-  #       destinationPath: "s3://k8s-at-home-backup/cnpg/gitea"
-  #       endpointURL: <secret:s3_endpoint>
-  #       s3Credentials:
-  #         accessKeyId:
-  #           name: gitea-secrets
-  #           key: S3_ACCESS_KEY_ID
-  #         secretAccessKey:
-  #           name: gitea-secrets
-  #           key: S3_ACCESS_SECRET_KEY
+  #   - name: giteadb-cnpg-backup
+  #     plugin:
+  #       name: barman-cloud.cloudnative-pg.io
+  #       parameters:
+  #         barmanObjectName: giteadb-objectstore
+dragonfly:
+  name: gitea
+  authentication:
+    existingSecret: gitea-dragonfly-auth
+    existingSecretKey: redis-password

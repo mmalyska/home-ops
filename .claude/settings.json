@@ -39,7 +39,18 @@
       "Bash(git status*)",
       "Bash(git log *)",
       "Bash(git diff *)",
-      "Bash(git branch*)"
+      "Bash(git branch*)",
+      "Bash(gh run *)",
+      "Bash(helm show *)",
+      "Bash(gh api *)",
+      "Bash(helm repo *)",
+      "Bash(helm search *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(helm template *)",
+      "Bash(task lint:*)",
+      "Bash(helm lint *)",
+      "Bash(yamllint *)"
     ],
     "deny": [
       "Bash(kubectl get secret*)",
@@ -61,16 +72,9 @@
   "hooks": {},
   "statusLine": {
     "type": "command",
-    "command": "npx -y ccstatusline@latest --config ./.claude/statusline/settings.json",
+    "command": "npx -y ccstatusline@latest --config /workspaces/home-ops/.claude/statusline/settings.json",
     "padding": 0
   },
-  "enabledPlugins": {
-    "claude-md-management@claude-plugins-official": false,
-    "code-simplifier@claude-plugins-official": false,
-    "context7@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false
-  },
-  "extraKnownMarketplaces": {},
   "alwaysThinkingEnabled": true,
   "preferences": {
     "tmuxSplitPanes": true

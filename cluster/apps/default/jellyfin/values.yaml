@@ -1,7 +1,7 @@
 jellyfin:
   image:
     repository: docker.io/jellyfin/jellyfin
-    tag: 10.11.8@sha256:1694ff069f0c9dafb283c36765175606866769f5d72f2ed56b6a0f1be922fc37
+    tag: 10.11.11@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
     pullPolicy: IfNotPresent
 
   podSecurityContext:
@@ -65,6 +65,9 @@ jellyfin:
     - name: movies
       persistentVolumeClaim:
         claimName: jellyfin-movies
+    - name: music
+      persistentVolumeClaim:
+        claimName: jellyfin-music
     - name: transcoding
       emptyDir: {}
 
@@ -73,6 +76,8 @@ jellyfin:
       mountPath: /data/tvshows
     - name: movies
       mountPath: /data/movies
+    - name: music
+      mountPath: /data/music
     - name: transcoding
       mountPath: /transcoding
 
@@ -114,4 +119,7 @@ nfsMounts:
     nfsServer: qnap.<secret:private-domain>
   - name: movies
     nfsPath: /movies
+    nfsServer: qnap.<secret:private-domain>
+  - name: music
+    nfsPath: /music
     nfsServer: qnap.<secret:private-domain>

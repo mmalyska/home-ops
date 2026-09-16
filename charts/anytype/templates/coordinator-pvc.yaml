@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: coordinator-networkstore
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.coordinator.storage.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.coordinator.storage.size }}

@@ -15,10 +15,10 @@ spec:
     template:
       engineVersion: v2
       data:
-        RESTIC_REPOSITORY: '{{`{{ .REPOSITORY_TEMPLATE }}`}}/wow-mysql'
-        RESTIC_PASSWORD: '{{`{{ .RESTIC_PASSWORD }}`}}'
-        AWS_ACCESS_KEY_ID: '{{`{{ .AWS_ACCESS_KEY_ID }}`}}'
-        AWS_SECRET_ACCESS_KEY: '{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}'
+        RESTIC_REPOSITORY: "{{`{{ .REPOSITORY_TEMPLATE }}`}}/wow-mysql"
+        RESTIC_PASSWORD: "{{`{{ .RESTIC_PASSWORD }}`}}"
+        AWS_ACCESS_KEY_ID: "{{`{{ .AWS_ACCESS_KEY_ID }}`}}"
+        AWS_SECRET_ACCESS_KEY: "{{`{{ .AWS_SECRET_ACCESS_KEY }}`}}"
   data:
     - secretKey: REPOSITORY_TEMPLATE
       remoteRef:
@@ -53,7 +53,7 @@ spec:
               emptyDir: {}
           initContainers:
             - name: dump
-              image: mysql:8.4@sha256:c36050afdca850f23cef85703f84c7531a5ae155a11b5ee1c60acb09937c4084
+              image: mysql:8.4@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
               command:
                 - sh
                 - -c
@@ -75,7 +75,7 @@ spec:
                   mountPath: /dump
           containers:
             - name: restic
-              image: restic/restic:0.18.1@sha256:39d9072fb5651c80d75c7a811612eb60b4c06b32ffe87c2e9f3c7222e1797e76
+              image: restic/restic:0.19.1@sha256:136600b6ff6843d61d355f7f71f460a166429f35de6fd11b568fece3c9a4d510
               command:
                 - sh
                 - -c
@@ -98,4 +98,4 @@ spec:
                   cpu: 50m
                   memory: 128Mi
                 limits:
-                  memory: 256Mi
+                  memory: 512Mi

@@ -1,0 +1,49 @@
+{{- $plugins := .Values.additionalPlugins | default list }}
+{{- if .Values.monitoring.enableServiceMonitor }}
+{{- $plugins = append $plugins "rabbitmq_prometheus" }}
+{{- end }}
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ printf "%s-%s" .Values.name "rmq" }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicas }}
+  {{- if .Values.image }}
+  image: {{ .Values.image }}
+  {{- end }}
+  persistence:
+    storage: {{ .Values.storage.size }}
+  {{- with .Values.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rabbitmq:
+    additionalPlugins:
+      {{- toYaml $plugins | nindent 6 }}
+    {{- with .Values.additionalConfig }}
+    additionalConfig: |
+      {{- . | nindent 6 }}
+    {{- end }}
+  {{- with .Values.override }}
+  override:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- if .Values.monitoring.enableServiceMonitor }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ printf "%s-%s" .Values.name "rmq" }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ printf "%s-%s" .Values.name "rmq" }}
+      app.kubernetes.io/component: rabbitmq
+  endpoints:
+    - port: prometheus
+      interval: 15s
+{{- end }}

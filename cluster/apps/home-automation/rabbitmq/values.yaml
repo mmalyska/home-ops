@@ -1,0 +1,36 @@
+rabbitmq-cluster:
+  name: home-assistant-mqtt
+  additionalPlugins:
+    - rabbitmq_mqtt
+  additionalConfig: |
+    load_definitions = /etc/rabbitmq-definitions/definitions.json
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: rabbitmq
+                volumeMounts:
+                  - name: definitions
+                    mountPath: /etc/rabbitmq-definitions
+            volumes:
+              - name: definitions
+                secret:
+                  secretName: rabbitmq-definitions
+    service:
+      spec:
+        ports:
+          - name: mqtt
+            port: 1883
+            targetPort: 1883
+            protocol: TCP
+  monitoring:
+    enableServiceMonitor: true

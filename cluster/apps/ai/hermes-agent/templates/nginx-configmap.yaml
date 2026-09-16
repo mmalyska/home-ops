@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-nginx
+  namespace: hermes-agent
+data:
+  nginx.conf: |
+    events {}
+    http {
+      server {
+        listen 9119;
+        location / {
+          proxy_pass http://127.0.0.1:9120;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          # Rewrite to loopback so hermes host-header guard passes
+          proxy_set_header Host 127.0.0.1;
+          # Clear Origin so hermes WS origin guard passes (loopback mode)
+          proxy_set_header Origin "";
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;
+        }
+      }
+    }

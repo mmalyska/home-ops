@@ -2,7 +2,6 @@
 
 ## Feedback — How to Work
 
-- [Update plan tasks as work completes](feedback_update_plan_tasks.md) — mark tasks.md [x] immediately after each item is done, not in batch at end
 - [Always update docs after code changes](feedback_update_docs.md) — proactively update CLAUDE.md/docs/README after any non-trivial change
 - [Always verify rendered manifests](feedback_verify_manifests.md) — helm template / kubectl kustomize after every values.yaml edit
 - [Check native Gateway API support first](feedback_check_native_gateway.md) — before writing manual HTTPRoute, check chart values
@@ -10,15 +9,20 @@
 - [Claude files belong in workspace .claude/](feedback_claude_files_in_workspace.md) — skills/config/artifacts go in /workspaces/home-ops/.claude/, not ~/.claude/ (ephemeral)
 - [Cluster access permission rules](feedback_cluster_access_rules.md) — read-only free, mutating ops need user confirmation
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
-- [Non-interactive shell flags](feedback_noninteractive_shell.md) — always use -f/-rf for cp/mv/rm (aliased to -i in devcontainer)
+- [Always push and open PR after branch work](feedback_push_and_pr_after_branch.md) — push + gh pr create immediately after committing on a feature branch
+- [Never write the private domain literally](feedback_no_domain_in_comments.md) — not in comments, not in memory files; grep before writing
+- [Grafana: no anonymous access, ever](feedback_grafana_no_anonymous_access.md) — user's explicit call, even though Grafana route is LAN-only
 
 ## Project Context
 
 - [Secrets architecture (post-2026-03-11)](project_secrets_architecture.md) — three mechanisms; when to use each
+- [Plans location convention](project_plans_location_convention.md) — actual practice is docs/superpowers/, not CLAUDE.md's documented .plans/
 
 ## Reference
 
 - [Gateway and DNS architecture](reference_gateway_dns_architecture.md) — two Envoy Gateway instances; HTTPRoute annotation rules
-- [L4T packages for CUDA on Orin](reference_l4t_packages.md) — t234 repo URLs, libcuda.so.1 location
 - [Home network hardware](reference_home_network_hardware.md) — router/NAS/RPi IPs and roles
-- [Plans and TODOs location](reference_plans_todos.md) — `.plans/` for plans, `.plans/TODO.md` for ad-hoc tasks
+- [QNAP QuObjects + barman-cloud caveat](reference_qnap_s3_barman_caveat.md) — boto3 ≥1.34 checksum fix required; set AWS_REQUEST_CHECKSUM_CALCULATION=when_required on all CNPG ObjectStores
+- [App removal procedure](reference_app_removal_procedure.md) — deleting the app dir never auto-prunes; manual `kubectl delete application` + separate PVC check required
+- [Ceph alert job scoping gotcha](reference_ceph_alert_job_scoping.md) — Ceph-mixin PrometheusRules lack job filters, can false-positive on non-cluster targets (router); fix via prometheusRuleOverrides
+- [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks kubelet taint changes post-registration; one-time manual taint, then Talos adopts it

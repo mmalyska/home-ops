@@ -1,0 +1,9 @@
+---
+apiVersion: v2
+name: open-webui
+type: application
+version: 1.0.0
+dependencies:
+  - name: open-webui
+    version: 16.5.0
+    repository: https://open-webui.github.io/helm-charts

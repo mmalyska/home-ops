@@ -1,0 +1,137 @@
+ceph-csi-drivers:
+  # Disable CephConnection and ClientProfile creation - Rook manages these
+  cephConnections: []
+  clientProfiles: []
+  drivers:
+    rbd:
+      enabled: true
+      name: rook-ceph.rbd.csi.ceph.com
+      snapshotPolicy: "volumeSnapshot"
+      controllerPlugin:
+        resources:
+          provisioner:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          resizer:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          attacher:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          snapshotter:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          plugin:
+            requests:
+              memory: 128Mi
+              cpu: 20m
+            limits:
+              memory: 1Gi
+          omapGenerator:
+            requests:
+              memory: 128Mi
+              cpu: 20m
+            limits:
+              memory: 1Gi
+          liveness: {}
+          logRotator: {}
+          addons: {}
+      nodePlugin:
+        tolerations:
+          - key: nvidia.com/gpu
+            operator: Equal
+            value: present
+            effect: NoSchedule
+        resources:
+          plugin:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+          registrar:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          liveness: {}
+          logRotator: {}
+          addons: {}
+    cephfs:
+      enabled: true
+      name: rook-ceph.cephfs.csi.ceph.com
+      controllerPlugin:
+        resources:
+          provisioner:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          resizer:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          attacher:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          snapshotter:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          plugin:
+            requests:
+              memory: 128Mi
+              cpu: 20m
+            limits:
+              memory: 1Gi
+          omapGenerator: {}
+          liveness: {}
+          logRotator: {}
+          addons: {}
+      nodePlugin:
+        tolerations:
+          - key: nvidia.com/gpu
+            operator: Equal
+            value: present
+            effect: NoSchedule
+        resources:
+          plugin:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 1Gi
+          registrar:
+            requests:
+              memory: 32Mi
+              cpu: 10m
+            limits:
+              memory: 256Mi
+          liveness: {}
+          logRotator: {}
+          addons: {}
+    nfs:
+      enabled: false
+    nvmeof:
+      enabled: false

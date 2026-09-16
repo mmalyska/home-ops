@@ -16,12 +16,12 @@ releases:
   - name: prometheus-operator-crds
     namespace: monitoring
     chart: oci://ghcr.io/prometheus-community/charts/prometheus-operator-crds
-    version: 29.0.0
+    version: 32.0.0
 
   - name: cilium
     namespace: kube-system
     chart: cilium/cilium
-    version: 1.19.4
+    version: 1.20.1
     values:
       - '{{ requiredEnv "CLUSTER_DIR" }}/core/cilium/values.yaml'
     needs:
@@ -30,7 +30,7 @@ releases:
   - name: kubelet-csr-approver
     namespace: kube-system
     chart: postfinance/kubelet-csr-approver
-    version: 1.2.14
+    version: 1.2.15
     values:
       - '{{ requiredEnv "CLUSTER_DIR" }}/system/kubelet-csr-approver/values.yaml'
     needs:

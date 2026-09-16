@@ -15,7 +15,7 @@ spec:
       restartPolicy: OnFailure
       initContainers:
         - name: wait-for-mysql
-          image: mysql:8.4@sha256:c36050afdca850f23cef85703f84c7531a5ae155a11b5ee1c60acb09937c4084
+          image: mysql:8.4@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
           command:
             - sh
             - -c
@@ -31,7 +31,7 @@ spec:
                   key: MYSQL_ROOT_PASSWORD
       containers:
         - name: db-import
-          image: ghcr.io/mmalyska/azerothcore-db-import:rolling@sha256:6629ae1177bae08b6775cb80837cbda7e8eeefaf565c7cfdb9ae252564702ccf
+          image: ghcr.io/mmalyska/azerothcore-db-import:rolling@sha256:83f175f4cb1c66e39337f26abfa9e41b21ed8a9bf7cd75c24648c20841953ef1
           env:
             - name: AC_DATA_DIR
               value: /azerothcore/env/dist/data
@@ -53,4 +53,4 @@ spec:
                   name: wow-mysql-secret
                   key: AC_CHARACTER_DATABASE_INFO_ROOT
             - name: AC_REALM_ADDRESS
-              value: {{ .Values.realmAddress | quote }}
+              value: {{.Values.realmAddress | quote}}

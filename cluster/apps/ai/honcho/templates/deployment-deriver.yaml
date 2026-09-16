@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: honcho-deriver
+  namespace: honcho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: honcho-deriver
+  template:
+    metadata:
+      labels:
+        app: honcho-deriver
+    spec:
+      containers:
+        - name: honcho-deriver
+          image: "{{ .Values.honcho.image.repository }}:{{ .Values.honcho.image.tag }}"
+          command: ["/app/.venv/bin/python", "-m", "src.deriver"]
+          env:
+            {{- include "honcho.llmEnv" . | nindent 12 }}
+          resources: {{toYaml .Values.honcho.deriver.resources | nindent 12}}

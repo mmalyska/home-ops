@@ -10,15 +10,15 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.19.1"
+      version = "5.25.0"
     }
     http = {
       source  = "hashicorp/http"
-      version = "3.6.0"
+      version = "3.6.2"
     }
     bitwarden-secrets = {
       source  = "bitwarden/bitwarden-secrets"
-      version = "0.5.4-pre"
+      version = "1.0.1"
     }
   }
 }

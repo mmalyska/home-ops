@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-honcho
+  namespace: hermes-agent
+data:
+  honcho.json: |
+    {
+      "baseUrl": "http://honcho.honcho.svc.cluster.local:8000",
+      "observationMode": "directional",
+      "recallMode": "hybrid",
+      "sessionStrategy": "per-session",
+      "contextCadence": 1,
+      "dialecticCadence": 2,
+      "dialecticDepth": 1,
+      "hosts": {
+        "hermes": {
+          "enabled": true,
+          "aiPeer": "hermes",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        },
+        "hermes.orchestrator": {
+          "enabled": true,
+          "aiPeer": "orchestrator",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        },
+        "hermes.devops": {
+          "enabled": true,
+          "aiPeer": "devops",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        },
+        "hermes.researcher": {
+          "enabled": true,
+          "aiPeer": "researcher",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        },
+        "hermes.dotnet-dev": {
+          "enabled": true,
+          "aiPeer": "dotnet-dev",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        },
+        "hermes.node-dev": {
+          "enabled": true,
+          "aiPeer": "node-dev",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        },
+        "hermes.mobile-dev": {
+          "enabled": true,
+          "aiPeer": "mobile-dev",
+          "peerName": "mmalyska",
+          "workspace": "hermes"
+        }
+      }
+    }

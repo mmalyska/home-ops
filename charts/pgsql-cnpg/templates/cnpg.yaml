@@ -1,3 +1,6 @@
+{{- if .Values.backup }}
+{{ fail "pgsql-cnpg: the 'backup' key is no longer supported. Migrate to 'objectStore' + 'retentionPolicy'. See chart v1.3.0 release notes." }}
+{{- end }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -20,10 +23,22 @@ spec:
   {{- end }}
   postgresql:
     parameters:
-      pgaudit.log: "all, -misc"
+      # "ddl, write" rather than "all, -misc". "all" audited every statement
+      # including every SELECT, on every cluster using this chart. Those audit
+      # lines go to stdout -> Alloy -> Loki, and Loki's own storage is a Ceph
+      # RBD volume — so verbose auditing was amplifying writes onto the same
+      # wearing MX500 drives twice over. DDL and write statements are the ones
+      # with forensic value; reads were volume without much benefit here.
+      # Override per app if a specific database genuinely needs read auditing.
+      pgaudit.log: "ddl, write"
       pgaudit.log_catalog: "off"
       pgaudit.log_parameter: "on"
       pgaudit.log_relation: "on"
+      {{- with .Values.postgresql }}
+      {{- with .parameters }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- end }}
   {{- with .Values.bootstrap }}
   bootstrap:
     {{- toYaml . | nindent 4 }}
@@ -37,10 +52,30 @@ spec:
     topologyKey: kubernetes.io/hostname
   monitoring:
     enablePodMonitor: {{ .Values.monitoring.enablePodMonitor }}
-  {{- with .Values.backup }}
-  backup:
+  {{- if .Values.objectStore }}
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: {{ printf "%s-objectstore" .Values.name }}
+  {{- end }}
+{{- if .Values.objectStore }}
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ printf "%s-objectstore" .Values.name }}
+spec:
+  configuration:
+    {{- $compressionDefaults := dict "data" (dict "compression" "gzip") "wal" (dict "compression" "gzip") }}
+    {{- toYaml (mergeOverwrite $compressionDefaults .Values.objectStore) | nindent 4 }}
+  {{- if .Values.retentionPolicy }}
+  retentionPolicy: {{ .Values.retentionPolicy }}
+  {{- end }}
+  {{- with .Values.instanceSidecarConfiguration }}
+  instanceSidecarConfiguration:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+{{- end }}
 {{ range $k, $v := .Values.scheduledBackups }}
 ---
 apiVersion: postgresql.cnpg.io/v1
@@ -50,7 +85,12 @@ metadata:
 spec:
   cluster:
     name: {{ printf "%s-%s" $.Values.name "cnpg" }}
+  {{- if $.Values.objectStore }}
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  {{- end }}
   {{- with $v.spec }}
-    {{- toYaml . | nindent 2 }}
+  {{- toYaml . | nindent 2 }}
   {{- end }}
 {{ end }}

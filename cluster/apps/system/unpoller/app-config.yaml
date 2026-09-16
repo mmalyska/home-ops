@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: monitoring
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
+          command:
+            - redis-server
+            - --port
+            - {{ .Values.redis.port | quote }}
+            - --dir
+            - /data/
+            - --appendonly
+            - "yes"
+            - --maxmemory
+            - 256mb
+            - --maxmemory-policy
+            - noeviction
+            - --protected-mode
+            - "no"
+            - --loadmodule
+            - /opt/redis-stack/lib/redisbloom.so
+          ports:
+            - containerPort: {{ .Values.redis.port }}
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -p
+                - {{ .Values.redis.port | quote }}
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -p
+                - {{ .Values.redis.port | quote }}
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: redis-data

@@ -1,0 +1,10 @@
+{
+  "name": "Coder CLI",
+  "id": "coder-cli",
+  "version": "1.0.0",
+  "description": "Installs the Coder CLI",
+  "options": {},
+  "containerEnv": {
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}

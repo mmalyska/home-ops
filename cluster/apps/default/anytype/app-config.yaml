@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: anytype
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: true

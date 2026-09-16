@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-config
+  namespace: hermes-agent
+data:
+  config.yaml: |
+{{ .Values.hermes.config | toYaml | indent 4 }}

@@ -1,0 +1,12 @@
+---
+apiVersion: v2
+name: litellm
+type: application
+version: 1.0.0
+dependencies:
+  - name: litellm-helm
+    version: 1.101.0
+    repository: oci://ghcr.io/berriai
+  - name: pgsql-cnpg
+    version: 1.5.0
+    repository: file://../../../../charts/pgsql-cnpg/

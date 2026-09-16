@@ -15,7 +15,7 @@ In this repo I'm focusing on:
 | Tool | Purpose |
 | ---- | ------- |
 | [Talos](https://talos.dev) | Kubernetes-focused immutable Linux OS for all nodes |
-| [talhelper](https://github.com/budimanjojo/talhelper) | Talos config generation from `talconfig.yaml` |
+| talosctl + envsubst | Talos config generation from `provision/talos/templates/` |
 | [Terraform](https://www.terraform.io) | Cloudflare DNS, tunnels, and firewall rules |
 
 ### Kubernetes
@@ -34,6 +34,7 @@ In this repo I'm focusing on:
 | [Keycloak](https://www.keycloak.org) | Identity provider (OIDC) |
 | [External Secrets Operator](https://external-secrets.io) | Secret sync from Bitwarden Secrets Manager |
 | [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts) | Prometheus + Grafana monitoring |
+| [Grafana Loki + Alloy](https://grafana.com/oss/loki/) | Log aggregation — Kubernetes pod logs + Asus router syslog |
 | [CloudNative-PG](https://cloudnative-pg.io) | PostgreSQL operator |
 | [VolSync](https://volsync.readthedocs.io) | PVC backup and restore |
 
