@@ -25,7 +25,14 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux/amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
@@ -49,7 +56,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      # Login against a Docker registry except on PR
+      # Login against the Docker registry
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
@@ -74,6 +81,7 @@ jobs:
           input_list="$DOCKER_METADATA_OUTPUT_TAGS"
 
           result_list="${input_list//${prefix}:/}"
+          result_list="${result_list//$'\n'/,}"
 
           echo "tags=$result_list" >> "$GITHUB_OUTPUT"
 
@@ -84,12 +92,52 @@ jobs:
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           imageTag: ${{ steps.dcmeta.outputs.tags }}
-          cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          push: filter
-          refFilterForPush: refs/heads/main
-          eventFilterForPush: push
+          push: ${{ github.event_name == 'pull_request' && 'never' || 'always' }}
           subFolder: .github
-          platform: linux/amd64
+          platform: ${{ matrix.platform }}
+          useNativeRunner: true
+
+  manifest:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Update Tags to Fit into devcontainers/cli format
+        id: dcmeta
+        run: |
+          prefix="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          input_list="$DOCKER_METADATA_OUTPUT_TAGS"
+
+          result_list="${input_list//${prefix}:/}"
+          result_list="${result_list//$'\n'/,}"
+
+          echo "tags=$result_list" >> "$GITHUB_OUTPUT"
+
+      - name: Merge multi-platform images
+        uses: devcontainers/ci/merge@v0.3
+        with:
+          imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          imageTag: ${{ steps.dcmeta.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
@@ -109,6 +157,7 @@ jobs:
   # Trigger renovate to refresh main devcontainer image
   renovate:
     name: Renovate
-    needs: build
+    if: github.event_name != 'pull_request'
+    needs: manifest
     uses: mmalyska/home-ops/.github/workflows/scheduled-renovate.yaml@main
     secrets: inherit
