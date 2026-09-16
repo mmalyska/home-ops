@@ -186,7 +186,7 @@ spec:
             - name: data
               mountPath: /opt/data
         - name: nginx
-          image: nginx:1.31-alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3
+          image: nginx:1.31-alpine@sha256:c8497b180665e631ec92a5091125bec5b214f0e2b99409e30653a125b37557da
           ports:
             - name: http
               containerPort: 9119
