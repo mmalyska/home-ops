@@ -249,7 +249,7 @@ spec:
       # ── Step 2: Firmware + device setup + CDI spec ──────────────────────
       containers:
         - name: cdi-writer
-          image: busybox:1.38@sha256:8f2ffdcb46f1b83e46665954ec130e497b979db766854f79ca9eee43242b7e4c
+          image: busybox:1.38@sha256:365a051f12e05767b598e643676f14a450fb678a75ccf2beb0052c95d5c73b83
           command: ["/bin/sh", "/scripts/cdi-writer.sh"]
           securityContext:
             privileged: true
