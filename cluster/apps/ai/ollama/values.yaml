@@ -32,7 +32,7 @@ ollama:
     enabled: false
   persistentVolume:
     enabled: true
-    size: "20Gi"
+    size: "40Gi"
   resources:
     limits:
       nvidia.com/gpu: 1
