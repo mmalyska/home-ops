@@ -25,6 +25,10 @@ hermes:
       show_token_analytics: true
     memory:
       provider: honcho
+    tts:
+      provider: piper
+      piper:
+        voice: en_US-lessac-medium
     timezone: "Europe/Warsaw"
     stt:
       provider: openai
@@ -116,6 +120,10 @@ hermes:
           model: deepseek/deepseek-v4-pro
         - provider: anthropic
           model: claude-sonnet-4-6
+      tts:
+        provider: piper
+        piper:
+          voice: en_US-lessac-medium
     devops: *localMainModel
     dotnet-dev: *localMainModel
     mobile-dev: *localMainModel
