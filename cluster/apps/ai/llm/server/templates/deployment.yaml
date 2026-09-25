@@ -78,6 +78,12 @@ spec:
             - -np
             - {{ .Values.server.parallel | quote }}
             - --jinja
+            # Gemma 4 thinks by default and the reasoning consumes max_tokens, so
+            # small-budget calls (titles, Honcho deriver) return empty content.
+            # Default it off; a request can turn it back on with
+            # chat_template_kwargs.enable_thinking=true.
+            - --chat-template-kwargs
+            - {{ .Values.server.chatTemplateKwargs | quote }}
             - --metrics
             - --host
             - 0.0.0.0

@@ -12,6 +12,8 @@ server:
     size: "10546934240"
     alias: gemma-4-26b-a4b
   # Total context; each of the `parallel` slots gets ctx/parallel (32768).
+  # Server-wide default chat-template kwargs (JSON). Per-request values override.
+  chatTemplateKwargs: '{"enable_thinking":false}'
   ctx: 65536
   parallel: 2
   storage: 20Gi
