@@ -44,21 +44,21 @@
 
 ## LLM Model Strategy
 
-Honcho runs 9 distinct LLM module slots. All route through OpenRouter (`openai` transport) except embeddings.
+Honcho runs 9 distinct LLM module slots. Deriver, Summary and Dialectic minimal/low/medium run on the local `llama-server` (`gemma-4-26b-a4b`, `llm` namespace, `openai` transport, thinking off by default); the rest route through OpenRouter (`openai` transport). Embeddings use the local `llm-embeddings` server.
 
 ### Primary / Fallback
 
-Every module has a free-tier primary and a paid fallback. The fallback activates automatically on the **final retry attempt** — which covers 429 rate-limit exhaustion without any manual intervention.
+Every module has a free-tier primary and a paid fallback. The fallback activates automatically on the **final retry attempt** — which covers 429 rate-limit exhaustion and (for the local slots) an unavailable llama-server without any manual intervention.
 
 | Module | Primary | Fallback |
 |--------|---------|---------|
-| Deriver | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Summary | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
+| Deriver | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
+| Summary | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
 | Dream deduction | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
 | Dream induction | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic minimal | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic low | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic medium | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
+| Dialectic minimal | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
+| Dialectic low | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
+| Dialectic medium | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
 | Dialectic high | `qwen/qwen3-235b-a22b-2507` ($0.071/$0.10) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
 | Dialectic max | `qwen/qwen3-235b-a22b-2507` ($0.071/$0.10) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
 
