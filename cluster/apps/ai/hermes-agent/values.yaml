@@ -12,8 +12,11 @@ hermes:
       memory: 1Gi
   config:
     model:
-      provider: openrouter
-      default: "deepseek/deepseek-v4-pro"
+      provider: custom
+      default: gemma-4-26b-a4b
+      base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+      api_key: local
+      context_length: 32768
     approvals:
       mode: smart
     display:
@@ -32,7 +35,7 @@ hermes:
       data_collection: "deny"
     fallback_providers:
       - provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        model: "deepseek/deepseek-v4-pro"
       - provider: anthropic
         model: claude-sonnet-4-6
     auxiliary:
@@ -95,7 +98,7 @@ hermes:
   # on every pod start (lists are replaced). Profiles themselves are created
   # imperatively; overlays for profiles that do not exist yet are skipped.
   profileOverlays:
-    researcher:
+    researcher: &localMainModel
       model:
         provider: custom
         default: gemma-4-26b-a4b
@@ -107,6 +110,11 @@ hermes:
           model: deepseek/deepseek-v4-pro
         - provider: anthropic
           model: claude-sonnet-4-6
+    devops: *localMainModel
+    dotnet-dev: *localMainModel
+    mobile-dev: *localMainModel
+    node-dev: *localMainModel
+    orchestrator: *localMainModel
 
 signalCli:
   replicas: 1
