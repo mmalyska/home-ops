@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-server
+  namespace: llm
+spec:
+  replicas: 1
+  # The single GPU unit cannot be held by two pods: never start the new one first.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: llama-server
+  template:
+    metadata:
+      labels:
+        app: llama-server
+    spec:
+      nodeSelector:
+        accelerator: jetson-orin
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+      initContainers:
+        - name: fetch-model
+          image: {{ .Values.server.fetchImage }}
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              DEST="/models/${MODEL_FILE}"
+              # Skip the network entirely when a previously verified file exists
+              # (lets the pod restart while offline).
+              if [ -f "${DEST}.ok" ] && [ "$(cat "${DEST}.ok")" = "${MODEL_SHA256}" ] \
+                 && [ "$(stat -c %s "${DEST}")" = "${MODEL_SIZE}" ]; then
+                echo "model present and verified; skipping download"
+                exit 0
+              fi
+              echo "downloading ${MODEL_URL}"
+              wget -c -O "${DEST}.part" "${MODEL_URL}"
+              echo "${MODEL_SHA256}  ${DEST}.part" | sha256sum -c -
+              mv "${DEST}.part" "${DEST}"
+              echo "${MODEL_SHA256}" > "${DEST}.ok"
+          env:
+            - name: MODEL_FILE
+              value: {{ .Values.server.model.file | quote }}
+            - name: MODEL_URL
+              value: {{ .Values.server.model.url | quote }}
+            - name: MODEL_SHA256
+              value: {{ .Values.server.model.sha256 | quote }}
+            - name: MODEL_SIZE
+              value: {{ .Values.server.model.size | quote }}
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      containers:
+        - name: llama-server
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          command: ["llama-server"]
+          args:
+            - -m
+            - /models/{{ .Values.server.model.file }}
+            - --alias
+            - {{ .Values.server.model.alias }}
+            # Short flags exactly as verified on this image (b8708, CUDA 12.6).
+            - -ngl
+            - "99"
+            - -fa
+            - "on"
+            - -ctk
+            - q8_0
+            - -ctv
+            - q4_0
+            - -c
+            - {{ .Values.server.ctx | quote }}
+            - -np
+            - {{ .Values.server.parallel | quote }}
+            - --jinja
+            - --metrics
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8080"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          # Cold start loads ~10.5 GB from Ceph (1-2 min); allow up to 10 min.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5
+          resources: {{ toYaml .Values.server.resources | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /models
+              readOnly: true
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: llama-server-models
