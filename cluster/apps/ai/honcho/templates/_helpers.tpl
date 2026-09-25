@@ -25,9 +25,9 @@
 - name: DERIVER_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DERIVER_MODEL_CONFIG__MODEL
-  value: deepseek/deepseek-v4-flash:free
+  value: gemma-4-26b-a4b
 - name: DERIVER_MODEL_CONFIG__OVERRIDES__BASE_URL
-  value: https://openrouter.ai/api/v1
+  value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DERIVER_MODEL_CONFIG__FALLBACK__TRANSPORT
   value: openai
 - name: DERIVER_MODEL_CONFIG__FALLBACK__MODEL
@@ -37,9 +37,9 @@
 - name: SUMMARY_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: SUMMARY_MODEL_CONFIG__MODEL
-  value: deepseek/deepseek-v4-flash:free
+  value: gemma-4-26b-a4b
 - name: SUMMARY_MODEL_CONFIG__OVERRIDES__BASE_URL
-  value: https://openrouter.ai/api/v1
+  value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: SUMMARY_MODEL_CONFIG__FALLBACK__TRANSPORT
   value: openai
 - name: SUMMARY_MODEL_CONFIG__FALLBACK__MODEL
@@ -59,9 +59,9 @@
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__MODEL
-  value: deepseek/deepseek-v4-flash:free
+  value: gemma-4-26b-a4b
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__OVERRIDES__BASE_URL
-  value: https://openrouter.ai/api/v1
+  value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__FALLBACK__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__FALLBACK__MODEL
@@ -71,9 +71,9 @@
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__MODEL
-  value: deepseek/deepseek-v4-flash:free
+  value: gemma-4-26b-a4b
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__OVERRIDES__BASE_URL
-  value: https://openrouter.ai/api/v1
+  value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__FALLBACK__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__FALLBACK__MODEL
@@ -83,9 +83,9 @@
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__MODEL
-  value: deepseek/deepseek-v4-flash:free
+  value: gemma-4-26b-a4b
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__OVERRIDES__BASE_URL
-  value: https://openrouter.ai/api/v1
+  value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__FALLBACK__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__FALLBACK__MODEL
