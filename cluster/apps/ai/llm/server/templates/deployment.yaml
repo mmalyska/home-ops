@@ -91,6 +91,8 @@ spec:
             - {{ .Values.server.cacheRam | quote }}
             - --ctx-checkpoints
             - {{ .Values.server.ctxCheckpoints | quote }}
+            - -ub
+            - {{ .Values.server.ubatch | quote }}
             - --metrics
             - --host
             - 0.0.0.0
