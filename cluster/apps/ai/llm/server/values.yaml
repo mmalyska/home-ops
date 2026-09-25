@@ -14,13 +14,18 @@ server:
   # Total context; each of the `parallel` slots gets ctx/parallel (32768).
   # Server-wide default chat-template kwargs (JSON). Per-request values override.
   chatTemplateKwargs: '{"enable_thinking":false}'
+  # Host-RAM caps (MiB / count). llama-server defaults (8192 / 32) exhaust nv1.
+  cacheRam: 512
+  ctxCheckpoints: 4
   ctx: 65536
   parallel: 2
   storage: 20Gi
   resources:
     requests:
       cpu: 500m
-      memory: 8Gi
+      memory: 11Gi
+    # Below the node's ~12.4 GiB budget so a runaway kills this pod, not the
+    # system pods (cilium-envoy, node-exporter) via a node-wide OOM.
     limits:
-      memory: 13Gi
+      memory: 12Gi
       nvidia.com/gpu: 1
