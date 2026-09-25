@@ -3,6 +3,11 @@ machine:
     hostname: nv1
     interfaces:
       - interface: enP8p1s0
+        # Talos runs DHCP on every linked interface by default; a static address
+        # does not turn it off. Without this, nv1 also leased 192.168.48.210, and
+        # lease churn flapped .5, restarted the kubelet, and dropped the GPU
+        # device-plugin registration (nvidia.com/gpu: 0).
+        dhcp: false
         addresses:
           - 192.168.48.5/24
         mtu: 1500
