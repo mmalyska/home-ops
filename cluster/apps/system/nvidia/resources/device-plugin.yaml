@@ -45,6 +45,8 @@ spec:
       labels:
         app: nvidia-device-plugin
     spec:
+      # The watchdog sidecar signals the plugin process across containers.
+      shareProcessNamespace: true
       nodeSelector:
         accelerator: jetson-orin
       tolerations:
@@ -66,7 +68,30 @@ spec:
           volumeMounts:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
+        # The plugin registers with the kubelet once and never re-registers, so
+        # any kubelet restart leaves the node at nvidia.com/gpu: 0. This sidecar
+        # restarts the plugin whenever the kubelet re-creates kubelet.sock.
+        - name: kubelet-watchdog
+          image: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+          command: ["sh", "/scripts/watchdog.sh"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 20m
+              memory: 32Mi
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+              readOnly: true
+            - name: watchdog-script
+              mountPath: /scripts
       volumes:
         - name: device-plugin
           hostPath:
             path: /var/lib/kubelet/device-plugins
+        - name: watchdog-script
+          configMap:
+            name: nvidia-device-plugin-watchdog
+            defaultMode: 0555
