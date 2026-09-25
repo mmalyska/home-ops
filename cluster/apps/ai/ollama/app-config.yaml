@@ -1,7 +1,9 @@
 - enabled: "true"
   namespace: ollama
   syncPolicy:
-    enabled: true
+    # TEMPORARY: auto-sync paused while the llama.cpp engine spike borrows nv1's
+    # single GPU (Ollama is scaled to 0). Revert to `true` when the spike ends.
+    enabled: false
     selfHeal: true
     prune: false
   plugin:
