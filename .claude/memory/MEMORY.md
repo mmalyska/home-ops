@@ -27,3 +27,6 @@
 - [Ceph alert job scoping gotcha](reference_ceph_alert_job_scoping.md) — Ceph-mixin PrometheusRules lack job filters, can false-positive on non-cluster targets (router); fix via prometheusRuleOverrides
 - [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks kubelet taint changes post-registration; one-time manual taint, then Talos adopts it
 - [llama-server nv1 memory budget](reference_llama_server_nv1_memory.md) — default cache/checkpoints OOM the node; 12Gi limit kills pod; thinking off by default
+- [Jetson llama.cpp CUDA tag](reference_jetson_llama_cuda_tag.md) — NVIDIA latest* tags are CUDA 13 and silently run on CPU; use pinned cu126
+- [nv1 META DHCP key](reference_nv1_meta_dhcp.md) — Talos META 0x0a DHCP operator flapped IP, restarted kubelet, GPU dropped to 0
+- [Uncased BERT embeddings](reference_uncased_bert_embeddings.md) — llama-server lowercases nomic-embed-text, Ollama does not; no re-embed needed
