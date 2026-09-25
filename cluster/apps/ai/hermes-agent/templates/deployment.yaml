@@ -219,8 +219,6 @@ spec:
               value: "127.0.0.1"
             - name: HERMES_DASHBOARD_PORT
               value: "9120"
-            - name: OLLAMA_BASE_URL
-              value: "http://ollama.ollama.svc.cluster.local:11434/v1"
             - name: SIGNAL_HTTP_URL
               value: "http://signal-cli:8080"
             {{- range .Values.externalSecrets }}

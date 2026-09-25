@@ -66,14 +66,14 @@ Prices are per 1M input/output tokens.
 
 ### Embeddings
 
-Embeddings use **Ollama** (already in cluster, CPU-only) to avoid OpenRouter's lack of embedding endpoint support:
+Embeddings use the CPU-only `llm-embeddings` server (llama.cpp, `llm` namespace) to avoid OpenRouter's lack of embedding endpoint support:
 
-- **Model**: `nomic-embed-text` (274 MB, 768 dimensions, fast on CPU)
-- **Endpoint**: `http://ollama.ha-ollama.svc.cluster.local:11434/v1`
-- **Cost**: free (local inference)
-- **Dimensions**: `EMBEDDING_VECTOR_DIMENSIONS=768`, `DIMENSIONS_MODE=never` (Ollama ignores the dimensions parameter)
+- **Model**: `nomic-embed-text` v1.5 (f16, 768 dimensions)
+- **Endpoint**: `http://llm-embeddings.llm.svc.cluster.local:8080/v1`
+- **Cost**: free (local inference), works offline
+- **Dimensions**: `EMBEDDING_VECTOR_DIMENSIONS=768`, `DIMENSIONS_MODE=never` (the server ignores the dimensions parameter)
 
-`nomic-embed-text` is included in Ollama's pull list via `cluster/apps/home-automation/ollama/values.yaml`.
+`nomic-embed-text` is an uncased BERT: llama-server lowercases input, Ollama (retired) did not. Stored vectors match llama-server exactly, so no re-embedding was needed when moving off Ollama. The server is defined in `cluster/apps/ai/llm/embeddings/`.
 
 ## Secrets
 
