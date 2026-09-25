@@ -2,6 +2,7 @@
 
 **Date:** 2026-09-25  
 **Status:** Draft — pending review  
+**Implementation plan:** `docs/superpowers/plans/2026-09-25-local-first-llm.md`  
 
 ## Problem
 
@@ -75,7 +76,7 @@ Only `llama-server` on nv1 holds the GPU. Everything else is CPU on the M720q no
 - New ApplicationSet app under `cluster/apps/ai/llm/` (namespace `llm`, Service `llama-server`), replacing `ollama`.
 - Image: `ghcr.io/nvidia-ai-iot/llama_cpp:b8708-r36.4-tegra-aarch64-cu126-22.04`, **pinned by digest**. Never use `latest*` tags (CUDA 13). Renovate cannot track these tags; bumps are manual and must re-verify CUDA init.
 - Model: Gemma 4 26B-A4B `UD-Q2_K_XL` GGUF from `unsloth/gemma-4-26B-A4B-it-GGUF`, on a dedicated PVC, fetched once by an init container with a checksum check.
-- Flags (starting point, to be tuned in validation): `-ngl 99 -fa on -ctk q8_0 -ctv q4_0 --jinja -np 2 -c 32768 --cache-ram 1024 --metrics --host 0.0.0.0 --port 8080`, sampling `temperature=1.0 top_p=0.95 top_k=64` (Google's recommendation).
+- Flags (starting point, tuned in validation): `-ngl 99 -fa on -ctk q8_0 -ctv q4_0 --jinja -np 2 -c 65536 --metrics --host 0.0.0.0 --port 8080` — the short flags are the ones verified on the pinned image. Total context is split across slots, so `-c 65536 -np 2` gives **32768 per slot**; Hermes `model.context_length` must be 32768 (Hermes agent prompts exceed 16k). Sampling `temperature=1.0 top_p=0.95 top_k=64` (Google's recommendation).
 - Deployment: `strategy: Recreate`, `nodeSelector: accelerator=jetson-orin`, toleration for `nvidia.com/gpu=present`, `nvidia.com/gpu: 1`, memory limit sized to the measured peak (≈13 Gi), readiness on `/health`, ClusterIP Service on 8080. No HTTPRoute (LAN/in-cluster only); optional `--api-key` from an ExternalSecret.
 - Clients must send `parallel_tool_calls: true`.
 - Observability: PodMonitor on `/metrics`; alerts for llama-server down and for `nvidia.com/gpu` allocatable = 0 on nv1.
@@ -161,6 +162,6 @@ Only `llama-server` on nv1 holds the GPU. Everything else is CPU on the M720q no
 
 - Canary profile for step 4 (default: `researcher`).
 - Whether to keep `qwen3.5:9b` / E4B for anything (currently neither is planned).
-- Final served model name and context size after S2.
+- Final context size after S2 (start at `-c 65536 -np 2`; reduce to 49152 or 32768 if memory exceeds the ~13 Gi limit, and keep Hermes `context_length` equal to `ctx / np`).
 - Exact CPU whisper/embedding images (S3, S4).
 - Revisit vision-on-Jetson once real memory numbers with `-np 2` are known.
