@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-profile-overlays
+  namespace: hermes-agent
+data:
+{{- range $name, $overlay := .Values.hermes.profileOverlays }}
+  {{ $name }}.yaml: |
+{{ $overlay | toYaml | indent 4 }}
+{{- end }}

@@ -17,6 +17,8 @@ spec:
       annotations:
         checksum/config:
           {{include (print $.Template.BasePath "/configmap.yaml") . | sha256sum}}
+        checksum/profile-overlays:
+          {{include (print $.Template.BasePath "/profile-overlays-configmap.yaml") . | sha256sum}}
     spec:
       initContainers:
         - name: fix-kanban-db-permissions
@@ -141,6 +143,57 @@ spec:
           env:
             - name: HERMES_HOME
               value: /opt/data
+        - name: profile-config-seeder
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          command:
+            - python3
+            - -c
+            - |
+              import os
+              import sys
+
+              import yaml
+
+              # Deep-merges per-profile overlays (ConfigMap files named <profile>.yaml) into
+              # <HERMES_HOME>/profiles/<profile>/config.yaml. Profiles are created
+              # imperatively inside the pod, so a missing profile directory is skipped.
+              overlay_dir = os.environ.get('OVERLAY_DIR', '/profile-overlays')
+              hermes_home = os.environ.get('HERMES_HOME', '/opt/data')
+              profiles_dir = os.path.join(hermes_home, 'profiles')
+
+
+              def deep_merge(base, src):
+                  for k, v in src.items():
+                      if isinstance(v, dict) and isinstance(base.get(k), dict):
+                          deep_merge(base[k], v)
+                      else:
+                          base[k] = v
+
+
+              for fname in sorted(os.listdir(overlay_dir)):
+                  if not fname.endswith('.yaml'):
+                      continue
+                  profile = fname[:-len('.yaml')]
+                  target = os.path.join(profiles_dir, profile, 'config.yaml')
+                  if not os.path.isfile(target):
+                      print(f'skip {profile}: {target} not found', file=sys.stderr)
+                      continue
+                  with open(os.path.join(overlay_dir, fname)) as f:
+                      overrides = yaml.safe_load(f) or {}
+                  with open(target) as f:
+                      config = yaml.safe_load(f) or {}
+                  deep_merge(config, overrides)
+                  with open(target, 'w') as f:
+                      yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                  print(f'merged overlay into {target}')
+          env:
+            - name: HERMES_HOME
+              value: /opt/data
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: profile-overlays
+              mountPath: /profile-overlays
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
@@ -214,6 +267,9 @@ spec:
         - name: honcho-config
           configMap:
             name: hermes-agent-honcho
+        - name: profile-overlays
+          configMap:
+            name: hermes-agent-profile-overlays
         - name: sandbox-ssh-keys
           secret:
             secretName: hermes-agent-secrets
