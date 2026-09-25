@@ -130,6 +130,12 @@ hermes:
         provider: piper
         piper:
           voice: en_US-lessac-medium
+      stt:
+        provider: openai
+        openai:
+          model: Systran/faster-whisper-small
+          base_url: http://speaches.llm.svc.cluster.local:8000/v1
+          api_key: local
     devops: *cloudMainModel
     dotnet-dev: *cloudMainModel
     mobile-dev: *cloudMainModel
