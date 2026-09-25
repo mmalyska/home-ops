@@ -7,3 +7,7 @@ resources:
   - resources/cdi-setup.yaml
   - resources/device-plugin.yaml
   - resources/power-mode.yaml
+configMapGenerator:
+  - name: nvidia-device-plugin-watchdog
+    files:
+      - watchdog.sh=resources/watchdog.sh
