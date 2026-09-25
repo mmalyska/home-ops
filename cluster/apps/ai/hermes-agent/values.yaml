@@ -11,12 +11,17 @@ hermes:
       cpu: 1500m
       memory: 1Gi
   config:
+    # Hermes rejects any model below 64K context (agent_init._enforce_minimum_context),
+    # and llama-server gives each slot 32768, so the main model stays on the cloud.
+    # base_url/api_key are set to "" and context_length to a cloud-sized value on purpose:
+    # the seeders only add/overwrite keys, so stale local values on the PVC must be
+    # overwritten, not just dropped.
     model:
-      provider: custom
-      default: gemma-4-26b-a4b
-      base_url: http://llama-server.llm.svc.cluster.local:8080/v1
-      api_key: local
-      context_length: 32768
+      provider: openrouter
+      default: "deepseek/deepseek-v4-pro"
+      base_url: ""
+      api_key: ""
+      context_length: 131072
     approvals:
       mode: smart
     display:
@@ -45,7 +50,7 @@ hermes:
       data_collection: "deny"
     fallback_providers:
       - provider: openrouter
-        model: "deepseek/deepseek-v4-pro"
+        model: "deepseek/deepseek-v4-flash"
       - provider: anthropic
         model: claude-sonnet-4-6
     auxiliary:
@@ -57,11 +62,12 @@ hermes:
         model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
+      # compression has a 64K floor in Hermes (auxiliary_client._task_minimum_context_length)
       compression:
-        provider: custom
-        model: gemma-4-26b-a4b
-        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
-        api_key: local
+        provider: openrouter
+        model: "deepseek/deepseek-v4-flash"
+        base_url: ""
+        api_key: ""
       skills_hub:
         provider: auto
         model: ""
@@ -108,27 +114,27 @@ hermes:
   # on every pod start (lists are replaced). Profiles themselves are created
   # imperatively; overlays for profiles that do not exist yet are skipped.
   profileOverlays:
-    researcher: &localMainModel
+    researcher: &cloudMainModel
       model:
-        provider: custom
-        default: gemma-4-26b-a4b
-        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
-        api_key: local
-        context_length: 32768
+        provider: openrouter
+        default: deepseek/deepseek-v4-pro
+        base_url: ""
+        api_key: ""
+        context_length: 131072
       fallback_providers:
         - provider: openrouter
-          model: deepseek/deepseek-v4-pro
+          model: deepseek/deepseek-v4-flash
         - provider: anthropic
           model: claude-sonnet-4-6
       tts:
         provider: piper
         piper:
           voice: en_US-lessac-medium
-    devops: *localMainModel
-    dotnet-dev: *localMainModel
-    mobile-dev: *localMainModel
-    node-dev: *localMainModel
-    orchestrator: *localMainModel
+    devops: *cloudMainModel
+    dotnet-dev: *cloudMainModel
+    mobile-dev: *cloudMainModel
+    node-dev: *cloudMainModel
+    orchestrator: *cloudMainModel
 
 signalCli:
   replicas: 1

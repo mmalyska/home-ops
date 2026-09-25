@@ -250,12 +250,15 @@ kubectl rollout restart deploy/hermes-agent -n hermes-agent
 
 ## Local inference
 
-The `researcher` profile, the auxiliary tasks, and Honcho's deriver/summary/low-tier dialectic calls run on the local `llama-server` (`llm` namespace, Gemma 4 26B-A4B on nv1's GPU). OpenRouter and Anthropic are the automatic fallback chain (`fallback_providers`).
+Honcho's deriver, summary and minimal/low/medium dialectic calls, and seven of Hermes' auxiliary tasks (web_extract, approval, title_generation, triage_specifier, kanban_decomposer, profile_describer, curator) run on the local `llama-server` (`llm` namespace, Gemma 4 26B-A4B on nv1's GPU). Speech-to-text runs on Speaches (`Systran/faster-whisper-small`, CPU, `llm` namespace) and text-to-speech on Piper inside this pod (voices cached under `cache/piper-voices/` in each profile home; `piper-tts` is pip-installed in `postStart`, so a restart needs PyPI).
 
-- Endpoint: `http://llama-server.llm.svc.cluster.local:8080/v1`, model `gemma-4-26b-a4b`, per-slot context 32768 (`model.context_length` must equal `ctx / parallel` of the server).
+**The main model and the `compression` task stay on the cloud (OpenRouter, Anthropic fallback).** Hermes refuses to build an agent for any model with less than **64,000 tokens of context** (`agent_init._enforce_minimum_context`, and a 64K floor for `compression` in `auxiliary_client`), and llama-server gives each slot `ctx / parallel` = 32768. A local main model needs `ctx / parallel >= 64000` and `model.context_length` equal to that; the server memory budget for that is in `docs/src/k8s/nv1-jetson.md`. Do not just raise `model.context_length` above what a slot really serves: requests beyond the slot fail with HTTP 400.
+
+- Endpoint: `http://llama-server.llm.svc.cluster.local:8080/v1`, model `gemma-4-26b-a4b`.
 - The server defaults to **thinking off** (Gemma 4's reasoning consumes `max_tokens` and leaves small-budget calls empty). A request can opt in with `chat_template_kwargs.enable_thinking=true`; Hermes can send it per auxiliary task via `auxiliary.<task>.extra_body` (not used today).
-- Profiles are not in `values.yaml`; their config lives on the PVC. `hermes.profileOverlays.<name>` is deep-merged into `/opt/data/profiles/<name>/config.yaml` on every pod start (lists are replaced; overlays never remove keys). To roll a profile back to the cloud, remove its overlay **and** run `hermes -p <name> config set model.provider openrouter`.
+- Profiles are not in `values.yaml`; their config lives on the PVC. `hermes.profileOverlays.<name>` is deep-merged into `/opt/data/profiles/<name>/config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile back to another provider, overwrite `model.provider`, `model.default`, `model.base_url` (`""`), `model.api_key` (`""`) and `model.context_length` explicitly, otherwise a stale `base_url` keeps traffic on the old endpoint. `hermes chat -q "ping"` in the pod is the quickest check that an agent can start.
 - Vision still uses Gemini via OpenRouter (the 26B leaves no memory for the projector).
+- The auxiliary tasks above have no per-task cloud fallback; they fall back to the main model (cloud) if llama-server is down.
 - GPU rules, memory budget and recovery: see `docs/src/k8s/nv1-jetson.md`.
 
 ## Security Notes
