@@ -1,0 +1,4 @@
+apiVersion: v2
+name: llm-stt
+type: application
+version: 1.0.0
