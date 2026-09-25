@@ -18,17 +18,22 @@ spec:
           annotations:
             summary: llama-server has no available replica
             description: >-
-              Hermes and Honcho fall back to the cloud providers while this is
-              down. Check GPU registration (NodeGpuUnavailable), the model PVC
+              Honcho falls back to its cloud models and Hermes' local auxiliary
+              tasks fall back to the main (cloud) model while this is down. Check GPU registration (NodeGpuUnavailable), the model PVC
               and the pod logs.
-        - alert: LlamaServerSlow
-          expr: llamacpp:predicted_tokens_seconds > 0 and llamacpp:predicted_tokens_seconds < 8
+        # llamacpp:predicted_tokens_seconds is an average since pod start that
+        # keeps its value while idle and drops with concurrent slots, so it
+        # false-fires on a healthy GPU. CPU use separates the cases: about
+        # 0.2-1.2 cores on the GPU, about 7 cores on CPU fallback.
+        - alert: LlamaServerOnCpu
+          expr: >-
+            rate(container_cpu_usage_seconds_total{namespace="llm",container="llama-server"}[5m]) > 3
           for: 10m
           labels:
             severity: warning
           annotations:
-            summary: llama-server generation is below 8 tok/s
+            summary: llama-server is burning CPU, probably running on CPU instead of the GPU
             description: >-
-              A healthy GPU run is 14-16 tok/s; about 6 tok/s means CPU
-              fallback (usually a CUDA 13 image or a lost GPU). Check the
-              startup log for ggml_cuda_init errors.
+              A healthy GPU run uses about 0.2-1.2 cores; CPU fallback (usually
+              a CUDA 13 image or a lost GPU) is about 7 cores at about 6 tok/s.
+              Check the startup log for ggml_cuda_init errors.

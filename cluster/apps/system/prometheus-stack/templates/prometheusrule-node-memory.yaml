@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-memory
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: node.memory
+      rules:
+        # The mixin's NodeMemoryHighUtilization (disabled in values.yaml) with
+        # nv1 excluded: its unified memory normally sits above 90%.
+        - alert: NodeMemoryHighUtilization
+          expr: >-
+            100 - (node_memory_MemAvailable_bytes{job="node-exporter",instance!="192.168.48.5:9100"}
+            / node_memory_MemTotal_bytes{job="node-exporter",instance!="192.168.48.5:9100"} * 100) > 90
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Node memory is over 90% utilized
+            description: >-
+              Memory utilization on {{ "{{ $labels.instance }}" }} has been above 90% for 15 minutes.
+        # nv1 runs llama-server with about 1.0-1.5 GiB of MemAvailable in normal
+        # use. Below 400 MiB the node is close to the OOM storm that killed
+        # cilium-envoy and node-exporter (MemAvailable was about 120 MiB then).
+        - alert: Nv1MemoryLow
+          expr: node_memory_MemAvailable_bytes{job="node-exporter",instance="192.168.48.5:9100"} < 400 * 1024 * 1024
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: nv1 is nearly out of memory
+            description: >-
+              nv1 MemAvailable is under 400 MiB. llama-server (limit 13Gi) is the
+              usual cause; see the memory budget in docs/src/k8s/nv1-jetson.md.

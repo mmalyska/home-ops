@@ -2,6 +2,10 @@ kube-prometheus-stack:
   defaultRules:
     rules:
       kubeProxy: false
+    disabled:
+      # nv1 shares 16 GB between CPU and GPU and normally sits above 90%;
+      # replaced by templates/prometheusrule-node-memory.yaml (excludes nv1).
+      NodeMemoryHighUtilization: true
   kubeControllerManager:
     enabled: true
   kubeEtcd:
