@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: speaches
+  namespace: llm
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: speaches
+      rules:
+        - alert: SpeachesUnavailable
+          expr: kube_deployment_status_replicas_available{namespace="llm",deployment="speaches"} < 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Speech-to-text server has no available replica
+            description: Voice-note transcription fails until the speaches deployment is back.

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: speaches
+  namespace: llm
+spec:
+  type: ClusterIP
+  selector:
+    app: speaches
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP

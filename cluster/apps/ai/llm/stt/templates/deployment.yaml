@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speaches
+  namespace: llm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: speaches
+  template:
+    metadata:
+      labels:
+        app: speaches
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: speaches
+          image: "{{ .Values.stt.image.repository }}:{{ .Values.stt.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 5
+          resources: {{ toYaml .Values.stt.resources | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /home/ubuntu/.cache/huggingface/hub
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: speaches-models
