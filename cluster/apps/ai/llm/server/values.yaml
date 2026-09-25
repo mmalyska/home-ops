@@ -1,0 +1,24 @@
+server:
+  image:
+    repository: ghcr.io/nvidia-ai-iot/llama_cpp
+    # CUDA 12.6 build for JetPack 6. NEVER use latest* tags (CUDA 13 does not
+    # initialize on nv1's driver and silently falls back to CPU).
+    tag: "b8708-r36.4-tegra-aarch64-cu126-22.04@sha256:8fa5df9a76d3ddce89ade0ae67822afdfac27a5fe3a9e5eff7b6dfd72cd34f6b"
+  fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+  model:
+    file: gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
+    url: https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
+    sha256: 2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658
+    size: "10546934240"
+    alias: gemma-4-26b-a4b
+  # Total context; each of the `parallel` slots gets ctx/parallel (32768).
+  ctx: 65536
+  parallel: 2
+  storage: 20Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 8Gi
+    limits:
+      memory: 13Gi
+      nvidia.com/gpu: 1

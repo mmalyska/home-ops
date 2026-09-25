@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: llama-server
+  namespace: llm
+spec:
+  selector:
+    matchLabels:
+      app: llama-server
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
