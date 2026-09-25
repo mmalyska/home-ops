@@ -26,6 +26,12 @@ hermes:
     memory:
       provider: honcho
     timezone: "Europe/Warsaw"
+    stt:
+      provider: openai
+      openai:
+        model: Systran/faster-whisper-small
+        base_url: http://speaches.llm.svc.cluster.local:8000/v1
+        api_key: local
     discord:
       require_mention: true
       free_response_channels: "881886312574107758"
