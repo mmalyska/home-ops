@@ -40,35 +40,51 @@ hermes:
         provider: openrouter
         model: "google/gemini-2.5-flash-lite"
       web_extract:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       compression:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       skills_hub:
         provider: auto
         model: ""
       approval:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       mcp:
         provider: auto
         model: ""
       title_generation:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       triage_specifier:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       kanban_decomposer:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       profile_describer:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       curator:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
 #    mcp_servers:
 #      github:
 #        command: "npx"
