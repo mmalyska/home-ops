@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: nv1-gpu
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: nv1.gpu
+      rules:
+        - alert: NodeGpuUnavailable
+          expr: >-
+            kube_node_status_allocatable{resource="nvidia_com_gpu",node="nv1"} == 0
+            or absent(kube_node_status_allocatable{resource="nvidia_com_gpu",node="nv1"})
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: nv1 has no allocatable GPU
+            description: >-
+              The Jetson device plugin is not registered with the kubelet on nv1
+              (allocatable nvidia.com/gpu is 0 or missing), so GPU pods stay
+              Pending. Restart the nvidia-device-plugin pod; the watchdog
+              sidecar should normally do this automatically.
