@@ -248,6 +248,16 @@ Restart the pod — the init container re-seeds config.yaml from the ConfigMap:
 kubectl rollout restart deploy/hermes-agent -n hermes-agent
 ```
 
+## Local inference
+
+The `researcher` profile, the auxiliary tasks, and Honcho's deriver/summary/low-tier dialectic calls run on the local `llama-server` (`llm` namespace, Gemma 4 26B-A4B on nv1's GPU). OpenRouter and Anthropic are the automatic fallback chain (`fallback_providers`).
+
+- Endpoint: `http://llama-server.llm.svc.cluster.local:8080/v1`, model `gemma-4-26b-a4b`, per-slot context 32768 (`model.context_length` must equal `ctx / parallel` of the server).
+- The server defaults to **thinking off** (Gemma 4's reasoning consumes `max_tokens` and leaves small-budget calls empty). A request can opt in with `chat_template_kwargs.enable_thinking=true`; Hermes can send it per auxiliary task via `auxiliary.<task>.extra_body` (not used today).
+- Profiles are not in `values.yaml`; their config lives on the PVC. `hermes.profileOverlays.<name>` is deep-merged into `/opt/data/profiles/<name>/config.yaml` on every pod start (lists are replaced; overlays never remove keys). To roll a profile back to the cloud, remove its overlay **and** run `hermes -p <name> config set model.provider openrouter`.
+- Vision still uses Gemini via OpenRouter (the 26B leaves no memory for the projector).
+- GPU rules, memory budget and recovery: see `docs/src/k8s/nv1-jetson.md`.
+
 ## Security Notes
 
 - All secrets come from Bitwarden via ExternalSecret — no credentials in git
