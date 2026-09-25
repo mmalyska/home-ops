@@ -1,0 +1,18 @@
+embeddings:
+  image:
+    repository: ghcr.io/ggml-org/llama.cpp
+    tag: "server@sha256:6257697a7f5d034b8fb499ddb07af3e250506352f94102054252a23f3b85e0af"
+  fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+  model:
+    file: nomic-embed-text-v1.5.f16.gguf
+    url: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf
+    sha256: f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb
+    size: "274290560"
+    alias: nomic-embed-text
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
