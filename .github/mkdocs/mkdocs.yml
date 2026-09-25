@@ -144,3 +144,4 @@ nav:
           - "Rook-Ceph CephX Ciphers": k8s/rook-ceph-cephx.md
           - "Debugging with egctl": k8s/egctl.md
           - "NVMe Replacement": k8s/nvme-replacement.md
+          - "nv1 Jetson (GPU)": k8s/nv1-jetson.md
