@@ -17,6 +17,9 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/arch: amd64
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: speaches
           image: "{{ .Values.stt.image.repository }}:{{ .Values.stt.image.tag }}"
