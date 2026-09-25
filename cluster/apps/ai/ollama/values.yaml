@@ -1,4 +1,7 @@
 ollama:
+  # Scaled to 0 so llama-server can take the single nvidia.com/gpu unit on nv1.
+  # Ollama is retired once the local-first cutover is verified.
+  replicaCount: 0
   image:
     tag: "0.20.5@sha256:8ab27f32210327a04fb98f6e53fba5d19a9d632777455389d48724028434a9f0" # >=0.20.5 for the JetPack 6 CUDA backend (upstream Bug 19)
   ollama:
