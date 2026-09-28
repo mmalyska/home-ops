@@ -11,17 +11,15 @@ hermes:
       cpu: 1500m
       memory: 1Gi
   config:
-    # Hermes rejects any model below 64K context (agent_init._enforce_minimum_context),
-    # and llama-server gives each slot 32768, so the main model stays on the cloud.
-    # base_url/api_key are set to "" and context_length to a cloud-sized value on purpose:
-    # the seeders only add/overwrite keys, so stale local values on the PVC must be
-    # overwritten, not just dropped.
+    # Hermes rejects any model below 64K context (agent_init._enforce_minimum_context).
+    # llama-server now runs -c 131072 -np 2 (65536 per slot, verified under a
+    # sustained memory test), so the main model can point at it again.
     model:
-      provider: openrouter
-      default: "deepseek/deepseek-v4-pro"
-      base_url: ""
-      api_key: ""
-      context_length: 131072
+      provider: custom
+      default: gemma-4-26b-a4b
+      base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+      api_key: local
+      context_length: 65536
     approvals:
       mode: smart
     display:
@@ -50,7 +48,7 @@ hermes:
       data_collection: "deny"
     fallback_providers:
       - provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
+        model: "deepseek/deepseek-v4-pro"
       - provider: anthropic
         model: claude-sonnet-4-6
     auxiliary:
@@ -62,12 +60,13 @@ hermes:
         model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
-      # compression has a 64K floor in Hermes (auxiliary_client._task_minimum_context_length)
+      # compression has a 64K floor too (auxiliary_client._task_minimum_context_length);
+      # llama-server's 65536-per-slot context clears it.
       compression:
-        provider: openrouter
-        model: "deepseek/deepseek-v4-flash"
-        base_url: ""
-        api_key: ""
+        provider: custom
+        model: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
       skills_hub:
         provider: auto
         model: ""
@@ -114,16 +113,16 @@ hermes:
   # on every pod start (lists are replaced). Profiles themselves are created
   # imperatively; overlays for profiles that do not exist yet are skipped.
   profileOverlays:
-    researcher: &cloudMainModel
+    researcher: &localMainModel
       model:
-        provider: openrouter
-        default: deepseek/deepseek-v4-pro
-        base_url: ""
-        api_key: ""
-        context_length: 131072
+        provider: custom
+        default: gemma-4-26b-a4b
+        base_url: http://llama-server.llm.svc.cluster.local:8080/v1
+        api_key: local
+        context_length: 65536
       fallback_providers:
         - provider: openrouter
-          model: deepseek/deepseek-v4-flash
+          model: deepseek/deepseek-v4-pro
         - provider: anthropic
           model: claude-sonnet-4-6
       tts:
@@ -136,11 +135,11 @@ hermes:
           model: Systran/faster-whisper-small
           base_url: http://speaches.llm.svc.cluster.local:8000/v1
           api_key: local
-    devops: *cloudMainModel
-    dotnet-dev: *cloudMainModel
-    mobile-dev: *cloudMainModel
-    node-dev: *cloudMainModel
-    orchestrator: *cloudMainModel
+    devops: *localMainModel
+    dotnet-dev: *localMainModel
+    mobile-dev: *localMainModel
+    node-dev: *localMainModel
+    orchestrator: *localMainModel
 
 signalCli:
   # Disabled: Hermes' Signal gateway needs SIGNAL_HTTP_URL (removed from the
