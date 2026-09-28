@@ -11,7 +11,12 @@ server:
     sha256: 2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658
     size: "10546934240"
     alias: gemma-4-26b-a4b
-  # Total context; each of the `parallel` slots gets ctx/parallel (32768).
+  # Total context; each of the `parallel` slots gets ctx/parallel. Hermes hard-
+  # refuses to start a session on a model with less than 64,000 tokens of
+  # context (agent_init._enforce_minimum_context), so each slot needs >= 64000;
+  # 131072 total / 2 slots = 65536 per slot. Spike: verify this still fits
+  # nv1's memory budget under sustained load before pointing Hermes' main
+  # model back at this server (see docs/src/k8s/nv1-jetson.md).
   # Server-wide default chat-template kwargs (JSON). Per-request values override.
   chatTemplateKwargs: '{"enable_thinking":false}'
   # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system). The
@@ -21,7 +26,7 @@ server:
   cacheRam: 256 # MiB of host-RAM prompt cache
   ctxCheckpoints: 2 # per slot
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
-  ctx: 65536
+  ctx: 131072
   parallel: 2
   storage: 20Gi
   resources:
