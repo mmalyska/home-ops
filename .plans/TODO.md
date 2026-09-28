@@ -16,6 +16,10 @@ General backlog items not tied to a specific plan.
 
 - [ ] **nv1 iGPU utilization metrics** — `node-exporter` gives free thermal-zone temps for the Jetson Orin GA10B iGPU (`node_thermal_zone_temp{type="gpu-thermal"}`, already surfaced on the "Cluster Nodes" dashboard's "Thermal Zones" panel), but there is no exporter for GPU utilization/clocks — Jetson has no `nvidia-smi`. Investigate a `jtop`/jetson-stats Prometheus exporter or a `tegrastats`-parsing textfile-collector sidecar, in the spirit of the existing `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` pattern. Scope as its own design doc given nv1's GPU stack is still mid-rollout (see `docs/superpowers/plans/2026-08-13-jetson-igpu.md`).
 
+## AI — Hermes
+
+- [ ] **Gemini 2.5 Flash-Lite retires 2026-10-16** — Hermes vision (`cluster/apps/ai/hermes-agent/values.yaml`, `auxiliary.vision`) uses `google/gemini-2.5-flash-lite` via OpenRouter ($0.10/$0.40 per 1M, identical to Google's direct price — no cost reason to go direct). Pick a replacement before the retirement date: `gemini-3.1-flash-lite` ($0.25/$1.50/M) or `gemini-3.5-flash-lite` ($0.30/$2.50/M) are the closest current tiers as of 2026-09-28; re-check OpenRouter's live pricing when actually switching, since it moves. Checked 2026-09-28: none of Hermes/Honcho's other paid OpenRouter models (`deepseek-v4-pro`, `deepseek-v4-flash`, `qwen3-235b-a22b-2507`) are cheaper direct — DeepSeek direct has a 2x peak surcharge overlapping Warsaw daytime hours, and DashScope International is pricier than OpenRouter for Qwen3-235B.
+
 ## Storage — Rook-Ceph
 
 - [ ] **🔒 GATED — Migrate CSI keys to the `aes256k` cipher and unmute the CephX warnings** — do **not** start until *both* gates below are true. Full background: `docs/src/k8s/rook-ceph-cephx.md`.
