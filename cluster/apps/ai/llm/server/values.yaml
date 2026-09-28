@@ -20,7 +20,14 @@ server:
   # Gemma's chat_template_kwargs.enable_thinking, suppress it with
   # --reasoning-budget (verified in Task 2). Leave chatTemplateKwargs unset for
   # this model.
-  reasoningBudget: 0 # verified in Task 2; -1 = unrestricted, 0 = end immediately
+  # Task 2 finding (2026-09-28): 0 is BROKEN on this build (b8708-ae65fbdf3) —
+  # it disables the reasoning-content parser entirely, leaking raw <think>
+  # tags into `content` instead of truncating reasoning. A positive value
+  # works correctly (clean parsing, capped length). 64 keeps aux-task cost
+  # low (~80 completion tokens, ~280 reasoning chars) while holding as a
+  # true hard cap under context growth up to ~50K tokens (the nousresearch/
+  # hermes-agent#9344 regression test, single-shot calls — passed cleanly).
+  reasoningBudget: 64
   # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system).
   # LFM2.5's footprint is smaller than Gemma's (measured in the 2026-09-28
   # spike: ~8.5-8.9 GiB light load vs Gemma's ~10.2-12.2 GiB), but re-verify
