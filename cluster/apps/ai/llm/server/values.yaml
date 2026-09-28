@@ -1,7 +1,5 @@
 server:
-  # Scaled to 0 for a throwaway spike test comparing LFM2.5-8B-A1B against the
-  # running Gemma 4 26B-A4B; restore to 1 afterward.
-  replicaCount: 0
+  replicaCount: 1
   image:
     repository: ghcr.io/nvidia-ai-iot/llama_cpp
     # CUDA 12.6 build for JetPack 6. NEVER use latest* tags (CUDA 13 does not
@@ -9,23 +7,24 @@ server:
     tag: "b8708-r36.4-tegra-aarch64-cu126-22.04@sha256:8fa5df9a76d3ddce89ade0ae67822afdfac27a5fe3a9e5eff7b6dfd72cd34f6b"
   fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
   model:
-    file: gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
-    url: https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
-    sha256: 2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658
-    size: "10546934240"
-    alias: gemma-4-26b-a4b
+    file: LFM2.5-8B-A1B-UD-Q6_K_XL.gguf
+    url: https://huggingface.co/unsloth/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-UD-Q6_K_XL.gguf
+    sha256: de2718c45e69587a0589ebe5f531ed4a99bccf341b2c122b6479ffe28929a9be
+    size: "7742467680"
+    alias: lfm2.5-8b-a1b
   # Total context; each of the `parallel` slots gets ctx/parallel. Hermes hard-
   # refuses to start a session on a model with less than 64,000 tokens of
   # context (agent_init._enforce_minimum_context), so each slot needs >= 64000;
-  # 131072 total / 2 slots = 65536 per slot. Spike: verify this still fits
-  # nv1's memory budget under sustained load before pointing Hermes' main
-  # model back at this server (see docs/src/k8s/nv1-jetson.md).
-  # Server-wide default chat-template kwargs (JSON). Per-request values override.
-  chatTemplateKwargs: '{"enable_thinking":false}'
-  # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system). The
-  # pod sits at ~12 GiB right after warm-up; measured: a 12Gi limit OOM-kills
-  # it, the llama-server defaults (cache 8192 MiB, 32 checkpoints) starve the
-  # node. Each checkpoint is ~100-120 MiB (sliding window), 2 slots.
+  # 131072 total / 2 slots = 65536 per slot.
+  # LFM2.5 is a reasoning-only model (always emits chain-of-thought); unlike
+  # Gemma's chat_template_kwargs.enable_thinking, suppress it with
+  # --reasoning-budget (verified in Task 2). Leave chatTemplateKwargs unset for
+  # this model.
+  reasoningBudget: 0 # verified in Task 2; -1 = unrestricted, 0 = end immediately
+  # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system).
+  # LFM2.5's footprint is smaller than Gemma's (measured in the 2026-09-28
+  # spike: ~8.5-8.9 GiB light load vs Gemma's ~10.2-12.2 GiB), but re-verify
+  # under concurrent near-max-context load in Task 3 before trusting this.
   cacheRam: 256 # MiB of host-RAM prompt cache
   ctxCheckpoints: 2 # per slot
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
@@ -35,10 +34,10 @@ server:
   resources:
     requests:
       cpu: 500m
-      memory: 11Gi
-    # Expected steady state ~12.4 GiB. Keep the limit under what the node can
-    # supply (~13.4 GiB before it starves) so a runaway kills this pod, not the
-    # system pods (cilium-envoy, node-exporter) via a node-wide OOM.
+      memory: 9Gi
+    # Re-tune after Task 3's concurrent test result; this starting point keeps
+    # the same ~4 GiB of slack under the 13.4 GiB node-starvation point that
+    # the Gemma config used, scaled to LFM2.5's smaller measured baseline.
     limits:
-      memory: 13Gi
+      memory: 11Gi
       nvidia.com/gpu: 1
