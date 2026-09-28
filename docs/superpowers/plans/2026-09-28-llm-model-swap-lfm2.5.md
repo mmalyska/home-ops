@@ -43,7 +43,7 @@ A follow-up research spike identified **LFM2.5-8B-A1B** (Liquid AI, 8.3B total /
 
 ## Review Focus
 
-1. **Reasoning suppression for small-budget calls.** If `--reasoning-budget 0` (or an equivalent) does not actually shrink LFM2.5's output the way Gemma's `enable_thinking=false` did, every one of Hermes's 7 local aux tasks and Honcho's 5 local slots gets slower and more expensive the moment this rolls out — a regression a real user would notice immediately as "Hermes feels slower now." Task 2 must measure completion-token counts before and after, not just check the response is non-empty.
+1. **Reasoning suppression for small-budget calls, and whether it holds as context grows.** If `--reasoning-budget 0` (or an equivalent) does not actually shrink LFM2.5's output the way Gemma's `enable_thinking=false` did, every one of Hermes's 7 local aux tasks and Honcho's 5 local slots gets slower and more expensive the moment this rolls out. Worse, [nousresearch/hermes-agent#9344](https://github.com/NousResearch/hermes-agent/issues/9344) shows a different reasoning model returning empty responses once accumulated conversation context made reasoning-token consumption eat the entire output budget — a risk specifically for the `compression` task, which is Hermes's own rescue mechanism for an overgrown conversation and would be pointed at the same always-reasoning model. Task 2 must measure completion-token counts at small AND large context sizes, not just check one short response is non-empty.
 2. **Concurrent load at production-representative context size.** The spike's concurrency test used short (~3k-token) system prompts. Real Hermes turns and Honcho's deriver calls can be much larger. Task 3 must reproduce near-65536-token contexts on *both* slots concurrently, repeatedly, or this plan repeats the exact mistake that caused the 2026-09-28 incident.
 3. **Storage headroom during the swap.** The `llama-server-models` PVC is 20Gi and currently holds the ~9.82 GiB Gemma blob. Adding the ~7.21 GiB LFM2.5 file brings it to ~17 GiB before cleanup — tight but should fit; Task 1 must check `df`/`du` on the PVC before assuming so, and Task 7 removes the old blob once the swap is confirmed.
 4. **License change.** LFM2.5 is LFM Open License v1.0 (free for organizations under $10M annual revenue — fine for this home-lab, but a different license family than Gemma's). Task 7 records this in the docs it already touches; it is not a blocker.
@@ -159,22 +159,24 @@ gh pr create --base main --label area/cluster --label enhancement --title "feat(
 
 ---
 
-### Task 2: Verify reasoning suppression (blocks Task 1's merge)
+### Task 2: Verify reasoning behavior — budget, growth under context, and per-call control (blocks Task 1's merge)
+
+**Why this task is wider than "does the flag work":** [nousresearch/hermes-agent#9344](https://github.com/NousResearch/hermes-agent/issues/9344) documents a generic reasoning-model failure mode (reported against a different, cloud model — GLM-5-Turbo — nothing to do with `reasoning_effort`/`reasoning_overrides` or a local provider, but the mechanism is architecture-agnostic): as conversation context grows, a reasoning model allocates *progressively more* tokens to thinking, not a fixed per-call overhead. At ~53K tokens of accumulated context with a 16K output budget, reasoning alone consumed the whole budget and every reply came back empty (`finish_reason: length`). Their own recovery made it worse — retries appended more reasoning-only history, growing context further, and compression only fired *after* the failure. **This is a direct risk for us**, because this plan points both the main conversation *and* the `compression` task (Hermes's own rescue mechanism for an overgrown conversation) at the same always-reasoning model — if reasoning growth eats the compression call's budget too, there is no rescue path left. `--reasoning-budget` is a hard server-side cap, unlike relying on the model to self-regulate, and should structurally prevent this — but that must be verified under real context growth, not assumed from a short-prompt test.
 
 **Files:**
-- Create (scratch, not committed): `/tmp/lfm_reasoning_check.py`
+- Create (scratch, not committed): `/tmp/lfm_reasoning_check.py`, `/tmp/lfm_reasoning_growth.py`
 
 **Interfaces:**
-- Consumes: a live `llama-server` running LFM2.5 with `--reasoning-budget 0` (deploy Task 1's branch to a throwaway pod exactly like the 2026-09-28 spike, or merge Task 1 and test on the real Deployment if you're comfortable — either works, this task is read-only against whichever is running).
-- Produces: a go/no-go verdict for Task 1's merge, and (if budget 0 is too aggressive) the actual working value for `reasoningBudget`.
+- Consumes: a live `llama-server` running LFM2.5 (deploy Task 1's branch to a throwaway pod exactly like the 2026-09-28 spike, or merge Task 1 and test on the real Deployment if you're comfortable — either works, this task is read-only against whichever is running).
+- Produces: a go/no-go verdict for Task 1's merge; the working `reasoningBudget` value; a decision on whether the main model and the aux tasks can run different reasoning policies on this one server, or must share one.
 
-- [ ] **Step 1: Compare token cost with and without the budget**
+- [ ] **Step 1: Aux-shaped calls — does a budget suppress reasoning enough for small `max_tokens`?**
 
 ```python
 #!/usr/bin/env python3
-"""Task 2: does --reasoning-budget suppress LFM2.5's chain-of-thought the way
-Gemma's enable_thinking=false did? Compare completion_tokens for the same
-trivial prompt at a few budget values."""
+"""Step 1: does --reasoning-budget suppress LFM2.5's chain-of-thought the way
+Gemma's enable_thinking=false did, for the short, low-max_tokens calls the 7
+local aux tasks make?"""
 import json, urllib.request
 
 URL = "http://localhost:18100/v1/chat/completions"  # port-forward to the test server first
@@ -199,15 +201,79 @@ for i in range(3):
 
 Run it (port-forward first: `kubectl -n llm port-forward pod/<the-test-pod-or-svc> 18100:8080`).
 
-**Expected if `--reasoning-budget 0` works:** `completion_tokens` in the same range as Gemma's thinking-off numbers (single digits to ~10), `reasoning_chars` near 0, and `content` still a valid title. **If it doesn't work** (reasoning_chars stays in the 400-2000 range seen in the spike): try `--reasoning-budget 64` or `128` (a small but non-zero budget) and re-run; find the smallest value that still produces a correct, non-empty `content`. Record whatever value you land on in `server.reasoningBudget` (Task 1's values.yaml) and in the PR description before merging.
+**Expected if `--reasoning-budget 0` works:** `completion_tokens` in the same range as Gemma's thinking-off numbers (single digits to ~10), `reasoning_chars` near 0, and `content` still a valid title. **If it doesn't work** (reasoning_chars stays in the 400-2000 range seen in the spike): try `--reasoning-budget 64` or `128` and re-run; find the smallest value that still produces a correct, non-empty `content`.
 
-- [ ] **Step 2: If no budget value works, stop and report**
+- [ ] **Step 2: Does the budget hold as a HARD cap when context is large? (the #9344 regression test)**
 
-If even a moderate budget (e.g. 256) still produces empty `content` (the same failure mode Gemma had with thinking on and a small `max_tokens`), the fallback is **not** to ship LFM2.5 for the 7 local aux tasks — keep those on Gemma or on the cloud, and only use LFM2.5 for the main model / compression (which already use larger `max_tokens` budgets and tolerate more reasoning overhead). Record this as a ruling in whatever ledger you're tracking this plan under, and adjust Task 4 accordingly (skip re-pointing the aux tasks).
+```python
+#!/usr/bin/env python3
+"""Step 2: reproduce the shape of nousresearch/hermes-agent#9344 — does
+reasoning-token consumption grow with prompt/context size, and does
+--reasoning-budget actually cap it regardless, or does it degrade the same
+way GLM-5-Turbo did? Run at increasing context sizes and at a couple of
+--reasoning-budget values (set via server restart between rounds, or run
+one round per throwaway pod if you want them side by side)."""
+import json, urllib.request
 
-- [ ] **Step 3: Un-gate Task 1's PR**
+URL = "http://localhost:18101/v1/chat/completions"
+MODEL = "lfm2.5-8b-a1b"
+MAX_TOKENS = 500  # deliberately modest, like a real conversational turn budget
 
-Once you have a working `reasoningBudget` value and it's reflected in Task 1's branch, remove the draft/hold status and merge it.
+
+def chat(context_tokens_approx, max_tokens=MAX_TOKENS):
+    filler = " ".join(f"Section {i}: the scheduler places pods on nodes based on resource requests, affinity and taints, item {i*7}."
+                       for i in range(max(1, context_tokens_approx // 28)))  # ~28 tokens/sentence, rough
+    body = {"model": MODEL, "max_tokens": max_tokens,
+            "messages": [{"role": "user", "content": filler + "\nGiven the above, in one sentence, what should I check first if a pod is stuck Pending?"}]}
+    req = urllib.request.Request(URL, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=300) as r:
+        d = json.load(r)
+    m = d["choices"][0]["message"]
+    return {"prompt_tokens": d["usage"]["prompt_tokens"], "completion_tokens": d["usage"]["completion_tokens"],
+            "reasoning_chars": len(m.get("reasoning_content") or ""), "content_empty": not (m.get("content") or "").strip(),
+            "finish_reason": d["choices"][0]["finish_reason"]}
+
+
+for target in (1_000, 8_000, 20_000, 40_000, 55_000):
+    print(target, chat(target))
+```
+
+Run this **at whatever `reasoningBudget` value Step 1 landed on** (not unrestricted — the whole point is to check the cap holds). **Pass:** `content_empty` is `False` and `finish_reason` is `"stop"` (not `"length"`) at every context size, and `reasoning_chars`/`completion_tokens` stay roughly flat rather than growing with `prompt_tokens`. **Fail (the #9344 pattern):** `content_empty` becomes `True` and `finish_reason` becomes `"length"` at larger context sizes, or `completion_tokens` climbs toward `max_tokens` as context grows — this means `--reasoning-budget` is a *soft* hint, not a hard cap, for this model/build, and you cannot trust a fixed `max_tokens` for either the main model or `compression` regardless of the budget value. If it fails, try a smaller budget (e.g. half of Step 1's value) and re-run the full sweep before concluding it's broken — don't stop at one data point.
+
+- [ ] **Step 3: If Step 2 fails at any budget, do not proceed with `compression` on this model**
+
+The compression task is Hermes's rescue mechanism for exactly the large-context scenario Step 2 tests. If it can't reliably produce non-empty output at 40-55K tokens of context, pointing `compression` at LFM2.5 recreates #9344's compounding failure (the rescue mechanism fails at the same time it's needed most). In that case: keep `compression` on the cloud (revert that part of Task 4), and record this as a ruling — LFM2.5 is usable for the main model and the other aux tasks, but not for compression, until upstream fixes make `--reasoning-budget` a true hard cap.
+
+- [ ] **Step 4: Context-compounding check — already answered, confirm it still holds**
+
+Checked directly against the pinned Hermes image (`v2026.9.24`) before writing this plan: `agent/message_sanitization.py`'s `_REASONING_ECHO_RULES` only requires reasoning-content echo-back for the `kimi`, `deepseek`, and `mimo` provider families (matched by provider name, model substring, or host). Everything else — including our `custom` provider pointing at `llama-server`/`lfm2.5-8b-a1b` — is on the "strict" side, where `apply_reasoning_content_policy` strips `reasoning_content` from replayed history entirely (`agent/message_sanitization.py:635-667`). **So reasoning traces do not compound into context turn-over-turn for our config** — each turn's reasoning cost is paid once and discarded, it doesn't inflate the next turn's prompt. Re-run this grep against whatever Hermes image tag is actually live before trusting it (Renovate bumps this image; the rule table could change):
+
+```bash
+kubectl exec -n hermes-agent deploy/hermes-agent -c hermes-agent -- sh -c \
+  'grep -n "_REASONING_ECHO_RULES" -A6 /opt/hermes/agent/message_sanitization.py'
+```
+
+Expected: `lfm`/`liquid`/`custom` is not one of the listed families (kimi/deepseek/mimo). If a future Hermes version adds LFM2.5 to the echo-back list, re-evaluate — that would mean reasoning does compound and the growing-context risk in Step 2 gets worse, not just from the model's own behavior but from replayed history too.
+
+- [ ] **Step 5: Can the main model and the aux tasks run different reasoning policies on one server?**
+
+`--reasoning-budget` is a server-startup flag — one value for the whole server. Hermes has two *client-side* levers that might let the main model ask for something different per call: `agent.reasoning_effort` / `agent.reasoning_overrides.<model>` (main agent, resolved in `hermes_constants.resolve_reasoning_config`) and `auxiliary.<task>.reasoning_effort` (aux tasks, already in use elsewhere in this repo). Test whether either one actually changes LFM2.5's behavior for a `custom` provider (it may be a no-op if Hermes only wires `reasoning_effort` for providers with a recognized reasoning wire shape — OpenAI, Anthropic, DeepSeek — and not for generic OpenAI-compatible custom endpoints):
+
+```bash
+# from the Hermes pod, or via direct curl to the test server with the same body shape Hermes would send:
+curl -s localhost:18101/v1/chat/completions -d '{"model":"lfm2.5-8b-a1b","max_tokens":500,"reasoning_effort":"low","messages":[{"role":"user","content":"What is 17*23?"}]}' | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["usage"]["completion_tokens"], len(d["choices"][0]["message"].get("reasoning_content") or ""))'
+# compare against the same call with reasoning_effort omitted, and with {"chat_template_kwargs":{"thinking_budget":64}} instead
+```
+
+**If neither changes the output measurably:** there is no per-call override for this model on this server build — the server's one `--reasoning-budget` value has to serve both the main model and the aux tasks. Pick the value that keeps aux tasks correct (Step 1's finding) even if that's not the ideal value for main-model quality, and record this as a ruling. **If one does work:** set the server default to the aux-safe value (Step 1), and configure `agent.reasoning_overrides.lfm2.5-8b-a1b` (or the equivalent per-task `extra_body`) to request a higher budget for the main model specifically — record the exact config key used, since it isn't yet documented anywhere in this repo.
+
+- [ ] **Step 6: Main-model-shaped quality check, at whatever policy Steps 1-5 landed on**
+
+Reuse `tool_par.json`-style multi-tool prompts and a short multi-turn conversation (3-4 turns, each referencing the previous answer) at the chosen budget. Confirm tool calls stay well-formed (`parallel_tool_calls: true`, same as the 2026-09-28 spike's clean 3/3 result) and that answers remain coherent across turns. This is a lighter-weight sanity check than Step 2 — Step 2 is the one that must pass; this one confirms nothing regressed on ordinary use.
+
+- [ ] **Step 7: Record the outcome and un-gate Task 1's PR**
+
+Write down: the final `reasoningBudget` value, whether `compression` stays on LFM2.5 or moves to the cloud (Step 3), and whether a per-call override exists for the main model (Step 5) — in the PR description and in whatever ledger tracks this plan. Once recorded, remove Task 1's PR's draft/hold status and merge it.
 
 ---
 
