@@ -143,7 +143,9 @@ hermes:
     orchestrator: *cloudMainModel
 
 signalCli:
-  replicas: 1
+  # Disabled: Hermes' Signal gateway needs SIGNAL_HTTP_URL (removed from the
+  # Deployment env above), which was the only consumer of this pod.
+  replicas: 0
   image:
     repository: bbernhard/signal-cli-rest-api
     tag: "0.101@sha256:2cf09d66a86fdd210e42ee91662216364acc27da1163a8c44167a77ea3a6559a"
