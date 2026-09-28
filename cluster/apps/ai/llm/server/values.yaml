@@ -1,7 +1,5 @@
 server:
-  # Scaled to 0 for a throwaway spike test comparing LFM2.5-8B-A1B against the
-  # running Gemma 4 26B-A4B; restore to 1 afterward.
-  replicaCount: 0
+  replicaCount: 1
   image:
     repository: ghcr.io/nvidia-ai-iot/llama_cpp
     # CUDA 12.6 build for JetPack 6. NEVER use latest* tags (CUDA 13 does not
