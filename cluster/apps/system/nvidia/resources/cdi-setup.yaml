@@ -146,6 +146,18 @@ data:
         if [ -c /dev/dri/renderD128 ]; then
           printf '        - path: /dev/dri/renderD128\n          permissions: rw\n'
         fi
+
+        # /dev/host1x-fence: Tegra host1x fence/sync device. Not required for
+        # cuInit (that's renderD128, above) — CUDA on Tegra probes for this
+        # separately and falls back gracefully when it's absent (confirmed:
+        # a pod without it still initializes CUDA and runs real GPU inference
+        # at expected speed; only symptom was one harmless startup log line,
+        # "DrmCreateEventPollFd: failed to open host1x-fence device: -1").
+        # Injecting it in case it backs a fence/sync path some future
+        # workload actually exercises.
+        if [ -c /dev/host1x-fence ]; then
+          printf '        - path: /dev/host1x-fence\n          permissions: rw\n'
+        fi
         echo '      mounts:'
         echo '        # Bind-mount the entire JetPack r36.5 library directory.'
         echo '        # Replaces all individual hostPath lib mounts in the legacy manifest.'
@@ -189,7 +201,8 @@ data:
     for dev in \
         $(find /dev/nvgpu/ -type c 2>/dev/null) \
         $(find /dev/ -maxdepth 1 -name 'nvhost-*' 2>/dev/null) \
-        /dev/nvmap; do
+        /dev/nvmap \
+        /dev/host1x-fence; do
       if [ -e "${dev}" ]; then chmod 666 "${dev}" 2>/dev/null || true; fi
     done
 
