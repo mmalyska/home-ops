@@ -134,6 +134,7 @@ nav:
       - "Hardware": general/hardware.md
       - "Network": general/network.md
       - "UPS & Power": general/ups.md
+      - "Matter over Thread": general/matter-thread.md
       - "Network Upgrade Plan": general/network-upgrade-plan.md
       - "Network Migration Plan": general/network-migration-plan.md
   - "Home Ops":
