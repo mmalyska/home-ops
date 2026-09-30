@@ -83,7 +83,9 @@ spec:
             # Default it off; a request can turn it back on with
             # chat_template_kwargs.enable_thinking=true.
             - --chat-template-kwargs
-            - {{ .Values.server.chatTemplateKwargs | quote }}
+            - {{ .Values.server.chatTemplateKwargs | default "{}" | quote }}
+            - --reasoning-budget
+            - {{ .Values.server.reasoningBudget | quote }}
             # nv1 has ~12.4 GiB of unified memory left for this pod. The host-RAM
             # prompt cache defaults to 8 GiB and each context checkpoint is ~100 MiB
             # (32 per slot), which starved the node into global OOM. Cap both.

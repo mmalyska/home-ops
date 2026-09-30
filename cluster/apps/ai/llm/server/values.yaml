@@ -1,33 +1,59 @@
 server:
-  # Scaled to 0 for a throwaway spike test comparing LFM2.5-8B-A1B against the
-  # running Gemma 4 26B-A4B; restore to 1 afterward.
-  replicaCount: 0
+  replicaCount: 1
   image:
-    repository: ghcr.io/nvidia-ai-iot/llama_cpp
-    # CUDA 12.6 build for JetPack 6. NEVER use latest* tags (CUDA 13 does not
-    # initialize on nv1's driver and silently falls back to CPU).
-    tag: "b8708-r36.4-tegra-aarch64-cu126-22.04@sha256:8fa5df9a76d3ddce89ade0ae67822afdfac27a5fe3a9e5eff7b6dfd72cd34f6b"
+    # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
+    # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
+    # 2026-06-16) and the think-tag leak fix (ggml-org/llama.cpp#24234). This
+    # tag tracks upstream llama.cpp releases (ci/latest.sh) on top of the same
+    # proven-good JetPack6/r36.4/CUDA12.6/Orin(sm_87) base NVIDIA publishes.
+    # NEVER use *-cu129 anything on nv1 (CUDA 13/12.9 does not initialize on
+    # this driver and silently falls back to CPU).
+    repository: ghcr.io/mmalyska/llama-cpp-jetson
+    tag: "v0.5.0@sha256:fa63364ad35e90a160daebe7a1b33fea4dbb72ed3abdb2bbd3e4b564f4f62d98"
   fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
   model:
-    file: gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
-    url: https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
-    sha256: 2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658
-    size: "10546934240"
-    alias: gemma-4-26b-a4b
+    file: LFM2.5-8B-A1B-UD-Q6_K_XL.gguf
+    url: https://huggingface.co/unsloth/LFM2.5-8B-A1B-GGUF/resolve/main/LFM2.5-8B-A1B-UD-Q6_K_XL.gguf
+    sha256: de2718c45e69587a0589ebe5f531ed4a99bccf341b2c122b6479ffe28929a9be
+    size: "7742467680"
+    alias: lfm2.5-8b-a1b
   # Total context; each of the `parallel` slots gets ctx/parallel. Hermes hard-
   # refuses to start a session on a model with less than 64,000 tokens of
   # context (agent_init._enforce_minimum_context), so each slot needs >= 64000;
-  # 131072 total / 2 slots = 65536 per slot. Spike: verify this still fits
-  # nv1's memory budget under sustained load before pointing Hermes' main
-  # model back at this server (see docs/src/k8s/nv1-jetson.md).
-  # Server-wide default chat-template kwargs (JSON). Per-request values override.
-  chatTemplateKwargs: '{"enable_thinking":false}'
-  # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system). The
-  # pod sits at ~12 GiB right after warm-up; measured: a 12Gi limit OOM-kills
-  # it, the llama-server defaults (cache 8192 MiB, 32 checkpoints) starve the
-  # node. Each checkpoint is ~100-120 MiB (sliding window), 2 slots.
+  # 131072 total / 2 slots = 65536 per slot.
+  # LFM2.5 is a reasoning-only model (always emits chain-of-thought); unlike
+  # Gemma's chat_template_kwargs.enable_thinking, suppress it with
+  # --reasoning-budget (verified in Task 2). Leave chatTemplateKwargs unset for
+  # this model.
+  # Task 2 finding (2026-09-28): 0 is BROKEN on this build (b8708-ae65fbdf3) —
+  # it disables the reasoning-content parser entirely, leaking raw <think>
+  # tags into `content` instead of truncating reasoning. A positive value
+  # works correctly (clean parsing, capped length). 64 keeps aux-task cost
+  # low (~80 completion tokens, ~280 reasoning chars) while holding as a
+  # true hard cap under context growth up to ~50K tokens (the nousresearch/
+  # hermes-agent#9344 regression test, single-shot calls — passed cleanly).
+  reasoningBudget: 64
+  # Corruption ruling (2026-09-29): LFM2.5's hybrid (recurrent/short-conv)
+  # state has a known, unfixed upstream bug (ggml-org/llama.cpp#29002) that
+  # corrupts multi-turn output at a measured ~7-8% rate at this exact config
+  # (-np 2, checkpoints on, this image). Owner explicitly accepted this rate
+  # for BOTH the main model and aux tasks/compression (this PR originally
+  # scoped LFM2.5 to aux/compression only, keeping the main model on cloud
+  # over this same bug — that restriction is now lifted). np 1 + checkpoints
+  # off was tested as a mitigation (~7.1% at n=98) but wasn't a large enough
+  # improvement over np 2 to justify losing a concurrent slot, so np 2 stays.
+  # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system).
+  # Task 3 (2026-09-30, this image/config, real measurement — not the
+  # 2026-09-28 spike's lighter ~3k-token-prompt test): 5 rounds of 2
+  # concurrent ~45.7K-token requests (near the 65536/slot ceiling) peaked at
+  # 7.24-7.37 GiB, stable across rounds (no checkpoint-growth runaway) —
+  # far under both this chart's 11Gi limit and the ~13.4 GiB node-starvation
+  # point. Real headroom confirmed (~6 GiB), hence ctxCheckpoints bumped from
+  # the original conservative 2 to 4 below. A 3rd parallel slot or a bigger
+  # per-slot context are also affordable on this data but need their own
+  # spike/measurement before changing `parallel`/`ctx` — not done yet.
   cacheRam: 256 # MiB of host-RAM prompt cache
-  ctxCheckpoints: 2 # per slot
+  ctxCheckpoints: 4 # per slot; bumped from 2 given confirmed headroom (Task 3)
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   ctx: 131072
   parallel: 2
@@ -35,10 +61,10 @@ server:
   resources:
     requests:
       cpu: 500m
-      memory: 11Gi
-    # Expected steady state ~12.4 GiB. Keep the limit under what the node can
-    # supply (~13.4 GiB before it starves) so a runaway kills this pod, not the
-    # system pods (cilium-envoy, node-exporter) via a node-wide OOM.
+      memory: 9Gi
+    # Re-tune after Task 3's concurrent test result; this starting point keeps
+    # the same ~4 GiB of slack under the 13.4 GiB node-starvation point that
+    # the Gemma config used, scaled to LFM2.5's smaller measured baseline.
     limits:
-      memory: 13Gi
+      memory: 11Gi
       nvidia.com/gpu: 1
