@@ -52,7 +52,17 @@ server:
   # the original conservative 2 to 4 below. A 3rd parallel slot or a bigger
   # per-slot context are also affordable on this data but need their own
   # spike/measurement before changing `parallel`/`ctx` — not done yet.
-  cacheRam: 256 # MiB of host-RAM prompt cache
+  # Bumped 256 -> 2048 (2026-09-30): a wider corruption-rate test driving
+  # REAL Hermes traffic (4 concurrent profiles, real multi-turn conversations
+  # with ~16K-token system-prompt-heavy contexts) showed constant cache
+  # eviction at 256 MiB ("making room for prompt cache entry, removing oldest
+  # entry", each entry 70-86 MiB -- only ~3 fit). This forces full prompt
+  # reprocessing from scratch on every turn instead of cheap cached-prefix
+  # reuse, and was a major contributor to a long request-latency tail (some
+  # turns took 15-30+ minutes). 2048 MiB fits ~25-28 such entries, comfortably
+  # covering several concurrent growing conversations. Well within the
+  # confirmed ~6 GiB of real headroom (see the Task 3 note below).
+  cacheRam: 2048 # MiB of host-RAM prompt cache
   ctxCheckpoints: 4 # per slot; bumped from 2 given confirmed headroom (Task 3)
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   ctx: 131072
@@ -66,5 +76,9 @@ server:
     # the same ~4 GiB of slack under the 13.4 GiB node-starvation point that
     # the Gemma config used, scaled to LFM2.5's smaller measured baseline.
     limits:
-      memory: 11Gi
+      # Bumped 11Gi -> 12Gi alongside the cacheRam increase above: expected
+      # new peak ~9.2 GiB (7.37 GiB Task 3 baseline + ~1.8 GiB cache growth),
+      # keeping a real margin under this limit and under the ~13.4 GiB
+      # node-starvation point.
+      memory: 12Gi
       nvidia.com/gpu: 1
