@@ -1,10 +1,15 @@
 server:
   replicaCount: 1
   image:
-    repository: ghcr.io/nvidia-ai-iot/llama_cpp
-    # CUDA 12.6 build for JetPack 6. NEVER use latest* tags (CUDA 13 does not
-    # initialize on nv1's driver and silently falls back to CPU).
-    tag: "b8708-r36.4-tegra-aarch64-cu126-22.04@sha256:8fa5df9a76d3ddce89ade0ae67822afdfac27a5fe3a9e5eff7b6dfd72cd34f6b"
+    # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
+    # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
+    # 2026-06-16) and the think-tag leak fix (ggml-org/llama.cpp#24234). This
+    # tag tracks upstream llama.cpp releases (ci/latest.sh) on top of the same
+    # proven-good JetPack6/r36.4/CUDA12.6/Orin(sm_87) base NVIDIA publishes.
+    # NEVER use *-cu129 anything on nv1 (CUDA 13/12.9 does not initialize on
+    # this driver and silently falls back to CPU).
+    repository: ghcr.io/mmalyska/llama-cpp-jetson
+    tag: "v0.5.0@sha256:fa63364ad35e90a160daebe7a1b33fea4dbb72ed3abdb2bbd3e4b564f4f62d98"
   fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
   model:
     file: LFM2.5-8B-A1B-UD-Q6_K_XL.gguf
@@ -28,12 +33,27 @@ server:
   # true hard cap under context growth up to ~50K tokens (the nousresearch/
   # hermes-agent#9344 regression test, single-shot calls — passed cleanly).
   reasoningBudget: 64
+  # Corruption ruling (2026-09-29): LFM2.5's hybrid (recurrent/short-conv)
+  # state has a known, unfixed upstream bug (ggml-org/llama.cpp#29002) that
+  # corrupts multi-turn output at a measured ~7-8% rate at this exact config
+  # (-np 2, checkpoints on, this image). Owner explicitly accepted this rate
+  # for BOTH the main model and aux tasks/compression (this PR originally
+  # scoped LFM2.5 to aux/compression only, keeping the main model on cloud
+  # over this same bug — that restriction is now lifted). np 1 + checkpoints
+  # off was tested as a mitigation (~7.1% at n=98) but wasn't a large enough
+  # improvement over np 2 to justify losing a concurrent slot, so np 2 stays.
   # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system).
-  # LFM2.5's footprint is smaller than Gemma's (measured in the 2026-09-28
-  # spike: ~8.5-8.9 GiB light load vs Gemma's ~10.2-12.2 GiB), but re-verify
-  # under concurrent near-max-context load in Task 3 before trusting this.
+  # Task 3 (2026-09-30, this image/config, real measurement — not the
+  # 2026-09-28 spike's lighter ~3k-token-prompt test): 5 rounds of 2
+  # concurrent ~45.7K-token requests (near the 65536/slot ceiling) peaked at
+  # 7.24-7.37 GiB, stable across rounds (no checkpoint-growth runaway) —
+  # far under both this chart's 11Gi limit and the ~13.4 GiB node-starvation
+  # point. Real headroom confirmed (~6 GiB), hence ctxCheckpoints bumped from
+  # the original conservative 2 to 4 below. A 3rd parallel slot or a bigger
+  # per-slot context are also affordable on this data but need their own
+  # spike/measurement before changing `parallel`/`ctx` — not done yet.
   cacheRam: 256 # MiB of host-RAM prompt cache
-  ctxCheckpoints: 2 # per slot
+  ctxCheckpoints: 4 # per slot; bumped from 2 given confirmed headroom (Task 3)
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   ctx: 131072
   parallel: 2
