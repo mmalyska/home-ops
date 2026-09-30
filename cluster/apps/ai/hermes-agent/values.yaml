@@ -6,10 +6,15 @@ hermes:
   resources:
     requests:
       cpu: 200m
-      memory: 512Mi
+      memory: 768Mi
+    # Bumped 2026-09-30: OOMKilled (exit 137) under 4 concurrent real chat
+    # sessions (a corruption-rate test, not unusual production load) at the
+    # old 1Gi limit -- idle baseline alone measured 609Mi. mc3 has ample
+    # headroom (~28.5 GiB allocatable, ~45% used at the time), so this isn't
+    # tightly budgeted like nv1's llama-server.
     limits:
       cpu: 1500m
-      memory: 1Gi
+      memory: 3Gi
   config:
     # Hermes rejects any model below 64K context (agent_init._enforce_minimum_context).
     # llama-server now runs -c 131072 -np 2 (65536 per slot, verified under a
