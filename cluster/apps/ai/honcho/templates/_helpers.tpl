@@ -25,7 +25,7 @@
 - name: DERIVER_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DERIVER_MODEL_CONFIG__MODEL
-  value: gemma-4-26b-a4b
+  value: lfm2.5-8b-a1b
 - name: DERIVER_MODEL_CONFIG__OVERRIDES__BASE_URL
   value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DERIVER_MODEL_CONFIG__FALLBACK__TRANSPORT
@@ -37,7 +37,7 @@
 - name: SUMMARY_MODEL_CONFIG__TRANSPORT
   value: openai
 - name: SUMMARY_MODEL_CONFIG__MODEL
-  value: gemma-4-26b-a4b
+  value: lfm2.5-8b-a1b
 - name: SUMMARY_MODEL_CONFIG__OVERRIDES__BASE_URL
   value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: SUMMARY_MODEL_CONFIG__FALLBACK__TRANSPORT
@@ -59,7 +59,7 @@
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__MODEL
-  value: gemma-4-26b-a4b
+  value: lfm2.5-8b-a1b
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__OVERRIDES__BASE_URL
   value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__FALLBACK__TRANSPORT
@@ -71,7 +71,7 @@
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__MODEL
-  value: gemma-4-26b-a4b
+  value: lfm2.5-8b-a1b
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__OVERRIDES__BASE_URL
   value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DIALECTIC_LEVELS__low__MODEL_CONFIG__FALLBACK__TRANSPORT
@@ -83,7 +83,7 @@
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__MODEL
-  value: gemma-4-26b-a4b
+  value: lfm2.5-8b-a1b
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__OVERRIDES__BASE_URL
   value: http://llama-server.llm.svc.cluster.local:8080/v1
 - name: DIALECTIC_LEVELS__medium__MODEL_CONFIG__FALLBACK__TRANSPORT
