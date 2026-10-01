@@ -1,5 +1,10 @@
 server:
-  replicaCount: 1
+  # Scaled to 0 temporarily (2026-10-01) for a second vLLM spike -- testing
+  # the out-of-tree vllm-gguf-plugin (generic tensor-name adapter) after the
+  # in-tree GGUF loader hit a hard architecture allowlist wall (lfm2_moe not
+  # recognized, see PR #5388). Restore to 1 immediately after (companion
+  # revert PR follows, same as before).
+  replicaCount: 0
   image:
     # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
     # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
