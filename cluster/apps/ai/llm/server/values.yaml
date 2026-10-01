@@ -1,5 +1,11 @@
 server:
-  replicaCount: 1
+  # Scaled to 0 temporarily (2026-10-01) to free nv1's single GPU for a
+  # throwaway vLLM spike test (checking whether a different inference engine
+  # avoids llama.cpp's known hybrid-state corruption bug, ggml-org/llama.cpp
+  # #29002). Hermes/Honcho fall back to cloud providers for the duration, by
+  # design. Restore to 1 immediately after the spike (do not merge a PR that
+  # leaves this at 0).
+  replicaCount: 0
   image:
     # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
     # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
