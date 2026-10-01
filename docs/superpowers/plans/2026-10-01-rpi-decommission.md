@@ -1,0 +1,1308 @@
+# RPi Decommission Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Run Home Assistant, AdGuard Home (DNS + ad-blocking), MQTT, Zigbee2MQTT and the Matter server in the cluster so the Raspberry Pi (`192.168.50.9`, HAOS) can be powered off.
+
+**Architecture:** Five phases, one PR each, each leaving the RPi functional until Phase 4. MQTT (existing RabbitMQ app) and Z2M move first and are proven against the RPi's HA; then two AdGuard Home instances replace the RPi's AdGuard; then HA and the Matter server are restored into the cluster on a Multus macvlan interface on VLAN 48 (no `hostNetwork`) with a fresh Postgres recorder; then the production hostname is cut over.
+
+**Tech Stack:** ArgoCD ApplicationSets, Helm (bjw-s `app-template` 5.2.1), Kustomize, External Secrets (Bitwarden), Cilium 1.20 (L2 LB, `cni.exclusive`), Multus (thick), CloudNativePG, RabbitMQ cluster-operator, external-dns (AdGuard webhook), Talos.
+
+**Spec:** `docs/superpowers/specs/2026-10-01-rpi-decommission-design.md`
+
+## Global Constraints
+
+- All edits happen in the git worktree `/workspaces/home-ops-ha-migration`, never in `/workspaces/home-ops` (another session uses it). Each phase branches off `origin/main`: `git switch -c <branch> origin/main`.
+- Never push to `main`; PRs only. Branch prefixes `feat/`, `fix/`, `chore/`.
+- Never commit secrets (gitleaks enforces it). Credentials live in Bitwarden and reach pods through `ExternalSecret` (`ClusterSecretStore` `bitwarden`); mark UUID lines `#gitleaks:allow #KEY_NAME`.
+- Never write the private domain literally (comments, docs, memory). Use the `<secret:private-domain>` token in manifests and `<domain>` in prose.
+- Hostnames in non-Secret fields need `SECRET_PROVIDER: cluster-secrets` in the app's `app-config.yaml`.
+- HTTPRoutes use annotation `external-dns.alpha.kubernetes.io/controller: dns-controller`; DNSEndpoints use `internal`.
+- Cilium LB pool is `192.168.48.20–50`. Allocations in this plan: `.24` AdGuard primary, `.25` AdGuard replica, `.26` MQTT. Macvlan pod block `192.168.48.60–.69` (outside the pool): `.60` Home Assistant, `.61` Matter server.
+- **Never mutate cluster state** (`kubectl apply/delete/patch/cp/scale`, ArgoCD sync, `talosctl apply`) without explicit user confirmation. Steps marked **[CONFIRM]** stop and ask. Read-only `kubectl get/logs/describe` and `talosctl ls/read` are free.
+- Talos nodes `mc1`–`mc3` NIC is `eth0`; `nv1` (worker) is `enP8p1s0`. HA and Matter are pinned to control-plane nodes via `nodeSelector: node-role.kubernetes.io/control-plane: ""`.
+- Never edit generated files in `provision/talos/clusterconfig/`; regenerate with `task talos:generate`.
+- Verification before every commit: `helm dependency build && helm template <release> . -f values.yaml` (Helm apps), `kubectl kustomize .` (Kustomize apps), then `task lint:all` from the worktree root.
+- Update docs (`docs/src/general/network.md`, `hardware.md`, `matter-thread.md`) and `.claude/memory/` files with each phase's durable facts.
+- Steps marked **[USER]** need an action only the user can do (RPi, UniFi UI, Bitwarden). Stop and hand the exact instruction to the user; do not work around them.
+
+## Review Focus
+
+1. **Pod on net1 cannot reach an LB IP announced by its own node** (macvlan host isolation). In-cluster consumers of MQTT/AdGuard must use `*.svc.cluster.local`, never the LB IPs or `mqtt.<domain>`. Tasks 3.4 and 3.5 check HA's config for LB-IP/`mqtt.<domain>` references.
+2. **HA behind Envoy returns 400** unless `http.use_x_forwarded_for: true` and `trusted_proxies` include the pod CIDR (`10.244.0.0/16`); the restored HAOS config trusts the old proxy only. Task 3.4 adds the check.
+3. **Two Z2M (or two HA) instances active at once.** The SLZB socket takes one client; two HAs double-fire automations. Task 1.3 and Task 4.1 gate on the old instance being stopped first.
+4. **AdGuard replica drift / stale rewrites** — `adguardhome-sync` is one-way (primary → replica); external-dns must write only to the primary, and imported manual rewrites that duplicate `DNSEndpoint`s would be deleted by `policy: sync`. Task 2.3 compares rewrites before and after.
+5. **Matter fabric data missing** — Matter devices would need recommissioning. Task 3.5/4.1 check that the PVC contains the fabric files before the server starts.
+6. **Cluster DNS loop** — Talos nodes must not resolve through the in-cluster AdGuard. Task 2.1 lands first and is verified on every node.
+7. **IPv6 on `net1`** — the Thread OMR route must work from `net1`. Task 3.3 verifies SLAAC, default route and reachability, with a `tuning` fallback.
+
+---
+
+# PHASE 0 — MQTT broker
+
+Branch: `feat/mqtt-enable-rabbitmq`
+
+### Task 0.1: Enable RabbitMQ MQTT with Z2M user, LB service and hostname
+
+**Files:**
+- Modify: `charts/rabbitmq-cluster/templates/rabbitmqcluster.yaml`
+- Modify: `charts/rabbitmq-cluster/values.yaml`
+- Modify: `cluster/apps/home-automation/rabbitmq/values.yaml`
+- Modify: `cluster/apps/home-automation/rabbitmq/app-config.yaml`
+- Modify: `cluster/apps/home-automation/rabbitmq/templates/external-secret.yaml`
+- Create: `cluster/apps/home-automation/rabbitmq/templates/dnsendpoint.yaml`
+
+**Interfaces:**
+- Produces: MQTT at `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local:1883` (ClusterIP, in-cluster) and `192.168.48.26:1883` / `mqtt.<domain>` (LAN); users `admin`, `home_assistant`, `zigbee2mqtt`.
+
+- [ ] **Step 1: [USER] Create Bitwarden secrets**
+
+Ask the user to create two Bitwarden Secrets Manager entries, `RABBITMQ_ZIGBEE2MQTT_USERNAME` and `RABBITMQ_ZIGBEE2MQTT_PASSWORD` (a long random password), and reply with both UUIDs. Do not continue until the UUIDs are provided; they replace `<UUID_Z2M_USERNAME>` and `<UUID_Z2M_PASSWORD>` below.
+
+- [ ] **Step 2: Create the branch**
+
+```bash
+cd /workspaces/home-ops-ha-migration
+git fetch origin main && git switch -c feat/mqtt-enable-rabbitmq origin/main
+```
+
+- [ ] **Step 3: Add `service` passthrough to the chart**
+
+In `charts/rabbitmq-cluster/templates/rabbitmqcluster.yaml`, directly after the `persistence:` block (before `{{- with .Values.resources }}`), add:
+
+```yaml
+  {{- with .Values.service }}
+  service:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+```
+
+In `charts/rabbitmq-cluster/values.yaml` add after `image: ""`:
+
+```yaml
+service: {}
+```
+
+- [ ] **Step 4: Set service, enable the app, add the plugin env**
+
+In `cluster/apps/home-automation/rabbitmq/values.yaml`, under `rabbitmq-cluster:` add (same level as `name:`):
+
+```yaml
+  service:
+    type: LoadBalancer
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.26"
+```
+
+Replace `cluster/apps/home-automation/rabbitmq/app-config.yaml` with:
+
+```yaml
+- enabled: "true"
+  namespace: ha-rabbitmq
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
+```
+
+- [ ] **Step 5: Add the `zigbee2mqtt` user to the definitions**
+
+In `templates/external-secret.yaml`, in `definitions.json` add a third user and permission, mirroring the existing `home_assistant` lines exactly (same password field style):
+
+```
+              {"name": "{{ `{{ .zigbee2mqtt_username }}` }}", "password": "{{ `{{ .zigbee2mqtt_password }}` }}", "tags": ""}
+```
+```
+              {"user": "{{ `{{ .zigbee2mqtt_username }}` }}", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
+```
+
+Open the file first and copy the exact existing user-line shape (including the field that holds the password) so the new line matches; add commas as needed. Append to `spec.data`:
+
+```yaml
+    - secretKey: zigbee2mqtt_username
+      remoteRef:
+        key: "<UUID_Z2M_USERNAME>" #gitleaks:allow #RABBITMQ_ZIGBEE2MQTT_USERNAME
+    - secretKey: zigbee2mqtt_password
+      remoteRef:
+        key: "<UUID_Z2M_PASSWORD>" #gitleaks:allow #RABBITMQ_ZIGBEE2MQTT_PASSWORD
+```
+
+- [ ] **Step 6: Publish `mqtt.<domain>`**
+
+Create `cluster/apps/home-automation/rabbitmq/templates/dnsendpoint.yaml`:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: mqtt-endpoint
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: internal
+spec:
+  endpoints:
+    - dnsName: mqtt.<secret:private-domain>
+      recordType: A
+      targets:
+        - 192.168.48.26
+```
+
+- [ ] **Step 7: Verify the render**
+
+```bash
+cd cluster/apps/home-automation/rabbitmq
+helm dependency build && helm template rabbitmq . -f values.yaml > /tmp/rmq.yaml
+grep -n -A3 "kind: RabbitmqCluster" /tmp/rmq.yaml | head
+grep -n -B1 -A3 "type: LoadBalancer" /tmp/rmq.yaml
+grep -n "192.168.48.26" /tmp/rmq.yaml
+grep -c "zigbee2mqtt_username" /tmp/rmq.yaml
+```
+
+Expected: `type: LoadBalancer` and the `lbipam.cilium.io/ips` annotation appear under the RabbitmqCluster `service:`; `192.168.48.26` appears in both the annotation and the DNSEndpoint; the zigbee2mqtt token appears (≥2).
+
+Use the scratchpad dir instead of `/tmp` if the harness requires it.
+
+- [ ] **Step 8: Lint and commit**
+
+```bash
+cd /workspaces/home-ops-ha-migration && task lint:all
+git add charts/rabbitmq-cluster cluster/apps/home-automation/rabbitmq
+git commit -m "feat(rabbitmq): enable MQTT broker with LB IP, DNS name and zigbee2mqtt user"
+git push -u origin feat/mqtt-enable-rabbitmq
+gh pr create --base main --title "feat(rabbitmq): enable MQTT broker for HA stack migration" --body "Phase 0 of docs/superpowers/plans/2026-10-01-rpi-decommission.md"
+```
+
+### Task 0.2: Verify the broker from the RPi **[CONFIRM before ArgoCD sync, then USER]**
+
+- [ ] **Step 1: [CONFIRM]** After the PR merges, ask the user to confirm the ArgoCD sync of `ha-rabbitmq` (auto-sync policy applies; confirm they accept it going live).
+- [ ] **Step 2: Read-only cluster check**
+
+```bash
+kubectl -n ha-rabbitmq get rabbitmqcluster,pods,svc
+kubectl -n ha-rabbitmq get svc -o wide | grep 1883
+```
+
+Expected: cluster `ALLREPLICASREADY=True`, a `LoadBalancer` service with EXTERNAL-IP `192.168.48.26` exposing 1883.
+
+- [ ] **Step 3: [USER] Connectivity test from the RPi**
+
+Ask the user to run from the RPi's Terminal addon (use the `home_assistant` credentials from Bitwarden, not pasted here):
+
+```bash
+mosquitto_sub -h mqtt.<domain> -p 1883 -u <user> -P '<password>' -t 'test/#' -v &
+mosquitto_pub -h mqtt.<domain> -p 1883 -u <user> -P '<password>' -t test/ping -m hello
+```
+
+Expected: the subscriber prints `test/ping hello`. Failure: check the firewall rule VLAN 50 → `192.168.48.26:1883` (VLANs 48/50 are one allow-all zone, so a failure points at DNS: `dig mqtt.<domain>` from the RPi).
+
+- [ ] **Step 4:** If any device hardcodes the RPi's Mosquitto IP, ask the user to list them so Phase 1 repoints them to `mqtt.<domain>`.
+
+---
+
+# PHASE 1 — Zigbee2MQTT standalone
+
+Branch: `feat/zigbee2mqtt`
+
+### Task 1.1: Zigbee2MQTT app (scaled to 0)
+
+**Files:**
+- Create: `cluster/apps/home-automation/zigbee2mqtt/app-config.yaml`
+- Create: `cluster/apps/home-automation/zigbee2mqtt/Chart.yaml`
+- Create: `cluster/apps/home-automation/zigbee2mqtt/values.yaml`
+- Create: `cluster/apps/home-automation/zigbee2mqtt/templates/externalsecret.yaml`
+
+**Interfaces:**
+- Consumes: broker `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local:1883` and the `zigbee2mqtt` user from Task 0.1.
+- Produces: namespace `ha-zigbee2mqtt`, PVC mounted at `/app/data`, frontend `z2m.<domain>`.
+
+- [ ] **Step 1: Branch and pin the image**
+
+```bash
+cd /workspaces/home-ops-ha-migration && git fetch origin main && git switch -c feat/zigbee2mqtt origin/main
+docker buildx imagetools inspect koenkk/zigbee2mqtt:<TAG> | head -3
+```
+
+`<TAG>` = the Z2M version that the RPi addon runs now (**[USER]** supplies it; same major). Record `tag@sha256:digest` for `values.yaml`.
+
+- [ ] **Step 2: Create `app-config.yaml`**
+
+```yaml
+- enabled: "true"
+  namespace: ha-zigbee2mqtt
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
+```
+
+- [ ] **Step 3: Create `Chart.yaml`**
+
+```yaml
+---
+apiVersion: v2
+name: zigbee2mqtt
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+dependencies:
+  - name: app-template
+    version: 5.2.1
+    repository: https://bjw-s-labs.github.io/helm-charts
+```
+
+- [ ] **Step 4: Create `values.yaml`**
+
+```yaml
+app-template:
+  defaultPodOptions:
+    securityContext:
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
+      fsGroupChangePolicy: "OnRootMismatch"
+  controllers:
+    main:
+      replicas: 0 # data restore first (Task 1.2); flipped to 1 in Task 1.3
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: koenkk/zigbee2mqtt
+            tag: <TAG>@sha256:<DIGEST>
+          envFrom:
+            - secretRef:
+                name: zigbee2mqtt-secret
+          env:
+            TZ: Europe/Warsaw
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+  service:
+    main:
+      controller: main
+      ports:
+        http:
+          port: 8080
+  route:
+    main:
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - z2m.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: main
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /app/data
+```
+
+Replace `<TAG>`/`<DIGEST>` with the values from Step 1 and the user's timezone if it differs.
+
+- [ ] **Step 5: Create `templates/externalsecret.yaml`**
+
+Z2M reads `ZIGBEE2MQTT_CONFIG_*` env vars over the YAML; the network key stays in the restored `configuration.yaml` (never in git).
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: zigbee2mqtt-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: zigbee2mqtt-secret
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        ZIGBEE2MQTT_CONFIG_MQTT_SERVER: "mqtt://home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local:1883"
+        ZIGBEE2MQTT_CONFIG_MQTT_USER: "{{ `{{ .USERNAME }}` }}"
+        ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD: "{{ `{{ .PASSWORD }}` }}"
+  data:
+    - secretKey: USERNAME
+      remoteRef:
+        key: "<UUID_Z2M_USERNAME>" #gitleaks:allow #RABBITMQ_ZIGBEE2MQTT_USERNAME
+    - secretKey: PASSWORD
+      remoteRef:
+        key: "<UUID_Z2M_PASSWORD>" #gitleaks:allow #RABBITMQ_ZIGBEE2MQTT_PASSWORD
+```
+
+Use the UUIDs from Task 0.1 Step 1.
+
+- [ ] **Step 6: Verify render, lint, commit, PR**
+
+```bash
+cd cluster/apps/home-automation/zigbee2mqtt
+helm dependency build && helm template zigbee2mqtt . -f values.yaml | grep -n -E "kind: (StatefulSet|Deployment)|replicas: 0|port: 8080|z2m\.|/app/data|zigbee2mqtt-secret"
+cd /workspaces/home-ops-ha-migration && task lint:all
+git add cluster/apps/home-automation/zigbee2mqtt
+git commit -m "feat(zigbee2mqtt): add standalone Zigbee2MQTT app (scaled to 0 pending data restore)"
+git push -u origin feat/zigbee2mqtt
+gh pr create --base main --title "feat(zigbee2mqtt): standalone Zigbee2MQTT in cluster" --body "Phase 1 of docs/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0."
+```
+
+Expected: a Deployment with `replicas: 0`, port 8080, the `z2m.` host, the `/app/data` mount and both env `secretRef`s appear.
+
+### Task 1.2: Restore the RPi Z2M data into the PVC **[USER + CONFIRM]**
+
+- [ ] **Step 1: [USER] Export from the RPi**
+
+Ask the user to copy the Z2M addon data directory (`/config/zigbee2mqtt/` on HAOS, via the Samba/SSH addon) containing `configuration.yaml`, `database.db`, `coordinator_backup.json`, `state.json` to a local folder, and to **edit `configuration.yaml`** in that copy:
+
+```yaml
+serial:
+  port: tcp://<slzb-ip>:6638   # confirm the port in the SLZB web UI (Z2M socket)
+  adapter: ember               # keep whatever the existing config uses (ember or zstack)
+```
+
+and remove the `mqtt:` `user`/`password`/`server` keys (they come from env). Do **not** paste this file into the chat or repo.
+
+- [ ] **Step 2: [CONFIRM] Merge the PR and let ArgoCD create the app (replicas 0)**
+
+```bash
+kubectl -n ha-zigbee2mqtt get pvc,deploy
+```
+
+Expected: PVC `Bound`, Deployment `0/0`.
+
+- [ ] **Step 3: [CONFIRM] Copy data with a helper pod**
+
+```bash
+kubectl -n ha-zigbee2mqtt run z2m-restore --image=busybox:1.37 --restart=Never --overrides='{"spec":{"securityContext":{"runAsUser":568,"runAsGroup":568,"fsGroup":568},"volumes":[{"name":"d","persistentVolumeClaim":{"claimName":"zigbee2mqtt-data"}}],"containers":[{"name":"z2m-restore","image":"busybox:1.37","command":["sleep","3600"],"volumeMounts":[{"name":"d","mountPath":"/app/data"}]}]}}'
+kubectl -n ha-zigbee2mqtt wait --for=condition=Ready pod/z2m-restore
+kubectl -n ha-zigbee2mqtt cp <local-folder>/. z2m-restore:/app/data/
+kubectl -n ha-zigbee2mqtt exec z2m-restore -- ls -la /app/data
+kubectl -n ha-zigbee2mqtt delete pod z2m-restore
+```
+
+The PVC name is `kubectl -n ha-zigbee2mqtt get pvc` output (adjust `claimName`). Expected: the four files are listed, owned by 568.
+
+### Task 1.3: Cut over Z2M **[CONFIRM + USER]**
+
+**Files:**
+- Modify: `cluster/apps/home-automation/zigbee2mqtt/values.yaml` (`replicas: 1`)
+
+- [ ] **Step 1: [USER] Stop the RPi's Z2M and Mosquitto addons**
+
+The SLZB socket takes one client. Ask the user to stop the **Zigbee2MQTT** addon (and disable "start on boot"), then the **Mosquitto** addon, on the RPi.
+
+- [ ] **Step 2: [USER] Repoint the RPi HA MQTT integration**
+
+Settings → Devices & services → MQTT → Configure: broker `mqtt.<domain>`, port 1883, the `home_assistant` user/password.
+
+- [ ] **Step 3: Flip replicas, commit, PR**
+
+```bash
+git switch -c fix/zigbee2mqtt-start origin/main
+sed -i 's/replicas: 0 # data restore first.*/replicas: 1/' cluster/apps/home-automation/zigbee2mqtt/values.yaml
+(cd cluster/apps/home-automation/zigbee2mqtt && helm dependency build && helm template z . -f values.yaml | grep -n "replicas: 1")
+git add -A && git commit -m "feat(zigbee2mqtt): start Zigbee2MQTT" && git push -u origin fix/zigbee2mqtt-start
+gh pr create --base main --title "feat(zigbee2mqtt): start Zigbee2MQTT" --body "Phase 1 cutover; RPi Z2M/Mosquitto stopped first."
+```
+
+- [ ] **Step 4: Verify**
+
+```bash
+kubectl -n ha-zigbee2mqtt logs deploy/zigbee2mqtt --tail=50
+```
+
+Expected: `Connected to MQTT server`, the coordinator connection to `tcp://<slzb-ip>:6638` succeeds, and the device list loads without "re-pair" prompts.
+
+- [ ] **Step 5: [USER] Functional acceptance**
+
+All Zigbee devices appear in the RPi's HA; toggling a light/switch from HA changes its state and the state returns to HA; `kubectl -n ha-zigbee2mqtt delete pod -l app.kubernetes.io/name=zigbee2mqtt` (**[CONFIRM]**) restarts and devices return within a minute. Open `https://z2m.<domain>` and confirm the frontend loads.
+
+- [ ] **Step 6: Docs and memory**
+
+Add to `docs/src/general/network.md` the `.26` MQTT row and a "Zigbee2MQTT / MQTT" bullet; add a `.claude/memory/` note (or update `reference_home_network_hardware.md`) saying MQTT/Z2M moved in-cluster on `<date>`. Commit on the same branch.
+
+---
+
+# PHASE 2 — DNS and ad-blocking
+
+### Task 2.1: Move Talos nodes off the RPi's DNS **[CONFIRM]**
+
+Branch: `fix/talos-nameserver`
+
+**Files:**
+- Modify: `provision/talos/templates/controlplane.yaml` (nameservers)
+- Modify: `provision/talos/templates/worker.yaml` (nameservers, if present)
+
+- [ ] **Step 1: Locate every nameserver reference**
+
+```bash
+cd /workspaces/home-ops-ha-migration && git fetch origin main && git switch -c fix/talos-nameserver origin/main
+grep -n -B1 -A3 "nameservers" provision/talos/templates/*.yaml provision/talos/nodes/*.yaml
+grep -n "192.168.50.9" provision/talos/templates/*.yaml provision/talos/nodes/*.yaml
+```
+
+- [ ] **Step 2: Replace `192.168.50.9` with `192.168.48.254` everywhere found**, including the NTP comment in `controlplane.yaml` that says "nameserver is AdGuard on the RPi" (reword to "nameserver is the UCG-Max").
+
+```bash
+sed -i 's/192\.168\.50\.9/192.168.48.254/' provision/talos/templates/controlplane.yaml provision/talos/templates/worker.yaml
+sed -i 's/nameserver is AdGuard on the RPi/nameserver is the UCG-Max/' provision/talos/templates/controlplane.yaml
+grep -n "192.168.50.9" provision/talos/templates/*.yaml || echo "none left"
+```
+
+Expected: `none left`.
+
+- [ ] **Step 3: Regenerate and diff**
+
+```bash
+task talos:generate
+git status --short
+git diff --stat
+```
+
+Expected: only the template files (and generated files if tracked) change; no other drift.
+
+- [ ] **Step 4: Commit and PR** — `git commit -am "fix(talos): resolve through UCG-Max instead of RPi AdGuard"`, push, `gh pr create`.
+
+- [ ] **Step 5: [CONFIRM] Apply node by node**
+
+After merge, show the user the apply command from `.taskfiles` (`task talos:apply` — read `.taskfiles/*/Taskfile.y*ml` to get the exact node argument form) and apply to **one node at a time**, waiting for the user's go-ahead between nodes. After each node:
+
+```bash
+TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig talosctl -n <node-ip> get resolvers -o yaml
+```
+
+Expected: `192.168.48.254` is the only resolver. Also `kubectl get nodes` stays `Ready`.
+
+### Task 2.2: AdGuard Home app (two instances + sync)
+
+Branch: `feat/adguard-home`
+
+**Files:**
+- Create: `cluster/apps/system/adguard-home/app-config.yaml`
+- Create: `cluster/apps/system/adguard-home/Chart.yaml`
+- Create: `cluster/apps/system/adguard-home/values.yaml`
+- Create: `cluster/apps/system/adguard-home/templates/externalsecret.yaml`
+
+**Interfaces:**
+- Consumes: Bitwarden entries `ADGUARD_USER` / `ADGUARD_PASSWORD` (existing, UUIDs in `cluster/apps/system/adguard-dns/templates/externalsecret.yaml`).
+- Produces: namespace `adguard-home`; DNS on `192.168.48.24` (primary) and `192.168.48.25` (replica); in-cluster web service of the primary for external-dns and `agh-proxy`; secret `adguard-home-secret` with `USERNAME`, `PASSWORD`.
+
+- [ ] **Step 1: Pin images**
+
+```bash
+docker buildx imagetools inspect adguard/adguardhome:<TAG> | head -3
+docker buildx imagetools inspect ghcr.io/bakito/adguardhome-sync:<TAG> | head -3
+```
+
+Use the latest stable tag of each (check `gh release list -R AdguardTeam/AdGuardHome -L 3` and `-R bakito/adguardhome-sync`). Record `tag@sha256:digest`.
+
+- [ ] **Step 2: `app-config.yaml`**
+
+```yaml
+- enabled: "true"
+  namespace: adguard-home
+  syncWave: "-3"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  plugin:
+    env:
+      - name: SECRET_PROVIDER
+        value: cluster-secrets
+```
+
+- [ ] **Step 3: `Chart.yaml`** (same shape as Task 1.1 Step 3 with `name: adguard-home`).
+
+- [ ] **Step 4: `values.yaml`**
+
+```yaml
+app-template:
+  defaultPodOptions:
+    labels:
+      adguard-home/role: dns
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                adguard-home/role: dns
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+  controllers:
+    primary:
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: adguard/adguardhome
+            tag: <TAG>@sha256:<DIGEST>
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+    replica:
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: adguard/adguardhome
+            tag: <TAG>@sha256:<DIGEST>
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+    sync:
+      containers:
+        main:
+          image:
+            repository: ghcr.io/bakito/adguardhome-sync
+            tag: <TAG>@sha256:<DIGEST>
+          args: ["run"]
+          env:
+            ORIGIN_URL: http://adguard-home-web-primary.adguard-home.svc.cluster.local:3000
+            REPLICA1_URL: http://adguard-home-web-replica.adguard-home.svc.cluster.local:3000
+            CRON: "*/10 * * * *"
+            RUNONSTART: "true"
+            FEATURES_DHCP_SERVER_CONFIG: "false"
+            FEATURES_DHCP_STATIC_LEASES: "false"
+          envFrom:
+            - secretRef:
+                name: adguard-home-secret
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+  service:
+    dns-primary:
+      controller: primary
+      type: LoadBalancer
+      annotations:
+        lbipam.cilium.io/ips: "192.168.48.24"
+      ports:
+        dns-udp:
+          port: 53
+          protocol: UDP
+        dns-tcp:
+          port: 53
+          protocol: TCP
+    dns-replica:
+      controller: replica
+      type: LoadBalancer
+      annotations:
+        lbipam.cilium.io/ips: "192.168.48.25"
+      ports:
+        dns-udp:
+          port: 53
+          protocol: UDP
+        dns-tcp:
+          port: 53
+          protocol: TCP
+    web-primary:
+      controller: primary
+      ports:
+        http:
+          port: 3000
+    web-replica:
+      controller: replica
+      ports:
+        http:
+          port: 3000
+  persistence:
+    data-primary:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      advancedMounts:
+        primary:
+          main:
+            - path: /opt/adguardhome/conf
+              subPath: conf
+            - path: /opt/adguardhome/work
+              subPath: work
+    data-replica:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      advancedMounts:
+        replica:
+          main:
+            - path: /opt/adguardhome/conf
+              subPath: conf
+            - path: /opt/adguardhome/work
+              subPath: work
+```
+
+The sync tool reads `ORIGIN_USERNAME`/`ORIGIN_PASSWORD`/`REPLICA1_USERNAME`/`REPLICA1_PASSWORD` from the secret (Step 5).
+
+- [ ] **Step 5: `templates/externalsecret.yaml`**
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: adguard-home
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: adguard-home-secret
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        ORIGIN_USERNAME: "{{ `{{ .ADGUARD_USER }}` }}"
+        ORIGIN_PASSWORD: "{{ `{{ .ADGUARD_PASSWORD }}` }}"
+        REPLICA1_USERNAME: "{{ `{{ .ADGUARD_USER }}` }}"
+        REPLICA1_PASSWORD: "{{ `{{ .ADGUARD_PASSWORD }}` }}"
+  data:
+    - secretKey: ADGUARD_USER
+      remoteRef:
+        key: "7e657efe-c9fa-420d-8959-b40800e9dea5" #gitleaks:allow #ADGUARD_USER
+    - secretKey: ADGUARD_PASSWORD
+      remoteRef:
+        key: "6ccac8f0-d23e-48da-ae23-b40800e9e7f0" #gitleaks:allow #ADGUARD_PASSWORD
+```
+
+- [ ] **Step 6: Verify the render and the real Service names**
+
+```bash
+cd cluster/apps/system/adguard-home
+helm dependency build && helm template adguard-home . -f values.yaml > /tmp/agh.yaml
+grep -n -E "^kind: (Deployment|Service)|name: adguard-home-|lbipam|port: (53|3000)" /tmp/agh.yaml
+```
+
+Expected: Deployments `adguard-home-primary`, `-replica`, `-sync`; Services `adguard-home-dns-primary`, `-dns-replica`, `-web-primary`, `-web-replica` with the two LB IPs; both TCP and UDP 53. **If the Service names differ from `adguard-home-web-primary` / `adguard-home-web-replica`, fix `ORIGIN_URL` / `REPLICA1_URL` in `values.yaml` to the rendered names** before committing.
+
+- [ ] **Step 7: Lint, commit, PR**
+
+```bash
+cd /workspaces/home-ops-ha-migration && task lint:all
+git add cluster/apps/system/adguard-home
+git commit -m "feat(adguard-home): add two-instance AdGuard Home with sync"
+git push -u origin feat/adguard-home
+gh pr create --base main --title "feat(adguard-home): in-cluster AdGuard Home (primary + replica)" --body "Phase 2 of docs/superpowers/plans/2026-10-01-rpi-decommission.md. Seeded with RPi config before DHCP cutover."
+```
+
+### Task 2.3: Seed config and verify DNS **[USER + CONFIRM]**
+
+- [ ] **Step 1: [USER] Export from the RPi**
+
+Ask the user to copy `AdGuardHome.yaml` from the HAOS AdGuard addon (`/addon_configs/<slug>_adguard/AdGuardHome.yaml`, via the Samba/SSH addon) to a local file. It contains admin password hashes: **never paste it into chat or commit it**.
+
+- [ ] **Step 2: Prepare the seed locally**
+
+Work on a copy; set:
+- `http.address: 0.0.0.0:3000`
+- `dns.bind_hosts: [0.0.0.0]`, `dns.port: 53`
+- `dns.upstream_dns`: public DoH upstreams (for example `https://dns.cloudflare.com/dns-query`, `https://dns.quad9.net/dns-query`) plus, for the local zone and reverse lookups, `[/<domain>/]192.168.48.254` and `[/168.192.in-addr.arpa/]192.168.48.254`; `use_private_ptr_resolvers: true`, `local_ptr_upstreams: [192.168.48.254]`
+- remove RPi-specific values (`dhcp` enabled flags, old `bind_host` addresses).
+- Keep `users:` (so the Bitwarden credentials match), filters, user rules, clients.
+- Record the rewrites list (`filtering.rewrites`) for Step 6.
+
+- [ ] **Step 3: [CONFIRM] Seed both PVCs** (after merge, with each Deployment scaled to 0 or just created and crash-looping on first start; prefer scaling to 0 first)
+
+```bash
+kubectl -n adguard-home scale deploy/adguard-home-primary deploy/adguard-home-replica --replicas=0
+for who in primary replica; do
+  kubectl -n adguard-home run agh-seed-$who --image=busybox:1.37 --restart=Never --overrides="{\"spec\":{\"volumes\":[{\"name\":\"d\",\"persistentVolumeClaim\":{\"claimName\":\"adguard-home-data-$who\"}}],\"containers\":[{\"name\":\"agh-seed-$who\",\"image\":\"busybox:1.37\",\"command\":[\"sleep\",\"600\"],\"volumeMounts\":[{\"name\":\"d\",\"mountPath\":\"/data\"}]}]}}"
+  kubectl -n adguard-home wait --for=condition=Ready pod/agh-seed-$who
+  kubectl -n adguard-home exec agh-seed-$who -- mkdir -p /data/conf /data/work
+  kubectl -n adguard-home cp <seed-file> agh-seed-$who:/data/conf/AdGuardHome.yaml
+  kubectl -n adguard-home delete pod agh-seed-$who
+done
+kubectl -n adguard-home scale deploy/adguard-home-primary deploy/adguard-home-replica --replicas=1
+```
+
+Check the PVC names with `kubectl -n adguard-home get pvc` first and adjust `claimName`.
+
+- [ ] **Step 4: Check pod placement and services (read-only)**
+
+```bash
+kubectl -n adguard-home get pods -o wide
+kubectl -n adguard-home get svc
+```
+
+Expected: primary and replica on **different nodes**; LB IPs `192.168.48.24` and `.25` assigned.
+
+- [ ] **Step 5: DNS verification from a LAN host (devcontainer or the user's machine)**
+
+```bash
+for ip in 192.168.48.24 192.168.48.25; do
+  dig @$ip +short envoy-internal-test.<domain> A
+  dig @$ip +short doubleclick.net A
+  dig @$ip +short google.com A
+  dig @$ip -x 192.168.48.254 +short
+done
+```
+
+Expected for both IPs: the cluster-internal name resolves (use any existing app hostname), `doubleclick.net` returns `0.0.0.0` (blocked), `google.com` resolves, the reverse lookup answers from UniFi. Run it also from a host on VLAN 10 and VLAN 40.
+
+- [ ] **Step 6: Rewrites diff (Review Focus 4)**
+
+Compare `filtering.rewrites` from the seed with the `DNSEndpoint`s that external-dns publishes (`k8s.`, `qnap.`, plus every HTTPRoute host). Remove from the seed any rewrite that external-dns will recreate or any rewrite you cannot explain, so `policy: sync` has no foreign records to fight over. Confirm `adguardhome-sync` logs show a clean primary → replica sync:
+
+```bash
+kubectl -n adguard-home logs deploy/adguard-home-sync --tail=40
+```
+
+Expected: `Sync successful`, replica rewrites equal the primary's.
+
+### Task 2.4: Repoint external-dns, `agh-proxy` and DHCP **[CONFIRM + USER]**
+
+Branch: `chore/adguard-cutover`
+
+**Files:**
+- Modify: `cluster/apps/default/hass-proxy/templates/service.yaml` (agh Endpoints → primary web Service)
+- Modify: `docs/src/general/network.md`
+
+- [ ] **Step 1: [USER] Update Bitwarden `ADGUARD_URL`** to `http://adguard-home-web-primary.adguard-home.svc.cluster.local:3000` (use the rendered service name from Task 2.2 Step 6) and confirm. ESO refreshes within an hour; to force it, **[CONFIRM]** `kubectl -n adguard-dns annotate externalsecret adguard-dns force-sync=$(date +%s) --overwrite` then `kubectl -n adguard-dns rollout restart deploy/adguard-dns`.
+
+- [ ] **Step 2: Verify external-dns writes to the primary**
+
+```bash
+kubectl -n adguard-dns logs deploy/adguard-dns -c external-dns --tail=30
+```
+
+Expected: successful reconcile, no 401/connection errors; a new test HTTPRoute host appears in both AdGuard instances after the next sync.
+
+- [ ] **Step 3: Repoint `agh.<domain>`**
+
+The `agh-proxy` `Service`/`Endpoints` pair in `cluster/apps/default/hass-proxy/templates/service.yaml` forwards to the RPi (`192.168.50.9:8812`). Delete that pair, and change the `agh-proxy` HTTPRoute backendRef in `httproute.yaml` to point straight at the new primary:
+
+```yaml
+        - name: adguard-home-web-primary
+          namespace: adguard-home
+          port: 3000
+```
+
+and add to `cluster/apps/system/adguard-home/templates/referencegrant.yaml` (create) a `ReferenceGrant` allowing `HTTPRoute` in `hass-proxy` to reference the Service:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-hass-proxy-httproute
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: hass-proxy
+  to:
+    - group: ""
+      kind: Service
+      name: adguard-home-web-primary
+```
+
+Verify: `kubectl kustomize`/`helm template` renders cleanly in both apps; `task lint:all`.
+
+- [ ] **Step 4: Commit, PR, merge, verify** `https://agh.<domain>` shows the new instance's login and the same filters.
+
+- [ ] **Step 5: [USER] DHCP cutover**
+
+1. A day ahead, lower the DHCP lease time on each VLAN to 1 hour.
+2. Set DNS servers for every VLAN to `192.168.48.24` and `192.168.48.25` (UniFi Networks → each network → DHCP name server). Do not add UniFi or the RPi as a third entry.
+3. Watch the RPi AdGuard query log: client count should fall toward zero within the lease window. Ask the user to list the remaining clients and fix their static DNS settings.
+4. Restore longer leases.
+
+- [ ] **Step 6: Docs/memory**
+
+Update `docs/src/general/network.md`: DNS flow (clients → `.24`/`.25`; UniFi upstream for the local zone; nodes → `.254`), IP table rows `.24`, `.25`, `.26`, `.60`, `.61`; remove "AdGuard on the RPi" wording. Update `.claude/memory/reference_gateway_dns_architecture.md` and `reference_home_network_hardware.md`.
+
+---
+
+# PHASE 3 — Home Assistant restore
+
+### Task 3.1: Cilium `cni.exclusive: false`
+
+Branch: `feat/multus-prereq-cilium`
+
+**Files:**
+- Modify: `cluster/apps/core/cilium/values.yaml`
+
+- [ ] **Step 1: Edit**
+
+Under `cilium:` add (keep the existing keys):
+
+```yaml
+  cni:
+    exclusive: false
+```
+
+- [ ] **Step 2: Verify render**
+
+```bash
+cd cluster/apps/core/cilium && helm dependency build && helm template cilium . -f values.yaml | grep -n -i "cni-exclusive"
+```
+
+Expected: `cni-exclusive: "false"` in the `cilium-config` ConfigMap.
+
+- [ ] **Step 3: Lint, commit, PR**, `git commit -m "feat(cilium): allow chained CNI configs (cni.exclusive=false) for Multus"`.
+
+- [ ] **Step 4: [CONFIRM] Sync and verify**
+
+Sync of a Cilium config change restarts agents. Ask for the user's go-ahead, then:
+
+```bash
+kubectl -n kube-system rollout status ds/cilium
+kubectl -n kube-system exec ds/cilium -- cilium-dbg status | head -15
+TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig talosctl -n 192.168.48.2 ls /etc/cni/net.d
+```
+
+Expected: agents Ready, `Cluster health` OK, `05-cilium.conflist` still present, no workload disruption.
+
+### Task 3.2: Multus app
+
+Branch: `feat/multus`
+
+**Files:**
+- Create: `cluster/apps/system/multus/kustomization.yaml`
+- Create: `cluster/apps/system/multus/app-config.yaml`
+
+- [ ] **Step 1: Check CNI plugins on Talos (read-only)**
+
+```bash
+TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig talosctl -n 192.168.48.2 ls /opt/cni/bin
+```
+
+Expected: `macvlan` and `static` among the binaries. **If either is missing**, add a `cni-plugins` installer DaemonSet (the upstream `containernetworking/plugins` release archive copied to `/opt/cni/bin` via an init container) as an extra manifest in `cluster/apps/system/multus/` and re-check before continuing.
+
+- [ ] **Step 2: Pick the release**
+
+```bash
+gh release list -R k8snetworkplumbingwg/multus-cni -L 5
+```
+
+Use the latest stable `vX.Y.Z` for the thick DaemonSet.
+
+- [ ] **Step 3: `kustomization.yaml`**
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: multus
+
+resources:
+  # renovate-raw: datasource=github-releases depName=k8snetworkplumbingwg/multus-cni
+  - https://github.com/k8snetworkplumbingwg/multus-cni/releases/download/vX.Y.Z/multus-daemonset-thick.yml
+```
+
+Replace `vX.Y.Z` with the release from Step 2. Confirm the manifest's asset URL exists: `curl -fsI <url> | head -1` (expect `HTTP/2 302`/`200`).
+
+- [ ] **Step 4: `app-config.yaml`**
+
+```yaml
+- enabled: "true"
+  namespace: kube-system
+  syncWave: "-4"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+```
+
+- [ ] **Step 5: Render and inspect Talos-relevant paths**
+
+```bash
+kubectl kustomize cluster/apps/system/multus | grep -n -E "hostPath|path: /(etc/cni|opt/cni|var/run)|kind: (DaemonSet|CustomResourceDefinition)"
+```
+
+Expected: host paths `/etc/cni/net.d` and `/opt/cni/bin` for CNI config/binaries, and the `NetworkAttachmentDefinition` CRD. If the manifest uses other host paths, add a kustomize patch pointing them at the Talos paths.
+
+- [ ] **Step 6: Lint, commit, PR**; **[CONFIRM]** sync; verify:
+
+```bash
+kubectl -n kube-system get ds -l app=multus
+kubectl get crd network-attachment-definitions.k8s.cni.cncf.io
+TALOSCONFIG=... talosctl -n 192.168.48.2 ls /etc/cni/net.d
+```
+
+Expected: DaemonSet ready on all nodes; the CRD exists; `00-multus.conf` appears alongside `05-cilium.conflist`; existing pods are unaffected (`kubectl get pods -A | grep -v Running | grep -v Completed` shows nothing new).
+
+### Task 3.3: Matter server app with macvlan interface
+
+Branch: `feat/matter-server`
+
+**Files:**
+- Create: `cluster/apps/home-automation/matter-server/app-config.yaml`
+- Create: `cluster/apps/home-automation/matter-server/Chart.yaml`
+- Create: `cluster/apps/home-automation/matter-server/values.yaml`
+- Create: `cluster/apps/home-automation/matter-server/templates/nad.yaml`
+
+**Interfaces:**
+- Produces: namespace `ha-matter-server`, websocket `ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`, `net1` at `192.168.48.61/24`, PVC at `/data`.
+
+- [ ] **Step 1: `app-config.yaml`** — as in Task 1.1 Step 2 with `namespace: ha-matter-server`, plus `enabled: "true"`. **`Chart.yaml`** as in Task 1.1 Step 3 with `name: matter-server`.
+
+- [ ] **Step 2: `templates/nad.yaml`**
+
+```yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: vlan48
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "capabilities": { "ips": true },
+      "ipam": {
+        "type": "static",
+        "routes": [
+          { "dst": "192.168.0.0/16", "gw": "192.168.48.254" }
+        ]
+      }
+    }
+```
+
+The route sends LAN-bound replies out `net1` so traffic from other VLANs is not asymmetric; the pod's default route and cluster traffic stay on Cilium `eth0`.
+
+- [ ] **Step 3: `values.yaml`**
+
+```yaml
+app-template:
+  defaultPodOptions:
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+  controllers:
+    main:
+      strategy: Recreate
+      replicas: 0 # data restore first (Task 3.5 step 6)
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.61/24"]}]'
+      containers:
+        main:
+          image:
+            repository: ghcr.io/home-assistant-libs/python-matter-server
+            tag: <TAG>@sha256:<DIGEST>
+          args:
+            - --storage-path
+            - /data
+            - --paa-root-cert-dir
+            - /data/credentials
+            - --primary-interface
+            - net1
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN", "NET_RAW"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+  service:
+    main:
+      controller: main
+      ports:
+        ws:
+          port: 5580
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /data
+```
+
+Pin `<TAG>@<DIGEST>` with `docker buildx imagetools inspect ghcr.io/home-assistant-libs/python-matter-server:<TAG>`; use the version matching the RPi's Matter Server addon where possible.
+
+- [ ] **Step 4: Verify, lint, commit, PR**
+
+```bash
+cd cluster/apps/home-automation/matter-server && helm dependency build && helm template matter . -f values.yaml | grep -n -E "NetworkAttachmentDefinition|k8s.v1.cni|primary-interface|replicas: 0|5580"
+cd /workspaces/home-ops-ha-migration && task lint:all
+git add cluster/apps/home-automation/matter-server
+git commit -m "feat(matter-server): add python-matter-server on VLAN 48 macvlan (scaled to 0)"
+```
+
+- [ ] **Step 5: [CONFIRM] Verify `net1` with a throwaway pod before depending on it**
+
+After the PR merges and Multus is running, ask the user to approve a temporary test pod that mirrors the annotation (a different IP, `192.168.48.69`):
+
+```bash
+kubectl -n ha-matter-server run net-test --image=nicolaka/netshoot --restart=Never --overrides='{"metadata":{"annotations":{"k8s.v1.cni.cncf.io/networks":"[{\"name\":\"vlan48\",\"ips\":[\"192.168.48.69/24\"]}]"}},"spec":{"nodeSelector":{"node-role.kubernetes.io/control-plane":""},"containers":[{"name":"net-test","image":"nicolaka/netshoot","command":["sleep","900"]}]}}'
+kubectl -n ha-matter-server exec net-test -- ip -4 addr show net1
+kubectl -n ha-matter-server exec net-test -- ip -6 addr show net1
+kubectl -n ha-matter-server exec net-test -- ip -6 route
+kubectl -n ha-matter-server exec net-test -- ping -c2 192.168.50.8
+kubectl -n ha-matter-server exec net-test -- ping -c2 -I net1 192.168.48.254
+kubectl -n ha-matter-server exec net-test -- ping -6 -c2 <OMR-address-of-a-Thread-device-or-SLZB>
+kubectl -n ha-matter-server exec net-test -- avahi-browse -a -t 2>/dev/null | head || true
+kubectl -n ha-matter-server delete pod net-test
+```
+
+Expected: `net1` has `192.168.48.69/24`, a SLAAC IPv6 address and an IPv6 default route via the UCG-Max; the QNAP ping works; the Thread (OMR) address replies through the UniFi static route; mDNS responses from Chromecasts are visible. If IPv6 SLAAC is missing, add a `tuning` plugin chain to the NAD setting `net.ipv6.conf.net1.accept_ra=2` and re-test. Remember Review Focus 1: do not test against an LB IP.
+
+### Task 3.4: Home Assistant app changes
+
+Branch: `feat/home-assistant-prod`
+
+**Files:**
+- Modify: `cluster/apps/home-automation/home-assistant/values.yaml`
+- Modify: `cluster/apps/home-automation/home-assistant/app-config.yaml` (`enabled: "true"`)
+- Create: `cluster/apps/home-automation/home-assistant/templates/nad.yaml` (same content as Task 3.3 Step 2)
+- Modify: `cluster/apps/home-automation/home-assistant/templates/secrets.yaml`
+
+**Interfaces:**
+- Consumes: CNPG secret `home-assistant-cnpg-app` (keys `uri`), Matter websocket from Task 3.3, MQTT service name from Task 0.1.
+- Produces: HA on `192.168.48.60` (`net1`), recorder on Postgres, routes `dom.<domain>` (dry-run) and later `hass.<domain>`.
+
+- [ ] **Step 1: Confirm the CNPG secret name (read-only, after the first sync) or from the chart**
+
+```bash
+grep -n "bootstrap" -A8 charts/pgsql-cnpg/templates/cnpg.yaml
+```
+
+The operator creates `<cluster-name>-app` with `uri`, `host`, `dbname`, `username`, `password`. Cluster name is `home-assistant-cnpg`, so the secret is `home-assistant-cnpg-app`. Use `kubectl -n ha-home-assistant get secret` after sync to confirm.
+
+- [ ] **Step 2: Edit `values.yaml`** — `app-template.controllers.main`:
+
+```yaml
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.60/24"]}]'
+```
+
+and under `app-template.defaultPodOptions` add:
+
+```yaml
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+```
+
+and in the HA container add:
+
+```yaml
+          env:
+            RECORDER_DB_URL:
+              valueFrom:
+                secretKeyRef:
+                  name: home-assistant-cnpg-app
+                  key: uri
+```
+
+Change `app-config.yaml` to `enabled: "true"`. Leave the `dom.` route in place for the dry-run.
+
+- [ ] **Step 3: Update `templates/secrets.yaml` secret values**
+
+`SECRET_MQTT_HOST` keeps `mqtt://home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local` (Review Focus 1: no LB IP). Leave `SECRET_EXTERNAL_URL` as `dom.` for the dry-run.
+
+- [ ] **Step 4: Verify the render**
+
+```bash
+cd cluster/apps/home-automation/home-assistant && helm dependency build && helm template home-assistant . -f values.yaml | grep -n -E "k8s.v1.cni|RECORDER_DB_URL|home-assistant-cnpg-app|NetworkAttachmentDefinition|node-role"
+```
+
+Expected: all five strings present.
+
+- [ ] **Step 5: Lint, commit, PR, merge, [CONFIRM] sync**
+
+```bash
+cd /workspaces/home-ops-ha-migration && task lint:all
+git add -A && git commit -m "feat(home-assistant): enable with macvlan net1, Postgres recorder env, control-plane pinning"
+```
+
+After sync: `kubectl -n ha-home-assistant get cluster.postgresql.cnpg.io,pods,pvc` → CNPG healthy, HA pod running with `net1` (`kubectl -n ha-home-assistant exec sts/home-assistant -- ip -4 addr show net1` shows `192.168.48.60/24`).
+
+### Task 3.5: Dry-run restore **[USER + CONFIRM]**
+
+- [ ] **Step 1: [USER] Take a HAOS backup** (Settings → System → Backups, full, download the `.tar`). Never commit it.
+
+- [ ] **Step 2: Extract only what is needed (local)**
+
+```bash
+mkdir -p /tmp/haos && cd /tmp/haos && tar xf <backup>.tar
+ls
+tar xzf homeassistant.tar.gz -C /tmp/haos/ha-config    # config
+tar xzf addon_core_matter_server*.tar.gz -C /tmp/haos/matter   # Matter fabric data (cutover only)
+```
+
+Adjust file names to what `ls` shows (HAOS uses `homeassistant.tar.gz` and per-add-on archives). The config sits under `data/` inside the archive.
+
+- [ ] **Step 3: Sanitize the config copy**
+
+In `ha-config/data/`:
+- delete `home-assistant_v2.db*` (recorder history is not restored);
+- move `automations.yaml`, `scripts.yaml`, `scenes.yaml` to `*.disabled` so nothing runs during the dry-run;
+- ensure `configuration.yaml` has:
+
+```yaml
+recorder:
+  db_url: !env_var RECORDER_DB_URL
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 10.244.0.0/16
+```
+
+merging with any existing `http:` and `recorder:` blocks (Review Focus 2);
+- remove or comment `hassio:`/supervisor-only keys; grep for LB-IP or `mqtt.<domain>` uses of cluster services (Review Focus 1):
+
+```bash
+grep -rn -E "192\.168\.48\.(2[0-9]|3[0-9]|4[0-9]|50)|mqtt\.<domain>" /tmp/haos/ha-config/data/ || echo "no LB-IP references"
+```
+
+- In `.storage/core.config_entries` disable (`"disabled_by": "user"`) the `mqtt`, `matter` and any device-controlling entries for the dry-run; do not run the Matter server in the dry-run.
+
+- [ ] **Step 4: [CONFIRM] Copy into the config PVC**
+
+```bash
+kubectl -n ha-home-assistant scale sts/home-assistant --replicas=0
+kubectl -n ha-home-assistant run ha-restore --image=busybox:1.37 --restart=Never --overrides='{"spec":{"securityContext":{"runAsUser":568,"runAsGroup":568,"fsGroup":568},"volumes":[{"name":"d","persistentVolumeClaim":{"claimName":"home-assistant-config"}}],"containers":[{"name":"ha-restore","image":"busybox:1.37","command":["sleep","3600"],"volumeMounts":[{"name":"d","mountPath":"/config"}]}]}}'
+kubectl -n ha-home-assistant wait --for=condition=Ready pod/ha-restore
+kubectl -n ha-home-assistant cp /tmp/haos/ha-config/data/. ha-restore:/config/
+kubectl -n ha-home-assistant delete pod ha-restore
+kubectl -n ha-home-assistant scale sts/home-assistant --replicas=1
+```
+
+- [ ] **Step 5: Dry-run checks**
+
+```bash
+kubectl -n ha-home-assistant logs sts/home-assistant --tail=100
+```
+
+Expected: boots without the `hassio` errors, recorder connects to Postgres (`kubectl -n ha-home-assistant exec <cnpg-pod> -- psql -U app -c '\dt' | head` shows HA tables), `https://dom.<domain>` loads (valid session or onboarding), entity registry present. **[USER]** reviews integrations (Settings → Devices & services): list SSDP/UPnP/DHCP-discovery integrations to decide on IP-based reconfiguration (spec "Known gap"); check Chromecast discovery over `net1`.
+
+- [ ] **Step 6: Matter data restore preparation (do not start the server yet)**
+
+```bash
+ls /tmp/haos/matter/
+```
+
+Expected: fabric/credential JSON files (for example `credentials/`, `*.json`). If it is empty or missing, **stop**: the backup did not include add-on data and every Matter device would need recommissioning — tell the user.
+
+---
+
+# PHASE 4 — Cutover and decommission
+
+### Task 4.1: Final cutover **[CONFIRM + USER]**
+
+Branch: `feat/hass-cutover`
+
+**Files:**
+- Modify: `cluster/apps/home-automation/home-assistant/values.yaml` (route hostname + parents)
+- Modify: `cluster/apps/home-automation/home-assistant/templates/secrets.yaml` (`SECRET_EXTERNAL_URL`)
+- Modify: `cluster/apps/home-automation/matter-server/values.yaml` (`replicas: 1`)
+- Modify: `cluster/apps/default/hass-proxy/templates/httproute.yaml` (remove `hass-proxy` HTTPRoute)
+- Modify: `cluster/apps/default/hass-proxy/templates/service.yaml` (remove `hass-proxy` Service/Endpoints)
+
+- [ ] **Step 1: Prepare the PR (not merged yet)**
+
+In HA `values.yaml` change the main route to the production host and both gateways:
+
+```yaml
+  route:
+    main:
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-external
+          namespace: envoy-gateway
+          sectionName: https
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - hass.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: main
+```
+
+Set `SECRET_EXTERNAL_URL: "https://hass.<secret:private-domain>"`. In `matter-server/values.yaml` set `replicas: 1`. Remove the `hass-proxy` `HTTPRoute` and its `Service`/`Endpoints` (the proxy otherwise collides on the same hostname). Keep `dom-code.<domain>` (code-server). Render each app and lint.
+
+- [ ] **Step 2: [USER] Take a fresh HAOS backup and stop the RPi HA**
+
+Download the new full backup; then stop Home Assistant core on the RPi (`ha core stop` in the SSH/Terminal addon). From this moment the RPi's HA is down.
+
+- [ ] **Step 3: Re-extract and sanitize** exactly as Task 3.5 Steps 2–3, **but without** moving automations aside and **without** disabling config entries; still fix MQTT broker host (`home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local`, via the integration's reconfigure after boot or by editing `core.config_entries`) and the Matter URL (`ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`).
+
+- [ ] **Step 4: [CONFIRM] Restore Matter data, then HA config**
+
+```bash
+kubectl -n ha-matter-server run matter-restore --image=busybox:1.37 --restart=Never --overrides='{"spec":{"volumes":[{"name":"d","persistentVolumeClaim":{"claimName":"matter-server-data"}}],"containers":[{"name":"matter-restore","image":"busybox:1.37","command":["sleep","900"],"volumeMounts":[{"name":"d","mountPath":"/data"}]}]}}'
+kubectl -n ha-matter-server wait --for=condition=Ready pod/matter-restore
+kubectl -n ha-matter-server cp /tmp/haos/matter/. matter-restore:/data/
+kubectl -n ha-matter-server exec matter-restore -- ls -la /data
+kubectl -n ha-matter-server delete pod matter-restore
+```
+
+Adjust `claimName` to the real PVC name. Then repeat the HA config copy from Task 3.5 Step 4 (HA scaled to 0 first) with the final sanitized config.
+
+- [ ] **Step 5: [CONFIRM] Merge the cutover PR and sync** `home-assistant`, `matter-server`, `hass-proxy`.
+
+- [ ] **Step 6: Verify**
+
+```bash
+kubectl -n ha-matter-server logs deploy/matter-server --tail=50
+kubectl -n ha-home-assistant logs sts/home-assistant --tail=100
+```
+
+Expected: the Matter server loads existing nodes (no "no fabrics" message), HA connects to MQTT and Matter without errors, `https://hass.<domain>` works **from the LAN and from the internet** (Cloudflare tunnel), the companion app reconnects, Z2M devices respond, Chromecast entities are available, automations fire. **[USER]** acceptance list: entity count roughly equals the old instance, a Matter device toggles, a Zigbee device toggles, TTS to a Chromecast plays, backup job configured (Task 4.2 step 3).
+
+- [ ] **Step 7: Rollback path (if acceptance fails)**
+
+Revert the cutover PR (restores `hass-proxy` to the RPi), tell the user to `ha core start` on the RPi, and stop the cluster HA/Matter (`replicas: 0`). Phase 3's data stays on the PVCs for another attempt.
+
+### Task 4.2: Decommission and cleanup
+
+Branch: `chore/rpi-decommission`
+
+**Files:**
+- Modify: `docs/src/general/network.md`, `docs/src/general/hardware.md`, `docs/src/general/matter-thread.md`
+- Modify: `.claude/memory/reference_home_network_hardware.md`, `reference_matter_thread_cross_vlan.md`, `reference_gateway_dns_architecture.md`
+- Delete (after the retention window): `cluster/apps/default/hass-proxy/`
+
+- [ ] **Step 1: [USER] Retention window**
+
+Keep the RPi powered off with its SD card/backup for N days (agree on N with the user, suggested 14). During the window nothing should have used it: re-check AdGuard queries by client and the `hass.<domain>` access logs for the old path.
+
+- [ ] **Step 2: Docs and memory**
+
+- `network.md`: remove the RPi from the topology diagram and IP table; add AdGuard `.24`/`.25`, MQTT `.26`, macvlan `.60`/`.61`; document the DNS flow and the macvlan/Multus design.
+- `hardware.md`: mark the RPi decommissioned.
+- `matter-thread.md`: production HA and the Matter server are now in the repo (`home-automation/home-assistant`, `matter-server`); note the OMR route must be revisited if the Thread network is re-formed.
+- Memory files: update the three listed above; do not write the private domain literally.
+
+- [ ] **Step 3: Backups for the new HA**
+
+Add a VolSync `ReplicationSource` (follow the repo's existing VolSync pattern, `grep -rn ReplicationSource cluster/apps | head`) for the HA config PVC, Z2M data PVC and Matter PVC; verify one backup completes (`kubectl get replicationsource -A`).
+
+- [ ] **Step 4: Remove `hass-proxy`** following the repo's removal procedure (memory: `reference_app_removal_procedure.md` — deleting the directory never auto-prunes): delete `cluster/apps/default/hass-proxy/`, then **[CONFIRM]** `kubectl delete application hass-proxy -n argocd`, and check for PVCs (none expected).
+
+- [ ] **Step 5: Final PR** with the docs/memory/cleanup changes; mark the plan complete by moving this plan to `docs/superpowers/archive/` if that is the repo's convention for finished work.
+
+- [ ] **Step 6: [USER] Retire the RPi** (reuse or recycle). Done.
