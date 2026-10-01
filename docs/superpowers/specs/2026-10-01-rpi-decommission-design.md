@@ -5,7 +5,7 @@
 
 ## Goal
 
-Decommission the Raspberry Pi (`192.168.50.9`, HAOS) and run everything it hosts in the cluster: Home Assistant, AdGuard Home (DNS + ad-blocking), MQTT, Zigbee2MQTT and the Matter server. The Zigbee/Thread coordinator is already the network-attached SLZB-MR4U, so no radio hardware has to move.
+Decommission the Raspberry Pi (`192.168.50.9`, HAOS) and run everything it hosts in the cluster: Home Assistant, AdGuard Home (DNS + ad-blocking), MQTT, Zigbee2MQTT, the Matter server and Music Assistant. The Zigbee/Thread coordinator is already the network-attached SLZB-MR4U, so no radio hardware has to move.
 
 ## Context & Decisions
 
@@ -13,9 +13,10 @@ Decommission the Raspberry Pi (`192.168.50.9`, HAOS) and run everything it hosts
 - **DNS / ad-blocking:** two AdGuard Home instances in the cluster, both blocking, both handed out by DHCP. UniFi is **not** handed to clients as a secondary: clients do not reliably prefer the primary (systemd-resolved sticks, Windows/macOS/Android race or pick fastest), so a non-filtering secondary would leak ads and, if it lacked internal records, return NXDOMAIN for them. UniFi (UCG-Max `192.168.48.254`) is used only as an upstream for the local zone and reverse lookups, and as the resolver for Talos nodes.
 - **Full-cluster outage:** accepted risk (user decision); no external last-resort DNS.
 - **Home Assistant network:** HA and the Matter server each get a Multus macvlan interface (`net1`) on VLAN 48 with a static IP, instead of `hostNetwork`. UniFi's mDNS reflector (already enabled across VLANs) delivers Chromecast/Matter mDNS to that segment. VLAN 48 and 50 are in one allow-all firewall zone and VLAN 48 has IPv6 enabled.
+- **Music Assistant (found later, not in the original inventory):** the RPi also runs the Music Assistant add-on. Its docs state that without host networking "player discovery and any players that need direct network access (AirPlay, Chromecast, DLNA, Sonos, and similar) will not work", and that port restrictions are unsupported. A plain bridge/pod network is therefore unsuitable; it gets its own macvlan interface (`net1`, `192.168.48.62`) on VLAN 48, which gives it a real LAN address with no port restrictions, the same as HA and the Matter server. Ports: 8095 (web/API) and 8097 (stream server). Its published/stream IP must be set to the `net1` address, otherwise players are handed the unreachable pod IP.
 - **Known gap:** SSDP/UPnP, DHCP-broadcast discovery and MAC-based ARP presence do not cross VLANs. Only QNAP remains on VLAN 50 and UPnP is disabled in UniFi. Mitigation: UniFi integration for presence, IP-based setup (with DHCP reservations) for other devices; a tagged-VLAN macvlan is the fallback if something specific needs it.
 - **Recorder history:** start fresh on the CNPG Postgres cluster already defined in the HA app. The RPi's SQLite file is not restored; keep it as an archive.
-- **Sequencing:** phased, each phase leaving the RPi functional (see below).
+- **Sequencing:** phased, each phase leaving the RPi functional (see below). Every addon (MQTT, Z2M, Matter server, AdGuard) is migrated and tested against the RPi's still-running HA **before** HA itself moves, so the final cutover only moves HA.
 
 ## Findings that shape the design
 
@@ -38,14 +39,20 @@ Each phase can be stopped after, and phases 0–2 can be reverted by pointing HA
 - Any device that hardcodes the RPi's Mosquitto IP is repointed to `mqtt.<domain>`.
 - **Done when:** an MQTT client on the RPi publishes and subscribes through `mqtt.<domain>`.
 
-### Phase 1 — Zigbee2MQTT standalone
+### Phase 1 — Zigbee2MQTT, Matter server and Music Assistant
 
 - New app `home-automation/zigbee2mqtt`: app-template StatefulSet, image `koenkk/zigbee2mqtt`, Ceph PVC at `/app/data`, frontend at `z2m.<domain>` on `envoy-internal`.
 - Config restored into the PVC from the RPi addon export: `configuration.yaml`, `database.db`, `coordinator_backup.json`. Same network key and PAN ID, so no device re-pairs. Nothing from these files is committed.
 - Adapter: `serial.port: tcp://<slzb-ip>:6638` with the adapter type taken from the existing config; both verified in the SLZB UI.
 - MQTT credentials via ExternalSecret → env (`ZIGBEE2MQTT_CONFIG_MQTT_*`). `base_topic` and `homeassistant: true` unchanged.
 - Cutover within the phase: stop the RPi's Z2M **and** Mosquitto addons (exactly one Z2M may own the coordinator), repoint the RPi HA MQTT integration to `mqtt.<domain>`, start cluster Z2M. Z2M republishes discovery; entities keep their IDs.
-- **Done when:** all Zigbee devices are visible in the RPi's HA, a state-change round trip works, and the device survives a Z2M pod restart.
+- **Done when (Z2M):** all Zigbee devices are visible in the RPi's HA, a state-change round trip works, and the device survives a Z2M pod restart.
+- **Matter server prerequisites:** Cilium `cni.exclusive: false`; deploy Multus; a macvlan NetworkAttachmentDefinition on `eth0` (VLAN 48) with static IPAM from a reserved block outside the `.20–.50` pool (`.60–.69`), plus a route so replies to LAN/VLAN 50 leave via `net1`. Matter is pinned to `mc1`–`mc3`.
+- **Matter server:** new `python-matter-server` app on `net1` at `192.168.48.61`, with a Ceph PVC at `/data`. Verify IPv6 reachability from `net1` to the Thread OMR prefix (the existing UniFi static route and firewall allow should apply; re-check the prefix rather than assume, it changes only if the Thread network is re-formed) and mDNS visibility before depending on it.
+- **Matter cutover within the phase:** stop the RPi's Matter Server addon (two servers must never share a fabric/storage), back up its data, restore it into the Matter PVC (**the fabric credentials live there; without them every Matter device must be recommissioned**), start the cluster server, and repoint the RPi HA's Matter integration to `ws://192.168.48.61:5580/ws` (the pod's `net1` address is routable from VLAN 50; the ClusterIP is not). The RPi's addon data stays untouched as the rollback.
+- **Done when (Matter):** all Matter nodes are available in the RPi's HA, a Thread and a Wi-Fi device toggle, and nodes return after a Matter pod restart.
+- **Music Assistant:** new `music-assistant` app (`ghcr.io/music-assistant/server`) on `net1` at `192.168.48.62`, Ceph PVC at `/data`, web UI at `ma.<domain>` on `envoy-internal` (via the ClusterIP service on 8095), pinned to `mc1`–`mc3`. If the library uses local files, `/media` is mounted from the QNAP (NFS, read-only). The RPi add-on is stopped first, its data restored into the PVC (provider credentials and library DB live there), the "Published IP address" core setting is set to `192.168.48.62`, and the RPi HA's Music Assistant integration is repointed to `http://192.168.48.62:8095`. The MA "Home Assistant" provider is given the RPi HA URL and a long-lived token (kept out of git) and is repointed to the cluster HA at Phase 4. The firewall must allow the player VLANs (for example IoT) to reach `192.168.48.62` on all ports.
+- **Done when (Music Assistant):** library and playlists are intact, playback to each Chromecast/AirPlay player in use works (including a group), the queue survives a pod restart, and the RPi's HA controls it. Players that rely on SSDP/UPnP discovery (DLNA, Sonos S1) are a known gap and are configured by IP or tested explicitly.
 
 ### Phase 2 — DNS and ad-blocking
 
@@ -60,17 +67,16 @@ Each phase can be stopped after, and phases 0–2 can be reverted by pointing HA
 
 ### Phase 3 — Home Assistant restore
 
-- Cilium: set `cni.exclusive: false`; deploy Multus; create a macvlan NetworkAttachmentDefinition on `eth0` (VLAN 48) with static IPAM from a reserved block outside the `.20–.50` pool (for example `.60–.69`), plus routes so replies to LAN/VLAN 50 leave via `net1`. HA and the Matter server are pinned to `mc1`–`mc3`.
-- Add `python-matter-server` as a new app; HA connects over a websocket on the cluster network. Verify IPv6 reachability from `net1` to the Thread OMR prefix; the existing UniFi static route and firewall allow should apply, and the OMR prefix is re-checked rather than assumed (it changes only if the Thread network is re-formed).
-- HA restore from the HAOS backup: extract `homeassistant.tar.gz` into the config PVC and the Matter server addon data into the Matter PVC (**the Matter fabric credentials live there; without them every Matter device must be recommissioned**). The SQLite recorder DB is excluded.
-- Stripped/rewired: `hassio` integration and supervisor-only entities; MQTT → `mqtt.<domain>`; Matter → new websocket URL; AdGuard integration (if any) → new instances. Edits via `.storage/core.config_entries` or UI reconfigure.
+- HA joins the Multus macvlan network (`net1` at `192.168.48.60`), is pinned to `mc1`–`mc3`, and reaches MQTT and the Matter server by their in-cluster service names (never LB IPs, because of macvlan host isolation).
+- HA restore from the HAOS backup: extract `homeassistant.tar.gz` into the config PVC. The SQLite recorder DB is excluded. (The Matter data was already migrated in Phase 1.)
+- Stripped/rewired: `hassio` integration and supervisor-only entities; MQTT → in-cluster broker service; Matter → `ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`; Music Assistant → `http://music-assistant.ha-music-assistant.svc.cluster.local:8095`; AdGuard integration (if any) → new instances; `http.trusted_proxies` for the Envoy pod CIDR. Edits via `.storage/core.config_entries` or UI reconfigure.
 - Recorder: `recorder: db_url: !env_var ...` from `home-assistant-secret` (CNPG credentials); no secret in git. HACS/`custom_components` ride along with the config.
-- **Dry-run:** restore into the test instance on a scratch hostname with automations, MQTT and Matter entries disabled so two HAs never drive the same devices; checks boot, integration load and Postgres.
+- **Dry-run:** restore into the test instance on a scratch hostname with automations and the MQTT, Matter and Music Assistant entries disabled so two HAs never drive the same devices; checks boot, integration load and Postgres.
 
 ### Phase 4 — Cutover and decommission
 
 1. Take a fresh HAOS backup, stop the RPi's HA.
-2. Restore it (config + Matter data) and start the cluster HA with `net1`.
+2. Restore its config and start the cluster HA with `net1` (the Matter server and Z2M are already live from Phase 1).
 3. Repoint `hass-proxy`'s backend to the in-cluster HA, keeping both gateways (preserves external access and the companion app URL).
 4. Power off the RPi; keep the SD card/backup for a retention window.
 5. After the window: remove `hass-proxy`/`agh-proxy`, update docs.
@@ -89,7 +95,8 @@ Each phase can be stopped after, and phases 0–2 can be reverted by pointing HA
 4. **Talos nameserver switch** — must land before the RPi goes away.
 5. **External access via `hass.<domain>`** — must be unchanged after the backend swap.
 6. **Discovery gap** (SSDP/DHCP/ARP) — mitigated as described above.
-7. **RPi-side exports** (Z2M config, `AdGuardHome.yaml`, HAOS backup) are done by the user; secrets in them are never committed or pasted into the repo.
+7. **Music Assistant stream address and firewall** — MA hands players its stream URL; if its published IP is the pod IP instead of `192.168.48.62`, or the player VLAN cannot reach `.62` on all ports, playback fails while discovery looks fine.
+8. **RPi-side exports** (Z2M config, `AdGuardHome.yaml`, HAOS backup) are done by the user; secrets in them are never committed or pasted into the repo.
 
 ## Delivery
 
