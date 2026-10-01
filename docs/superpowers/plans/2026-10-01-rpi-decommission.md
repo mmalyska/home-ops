@@ -764,13 +764,12 @@ Why macvlan: Music Assistant's docs say that without host networking "player dis
 - Consumes: Multus and the `vlan48` attachment pattern from Tasks 1.4–1.6.
 - Produces: namespace `ha-music-assistant`; `net1` at `192.168.48.62/24` (web `:8095`, streams `:8097`); in-cluster Service on 8095 (the rendered name is recorded in Step 3; later tasks assume `music-assistant`); `ma.<domain>` on `envoy-internal`; PVC at `/data`.
 
-- [ ] **Step 1: [USER] Answer three questions before writing manifests**
+- [ ] **Step 1: Recorded answers and remaining [USER] items**
 
-1. Which players does Music Assistant drive (Chromecast, AirPlay, Sonos, DLNA, Snapcast, software players) and on which VLAN do they sit?
-2. Is there a local music library (files)? If yes, the QNAP share path to mount at `/media` (read-only).
-3. Which providers are configured (Spotify, etc.)? Their credentials live in the add-on data and are restored with it; nothing is re-entered in git.
-
-If any player is on a VLAN other than 48/50 (for example IoT, VLAN 40), the user must confirm or create a UniFi firewall rule allowing that VLAN ↔ `192.168.48.62` on **all ports** (Music Assistant opens random ports to players) and that the mDNS reflector includes that VLAN.
+Answers already given: players are **Chromecast and DLNA, all on the Trusted VLAN (`192.168.10.0/24`)**; the UniFi mDNS reflector covers every VLAN; there is **no local music library** (so nothing is mounted at `/media`). Still to confirm with the user:
+1. Which streaming providers are configured (their credentials live in the add-on data and are restored with it; nothing is re-entered in git).
+2. **Firewall (UniFi):** Trusted must be able to reach `192.168.48.62` on **all ports** (Chromecasts and DLNA renderers fetch streams from MA on 8097 and random ports) and `192.168.48.62` must be able to open connections to Trusted (Chromecast control on TCP 8009, DLNA control URLs). Rules are needed in both directions because each side initiates its own connections. Confirm the rules exist or create them.
+3. **DLNA devices:** list the model/name of each DLNA renderer and what the user plays on it (see Step 8: DLNA discovery uses SSDP, which the mDNS reflector does not forward).
 
 - [ ] **Step 2: Create the branch, pin the image, write the files**
 
@@ -891,19 +890,7 @@ app-template:
         - path: /data
 ```
 
-If the user has a local library (Step 1, question 2), add under `persistence:`:
-
-```yaml
-    media:
-      type: nfs
-      server: 192.168.50.8
-      path: <qnap-share-path>
-      globalMounts:
-        - path: /media
-          readOnly: true
-```
-
-with the share path from the user. Use the timezone the user actually runs.
+No `/media` mount is needed (no local library). Use the timezone the user actually runs.
 
 - [ ] **Step 3: Verify the render, lint, commit, PR**
 
@@ -979,7 +966,10 @@ Expected: both open.
 
 1. Music Assistant integration in the RPi HA: set the server URL to `http://192.168.48.62:8095` (the pod's `net1` address is routable from VLAN 50; the ClusterIP is not).
 2. In MA → Settings → Providers → Home Assistant: URL of the RPi HA (`http://192.168.50.9:8123`) and the long-lived token from Step 4. The token is never committed.
-3. Acceptance: library, playlists and favorites present; discovered players list matches the old one; play a track to each Chromecast/AirPlay player in use and to a group; the queue survives **[CONFIRM]** `kubectl -n ha-music-assistant delete pod -l app.kubernetes.io/name=music-assistant`; the RPi HA's media-player entities control it. Players that rely on SSDP/UPnP (DLNA, Sonos S1) are a known gap: the user adds them by IP or decides about a tagged-VLAN macvlan.
+3. Acceptance: library, playlists and favorites present; the Chromecasts on Trusted appear in MA's player list (mDNS via the reflector); play a track to each Chromecast and to a group; the queue survives **[CONFIRM]** `kubectl -n ha-music-assistant delete pod -l app.kubernetes.io/name=music-assistant`; the RPi HA's media-player entities control it. 4. **DLNA (known gap).** MA's DLNA provider documents automatic discovery plus a network scan of its own subnet, and no manual add by IP. SSDP does not cross VLANs (the mDNS reflector only forwards mDNS), so DLNA renderers on Trusted will probably not appear. Check Settings → Players after 5 minutes (the docs say discovery can take that long). If they are missing, in order:
+   - **a. Add them to Home Assistant instead.** The HA `dlna_dmr` integration accepts a manual device-description URL (find it in the device's UPnP description, usually `http://<device-ip>:<port>/description.xml`), and MA's Home Assistant provider can expose selected HA `media_player` entities as MA players. Streams still come from MA at `192.168.48.62`, so the firewall rules from Step 1 apply. Verify with a real playback; if MA does not offer the entity as a player, go to b.
+   - **b. Give the MA pod a second macvlan interface on the Trusted VLAN.** This needs VLAN 10 tagged on the node ports in UniFi, a Talos VLAN sub-interface (`eth0.10`) in `provision/talos/nodes/*.yaml`, and a second NetworkAttachmentDefinition on it. It restores SSDP/mDNS/broadcast on Trusted but puts the nodes on Trusted at L2 (bypassing inter-VLAN firewall rules), so it needs an explicit user decision and its own task before use.
+   - **c. Drop DLNA for those devices** if Chromecast or another path covers them.
 
 - [ ] **Step 9: Rollback path**
 
