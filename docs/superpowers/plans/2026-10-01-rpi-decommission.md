@@ -810,7 +810,7 @@ gh release list -R music-assistant/server -L 3
 docker buildx imagetools inspect ghcr.io/music-assistant/server:<TAG> | head -3
 ```
 
-Use the stable tag matching the RPi add-on version where possible; record `tag@sha256:digest`.
+The RPi add-on is 2.10.5 (`music-assistant/home-assistant-addon` `music_assistant/config.yaml`); pin the same version (multi-arch index digest `sha256:28023f8c…aedc`, verified 2026-10-02). The addon is a thin wrapper around the upstream image `ghcr.io/music-assistant/server`, whose entrypoint is fixed to `--data-dir /data --cache-dir /data/.cache` (pass no `args`), which exposes 8095, and which runs as root (no `runAsNonRoot`). The addon excludes `cache.db`, `collage_images/*` and `.cache/*` from its backups, so the cache and artwork rebuild on first start. Upstream documents host networking as mandatory and a bridge network as unsupported; a macvlan `net1` with its own LAN address is neither (same stance as the Matter server), so Step 7 verifies discovery and the stream address explicitly.
 
 `app-config.yaml`:
 
@@ -884,21 +884,24 @@ app-template:
         main:
           image:
             repository: ghcr.io/music-assistant/server
-            tag: <TAG>@sha256:<DIGEST>
+            tag: 2.10.5@sha256:28023f8c0d96ca2496391f3218a6d70d7ef3ba84db846b3a3f3cd9ce7ef8aedc
           env:
             TZ: Europe/Warsaw
+            LOG_LEVEL: info
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 512Mi
             limits:
-              memory: 1Gi
+              memory: 2Gi
   service:
     main:
       controller: main
       ports:
         http:
           port: 8095
+        stream:
+          port: 8097
   route:
     main:
       annotations:
@@ -995,6 +998,8 @@ kubectl -n ha-music-assistant exec deploy/music-assistant -- ip -4 addr show net
 ```
 
 Expected: the server starts, `net1` is `192.168.48.62/24`, and the logs show providers loading. Then **[USER]** opens `https://ma.<domain>` → Settings → Core → Stream server and sets **Published IP address** to `192.168.48.62` (and bind to all interfaces). Without this MA may advertise the pod IP (`10.244.x.x`) to players.
+
+Also read the restored `settings.json` (extracted in Step 5) for network keys before the first start: if `publish_ip` or `bind_ip` hold the RPi's address (for example `192.168.50.9`), a stale `bind_ip` makes the server fail to bind and a stale `publish_ip` hands players the wrong address. Check with `python3 -c "import json;d=json.load(open('settings.json'));print({k:v for k,v in d.get('core',{}).get('streams',{}).get('values',{}).items() if 'ip' in k or 'url' in k})"` (adjust the path to the file's real structure; do not print provider credentials) and set both to the new address or empty before copying. The upstream docs also say the server detects its own IP at startup and to confirm it in the log; with two interfaces the default route is `eth0` (pod network), so confirm the logged address is `192.168.48.62`, not `10.244.x.x`.
 
 From a host on the player VLAN (not the cluster):
 
