@@ -16,3 +16,21 @@ images:
   - name: ghcr.io/k8snetworkplumbingwg/multus-cni
     newTag: v4.3.1-thick
     digest: sha256:a357a79359b80ddd5f4699117946cacf3b54f5baecf7944535594863e875fc25
+
+patches:
+  # Talos guide (siderolabs "Multus"): the upstream 50Mi limit can OOM-kill the
+  # primary CNI plugin. (The /var/run/netns hostPath patch is not needed: /var/run -> /run
+  # on these nodes, verified with talosctl.)
+  - target:
+      kind: DaemonSet
+      name: kube-multus-ds
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 200m
+            memory: 100Mi
+          limits:
+            cpu: 300m
+            memory: 150Mi
