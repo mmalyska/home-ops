@@ -554,7 +554,11 @@ TALOSCONFIG=... talosctl -n 192.168.48.2 ls /etc/cni/net.d
 
 Expected: DaemonSet ready on all nodes; the CRD exists; `00-multus.conf` appears alongside `05-cilium.conflist`; existing pods are unaffected (`kubectl get pods -A | grep -v Running | grep -v Completed` shows nothing new).
 
-### Task 1.6: Matter server app with macvlan interface
+### Task 1.6: Matter server app (matter.js) with macvlan interface
+
+**Server choice (researched 2026-10-02):** `python-matter-server` is archived (8.1.2 was the last release). The RPi's Matter Server addon (9.2.0) runs the **matter.js** server (`ghcr.io/matter-js/matterjs-server:1.4.0`, bundled by the addon), and its Python data was migrated to the new format automatically at addon 9.0.0. The server is documented as a drop-in replacement: same `/data` directory and WebSocket API; it runs unprivileged as UID 1000 (so the volume needs `fsGroup: 1000`) and needs roughly twice the Python server's RAM. Pin the same server version as the addon (1.4.0) so the restored data is read by the version that wrote it.
+
+Sources: `home-assistant/addons` `matter_server/` (config.yaml, build.yaml, run script, CHANGELOG) and `matter-js/matterjs-server` `docs/docker.md`, `docs/os_requirements.md`.
 
 Branch: `feat/matter-server`
 
@@ -600,6 +604,11 @@ The route sends LAN-bound replies out `net1` so traffic from other VLANs is not 
 ```yaml
 app-template:
   defaultPodOptions:
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      fsGroupChangePolicy: "OnRootMismatch"
     nodeSelector:
       node-role.kubernetes.io/control-plane: ""
   controllers:
@@ -612,24 +621,24 @@ app-template:
       containers:
         main:
           image:
-            repository: ghcr.io/home-assistant-libs/python-matter-server
-            tag: <TAG>@sha256:<DIGEST>
+            repository: ghcr.io/matter-js/matterjs-server
+            tag: 1.4.0@sha256:54232d0d3e7dff5a54759469d2753399270412b4c30c55b31750a4595e4cb236
           args:
             - --storage-path
             - /data
-            - --paa-root-cert-dir
-            - /data/credentials
             - --primary-interface
             - net1
+            - --enable-time-sync
           securityContext:
+            allowPrivilegeEscalation: false
             capabilities:
-              add: ["NET_ADMIN", "NET_RAW"]
+              drop: ["ALL"]
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 100m
+              memory: 256Mi
             limits:
-              memory: 512Mi
+              memory: 1Gi
   service:
     main:
       controller: main
@@ -645,16 +654,16 @@ app-template:
         - path: /data
 ```
 
-Pin `<TAG>@<DIGEST>` with `docker buildx imagetools inspect ghcr.io/home-assistant-libs/python-matter-server:<TAG>`; use the version matching the RPi's Matter Server addon where possible.
+`--enable-time-sync` mirrors the addon's default (`time_sync: auto`, on when the host clock is NTP-synchronized; the nodes are). The WebSocket on `net1` is unauthenticated and reachable from the LAN; it is needed on `net1` only while the RPi's HA is the client, and Task 4.2 restricts the listen address to the pod's cluster IP afterwards.
 
 - [ ] **Step 4: Verify, lint, commit, PR**
 
 ```bash
-cd cluster/apps/home-automation/matter-server && helm dependency build && helm template matter . -f values.yaml | grep -n -E "NetworkAttachmentDefinition|k8s.v1.cni|primary-interface|replicas: 0|5580"
+cd cluster/apps/home-automation/matter-server && helm dependency build && helm template matter . -f values.yaml | grep -n -E "NetworkAttachmentDefinition|k8s.v1.cni|primary-interface|replicas: 0|5580|matterjs-server|fsGroup"
 helm template matter . -f values.yaml | grep -n -A3 "^kind: Service"
 cd /workspaces/home-ops-ha-migration && task lint:all
 git add cluster/apps/home-automation/matter-server
-git commit -m "feat(matter-server): add python-matter-server on VLAN 48 macvlan (scaled to 0)"
+git commit -m "feat(matter-server): add matter.js Matter server on VLAN 48 macvlan (scaled to 0)"
 ```
 
 - [ ] **Step 5: [CONFIRM] Verify `net1` with a throwaway pod before depending on it**
@@ -670,8 +679,11 @@ kubectl -n ha-matter-server exec net-test -- ping -c2 192.168.50.8
 kubectl -n ha-matter-server exec net-test -- ping -c2 -I net1 192.168.48.254
 kubectl -n ha-matter-server exec net-test -- ping -6 -c2 <OMR-address-of-a-Thread-device-or-SLZB>
 kubectl -n ha-matter-server exec net-test -- avahi-browse -a -t 2>/dev/null | head || true
+kubectl -n ha-matter-server exec net-test -- sysctl net.ipv6.conf.all.forwarding net.ipv6.conf.net1.accept_ra net.ipv6.conf.net1.accept_ra_rt_info_max_plen
 kubectl -n ha-matter-server delete pod net-test
 ```
+
+Matter-specific gate (from `os_requirements.md`): IPv6 forwarding must be **0** in the pod (otherwise no reachability probing); `accept_ra` must be at least 1 on `net1` so the pod gets its default route/SLAAC address. Route Information Options (`accept_ra_rt_info_max_plen=64`) are not required here because the route to the Thread OMR prefix comes from the UniFi static route, but record the values. The same document warns that mDNS forwarders (UniFi's mDNS option) "tend to corrupt or severely hinder the Matter packets" and that Matter's link-local multicast does not cross VLANs. Our server (VLAN 48) and border router (VLAN 50) are on different VLANs and rely on that reflector, which already worked for phone commissioning on 2026-09-29; so the real test is Task 1.7 Step 8 (Thread devices operate and recover after a pod restart). If Thread devices flap or are unreachable there, the fallback is a tagged VLAN 50 interface for the Matter pod (own task, user decision) or reverting to the RPi addon (Step 9).
 
 Expected: `net1` has `192.168.48.69/24`, a SLAAC IPv6 address and an IPv6 default route via the UCG-Max; the QNAP ping works; the Thread (OMR) address replies through the UniFi static route; mDNS responses from Chromecasts are visible. If IPv6 SLAAC is missing, add a `tuning` plugin chain to the NAD setting `net.ipv6.conf.net1.accept_ra=2` and re-test. Remember Review Focus 1: do not test against an LB IP.
 
@@ -696,21 +708,22 @@ Settings → Add-ons → Matter Server → Stop, and disable "Start on boot". Th
 
 Create a partial backup containing only **Matter Server** (and the HA config for reference), download the `.tar`. Never commit it.
 
-- [ ] **Step 3: Extract and check the fabric files (local)**
+- [ ] **Step 3: Extract and check the fabric data (local)**
 
 ```bash
 mkdir -p /tmp/haos && cd /tmp/haos && tar xf <backup>.tar && ls
-mkdir -p matter && tar xzf addon_core_matter_server*.tar.gz -C matter
+mkdir -p matter && tar xzf addon_*matter_server*.tar.gz -C matter
 find matter -maxdepth 3 -type f | head -30
 ```
 
-Adjust the archive name to what `ls` shows. Expected: the fabric/credential JSON files (for example `credentials/` and per-fabric `*.json` under `data/`). If they are missing, **stop**: restart the RPi addon (rollback) and tell the user that the backup did not include add-on data; without it every Matter device must be recommissioned.
+Adjust the archive name to what `ls` shows. Expected: a non-empty `data/` with the matter.js server's storage files (already in the matter.js format since addon 9.0.0, so no migration runs). A leftover `data/.migrations/` directory (backup of the old Python data) may exist: do not copy it. If they are missing, **stop**: restart the RPi addon (rollback) and tell the user that the backup did not include add-on data; without it every Matter device must be recommissioned.
 
 - [ ] **Step 4: [CONFIRM] Copy the data into the Matter PVC (Deployment still at 0 replicas)**
 
 ```bash
 kubectl -n ha-matter-server get pvc,deploy
-kubectl -n ha-matter-server run matter-restore --image=busybox:1.37 --restart=Never --overrides='{"spec":{"volumes":[{"name":"d","persistentVolumeClaim":{"claimName":"matter-server-data"}}],"containers":[{"name":"matter-restore","image":"busybox:1.37","command":["sleep","900"],"volumeMounts":[{"name":"d","mountPath":"/data"}]}]}}'
+rm -rf /tmp/haos/matter/data/.migrations
+kubectl -n ha-matter-server run matter-restore --image=busybox:1.37 --restart=Never --overrides='{"spec":{"securityContext":{"runAsUser":1000,"runAsGroup":1000,"fsGroup":1000},"volumes":[{"name":"d","persistentVolumeClaim":{"claimName":"matter-server-data"}}],"containers":[{"name":"matter-restore","image":"busybox:1.37","command":["sleep","900"],"volumeMounts":[{"name":"d","mountPath":"/data"}]}]}}'
 kubectl -n ha-matter-server wait --for=condition=Ready pod/matter-restore
 kubectl -n ha-matter-server cp /tmp/haos/matter/data/. matter-restore:/data/
 kubectl -n ha-matter-server exec matter-restore -- ls -la /data
@@ -1619,6 +1632,20 @@ Keep the RPi powered off with its SD card/backup for **14 days** (user-confirmed
 - [ ] **Step 3: Backups for the new HA**
 
 Add a VolSync `ReplicationSource` (follow the repo's existing VolSync pattern, `grep -rn ReplicationSource cluster/apps | head`) for the HA config PVC, Z2M data PVC, Matter PVC and Music Assistant PVC; verify one backup completes (`kubectl get replicationsource -A`).
+
+- [ ] **Step 3b: Restrict the Matter WebSocket to the cluster network**
+
+After Phase 4 the RPi's HA no longer needs the `net1` address. The matter.js server's WebSocket is unauthenticated and binds to all interfaces by default. In `cluster/apps/home-automation/matter-server/values.yaml` add the pod IP to the container env and bind to it so only cluster traffic (HA via the Service) reaches it:
+
+```yaml
+          env:
+            POD_IP:
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+```
+
+and add `--listen-address` / `$(POD_IP)` to the args (Kubernetes expands `$(POD_IP)` in `args`). Keep `--primary-interface net1` (Matter/mDNS still uses `net1`). Verify HA still reaches the server (`ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`) and that `nc -vz 192.168.48.61 5580` from another LAN host now fails. Commit via PR.
 
 - [ ] **Step 4: Remove `hass-proxy`** following the repo's removal procedure (memory: `reference_app_removal_procedure.md` — deleting the directory never auto-prunes): delete `cluster/apps/default/hass-proxy/`, then **[CONFIRM]** `kubectl delete application hass-proxy -n argocd`, and check for PVCs (none expected).
 
