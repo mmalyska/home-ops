@@ -679,7 +679,7 @@ Branch: `fix/matter-server-start`
 - Consumes: Task 1.6 app (PVC, `net1` at `192.168.48.61`), Task 1.5 Multus.
 - Produces: a live Matter server owning the fabric, reachable by the RPi's HA at `ws://192.168.48.61:5580/ws` (the pod's `net1` address is routable from VLAN 50; the ClusterIP is not) and, after Phase 4, by the cluster HA at `ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`.
 
-Never run two Matter servers on the same storage/fabric. The RPi addon is stopped before the cluster server starts, and the RPi's data stays on the RPi as the rollback.
+The Thread network and the SLZB address are **not** changing during this migration (user-confirmed), so the existing UniFi OMR static route and firewall allow stay as they are. Only if a failed migration forces the Thread network to be re-created does the OMR prefix change; then follow the runbook in `docs/src/general/matter-thread.md` to update the route first. Never run two Matter servers on the same storage/fabric. The RPi addon is stopped before the cluster server starts, and the RPi's data stays on the RPi as the rollback.
 
 - [ ] **Step 1: [USER] Stop the RPi's Matter Server addon**
 
@@ -768,7 +768,7 @@ Why macvlan: Music Assistant's docs say that without host networking "player dis
 
 Answers already given: players are **Chromecast and DLNA, all on the Trusted VLAN (`192.168.10.0/24`)**; the UniFi mDNS reflector covers every VLAN; there is **no local music library** (so nothing is mounted at `/media`). Still to confirm with the user:
 1. Which streaming providers are configured (their credentials live in the add-on data and are restored with it; nothing is re-entered in git).
-2. **Firewall (UniFi):** Trusted must be able to reach `192.168.48.62` on **all ports** (Chromecasts and DLNA renderers fetch streams from MA on 8097 and random ports) and `192.168.48.62` must be able to open connections to Trusted (Chromecast control on TCP 8009, DLNA control URLs). Rules are needed in both directions because each side initiates its own connections. Confirm the rules exist or create them.
+2. **Firewall (UniFi):** already resolved. The user confirmed the Trusted ↔ infra zones (which contain VLAN 48 and 50) are allow-all, so `192.168.48.62` needs no new rules. Re-check only if players later move to another zone.
 3. **Devices MA plays to today (user-reported: Samsung TV, Alexa Dot, Xbox, Nvidia Shield, plus Chromecasts) and the expected path for each:**
    - **Nvidia Shield and Chromecasts:** Google Cast provider, discovered over mDNS (works through the reflector).
    - **Samsung TV:** ask the user for the model. 2018+ models support AirPlay 2, so check whether it appears under MA's AirPlay provider (mDNS, works through the reflector); otherwise DLNA (see Step 8).
