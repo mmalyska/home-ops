@@ -529,6 +529,13 @@ Replace `vX.Y.Z` with the release from Step 2. Confirm the manifest's asset URL 
     prune: false
 ```
 
+- [ ] **Step 4b: Apply the Talos guide's Multus requirements** (docs.siderolabs.com → Kubernetes guides → CNI → Multus; read on 2026-10-02, Talos < v1.14 branch):
+  - Raise the Multus daemon limits (upstream's 50Mi can OOM-kill the primary CNI plugin) to requests 200m/100Mi, limits 300m/150Mi: done as a kustomize patch.
+  - Check `talosctl --nodes <ip> list -l /var` shows `run -> /run`; if it does not, patch the `host-run-netns` hostPath to `/var/run/netns/`. Verified on mc1 and nv1: `run -> /run`, no patch needed.
+  - Cilium needs `cni.exclusive=false` or it silently renames `00-multus.conf` to `00-multus.conf.cilium_bak`: live since Task 1.4; after Multus starts, confirm `00-multus.conf` (not a `.cilium_bak`) exists in `/etc/cni/net.d`.
+  - The guide's NAD `dataDir: /run/cni` applies to IPAM plugins that keep leases (host-local, whereabouts). Our NADs use `static` IPAM, which keeps no state, so it is not needed; add it if the IPAM type ever changes.
+  - The guide's primary example bridges the NIC in Talos machine config (`br0`, `bridge` CNI plugin). We deliberately use macvlan on `eth0` (no node network changes, avoids touching the VIP/node IPs), which is why Task 1.5 also installs `macvlan` and `static`.
+
 - [ ] **Step 5: Render and inspect Talos-relevant paths**
 
 ```bash
