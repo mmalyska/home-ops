@@ -766,8 +766,8 @@ Why macvlan: Music Assistant's docs say that without host networking "player dis
 
 - [ ] **Step 1: Recorded answers and remaining [USER] items**
 
-Answers already given: players are **Chromecast and DLNA, all on the Trusted VLAN (`192.168.10.0/24`)**; the UniFi mDNS reflector covers every VLAN; there is **no local music library** (so nothing is mounted at `/media`). Still to confirm with the user:
-1. Which streaming providers are configured (their credentials live in the add-on data and are restored with it; nothing is re-entered in git).
+Answers already given: players are **Chromecast and DLNA, all on the Trusted VLAN (`192.168.10.0/24`)**; the UniFi mDNS reflector covers every VLAN; the music library is **on the QNAP** (correction: an earlier reading of "no library" was wrong). Providers in use: **Spotify, YouTube Music, Tidal and the QNAP files**. Still to confirm with the user:
+1. **How the RPi's MA reaches the QNAP library today**, because the restored provider config stores that path: either (a) a HAOS network-storage mount appearing under `/media/<name>` (Settings → System → Storage) used by MA's "Local filesystem" provider, or (b) MA's own SMB provider (`smb://192.168.50.8/<share>`). Also the QNAP share name/path and whether NFS is enabled for it (NFS is already used for the cluster's cold storage). Streaming-provider credentials (Spotify, YouTube Music, Tidal) live in the add-on data and are restored with it; nothing is re-entered in git, but re-authorization may be requested (checked in Step 8).
 2. **Firewall (UniFi):** already resolved. The user confirmed the Trusted ↔ infra zones (which contain VLAN 48 and 50) are allow-all, so `192.168.48.62` needs no new rules. Re-check only if players later move to another zone.
 3. **Devices MA plays to today (user-reported: Samsung TV, Alexa Dot, Xbox, Nvidia Shield, plus Chromecasts) and the expected path for each:**
    - **Nvidia Shield and Chromecasts:** Google Cast provider, discovered over mDNS (works through the reflector).
@@ -894,7 +894,19 @@ app-template:
         - path: /data
 ```
 
-No `/media` mount is needed (no local library). Use the timezone the user actually runs.
+Add the QNAP library as a read-only NFS volume under `persistence:` (path values come from Step 1 question 1; use the **same container path the restored provider config uses**, for example `/media/<name>`, so the restored Local-filesystem provider needs no edit):
+
+```yaml
+    library:
+      type: nfs
+      server: 192.168.50.8
+      path: <qnap-nfs-export-path>
+      globalMounts:
+        - path: <container-path-from-restored-config>
+          readOnly: true
+```
+
+If the RPi uses MA's SMB provider instead, no volume is needed: the restored `smb://192.168.50.8/<share>` provider works from the pod over `net1`/`eth0` as long as the QNAP is reachable (VLAN 50, allow-all). Note that MA mounting SMB itself may need extra container capabilities (`SYS_ADMIN`, `DAC_READ_SEARCH`) and an AppArmor/seccomp relaxation; prefer the NFS volume above and switch the provider to a Local-filesystem path if SMB mounting fails in the pod. Use the timezone the user actually runs.
 
 - [ ] **Step 3: Verify the render, lint, commit, PR**
 
@@ -970,7 +982,7 @@ Expected: both open.
 
 1. Music Assistant integration in the RPi HA: set the server URL to `http://192.168.48.62:8095` (the pod's `net1` address is routable from VLAN 50; the ClusterIP is not).
 2. In MA → Settings → Providers → Home Assistant: URL of the RPi HA (`http://192.168.50.9:8123`) and the long-lived token from Step 4. The token is never committed.
-3. Acceptance: library, playlists and favorites present; the Chromecasts on Trusted appear in MA's player list (mDNS via the reflector); play a track to each Chromecast and to a group; the queue survives **[CONFIRM]** `kubectl -n ha-music-assistant delete pod -l app.kubernetes.io/name=music-assistant`; the RPi HA's media-player entities control it. 4. **DLNA (known gap, now only the Samsung TV, and only if AirPlay does not work).** MA's DLNA provider documents automatic discovery plus a network scan of its own subnet, and no manual add by IP. SSDP does not cross VLANs (the mDNS reflector only forwards mDNS), so DLNA renderers on Trusted will probably not appear. Check Settings → Players after 5 minutes (the docs say discovery can take that long). If they are missing, in order:
+3. Acceptance: library (including the QNAP files: a track plays from disk), playlists and favorites present; browse and play one item from each of Spotify, YouTube Music and Tidal (if one asks to re-authorize, the user does it in the MA UI; tokens are stored in `/data`); the Chromecasts on Trusted appear in MA's player list (mDNS via the reflector); play a track to each Chromecast and to a group; the queue survives **[CONFIRM]** `kubectl -n ha-music-assistant delete pod -l app.kubernetes.io/name=music-assistant`; the RPi HA's media-player entities control it. 4. **DLNA (known gap, now only the Samsung TV, and only if AirPlay does not work).** MA's DLNA provider documents automatic discovery plus a network scan of its own subnet, and no manual add by IP. SSDP does not cross VLANs (the mDNS reflector only forwards mDNS), so DLNA renderers on Trusted will probably not appear. Check Settings → Players after 5 minutes (the docs say discovery can take that long). If they are missing, in order:
    - **a. Add them to Home Assistant instead.** The HA `dlna_dmr` integration accepts a manual device-description URL (find it in the device's UPnP description, usually `http://<device-ip>:<port>/description.xml`), and MA's Home Assistant provider can expose selected HA `media_player` entities as MA players. Streams still come from MA at `192.168.48.62`, so the firewall rules from Step 1 apply. Verify with a real playback; if MA does not offer the entity as a player, go to b.
    - **b. Give the MA pod a second macvlan interface on the Trusted VLAN.** This needs VLAN 10 tagged on the node ports in UniFi, a Talos VLAN sub-interface (`eth0.10`) in `provision/talos/nodes/*.yaml`, and a second NetworkAttachmentDefinition on it. It restores SSDP/mDNS/broadcast on Trusted but puts the nodes on Trusted at L2 (bypassing inter-VLAN firewall rules), so it needs an explicit user decision and its own task before use.
    - **c. Drop DLNA for those devices** if Chromecast or another path covers them.
