@@ -17,6 +17,10 @@ spec:
   {{- end }}
   persistence:
     storage: {{ .Values.storage.size }}
+  {{- with .Values.service }}
+  service:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- with .Values.resources }}
   resources:
     {{- toYaml . | nindent 4 }}

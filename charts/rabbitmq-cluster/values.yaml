@@ -1,6 +1,7 @@
 name: ""
 replicas: 1
 image: ""
+service: {}
 storage:
   size: 5Gi
 resources: {}
