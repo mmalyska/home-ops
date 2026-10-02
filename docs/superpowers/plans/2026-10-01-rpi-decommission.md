@@ -316,7 +316,7 @@ app-template:
         - path: /app/data
 ```
 
-Replace `<TAG>`/`<DIGEST>` with the values from Step 1 and the user's timezone if it differs.
+Replace `<TAG>`/`<DIGEST>` with the values from Step 1 (timezone `Europe/Warsaw` is user-confirmed).
 
 - [ ] **Step 5: Create `templates/externalsecret.yaml`**
 
@@ -906,7 +906,7 @@ Add the QNAP library as a read-only NFS volume under `persistence:` (path values
           readOnly: true
 ```
 
-If the RPi uses MA's SMB provider instead, no volume is needed: the restored `smb://192.168.50.8/<share>` provider works from the pod over `net1`/`eth0` as long as the QNAP is reachable (VLAN 50, allow-all). Note that MA mounting SMB itself may need extra container capabilities (`SYS_ADMIN`, `DAC_READ_SEARCH`) and an AppArmor/seccomp relaxation; prefer the NFS volume above and switch the provider to a Local-filesystem path if SMB mounting fails in the pod. Use the timezone the user actually runs.
+If the RPi uses MA's SMB provider instead, no volume is needed: the restored `smb://192.168.50.8/<share>` provider works from the pod over `net1`/`eth0` as long as the QNAP is reachable (VLAN 50, allow-all). Note that MA mounting SMB itself may need extra container capabilities (`SYS_ADMIN`, `DAC_READ_SEARCH`) and an AppArmor/seccomp relaxation; prefer the NFS volume above and switch the provider to a Local-filesystem path if SMB mounting fails in the pod. Timezone `Europe/Warsaw` is user-confirmed.
 
 - [ ] **Step 3: Verify the render, lint, commit, PR**
 
