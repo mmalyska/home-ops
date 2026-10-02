@@ -10,7 +10,7 @@ app-template:
   controllers:
     main:
       strategy: Recreate
-      replicas: 0 # data restore first (Task 1.7); flipped to 1 there
+      replicas: 1
       pod:
         annotations:
           k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.61/24"]}]'
