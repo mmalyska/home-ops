@@ -1600,7 +1600,7 @@ Branch: `chore/rpi-decommission`
 
 - [ ] **Step 1: [USER] Retention window**
 
-Keep the RPi powered off with its SD card/backup for N days (agree on N with the user, suggested 14). During the window nothing should have used it: re-check AdGuard queries by client and the `hass.<domain>` access logs for the old path.
+Keep the RPi powered off with its SD card/backup for **14 days** (user-confirmed). During the window nothing should have used it: re-check AdGuard queries by client and the `hass.<domain>` access logs for the old path.
 
 - [ ] **Step 2: Docs and memory**
 
