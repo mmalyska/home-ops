@@ -771,9 +771,9 @@ Answers already given: players are **Chromecast and DLNA, all on the Trusted VLA
 2. **Firewall (UniFi):** already resolved. The user confirmed the Trusted ↔ infra zones (which contain VLAN 48 and 50) are allow-all, so `192.168.48.62` needs no new rules. Re-check only if players later move to another zone.
 3. **Devices MA plays to today (user-reported: Samsung TV, Alexa Dot, Xbox, Nvidia Shield, plus Chromecasts) and the expected path for each:**
    - **Nvidia Shield and Chromecasts:** Google Cast provider, discovered over mDNS (works through the reflector).
-   - **Samsung TV:** ask the user for the model. 2018+ models support AirPlay 2, so check whether it appears under MA's AirPlay provider (mDNS, works through the reflector); otherwise DLNA (see Step 8).
+   - **Samsung TV (QE55Q67T, 2020 QLED):** should support AirPlay 2; ask the user to confirm it is enabled on the TV (Settings → General → Apple AirPlay Settings) and check whether it appears under MA's AirPlay provider (mDNS, works through the reflector); otherwise DLNA (see Step 8).
    - **Xbox:** MA has no Xbox provider; HA's `xbox` integration controls but does not stream. Ask whether the user really plays music to it; if not, drop it.
-   - **Alexa Dot:** ask whether the user uses MA's Alexa provider today. It is a custom Alexa skill (Amazon developer account, Amazon login with 2FA) and needs **public HTTPS (443) endpoints for both the skill service and MA's stream server**, so using it in the cluster means exposing MA through `envoy-external`. That is **outside this plan's scope**; if the user uses it, stop and agree a separate task (and note MA's own warning that playback/volume state reporting is unreliable).
+   - **Alexa Dot:** not used with MA (user-confirmed); nothing to migrate and no public exposure needed.
 
 - [ ] **Step 2: Create the branch, pin the image, write the files**
 
