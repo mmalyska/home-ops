@@ -72,6 +72,8 @@ spec:
           command: ["sleep", "2147483647"]
           securityContext:
             runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
