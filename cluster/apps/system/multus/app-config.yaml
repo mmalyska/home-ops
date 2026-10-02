@@ -1,0 +1,7 @@
+- enabled: "true"
+  namespace: kube-system
+  syncWave: "-4"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

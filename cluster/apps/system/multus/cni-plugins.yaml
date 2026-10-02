@@ -1,0 +1,90 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cni-plugins-installer
+  namespace: kube-system
+  labels:
+    app: cni-plugins-installer
+spec:
+  selector:
+    matchLabels:
+      app: cni-plugins-installer
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: cni-plugins-installer
+    spec:
+      # only the control-plane nodes (mc1-mc3) host macvlan workloads
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: install
+          image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              VERSION=v1.9.1
+              case "$(uname -m)" in
+                x86_64)  ARCH=amd64; SUM=b98f74a0f8522f0a83867178729c1aa70f2158f90c45a2ca8fa791db1c76b303 ;;
+                aarch64) ARCH=arm64; SUM=56171987d3947707c3563db2f4001bccaf50fd63468611b9f3cbecb1375ee7ec ;;
+                *) echo "unsupported arch $(uname -m)"; exit 1 ;;
+              esac
+              cd /tmp
+              curl -fsSL --retry 5 --retry-delay 3 -o plugins.tgz \
+                "https://github.com/containernetworking/plugins/releases/download/${VERSION}/cni-plugins-linux-${ARCH}-${VERSION}.tgz"
+              echo "${SUM}  plugins.tgz" | sha256sum -c -
+              mkdir out
+              tar -xzf plugins.tgz -C out ./macvlan ./static
+              for p in macvlan static; do
+                cp "out/${p}" "/host/opt/cni/bin/${p}.tmp"
+                chmod 0755 "/host/opt/cni/bin/${p}.tmp"
+                mv -f "/host/opt/cni/bin/${p}.tmp" "/host/opt/cni/bin/${p}"
+              done
+              ls -l /host/opt/cni/bin/macvlan /host/opt/cni/bin/static
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+      containers:
+        - name: idle
+          image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+          command: ["sleep", "2147483647"]
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 16Mi
+      volumes:
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin
+            type: Directory
