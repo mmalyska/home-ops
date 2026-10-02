@@ -1,0 +1,50 @@
+app-template:
+  defaultPodOptions:
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      fsGroupChangePolicy: "OnRootMismatch"
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+  controllers:
+    main:
+      strategy: Recreate
+      replicas: 0 # data restore first (Task 1.7); flipped to 1 there
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.61/24"]}]'
+      containers:
+        main:
+          image:
+            repository: ghcr.io/matter-js/matterjs-server
+            tag: 1.4.0@sha256:54232d0d3e7dff5a54759469d2753399270412b4c30c55b31750a4595e4cb236
+          args:
+            - --storage-path
+            - /data
+            - --primary-interface
+            - net1
+            - --enable-time-sync
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+  service:
+    main:
+      controller: main
+      ports:
+        ws:
+          port: 5580
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /data
