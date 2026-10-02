@@ -7,7 +7,7 @@ app-template:
       fsGroupChangePolicy: "OnRootMismatch"
   controllers:
     main:
-      replicas: 0 # data restore first (Task 1.2); flipped to 1 in Task 1.3
+      replicas: 1
       strategy: Recreate
       containers:
         main:
