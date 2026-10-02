@@ -3,6 +3,8 @@ cilium:
     mode: kubernetes
   policyEnforcementMode: "default"
   kubeProxyReplacement: true
+  cni:
+    exclusive: false # let Multus chain its config next to Cilium's
   k8sServiceHost: localhost
   k8sServicePort: 7445 # kubeprism port
   l2announcements:
