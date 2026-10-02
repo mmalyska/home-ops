@@ -628,6 +628,10 @@ app-template:
             - /data
             - --primary-interface
             - net1
+            - --fabricid
+            - "2"
+            - --vendorid
+            - "4939"
             - --enable-time-sync
           securityContext:
             allowPrivilegeEscalation: false
@@ -654,7 +658,7 @@ app-template:
         - path: /data
 ```
 
-`--enable-time-sync` mirrors the addon's default (`time_sync: auto`, on when the host clock is NTP-synchronized; the nodes are). The WebSocket on `net1` is unauthenticated and reachable from the LAN; it is needed on `net1` only while the RPi's HA is the client, and Task 4.2 restricts the listen address to the pod's cluster IP afterwards.
+**`--fabricid 2 --vendorid 4939` are mandatory** (found on the first start, 2026-10-02): the addon's run script passes them, and together they select the stored fabric `server-2-134b`. Without them the server defaults to fabric 1 / vendor `0xfff1`, logs `Using new server ID format: server-1-fff1` and `Found 0 nodes`, and silently creates a new empty fabric next to the restored data. `--enable-time-sync` mirrors the addon's default (`time_sync: auto`, on when the host clock is NTP-synchronized; the nodes are). The WebSocket on `net1` is unauthenticated and reachable from the LAN; it is needed on `net1` only while the RPi's HA is the client, and Task 4.2 restricts the listen address to the pod's cluster IP afterwards.
 
 - [ ] **Step 4: Verify, lint, commit, PR**
 
@@ -743,6 +747,9 @@ gh pr create --base main --title "feat(matter-server): start Matter server" --bo
 ```
 
 - [ ] **Step 6: Verify the server (read-only)**
+
+First read the start-up log for the store it opened: it must be `server-2-134b` and the controller must list the restored nodes (here 3 Thread nodes plus any Wi-Fi ones; `nextNodeId` was 9). `server-1-fff1` or `Found 0 nodes` means the fabric/vendor args are wrong: stop and fix the args before anything else (nothing may connect to the wrong store).
+
 
 ```bash
 kubectl -n ha-matter-server logs deploy/matter-server --tail=60
