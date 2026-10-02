@@ -133,10 +133,17 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 | `192.168.48.21` | `envoy-internal` gateway |
 | `192.168.48.22` | Jellyfin |
 | `192.168.48.23` | Minecraft Bedrock |
+| `192.168.48.26` | MQTT broker (RabbitMQ, `mqtt.PRIVATE_DOMAIN`) |
 | `192.168.48.27` | Home automation (Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
 | `192.168.48.29` | WoW (auth + world server) |
 | `192.168.48.30` | anytype any-sync services |
 | `192.168.48.254` | UCG-Max — VLAN 48 gateway, also the nodes' NTP source |
 | `192.168.50.8` | QNAP NAS |
-| `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon |
+| `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
+
+## MQTT and Zigbee2MQTT
+
+The MQTT broker is RabbitMQ with the MQTT plugin (`home-automation/rabbitmq`, namespace `ha-rabbitmq`). It is exposed on `192.168.48.26:1883` (`mqtt.PRIVATE_DOMAIN`) for LAN clients such as the RPi's Home Assistant; in-cluster clients use `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local:1883`. The same Cilium LoadBalancer also exposes AMQP (5672), the management UI (15672) and metrics (15692) on that IP.
+
+Zigbee2MQTT (`home-automation/zigbee2mqtt`, namespace `ha-zigbee2mqtt`) talks to the SLZB-MR4U Zigbee coordinator over TCP (`tcp://192.168.50.239:7638`, `zstack` adapter). Its data (`configuration.yaml`, `database.db`, coordinator backup) lives on a Ceph PVC; the Zigbee network key is part of that data and is never committed. The frontend is at `z2m.PRIVATE_DOMAIN` on `envoy-internal`. Only one Zigbee2MQTT may own the coordinator: the RPi's addon is stopped and must stay stopped.
