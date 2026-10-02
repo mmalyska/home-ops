@@ -138,6 +138,7 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 | `192.168.48.28` | Vintage Story |
 | `192.168.48.29` | WoW (auth + world server) |
 | `192.168.48.30` | anytype any-sync services |
+| `192.168.48.60–.69` | Reserved for pods with a Multus macvlan `net1` interface (outside the Cilium LB pool): `.61` Matter server (live); `.60` Home Assistant and `.62` Music Assistant are planned |
 | `192.168.48.254` | UCG-Max — VLAN 48 gateway, also the nodes' NTP source |
 | `192.168.50.8` | QNAP NAS |
 | `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
@@ -147,3 +148,14 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 The MQTT broker is RabbitMQ with the MQTT plugin (`home-automation/rabbitmq`, namespace `ha-rabbitmq`). It is exposed on `192.168.48.26:1883` (`mqtt.PRIVATE_DOMAIN`) for LAN clients such as the RPi's Home Assistant; in-cluster clients use `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local:1883`. The same Cilium LoadBalancer also exposes AMQP (5672), the management UI (15672) and metrics (15692) on that IP.
 
 Zigbee2MQTT (`home-automation/zigbee2mqtt`, namespace `ha-zigbee2mqtt`) talks to the SLZB-MR4U Zigbee coordinator over TCP (`tcp://192.168.50.239:7638`, `zstack` adapter). Its data (`configuration.yaml`, `database.db`, coordinator backup) lives on a Ceph PVC; the Zigbee network key is part of that data and is never committed. The frontend is at `z2m.PRIVATE_DOMAIN` on `envoy-internal`. Only one Zigbee2MQTT may own the coordinator: the RPi's addon is stopped and must stay stopped.
+
+## Pods with their own VLAN 48 address (Multus macvlan)
+
+Some workloads need real LAN presence (mDNS, IPv6 to the Thread network, unrestricted ports to players), which a pod on the Cilium network cannot give them. They get a second interface, `net1`, a macvlan on the node's `eth0` on VLAN 48 with a static IP from the reserved block (`192.168.48.60–.69`). The cluster-side parts live in `cluster/apps/core/cilium` (`cni.exclusive: false`) and `cluster/apps/system/multus` (Multus thick plus a small DaemonSet that installs the `macvlan` and `static` CNI plugins, which Talos does not ship). The NetworkAttachmentDefinition is named `vlan48` and is defined in each consuming app's namespace; such pods are pinned to the control-plane nodes (`mc1`–`mc3`, parent interface `eth0`).
+
+What the setup relies on (all verified from a test pod on `net1` on 2026-10-02):
+
+- **IPv6 on VLAN 48:** UniFi Router Advertisements/SLAAC are enabled on the network, so `net1` gets a `fd80:c04a:5687:48::/64` address and a default route via the gateway. The Talos nodes also pick up addresses in that prefix; Kubernetes still reports only their IPv4 addresses as node IPs.
+- **Thread network:** the UniFi static route to the OMR prefix (see `matter-thread.md`) works from VLAN 48; a traceroute from `net1` goes gateway, then the SLZB border router.
+- **mDNS:** the UniFi mDNS reflector must forward the relevant services to VLAN 48 (Google Cast, Matter, Thread TREL and Spotify Connect were seen arriving; AirPlay and MeshCoP were not).
+- **macvlan host isolation:** a pod's `net1` cannot talk to its own node's addresses, including a LoadBalancer IP that node announces. In-cluster consumers must use `*.svc.cluster.local` names, never LB IPs.
