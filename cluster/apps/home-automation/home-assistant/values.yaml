@@ -46,9 +46,7 @@ app-template:
     main:
       type: statefulset
       strategy: RollingUpdate
-      # Held at 0 until the restored config is copied into the PVC (Task 3.2); an empty
-      # config directory would otherwise be initialised by a first start.
-      replicas: 0
+      replicas: 1
       pod:
         annotations:
           k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.60/24"]}]'
