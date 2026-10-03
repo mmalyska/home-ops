@@ -1,5 +1,0 @@
----
-apiVersion: v2
-name: rabbitmq-cluster
-type: application
-version: 1.0.0
