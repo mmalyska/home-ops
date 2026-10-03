@@ -1,0 +1,100 @@
+---
+# Eclipse Mosquitto replaces RabbitMQ's MQTT plugin: the plugin never sends retained messages to
+# wildcard subscriptions, which is how Home Assistant discovers MQTT devices after a restart.
+app-template:
+  defaultPodOptions:
+    securityContext:
+      runAsUser: 1883
+      runAsGroup: 1883
+      runAsNonRoot: true
+      fsGroup: 1883
+      fsGroupChangePolicy: "OnRootMismatch"
+  controllers:
+    main:
+      strategy: Recreate
+      replicas: 1
+      initContainers:
+        passwd:
+          image: &image
+            repository: eclipse-mosquitto
+            tag: 2.1.2-alpine@sha256:38c0da4f2ef84284d47b3b3eeea1cb3bdeabe81ee10caf0cd5c5ff61ee3ea408
+          envFrom:
+            - secretRef:
+                name: mosquitto-secret
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              f=/mosquitto/generated/passwd
+              : > $f
+              mosquitto_passwd -b $f "$HOME_ASSISTANT_USERNAME" "$HOME_ASSISTANT_PASSWORD"
+              mosquitto_passwd -b $f "$ZIGBEE2MQTT_USERNAME" "$ZIGBEE2MQTT_PASSWORD"
+              chmod 0600 $f
+      containers:
+        main:
+          image: *image
+          probes:
+            liveness: &probe
+              enabled: true
+              custom: true
+              spec:
+                tcpSocket:
+                  port: 1883
+                initialDelaySeconds: 5
+                periodSeconds: 10
+                timeoutSeconds: 3
+            readiness: *probe
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 128Mi
+  service:
+    main:
+      controller: main
+      ports:
+        mqtt:
+          port: 1883
+  configMaps:
+    config:
+      data:
+        mosquitto.conf: |
+          listener 1883
+          allow_anonymous false
+          password_file /mosquitto/generated/passwd
+          persistence true
+          persistence_location /mosquitto/data/
+          autosave_interval 60
+          log_dest stdout
+          log_type error
+          log_type warning
+          log_type notice
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      advancedMounts:
+        main:
+          main:
+            - path: /mosquitto/data
+    config:
+      type: configMap
+      identifier: config
+      advancedMounts:
+        main:
+          main:
+            - path: /mosquitto/config/mosquitto.conf
+              subPath: mosquitto.conf
+              readOnly: true
+    generated:
+      type: emptyDir
+      advancedMounts:
+        main:
+          passwd:
+            - path: /mosquitto/generated
+          main:
+            - path: /mosquitto/generated
+              readOnly: true
