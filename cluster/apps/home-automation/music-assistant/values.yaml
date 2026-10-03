@@ -1,0 +1,61 @@
+app-template:
+  defaultPodOptions:
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+  controllers:
+    main:
+      strategy: Recreate
+      replicas: 0 # data restore first (Step 5); flipped to 1 in Step 6
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.62/24"]}]'
+      containers:
+        main:
+          image:
+            repository: ghcr.io/music-assistant/server
+            tag: 2.10.5@sha256:28023f8c0d96ca2496391f3218a6d70d7ef3ba84db846b3a3f3cd9ce7ef8aedc
+          env:
+            TZ: Europe/Warsaw
+            LOG_LEVEL: info
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+  service:
+    main:
+      controller: main
+      ports:
+        http:
+          port: 8095
+        stream:
+          port: 8097
+  route:
+    main:
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - ma.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: main
+              port: http
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      globalMounts:
+        - path: /data
+    library:
+      type: nfs
+      server: 192.168.50.8
+      path: /music
+      globalMounts:
+        - path: /media/music
+          readOnly: true
