@@ -1,8 +1,8 @@
 # Matter over Thread
 
 The Thread border router (SLZB-MR4U running OTBR, VLAN 50) is **not** managed in
-this repo. The production Home Assistant (HAOS on the RPi) is being migrated into
-the cluster; the Matter server already runs in the cluster (see below). This page records the network
+this repo. Home Assistant and the Matter server run in the cluster
+(`home-automation/home-assistant`, `matter-server`; the RPi's HAOS was stopped on 2026-10-04). This page records the network
 configuration that makes commissioning Matter devices work from a phone on the
 Trusted VLAN, so it can be redone after a reset or rebuild.
 

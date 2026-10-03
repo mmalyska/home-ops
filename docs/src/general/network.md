@@ -15,7 +15,7 @@ flowchart TB
 
     subgraph GAR[Garage rack]
         SW[USW-Pro-Max-16-PoE\ncore switch]
-        RPi[Raspberry Pi 4B\nHAOS + AdGuard Home addon\n192.168.50.9]
+        RPi[Raspberry Pi 4B\nstopped 2026-10-04, retained until 2026-10-17\nUPS NUT server\n192.168.50.9]
         AP1[U7 Pro - salon]
         AP2[U7 Pro - upper floor]
     end
@@ -194,7 +194,7 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.69` | Reserved for temporary test pods that verify a macvlan attachment |
 | `192.168.48.254` | UCG-Max, VLAN 48 gateway |
 | `192.168.50.8` | QNAP NAS |
-| `192.168.50.9` | RPi, HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
+| `192.168.50.9` | RPi (HAOS), stopped. Home Assistant, AdGuard Home, MQTT, Zigbee2MQTT, Matter and Music Assistant all moved to the cluster (2026-10-02 to 2026-10-04); kept powered off until 2026-10-17. It was also the UPS NUT server the Talos nodes monitor (`qnapups@192.168.50.9`): see the open item in the Talos config before retiring it |
 | `192.168.50.239` | SLZB-MR4U (Zigbee coordinator socket `:7638` and Thread border router) |
 
 ### Check before assigning an address
