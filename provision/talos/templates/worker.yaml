@@ -18,7 +18,11 @@ machine:
     defaultRuntimeSeccompProfileEnabled: true
     disableManifestsDirectory: true
   network:
+    # Internal-only names (s3, qnap, the OIDC issuer, ...) exist only in AdGuard, so it must come
+    # first; the UCG-Max (public names only) is the fallback if AdGuard is unreachable. Interim:
+    # the RPi's AdGuard until the in-cluster instances (192.168.48.25 / .31) take over.
     nameservers:
+      - 192.168.50.9
       - 192.168.48.254
   install:
     disk: /dev/nvme0n1
