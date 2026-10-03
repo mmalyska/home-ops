@@ -181,7 +181,7 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.24` | `alloy-router-syslog` (monitoring: router syslog receiver) |
 | `192.168.48.25` | AdGuard Home primary (DNS, live; IPv6 `fd80:c04a:5687:48::25`) |
-| `192.168.48.26` | MQTT broker (RabbitMQ, `mqtt.PRIVATE_DOMAIN`) |
+| `192.168.48.26` | MQTT broker (Mosquitto, `mqtt.PRIVATE_DOMAIN`) |
 | `192.168.48.27` | Home automation voice services, shared (Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
 | `192.168.48.29` | WoW, shared (auth and world server) |
@@ -217,7 +217,7 @@ Also grep the repo (`grep -rn "192.168.48.XX" cluster provision docs`) for stati
 
 ## MQTT and Zigbee2MQTT
 
-The MQTT broker is RabbitMQ with the MQTT plugin (`home-automation/rabbitmq`, namespace `ha-rabbitmq`). It is exposed on `192.168.48.26:1883` (`mqtt.PRIVATE_DOMAIN`) for LAN clients such as the RPi's Home Assistant; in-cluster clients use `home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local:1883`. The same Cilium LoadBalancer also exposes AMQP (5672), the management UI (15672) and metrics (15692) on that IP.
+The MQTT broker is Eclipse Mosquitto (`home-automation/mosquitto`, namespace `ha-mosquitto`). It is exposed on `192.168.48.26:1883` (`mqtt.PRIVATE_DOMAIN`) for LAN clients; in-cluster clients use `mosquitto.ha-mosquitto.svc.cluster.local:1883`. Users (Home Assistant, Zigbee2MQTT) come from Bitwarden and the password file is generated at pod start; messages are persisted on a PVC. It replaced RabbitMQ's MQTT plugin because RabbitMQ never sends retained messages to wildcard subscriptions, so Home Assistant lost all MQTT-discovered entities (Zigbee2MQTT devices) after every restart.
 
 Zigbee2MQTT (`home-automation/zigbee2mqtt`, namespace `ha-zigbee2mqtt`) talks to the SLZB-MR4U Zigbee coordinator over TCP (`tcp://192.168.50.239:7638`, `zstack` adapter). Its data (`configuration.yaml`, `database.db`, coordinator backup) lives on a Ceph PVC; the Zigbee network key is part of that data and is never committed. The frontend is at `z2m.PRIVATE_DOMAIN` on `envoy-internal`. Only one Zigbee2MQTT may own the coordinator: the RPi's addon is stopped and must stay stopped.
 

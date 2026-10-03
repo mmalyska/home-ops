@@ -1,9 +1,8 @@
 rabbitmq-cluster:
   name: home-assistant-mqtt
+  # 192.168.48.26 now belongs to Mosquitto
   service:
-    type: LoadBalancer
-    annotations:
-      lbipam.cilium.io/ips: "192.168.48.26"
+    type: ClusterIP
   additionalPlugins:
     - rabbitmq_mqtt
   additionalConfig: |

@@ -54,6 +54,9 @@ app-template:
   service:
     main:
       controller: main
+      type: LoadBalancer
+      annotations:
+        lbipam.cilium.io/ips: "192.168.48.26"
       ports:
         mqtt:
           port: 1883
