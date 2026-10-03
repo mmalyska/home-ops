@@ -120,7 +120,7 @@ app-template:
           namespace: envoy-gateway
           sectionName: https
       hostnames:
-        - dom-code.<secret:private-domain>
+        - hass-code.<secret:private-domain>
       rules:
         - backendRefs:
             - identifier: codeserver
