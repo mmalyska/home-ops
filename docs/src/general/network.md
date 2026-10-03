@@ -15,7 +15,7 @@ flowchart TB
 
     subgraph GAR[Garage rack]
         SW[USW-Pro-Max-16-PoE\ncore switch]
-        RPi[Raspberry Pi 4B\nHAOS + AdGuard Home addon\n192.168.50.9]
+        RPi[Raspberry Pi 4B\nstopped 2026-10-04\nretained until 2026-10-17\n192.168.50.9]
         AP1[U7 Pro - salon]
         AP2[U7 Pro - upper floor]
     end
@@ -143,6 +143,10 @@ There are no static external records any more (the old `haas.PRIVATE_DOMAIN` CNA
 
 HTTPRoutes attached to `envoy-external` are automatically published to Cloudflare by external-dns.
 
+## UPS monitoring (NUT)
+
+The CyberPower UPS is connected by USB to the **QNAP**, which serves it over NUT (`qnapups` on `192.168.50.8:3493`; the QNAP only answers the IPs on its allow list: the four node IPs `192.168.48.2-5`, plus anything else added there). The Talos control-plane nodes run the `nut-client` extension (`provision/talos/templates/extension-nut-client.yaml`) as secondaries: `MONITOR ${TALHELPER_UPSMONHOST} 1 ${TALHELPER_UPSMONUSER} ...`. `TALHELPER_UPSMONHOST` (`qnapups@192.168.50.8`), the user and the password are Bitwarden values read through `.envrc`, so a change needs Bitwarden first, then `task talos:generate` and `talosctl apply-config` per node (the extension service restarts on its own, no reboot). nv1 has no NUT extension. Until 2026-10-04 the NUT server was the RPi (`qnapups@192.168.50.9`); moving the USB cable to the QNAP removed that dependency. Check with `talosctl -n <node> logs ext-nut-client`: it should show `UPS: qnapups@... (secondary)` and no `connect failed`.
+
 ## External Access via Cloudflare Tunnel
 
 `cloudflared` runs 2 replicas in the cluster and connects to Cloudflare's network. Incoming requests from the internet are routed by Cloudflare to the `envoy-external` gateway. No ports need to be forwarded on the home router.
@@ -193,8 +197,8 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.62` | Music Assistant (macvlan `net1`, live) |
 | `192.168.48.69` | Reserved for temporary test pods that verify a macvlan attachment |
 | `192.168.48.254` | UCG-Max, VLAN 48 gateway |
-| `192.168.50.8` | QNAP NAS |
-| `192.168.50.9` | RPi, HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
+| `192.168.50.8` | QNAP NAS (also the UPS NUT server, see below) |
+| `192.168.50.9` | RPi (HAOS), stopped. Home Assistant, AdGuard Home, MQTT, Zigbee2MQTT, Matter and Music Assistant all moved to the cluster (2026-10-02 to 2026-10-04); kept powered off until 2026-10-17 |
 | `192.168.50.239` | SLZB-MR4U (Zigbee coordinator socket `:7638` and Thread border router) |
 
 ### Check before assigning an address
