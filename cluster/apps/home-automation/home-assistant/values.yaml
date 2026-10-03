@@ -101,11 +101,14 @@ app-template:
       annotations:
         external-dns.alpha.kubernetes.io/controller: dns-controller
       parentRefs:
+        - name: envoy-external
+          namespace: envoy-gateway
+          sectionName: https
         - name: envoy-internal
           namespace: envoy-gateway
           sectionName: https
       hostnames:
-        - dom.<secret:private-domain>
+        - hass.<secret:private-domain>
       rules:
         - backendRefs:
             - identifier: main
