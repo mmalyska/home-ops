@@ -32,6 +32,10 @@ app-template:
             - --vendorid
             - "4939"
             - --enable-time-sync
+            # The WebSocket API is unauthenticated: bind it to the pod network (eth0, reached by Home
+            # Assistant through the Service) instead of every interface, which includes the LAN-facing net1.
+            - --listen-address
+            - eth0
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
