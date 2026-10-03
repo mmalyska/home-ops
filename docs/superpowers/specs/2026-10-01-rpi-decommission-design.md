@@ -23,7 +23,8 @@ Decommission the Raspberry Pi (`192.168.50.9`, HAOS) and run everything it hosts
 - `provision/talos/templates/controlplane.yaml` sets `machine.network.nameservers` to `192.168.50.9` (RPi AdGuard). Must change to `192.168.48.254` before the RPi is retired or AdGuard moves in-cluster, otherwise nodes depend on their own DNS.
 - `cluster/apps/default/hass-proxy` publishes `hass.<domain>` on **both** `envoy-external` and `envoy-internal` (backend: RPi); `agh-proxy` publishes `agh.<domain>` on `envoy-internal`. Cutover swaps backends; hostnames and external access are preserved.
 - `cluster/apps/system/adguard-dns` is only external-dns (webhook provider) writing to the RPi's AdGuard via `ADGUARD_URL`; no AdGuard server exists in-cluster.
-- Free Cilium LB IPs: `.24`, `.25`, `.26`, `.31–.50` (`.22` Jellyfin, `.23` Minecraft, `.27–.30` taken).
+- Cilium LB IPAM has two pools without selectors (`pool` `.20–.50`, `coder-pool` `.51–.70`, now `.51–.59`). Free in the main pool: `.25` and `.31–.50`; `.24` is `alloy-router-syslog`, `.26` MQTT, `.22/.23/.27–.30` other services. The authoritative table is `docs/src/general/network.md`.
+- The RPi's AdGuard config has no users (login via HA ingress), DHCP disabled, and external-dns writes its records into `user_rules` (`$dnsrewrite` plus TXT ownership), not the rewrites list. external-dns reaches AdGuard via the `agh-proxy` route (`https://agh.<domain>/control`), so repointing that route is enough.
 - Cilium has no `cni.exclusive` setting (default `true`), which removes other CNI configs; Multus requires `cni.exclusive: false`.
 - `mc1`–`mc3` use NIC `eth0`; `nv1` uses `enP8p1s0`. macvlan attachments name the parent, so HA and Matter are pinned to `mc1`–`mc3`.
 - The existing HA test app (`ha-home-assistant`, `enabled: "false"`) already has an app-template StatefulSet, code-server sidecar, CNPG recorder DB and an `envoy-internal` route at `dom.<domain>`.
@@ -57,12 +58,12 @@ Each phase can be stopped after, and phases 0–2 can be reverted by pointing HA
 ### Phase 2 — DNS and ad-blocking
 
 - Move Talos nameserver to `192.168.48.254` first (Talos config change; requires explicit user confirmation before apply).
-- Two AdGuard Home StatefulSets (app-template), each with its own Ceph PVC, pod anti-affinity, LB IPs `192.168.48.24` (primary) and `192.168.48.25` (replica). Admin credentials via ExternalSecret.
+- Two AdGuard Home Deployments (app-template, `adguard/adguardhome` stable), each with its own Ceph PVC, required pod anti-affinity, on the control-plane nodes, with LB IPs `192.168.48.25` (primary) and `192.168.48.31` (replica), both `externalTrafficPolicy: Local` so real client IPs are kept. Admin user (the RPi's config had none) from the existing Bitwarden credentials via ExternalSecret; `adguardhome-sync` runs primary to replica.
 - `adguardhome-sync` replicates primary → replica (settings, filters, rewrites, clients).
 - Repoint `adguard-dns` external-dns (`ADGUARD_URL`) and `agh-proxy` to the primary.
 - Upstreams: public DoH, plus conditional forwarding of the local zone and private reverse DNS to `192.168.48.254`.
 - One-time import from the RPi's `AdGuardHome.yaml`: lists, rewrites (`k8s.` VIP, `qnap.`), clients; RPi-specific settings dropped.
-- DHCP: shorten leases a day ahead; UniFi hands out `.24` and `.25` on all VLANs. Before RPi shutdown, check its AdGuard query log for clients still using it (static DNS settings).
+- DHCP: shorten leases a day ahead; UniFi hands out `.25` and `.31` on all VLANs (check each VLAN's IPv6 DNS setting too: the LB addresses are IPv4 only). Before RPi shutdown, check its AdGuard query log for clients still using it (static DNS settings).
 - **Done when:** `dig` against both IPs from several VLANs returns correct internal records and blocklist hits; RPi AdGuard query volume is ~0.
 
 ### Phase 3 — Home Assistant restore

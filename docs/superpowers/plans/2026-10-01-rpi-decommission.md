@@ -18,7 +18,7 @@
 - Never write the private domain literally (comments, docs, memory). Use the `<secret:private-domain>` token in manifests and `<domain>` in prose.
 - Hostnames in non-Secret fields need `SECRET_PROVIDER: cluster-secrets` in the app's `app-config.yaml`.
 - HTTPRoutes use annotation `external-dns.alpha.kubernetes.io/controller: dns-controller`; DNSEndpoints use `internal`.
-- Cilium LB pool is `192.168.48.20–50`. Allocations in this plan: `.24` AdGuard primary, `.25` AdGuard replica, `.26` MQTT. Macvlan pod block `192.168.48.60–.69` (outside the pool): `.60` Home Assistant, `.61` Matter server, `.62` Music Assistant.
+- Cilium LB pool is `192.168.48.20–50`. Allocations in this plan: `.25` AdGuard primary, `.31` AdGuard replica, `.26` MQTT (`.24` is already used by `alloy-router-syslog`; see the IP table in `docs/src/general/network.md`, and run its "check before assigning" commands before taking any address). Macvlan pod block `192.168.48.60–.69` (outside the pool): `.60` Home Assistant, `.61` Matter server, `.62` Music Assistant.
 - **Never mutate cluster state** (`kubectl apply/delete/patch/cp/scale`, ArgoCD sync, `talosctl apply`) without explicit user confirmation. Steps marked **[CONFIRM]** stop and ask. Read-only `kubectl get/logs/describe` and `talosctl ls/read` are free.
 - Talos nodes `mc1`–`mc3` NIC is `eth0`; `nv1` (worker) is `enP8p1s0`. HA and Matter are pinned to control-plane nodes via `nodeSelector: node-role.kubernetes.io/control-plane: ""`.
 - Never edit generated files in `provision/talos/clusterconfig/`; regenerate with `task talos:generate`.
@@ -1038,398 +1038,42 @@ Add `.62` (Music Assistant) and `ma.<domain>` to `docs/src/general/network.md` a
 
 # PHASE 2 — DNS and ad-blocking
 
-### Task 2.1: Move Talos nodes off the RPi's DNS **[CONFIRM]**
+### Task 2.1: Move Talos nodes off the RPi's DNS **[DONE 2026-10-03]**
 
-Branch: `fix/talos-nameserver`
+PR #5431 set `machine.network.nameservers` to the UCG-Max (`192.168.48.254`) in `controlplane.yaml` and `worker.yaml` (the UCG-Max was verified to resolve github.com, ghcr.io, registry.k8s.io, cloudflare.com). Applied to mc1, mc2, mc3, nv1 one at a time without a reboot; `talosctl get resolvers` shows only `192.168.48.254`, nodes stay Ready, in-cluster resolution works.
 
-**Files:**
-- Modify: `provision/talos/templates/controlplane.yaml` (nameservers)
-- Modify: `provision/talos/templates/worker.yaml` (nameservers, if present)
+**Lesson (do not repeat the plain `task talos:apply`):** the Taskfile pins Talos `v1.13.10` / Kubernetes `v1.35.9` (Renovate bumps) while the nodes run Talos installer `v1.13.8` / Kubernetes `v1.35.8`. A normal `task talos:apply N=<node>` would also have rolled the control-plane images and the installer image. What was done instead:
+1. `task talos:generate TALOS_VERSION=v1.13.8 KUBERNETES_VERSION=v1.35.8` (versions overridden to the live ones; needs `mkdir -p provision/talos/clusterconfig` in a worktree).
+2. `talosctl apply-config --nodes <ip> --file clusterconfig/home-<node>.yaml --dry-run -m auto` must show **exactly one** changed line (the nameserver) per node. (A JSON patch is refused on multi-document configs; a strategic-merge patch would append to the list instead of replacing it.)
+3. `talosctl apply-config ... -m auto`, then verify resolvers and node Ready before the next node.
+4. Delete the generated `clusterconfig/home-*.yaml` and `talosconfig` (they contain secrets) but keep the tracked `clusterconfig/.gitignore`.
 
-- [ ] **Step 1: Locate every nameserver reference**
+The pending Renovate version bumps are a separate upgrade and have not been applied.
 
-```bash
-cd /workspaces/home-ops-ha-migration && git fetch origin main && git switch -c fix/talos-nameserver origin/main
-grep -n -B1 -A3 "nameservers" provision/talos/templates/*.yaml provision/talos/nodes/*.yaml
-grep -n "192.168.50.9" provision/talos/templates/*.yaml provision/talos/nodes/*.yaml
-```
+### Task 2.2: AdGuard Home app (two instances + sync) **[PR #5432]**
 
-- [ ] **Step 2: Replace `192.168.50.9` with `192.168.48.254` everywhere found**, including the NTP comment in `controlplane.yaml` that says "nameserver is AdGuard on the RPi" (reword to "nameserver is the UCG-Max").
+Built in `cluster/apps/system/adguard-home/` (namespace `adguard-home`): `adguard/adguardhome:v0.107.79` (latest stable, pinned by digest) as `primary` and `replica` Deployments, each with its own 2Gi Ceph PVC (`/opt/adguardhome/conf` and `/opt/adguardhome/work` via subPath), required pod anti-affinity, pinned to the control-plane nodes (Cilium L2 announcements exclude nv1); `ghcr.io/bakito/adguardhome-sync:v0.9.3` as `sync` (origin primary, replica1, `CRON */10 * * * *`, `RUN_ON_START true`, DHCP sync off; settings per the README: `RUN_ON_START`, not `RUNONSTART`). Services: `adguard-home-dns-primary` (LB `192.168.48.25`) and `adguard-home-dns-replica` (LB `192.168.48.31`), both `externalTrafficPolicy: Local` so AdGuard sees real client IPs (otherwise every query appears to come from a node, breaking per-client stats and putting all of VLAN 48 under one per-subnet rate limit); `adguard-home-web-primary` / `-replica` ClusterIP on 3000. ExternalSecret `adguard-home-secret` (Bitwarden `ADGUARD_USER` / `ADGUARD_PASSWORD`). **Everything starts at `replicas: 0`.**
 
-```bash
-sed -i 's/192\.168\.50\.9/192.168.48.254/' provision/talos/templates/controlplane.yaml provision/talos/templates/worker.yaml
-sed -i 's/nameserver is AdGuard on the RPi/nameserver is the UCG-Max/' provision/talos/templates/controlplane.yaml
-grep -n "192.168.50.9" provision/talos/templates/*.yaml || echo "none left"
-```
+IP choice: `.24` is used by `alloy-router-syslog`, so `.25` and `.31` are used; see the IP table in `docs/src/general/network.md` (PR #5433).
 
-Expected: `none left`.
+### Task 2.3: Seed the config, start, and verify DNS **[USER + CONFIRM]**
 
-- [ ] **Step 3: Regenerate and diff**
+**What the RPi's AdGuard config turned out to be** (HAOS addon `a0d7b954_adguard` 6.3.0, from the user's backup `adg.tar`): no users (`users: []`, login through HA ingress), DHCP disabled, 3 filter lists, `use_private_ptr_resolvers` with `192.168.10.1`, 8 DNS rewrites (node short names, `unifi`, the Minecraft host, the ASUS DDNS name, two duplicating external-dns records), and 51 `user_rules`: 6 hand-written allowlist rules and 45 written by external-dns. **external-dns writes its records into `user_rules`** (`$dnsrewrite` rules plus `k8s.main.a-<host>` TXT ownership markers), not into the rewrites list. The seed keeps all 51 so cluster names resolve on day one and external-dns keeps ownership.
 
-```bash
-task talos:generate
-git status --short
-git diff --stat
-```
+- [ ] **Step 1: Seed** (already built locally in the scratchpad `adg/seed/`: `conf/AdGuardHome.yaml`, `work/data/filters/*`). Changes versus the RPi file: `http.address: 0.0.0.0:3000`, `dns.bind_hosts: [0.0.0.0]`, `filtering.safe_fs_patterns` to the container path, and `users` set to the Bitwarden `ADGUARD_USER` with a bcrypt hash of `ADGUARD_PASSWORD` (generated without printing the password; the file is git-excluded and mode 600). Never commit it.
+- [ ] **Step 2: [CONFIRM] Copy into both PVCs** (Deployments at 0 replicas), with a short-lived helper pod per PVC (`adguard-home-data-primary`, `adguard-home-data-replica`): create `conf` and `work/data`, `kubectl cp` the seed in, verify file sizes and that no `AdGuardHome.yaml` contains a plaintext password, delete the helper pods.
+- [ ] **Step 3: Start PR:** flip `replicas` to 1 on `primary`, `replica` and `sync`; merge only after the copy is verified (same discipline as Matter and Music Assistant: an unseeded start would show AdGuard's first-run wizard instead of DNS).
+- [ ] **Step 4: Verify (read-only):** primary and replica Running on **different nodes**; `kubectl -n adguard-home get svc` shows `.25` / `.31`; no wizard in the logs; `adguard-home-sync` logs a successful sync; AdGuard's query log shows **real client IPs** for queries sent to `.25` from a LAN host (not a node address); if the L2 leader sits on a node without the pod, `externalTrafficPolicy: Local` must still answer, otherwise re-check Cilium L2 behaviour before continuing.
+- [ ] **Step 5: DNS checks** (no `dig` here: use a small Python UDP/TCP DNS query, or a throwaway pod): for both `.25` and `.31`, from VLAN 48 and from a host on another VLAN: an internal name (`ma.<domain>`), `doubleclick.net` (blocked, answers `0.0.0.0`), `google.com`, a reverse lookup (PTR via the UCG-Max), and the node short names (`mc1`). Compare the rule and rewrite counts with the RPi (51 / 8).
 
-Expected: only the template files (and generated files if tracked) change; no other drift.
+### Task 2.4: Repoint `agh.<domain>`, then DHCP **[CONFIRM + USER]**
 
-- [ ] **Step 4: Commit and PR** — `git commit -am "fix(talos): resolve through UCG-Max instead of RPi AdGuard"`, push, `gh pr create`.
+external-dns reaches AdGuard through `ADGUARD_URL=https://agh.<domain>/control`, which is the `agh-proxy` route in the `hass-proxy` app (backend: the RPi's AdGuard on `192.168.50.9:8812`). **No Bitwarden change is needed**: repointing that route moves external-dns to the new primary, and it authenticates with the same Bitwarden user and password the new instances now enforce.
 
-- [ ] **Step 5: [CONFIRM] Apply node by node**
-
-After merge, show the user the apply command from `.taskfiles` (`task talos:apply` — read `.taskfiles/*/Taskfile.y*ml` to get the exact node argument form) and apply to **one node at a time**, waiting for the user's go-ahead between nodes. After each node:
-
-```bash
-TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig talosctl -n <node-ip> get resolvers -o yaml
-```
-
-Expected: `192.168.48.254` is the only resolver. Also `kubectl get nodes` stays `Ready`.
-
-### Task 2.2: AdGuard Home app (two instances + sync)
-
-Branch: `feat/adguard-home`
-
-**Files:**
-- Create: `cluster/apps/system/adguard-home/app-config.yaml`
-- Create: `cluster/apps/system/adguard-home/Chart.yaml`
-- Create: `cluster/apps/system/adguard-home/values.yaml`
-- Create: `cluster/apps/system/adguard-home/templates/externalsecret.yaml`
-
-**Interfaces:**
-- Consumes: Bitwarden entries `ADGUARD_USER` / `ADGUARD_PASSWORD` (existing, UUIDs in `cluster/apps/system/adguard-dns/templates/externalsecret.yaml`).
-- Produces: namespace `adguard-home`; DNS on `192.168.48.24` (primary) and `192.168.48.25` (replica); in-cluster web service of the primary for external-dns and `agh-proxy`; secret `adguard-home-secret` with `USERNAME`, `PASSWORD`.
-
-- [ ] **Step 1: Pin images**
-
-```bash
-docker buildx imagetools inspect adguard/adguardhome:<TAG> | head -3
-docker buildx imagetools inspect ghcr.io/bakito/adguardhome-sync:<TAG> | head -3
-```
-
-Use the latest stable tag of each (check `gh release list -R AdguardTeam/AdGuardHome -L 3` and `-R bakito/adguardhome-sync`). Record `tag@sha256:digest`.
-
-- [ ] **Step 2: `app-config.yaml`**
-
-```yaml
-- enabled: "true"
-  namespace: adguard-home
-  syncWave: "-3"
-  syncPolicy:
-    enabled: true
-    selfHeal: true
-    prune: false
-  plugin:
-    env:
-      - name: SECRET_PROVIDER
-        value: cluster-secrets
-```
-
-- [ ] **Step 3: `Chart.yaml`** (same shape as Task 1.1 Step 3 with `name: adguard-home`).
-
-- [ ] **Step 4: `values.yaml`**
-
-```yaml
-app-template:
-  defaultPodOptions:
-    labels:
-      adguard-home/role: dns
-    affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          - topologyKey: kubernetes.io/hostname
-            labelSelector:
-              matchLabels:
-                adguard-home/role: dns
-    nodeSelector:
-      node-role.kubernetes.io/control-plane: ""
-  controllers:
-    primary:
-      strategy: Recreate
-      containers:
-        main:
-          image:
-            repository: adguard/adguardhome
-            tag: <TAG>@sha256:<DIGEST>
-          resources:
-            requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
-              memory: 512Mi
-    replica:
-      strategy: Recreate
-      containers:
-        main:
-          image:
-            repository: adguard/adguardhome
-            tag: <TAG>@sha256:<DIGEST>
-          resources:
-            requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
-              memory: 512Mi
-    sync:
-      containers:
-        main:
-          image:
-            repository: ghcr.io/bakito/adguardhome-sync
-            tag: <TAG>@sha256:<DIGEST>
-          args: ["run"]
-          env:
-            ORIGIN_URL: http://adguard-home-web-primary.adguard-home.svc.cluster.local:3000
-            REPLICA1_URL: http://adguard-home-web-replica.adguard-home.svc.cluster.local:3000
-            CRON: "*/10 * * * *"
-            RUNONSTART: "true"
-            FEATURES_DHCP_SERVER_CONFIG: "false"
-            FEATURES_DHCP_STATIC_LEASES: "false"
-          envFrom:
-            - secretRef:
-                name: adguard-home-secret
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            limits:
-              memory: 128Mi
-  service:
-    dns-primary:
-      controller: primary
-      type: LoadBalancer
-      annotations:
-        lbipam.cilium.io/ips: "192.168.48.24"
-      ports:
-        dns-udp:
-          port: 53
-          protocol: UDP
-        dns-tcp:
-          port: 53
-          protocol: TCP
-    dns-replica:
-      controller: replica
-      type: LoadBalancer
-      annotations:
-        lbipam.cilium.io/ips: "192.168.48.25"
-      ports:
-        dns-udp:
-          port: 53
-          protocol: UDP
-        dns-tcp:
-          port: 53
-          protocol: TCP
-    web-primary:
-      controller: primary
-      ports:
-        http:
-          port: 3000
-    web-replica:
-      controller: replica
-      ports:
-        http:
-          port: 3000
-  persistence:
-    data-primary:
-      type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      size: 2Gi
-      advancedMounts:
-        primary:
-          main:
-            - path: /opt/adguardhome/conf
-              subPath: conf
-            - path: /opt/adguardhome/work
-              subPath: work
-    data-replica:
-      type: persistentVolumeClaim
-      accessMode: ReadWriteOnce
-      size: 2Gi
-      advancedMounts:
-        replica:
-          main:
-            - path: /opt/adguardhome/conf
-              subPath: conf
-            - path: /opt/adguardhome/work
-              subPath: work
-```
-
-The sync tool reads `ORIGIN_USERNAME`/`ORIGIN_PASSWORD`/`REPLICA1_USERNAME`/`REPLICA1_PASSWORD` from the secret (Step 5).
-
-- [ ] **Step 5: `templates/externalsecret.yaml`**
-
-```yaml
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: adguard-home
-spec:
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: bitwarden
-  refreshInterval: 1h
-  target:
-    name: adguard-home-secret
-    creationPolicy: Owner
-    template:
-      engineVersion: v2
-      data:
-        ORIGIN_USERNAME: "{{ `{{ .ADGUARD_USER }}` }}"
-        ORIGIN_PASSWORD: "{{ `{{ .ADGUARD_PASSWORD }}` }}"
-        REPLICA1_USERNAME: "{{ `{{ .ADGUARD_USER }}` }}"
-        REPLICA1_PASSWORD: "{{ `{{ .ADGUARD_PASSWORD }}` }}"
-  data:
-    - secretKey: ADGUARD_USER
-      remoteRef:
-        key: "7e657efe-c9fa-420d-8959-b40800e9dea5" #gitleaks:allow #ADGUARD_USER
-    - secretKey: ADGUARD_PASSWORD
-      remoteRef:
-        key: "6ccac8f0-d23e-48da-ae23-b40800e9e7f0" #gitleaks:allow #ADGUARD_PASSWORD
-```
-
-- [ ] **Step 6: Verify the render and the real Service names**
-
-```bash
-cd cluster/apps/system/adguard-home
-helm dependency build && helm template adguard-home . -f values.yaml > /tmp/agh.yaml
-grep -n -E "^kind: (Deployment|Service)|name: adguard-home-|lbipam|port: (53|3000)" /tmp/agh.yaml
-```
-
-Expected: Deployments `adguard-home-primary`, `-replica`, `-sync`; Services `adguard-home-dns-primary`, `-dns-replica`, `-web-primary`, `-web-replica` with the two LB IPs; both TCP and UDP 53. **If the Service names differ from `adguard-home-web-primary` / `adguard-home-web-replica`, fix `ORIGIN_URL` / `REPLICA1_URL` in `values.yaml` to the rendered names** before committing.
-
-- [ ] **Step 7: Lint, commit, PR**
-
-```bash
-cd /workspaces/home-ops-ha-migration && task lint:all
-git add cluster/apps/system/adguard-home
-git commit -m "feat(adguard-home): add two-instance AdGuard Home with sync"
-git push -u origin feat/adguard-home
-gh pr create --base main --title "feat(adguard-home): in-cluster AdGuard Home (primary + replica)" --body "Phase 2 of docs/superpowers/plans/2026-10-01-rpi-decommission.md. Seeded with RPi config before DHCP cutover."
-```
-
-### Task 2.3: Seed config and verify DNS **[USER + CONFIRM]**
-
-- [ ] **Step 1: [USER] Export from the RPi**
-
-Ask the user to copy `AdGuardHome.yaml` from the HAOS AdGuard addon (`/addon_configs/<slug>_adguard/AdGuardHome.yaml`, via the Samba/SSH addon) to a local file. It contains admin password hashes: **never paste it into chat or commit it**.
-
-- [ ] **Step 2: Prepare the seed locally**
-
-Work on a copy; set:
-- `http.address: 0.0.0.0:3000`
-- `dns.bind_hosts: [0.0.0.0]`, `dns.port: 53`
-- `dns.upstream_dns`: public DoH upstreams (for example `https://dns.cloudflare.com/dns-query`, `https://dns.quad9.net/dns-query`) plus, for the local zone and reverse lookups, `[/<domain>/]192.168.48.254` and `[/168.192.in-addr.arpa/]192.168.48.254`; `use_private_ptr_resolvers: true`, `local_ptr_upstreams: [192.168.48.254]`
-- remove RPi-specific values (`dhcp` enabled flags, old `bind_host` addresses).
-- Keep `users:` (so the Bitwarden credentials match), filters, user rules, clients.
-- Record the rewrites list (`filtering.rewrites`) for Step 6.
-
-- [ ] **Step 3: [CONFIRM] Seed both PVCs** (after merge, with each Deployment scaled to 0 or just created and crash-looping on first start; prefer scaling to 0 first)
-
-```bash
-kubectl -n adguard-home scale deploy/adguard-home-primary deploy/adguard-home-replica --replicas=0
-for who in primary replica; do
-  kubectl -n adguard-home run agh-seed-$who --image=busybox:1.37 --restart=Never --overrides="{\"spec\":{\"volumes\":[{\"name\":\"d\",\"persistentVolumeClaim\":{\"claimName\":\"adguard-home-data-$who\"}}],\"containers\":[{\"name\":\"agh-seed-$who\",\"image\":\"busybox:1.37\",\"command\":[\"sleep\",\"600\"],\"volumeMounts\":[{\"name\":\"d\",\"mountPath\":\"/data\"}]}]}}"
-  kubectl -n adguard-home wait --for=condition=Ready pod/agh-seed-$who
-  kubectl -n adguard-home exec agh-seed-$who -- mkdir -p /data/conf /data/work
-  kubectl -n adguard-home cp <seed-file> agh-seed-$who:/data/conf/AdGuardHome.yaml
-  kubectl -n adguard-home delete pod agh-seed-$who
-done
-kubectl -n adguard-home scale deploy/adguard-home-primary deploy/adguard-home-replica --replicas=1
-```
-
-Check the PVC names with `kubectl -n adguard-home get pvc` first and adjust `claimName`.
-
-- [ ] **Step 4: Check pod placement and services (read-only)**
-
-```bash
-kubectl -n adguard-home get pods -o wide
-kubectl -n adguard-home get svc
-```
-
-Expected: primary and replica on **different nodes**; LB IPs `192.168.48.24` and `.25` assigned.
-
-- [ ] **Step 5: DNS verification from a LAN host (devcontainer or the user's machine)**
-
-```bash
-for ip in 192.168.48.24 192.168.48.25; do
-  dig @$ip +short envoy-internal-test.<domain> A
-  dig @$ip +short doubleclick.net A
-  dig @$ip +short google.com A
-  dig @$ip -x 192.168.48.254 +short
-done
-```
-
-Expected for both IPs: the cluster-internal name resolves (use any existing app hostname), `doubleclick.net` returns `0.0.0.0` (blocked), `google.com` resolves, the reverse lookup answers from UniFi. Run it also from a host on VLAN 10 and VLAN 40.
-
-- [ ] **Step 6: Rewrites diff (Review Focus 4)**
-
-Compare `filtering.rewrites` from the seed with the `DNSEndpoint`s that external-dns publishes (`k8s.`, `qnap.`, plus every HTTPRoute host). Remove from the seed any rewrite that external-dns will recreate or any rewrite you cannot explain, so `policy: sync` has no foreign records to fight over. Confirm `adguardhome-sync` logs show a clean primary → replica sync:
-
-```bash
-kubectl -n adguard-home logs deploy/adguard-home-sync --tail=40
-```
-
-Expected: `Sync successful`, replica rewrites equal the primary's.
-
-### Task 2.4: Repoint external-dns, `agh-proxy` and DHCP **[CONFIRM + USER]**
-
-Branch: `chore/adguard-cutover`
-
-**Files:**
-- Modify: `cluster/apps/default/hass-proxy/templates/service.yaml` (agh Endpoints → primary web Service)
-- Modify: `docs/src/general/network.md`
-
-- [ ] **Step 1: [USER] Update Bitwarden `ADGUARD_URL`** to `http://adguard-home-web-primary.adguard-home.svc.cluster.local:3000` (use the rendered service name from Task 2.2 Step 6) and confirm. ESO refreshes within an hour; to force it, **[CONFIRM]** `kubectl -n adguard-dns annotate externalsecret adguard-dns force-sync=$(date +%s) --overwrite` then `kubectl -n adguard-dns rollout restart deploy/adguard-dns`.
-
-- [ ] **Step 2: Verify external-dns writes to the primary**
-
-```bash
-kubectl -n adguard-dns logs deploy/adguard-dns -c external-dns --tail=30
-```
-
-Expected: successful reconcile, no 401/connection errors; a new test HTTPRoute host appears in both AdGuard instances after the next sync.
-
-- [ ] **Step 3: Repoint `agh.<domain>`**
-
-The `agh-proxy` `Service`/`Endpoints` pair in `cluster/apps/default/hass-proxy/templates/service.yaml` forwards to the RPi (`192.168.50.9:8812`). Delete that pair, and change the `agh-proxy` HTTPRoute backendRef in `httproute.yaml` to point straight at the new primary:
-
-```yaml
-        - name: adguard-home-web-primary
-          namespace: adguard-home
-          port: 3000
-```
-
-and add to `cluster/apps/system/adguard-home/templates/referencegrant.yaml` (create) a `ReferenceGrant` allowing `HTTPRoute` in `hass-proxy` to reference the Service:
-
-```yaml
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: ReferenceGrant
-metadata:
-  name: allow-hass-proxy-httproute
-spec:
-  from:
-    - group: gateway.networking.k8s.io
-      kind: HTTPRoute
-      namespace: hass-proxy
-  to:
-    - group: ""
-      kind: Service
-      name: adguard-home-web-primary
-```
-
-Verify: `kubectl kustomize`/`helm template` renders cleanly in both apps; `task lint:all`.
-
-- [ ] **Step 4: Commit, PR, merge, verify** `https://agh.<domain>` shows the new instance's login and the same filters.
-
-- [ ] **Step 5: [USER] DHCP cutover**
-
-1. A day ahead, lower the DHCP lease time on each VLAN to 1 hour.
-2. Set DNS servers for every VLAN to `192.168.48.24` and `192.168.48.25` (UniFi Networks → each network → DHCP name server). Do not add UniFi or the RPi as a third entry.
-3. Watch the RPi AdGuard query log: client count should fall toward zero within the lease window. Ask the user to list the remaining clients and fix their static DNS settings.
-4. Restore longer leases.
-
-- [ ] **Step 6: Docs/memory**
-
-Update `docs/src/general/network.md`: DNS flow (clients → `.24`/`.25`; UniFi upstream for the local zone; nodes → `.254`), IP table rows `.24`, `.25`, `.26`, `.60`, `.61`; remove "AdGuard on the RPi" wording. Update `.claude/memory/reference_gateway_dns_architecture.md` and `reference_home_network_hardware.md`.
+- [ ] **Step 1: One PR, two apps:** in the `adguard-home` app add an HTTPRoute for `agh.<domain>` (parent `envoy-internal`, annotation `external-dns.alpha.kubernetes.io/controller: dns-controller`, backend `adguard-home-web-primary:3000` in the same namespace, so no ReferenceGrant is needed); in the `hass-proxy` app remove the `agh-proxy` HTTPRoute, Service and Endpoints (keep `hass-proxy` until Phase 4). Two routes with the same hostname must not coexist, so both changes land together. Render both apps and lint.
+- [ ] **Step 2: After sync (confirm):** `https://agh.<domain>` shows the new instance's login; `kubectl -n adguard-dns logs deploy/adguard-dns -c external-dns` shows successful reconciles (no 401); create or touch a test HTTPRoute host and confirm the rule appears in both instances after the next sync.
+- [ ] **Step 3: [USER] DHCP cutover.** (a) A day ahead, lower lease times to 1 hour on each VLAN. (b) Set the DNS servers of every VLAN's DHCP to `192.168.48.25` and `192.168.48.31` (no UniFi or RPi entry). (c) Check **IPv6**: the LB addresses are IPv4 only, so look at each VLAN's IPv6 DNS (RDNSS/DHCPv6) setting; if clients are handed the RPi's IPv6 address or the gateway's, decide whether to leave that or turn it off. (d) Watch the RPi AdGuard query log: client count should fall toward zero within the lease window; fix devices with a hardcoded DNS. (e) Restore normal lease times.
+- [ ] **Step 4: Docs/memory:** `network.md` DNS flow (clients → `.25`/`.31`; UniFi for reverse lookups; nodes → `.254`), mark `.25` / `.31` live in the IP table (PR #5433 reserved them), update `.claude/memory/reference_gateway_dns_architecture.md` and `reference_home_network_hardware.md`.
 
 ---
 
