@@ -126,9 +126,10 @@ IPv6-only macvlan interface (`vlan48-v6` NetworkAttachmentDefinition, static add
 | primary | `fd80:c04a:5687:48::25` |
 | replica | `fd80:c04a:5687:48::31` |
 
-AdGuard binds `0.0.0.0` by default; add the instance's IPv6 address to `dns.bind_hosts` in its `AdGuardHome.yaml`
-on the PVC (it is not synced between instances) and restart the pod. Then set these as the manual IPv6 DNS servers in UniFi.
-The pod needs the net1 interface first, otherwise AdGuard fails to bind.
+No `bind_hosts` change is needed: AdGuard's `0.0.0.0` listener is dual-stack on the pod's sockets (`:::53`), so it
+answers on the macvlan address as soon as the interface exists. Verified by querying `fd80:c04a:5687:48::25` from another
+VLAN 48 pod (answers resolve, ad domains return `0.0.0.0`). Set both addresses as the manual IPv6 DNS servers in UniFi.
+The pod gets an extra SLAAC address and the RA default route on `net1` as well; both are harmless.
 
 ### External DNS records (Cloudflare)
 
