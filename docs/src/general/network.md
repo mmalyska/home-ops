@@ -90,7 +90,13 @@ Both gateways are implemented with [Envoy Gateway](https://gateway.envoyproxy.io
 Two [external-dns](https://github.com/kubernetes-sigs/external-dns) controllers run in parallel, each scoped to its own gateway by annotation filter (`external-dns.alpha.kubernetes.io/controller`):
 
 - **cloudflare-dns** — watches resources annotated `controller: external`, writes records to Cloudflare DNS (proxied). Sources: `DNSEndpoint` CRDs + `gateway-httproute` from `envoy-external`.
-- **adguard-dns** — watches resources annotated `controller: internal`, writes records to AdGuard Home on the RPI (192.168.50.9). Sources: `DNSEndpoint` CRDs + `gateway-httproute` from `envoy-internal`.
+- **adguard-dns** — watches resources annotated `controller: internal`, writes records to the in-cluster AdGuard Home primary (via `https://agh.PRIVATE_DOMAIN/control`; `adguard-home-sync` copies them to the replica). Sources: `DNSEndpoint` CRDs + `gateway-httproute` from `envoy-internal`.
+
+### DNS flow
+
+- **Clients:** every VLAN's DHCP hands out `192.168.48.25` and `192.168.48.31` (both AdGuard Home instances, both blocking). The UCG-Max is deliberately not a client resolver: clients do not reliably prefer the first server, and the UCG-Max knows no internal names and blocks nothing. IPv6 DNS uses the two ULAs below.
+- **AdGuard upstreams / reverse lookups:** the UCG-Max (`192.168.48.254`) answers reverse lookups for local clients.
+- **Nodes and pods:** see "Resolver chain for cluster pods and nodes" below.
 
 ### Internal DNS records (AdGuard Home)
 
@@ -178,13 +184,13 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.22` | Jellyfin |
 | `192.168.48.23` | Minecraft Bedrock |
 | `192.168.48.24` | `alloy-router-syslog` (monitoring: router syslog receiver) |
-| `192.168.48.25` | Reserved: AdGuard Home primary (DNS) |
+| `192.168.48.25` | AdGuard Home primary (DNS, live; IPv6 `fd80:c04a:5687:48::25`) |
 | `192.168.48.26` | MQTT broker (RabbitMQ, `mqtt.PRIVATE_DOMAIN`) |
 | `192.168.48.27` | Home automation voice services, shared (Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
 | `192.168.48.29` | WoW, shared (auth and world server) |
 | `192.168.48.30` | anytype any-sync services, shared |
-| `192.168.48.31` | Reserved: AdGuard Home replica (DNS) |
+| `192.168.48.31` | AdGuard Home replica (DNS, live; IPv6 `fd80:c04a:5687:48::31`) |
 | `192.168.48.51`–`.55` | Coder workspace SSH services (devops, dotnet, node, mobile, researcher) |
 | `192.168.48.60` | Reserved: Home Assistant (macvlan `net1`) |
 | `192.168.48.61` | Matter server (macvlan `net1`, live) |
