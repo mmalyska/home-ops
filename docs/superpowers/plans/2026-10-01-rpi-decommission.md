@@ -978,6 +978,13 @@ kubectl -n ha-music-assistant delete pod ma-restore
 
 Adjust `claimName` to the real PVC and the source folder to where the files were found.
 
+- [ ] **Step 5b: Findings from the real backup (2026-10-03) and what Step 5 must do with them**
+  - The backup is addon `d5369777_music_assistant` **2.10.4** (pin 2.10.4, not 2.10.5). `/data` is small (library DB 57MB, `auth.db`, `settings.json`, playlists/images dirs, `sendspin/` identity, WebRTC cert/key). Leave out `options.json`, `*.backup`, logs and `.cache`.
+  - **Library provider is `filesystem_nfs`** (MA's own in-container NFS mount; host/export are Fernet-encrypted in `settings.json`, the key travels in the same file). Decision (user, option B): no `SYS_ADMIN`; the share is mounted by Kubernetes at `/media/music` and re-added as a Local filesystem provider (the 225 local tracks rescan as new items; their favorites and playlist entries are re-created by hand). In the restored `settings.json` set `providers[filesystem_nfs--*].enabled = false` so MA does not try to mount NFS in the container; remove that provider in the UI after the new one has scanned.
+  - **Login lockout:** the only admin is linked solely to Home Assistant OAuth, which MA offers only once the `hass` provider has a URL (the restored `hass` provider has none). With an existing admin MA skips `/setup`, so you could not sign in. In the restored `auth.db`, delete the admin user and its provider link (keep `homeassistant_system`, the service user, and its integration token). With no non-system users MA redirects a browser request to `/setup`, where the user creates the first admin (username/password chosen by the user; never typed into the chat). Until then the JSON-RPC API answers 503 "Setup required", so the RPi HA's MA integration cannot connect before `/setup` is done.
+  - Spotify already shows "playback authorization required" on the RPi; re-authorize it in the MA UI. There is no YouTube Music or Tidal provider in this MA. Players: Shield (Cast), MacBook (AirPlay), web players (Sendspin), plus HA media players `konsola_xbox_w_salonie` and `housekeeper` via the `hass_players` provider (needs the HA provider configured with the RPi HA URL and a long-lived token, entered in the UI; repoint to the cluster HA at cutover).
+  - There is no `core.streams` section in the restored settings, so no stale `publish_ip`/`bind_ip`: set the published IP to `192.168.48.62` in the UI after the first start.
+
 - [ ] **Step 6: Flip replicas, commit, PR, sync**
 
 ```bash
