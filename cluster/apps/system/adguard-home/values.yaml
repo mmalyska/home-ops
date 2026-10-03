@@ -17,6 +17,9 @@ app-template:
     primary:
       strategy: Recreate
       replicas: 1
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48-v6","ips":["fd80:c04a:5687:48::25/64"]}]'
       containers:
         main:
           image:
