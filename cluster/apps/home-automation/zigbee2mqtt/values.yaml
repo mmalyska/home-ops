@@ -51,3 +51,29 @@ app-template:
       size: 1Gi
       globalMounts:
         - path: /app/data
+
+volsync:
+  pvc:
+    existingClaim: zigbee2mqtt
+    accessMode: ReadWriteOnce
+    capacity: 1Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    # root mover: reads files of any owner from the snapshot
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    backup:
+      schedule: "0 */6 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 0
+        daily: 6
+        weekly: 4
+        monthly: 2
+    restore:
+      # existing data: never render the restore-once ReplicationDestination
+      enabled: false
+      bootstrap: false
