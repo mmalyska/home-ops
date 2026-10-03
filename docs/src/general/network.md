@@ -138,7 +138,7 @@ Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` servic
 | `192.168.48.28` | Vintage Story |
 | `192.168.48.29` | WoW (auth + world server) |
 | `192.168.48.30` | anytype any-sync services |
-| `192.168.48.60–.69` | Reserved for pods with a Multus macvlan `net1` interface (outside the Cilium LB pool): `.61` Matter server (live); `.60` Home Assistant and `.62` Music Assistant are planned |
+| `192.168.48.60–.69` | Reserved for pods with a Multus macvlan `net1` interface (outside the Cilium LB pool): `.61` Matter server and `.62` Music Assistant (both live); `.60` Home Assistant is planned |
 | `192.168.48.254` | UCG-Max — VLAN 48 gateway, also the nodes' NTP source |
 | `192.168.50.8` | QNAP NAS |
 | `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
@@ -159,3 +159,13 @@ What the setup relies on (all verified from a test pod on `net1` on 2026-10-02):
 - **Thread network:** the UniFi static route to the OMR prefix (see `matter-thread.md`) works from VLAN 48; a traceroute from `net1` goes gateway, then the SLZB border router.
 - **mDNS:** the UniFi mDNS reflector must forward the relevant services to VLAN 48 (Google Cast, Matter, Thread TREL and Spotify Connect were seen arriving; AirPlay and MeshCoP were not).
 - **macvlan host isolation:** a pod's `net1` cannot talk to its own node's addresses, including a LoadBalancer IP that node announces. In-cluster consumers must use `*.svc.cluster.local` names, never LB IPs.
+
+## Music Assistant
+
+Music Assistant (`home-automation/music-assistant`, namespace `ha-music-assistant`) runs on a Multus macvlan `net1` at `192.168.48.62` (see the macvlan section above): upstream documents host networking as mandatory because players are discovered through mDNS/UPnP and stream from random ports, so a plain pod network is not enough. The web UI is `ma.PRIVATE_DOMAIN` on `envoy-internal` (Service port 8095); the stream server is on `192.168.48.62:8097`.
+
+- **Library:** the QNAP export `/music` is mounted by Kubernetes (NFS volume, read-only) at `/media/music` and added in the UI as a Local filesystem provider. The RPi used MA's own in-container NFS provider, which needs `SYS_ADMIN`; that was deliberately not carried over.
+- **Settings that matter behind the gateway:** set the web server's **Base URL** (`base_url`) to the public `https://ma.PRIVATE_DOMAIN` (the default, `auto`, resolves to the pod address and breaks the Home Assistant OAuth callback); `external_url` can match. **Never change the web server `bind_port`:** the Service and route target 8095, and MA stops answering. Set the stream server's `bind_ip` to `192.168.48.62`; otherwise MA hands players its pod address.
+- **Login:** the restored admin was linked only to Home Assistant OAuth, so it was removed and the first admin was created on the server's `/setup` page (username/password). The Home Assistant integration's system user and token were kept.
+- **Home Assistant provider:** needs the HA URL and a long-lived token (kept in the UI, not in git). Repoint it when Home Assistant itself moves into the cluster.
+- **Players:** Chromecast/Shield (Google Cast) and the MacBook (AirPlay) work over the mDNS reflector. DLNA/SSDP discovery does not cross VLANs; no DLNA player is configured.
