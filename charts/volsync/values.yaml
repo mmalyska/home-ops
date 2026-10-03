@@ -21,4 +21,7 @@ volsync:
       weekly: 4
       monthly: 2
   restore:
+    # false: do not render the ReplicationDestination at all (use for PVCs that already hold data;
+    # its restore-once trigger would restore over the live volume)
+    enabled: true
     bootstrap: true

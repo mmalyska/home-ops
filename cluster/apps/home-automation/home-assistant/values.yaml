@@ -127,3 +127,29 @@ app-template:
   persistence:
     config:
       existingClaim: home-assistant-config
+
+volsync:
+  pvc:
+    existingClaim: home-assistant-config
+    accessMode: ReadWriteMany
+    capacity: 10Gi
+    storageClass: ceph-filesystem
+    volumeSnapshotClass: csi-ceph-filesystem
+  volsync:
+    # root mover: reads files of any owner from the snapshot
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    backup:
+      schedule: "0 */6 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 0
+        daily: 6
+        weekly: 4
+        monthly: 2
+    restore:
+      # existing data: never render the restore-once ReplicationDestination
+      enabled: false
+      bootstrap: false
