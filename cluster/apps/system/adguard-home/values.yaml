@@ -16,7 +16,7 @@ app-template:
   controllers:
     primary:
       strategy: Recreate
-      replicas: 0 # config seed first (plan Task 2.3); flipped to 1 in the start PR
+      replicas: 1
       containers:
         main:
           image:
@@ -42,7 +42,7 @@ app-template:
               memory: 512Mi
     replica:
       strategy: Recreate
-      replicas: 0 # config seed first (plan Task 2.3); flipped to 1 in the start PR
+      replicas: 1
       containers:
         main:
           image:
@@ -58,7 +58,7 @@ app-template:
             limits:
               memory: 512Mi
     sync:
-      replicas: 0 # started together with primary/replica
+      replicas: 1
       containers:
         main:
           image:
