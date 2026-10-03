@@ -98,3 +98,5 @@ cluster:
       kubernetes:
         disabled: true
       service: {}
+  coreDNS:
+    disabled: true
