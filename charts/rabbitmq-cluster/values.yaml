@@ -1,0 +1,12 @@
+name: ""
+replicas: 1
+image: ""
+service: {}
+storage:
+  size: 5Gi
+resources: {}
+additionalPlugins: []
+additionalConfig: ""
+override: {}
+monitoring:
+  enableServiceMonitor: true
