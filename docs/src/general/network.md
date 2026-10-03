@@ -120,28 +120,71 @@ HTTPRoutes attached to `envoy-external` are automatically published to Cloudflar
 
 ## IP Allocation
 
-Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` service, pick an unused IP from this range and annotate with `lbipam.cilium.io/ips: "192.168.48.XX"`.
+This is the single source of truth for addresses on VLAN 48. **Update it in the same PR that assigns or moves an address**, and run the checks below *before* picking one: the docs have been wrong about free addresses before.
 
-| IP | Service |
+### Ranges on VLAN 48 (`192.168.48.0/24`)
+
+| Range | Use |
+|---|---|
+| `.1` | Control-plane VIP (kube-apiserver) |
+| `.2`–`.5` | Nodes (static in `provision/talos/nodes/`) |
+| `.6`–`.19` | Unused |
+| `.20`–`.50` | Cilium LoadBalancer pool `pool` |
+| `.51`–`.59` | Cilium LoadBalancer pool `coder-pool` (Coder workspace SSH services) |
+| `.60`–`.69` | Static addresses for pods with a Multus macvlan `net1` interface. **Outside every LB pool**; not known to Cilium, so a clash is silent |
+| `.70`–`.253` | Unused |
+| `.254` | UCG-Max, VLAN 48 gateway (also the nodes' NTP source and DNS resolver) |
+
+Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools and **neither has a `serviceSelector`**, so a `LoadBalancer` service without a fixed IP can draw an address from either pool. Always set a fixed IP with `lbipam.cilium.io/ips: "192.168.48.XX"`; services that deliberately share an IP also set `lbipam.cilium.io/sharing-key`. `coder-pool` used to span `.51–.70`, which overlapped the macvlan range; it now stops at `.59` so an auto-assigned address can never land on a pod-owned one.
+
+### Allocations
+
+| IP | Used by |
 |---|---|
 | `192.168.48.1` | Cluster VIP (kube-apiserver) |
-| `192.168.48.2` | mc1 — control plane node |
-| `192.168.48.3` | mc2 — control plane node |
-| `192.168.48.4` | mc3 — control plane node |
-| `192.168.48.5` | nv1 — Jetson Orin NX worker |
+| `192.168.48.2` | mc1, control plane node |
+| `192.168.48.3` | mc2, control plane node |
+| `192.168.48.4` | mc3, control plane node |
+| `192.168.48.5` | nv1, Jetson Orin NX worker |
 | `192.168.48.20` | `envoy-external` gateway |
 | `192.168.48.21` | `envoy-internal` gateway |
 | `192.168.48.22` | Jellyfin |
 | `192.168.48.23` | Minecraft Bedrock |
+| `192.168.48.24` | `alloy-router-syslog` (monitoring: router syslog receiver) |
+| `192.168.48.25` | Reserved: AdGuard Home primary (DNS) |
 | `192.168.48.26` | MQTT broker (RabbitMQ, `mqtt.PRIVATE_DOMAIN`) |
-| `192.168.48.27` | Home automation (Whisper, Piper, OpenWakeWord) |
+| `192.168.48.27` | Home automation voice services, shared (Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
-| `192.168.48.29` | WoW (auth + world server) |
-| `192.168.48.30` | anytype any-sync services |
-| `192.168.48.60–.69` | Reserved for pods with a Multus macvlan `net1` interface (outside the Cilium LB pool): `.61` Matter server and `.62` Music Assistant (both live); `.60` Home Assistant is planned |
-| `192.168.48.254` | UCG-Max — VLAN 48 gateway, also the nodes' NTP source |
+| `192.168.48.29` | WoW, shared (auth and world server) |
+| `192.168.48.30` | anytype any-sync services, shared |
+| `192.168.48.31` | Reserved: AdGuard Home replica (DNS) |
+| `192.168.48.51`–`.55` | Coder workspace SSH services (devops, dotnet, node, mobile, researcher) |
+| `192.168.48.60` | Reserved: Home Assistant (macvlan `net1`) |
+| `192.168.48.61` | Matter server (macvlan `net1`, live) |
+| `192.168.48.62` | Music Assistant (macvlan `net1`, live) |
+| `192.168.48.69` | Reserved for temporary test pods that verify a macvlan attachment |
+| `192.168.48.254` | UCG-Max, VLAN 48 gateway |
 | `192.168.50.8` | QNAP NAS |
-| `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
+| `192.168.50.9` | RPi, HAOS (Home Assistant OS); AdGuard Home as HA addon. MQTT and Zigbee2MQTT moved to the cluster on 2026-10-02 |
+| `192.168.50.239` | SLZB-MR4U (Zigbee coordinator socket `:7638` and Thread border router) |
+
+### Check before assigning an address
+
+```sh
+# every LoadBalancer IP in use (shared IPs list several services)
+kubectl get svc -A --no-headers \
+  -o custom-columns=IP:.status.loadBalancer.ingress[0].ip,NS:.metadata.namespace,NAME:.metadata.name \
+  | awk '$1 ~ /^192\.168\.48\./' | sort -V
+
+# every macvlan (Multus) pod address in use
+kubectl get pods -A -o json | jq -r '.items[] | select(.metadata.annotations["k8s.v1.cni.cncf.io/networks"]) |
+  "\(.metadata.annotations["k8s.v1.cni.cncf.io/networks"]) \(.metadata.namespace)/\(.metadata.name)"'
+
+# the pools themselves
+kubectl get ciliumloadbalancerippool -o custom-columns=NAME:.metadata.name,BLOCKS:.spec.blocks,SELECTOR:.spec.serviceSelector
+```
+
+Also grep the repo (`grep -rn "192.168.48.XX" cluster provision docs`) for static references, and ping the address from a VLAN 48 host. Anything not in the table above and not seen in these checks (a device with a static IP or a DHCP reservation in UniFi) can still clash: check UniFi's client list for the VLAN.
 
 ## MQTT and Zigbee2MQTT
 
