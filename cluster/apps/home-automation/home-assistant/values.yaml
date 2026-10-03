@@ -46,7 +46,8 @@ app-template:
     main:
       type: statefulset
       strategy: RollingUpdate
-      replicas: 1
+      # Held at 0 for the final config restore; set back to 1 right after
+      replicas: 0
       pod:
         annotations:
           k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.60/24"]}]'
