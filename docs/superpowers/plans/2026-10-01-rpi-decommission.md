@@ -1085,7 +1085,9 @@ external-dns reaches AdGuard through `ADGUARD_URL=https://agh.<domain>/control`,
 
 # PHASE 3 — Home Assistant restore
 
-### Task 3.1: Home Assistant app changes
+### Task 3.1: Home Assistant app changes **[DONE 2026-10-03, PR #5442, #5444]**
+
+Enabled `home-assistant` with `replicas: 0` first (so an empty config dir is not initialised before the restore; Argo `selfHeal` reverts an imperative `scale`, so the start is a second PR, #5444). CNPG `home-assistant-cnpg` 2/2 healthy, secret `home-assistant-cnpg-app` (`uri`), HA on `net1` `192.168.48.60/24`, pinned to the control plane. Original task text below.
 
 Branch: `feat/home-assistant-prod`
 
@@ -1156,7 +1158,16 @@ git add -A && git commit -m "feat(home-assistant): enable with macvlan net1, Pos
 
 After sync: `kubectl -n ha-home-assistant get cluster.postgresql.cnpg.io,pods,pvc` → CNPG healthy, HA pod running with `net1` (`kubectl -n ha-home-assistant exec sts/home-assistant -- ip -4 addr show net1` shows `192.168.48.60/24`).
 
-### Task 3.2: Dry-run restore **[USER + CONFIRM]**
+### Task 3.2: Dry-run restore **[DONE 2026-10-03]**
+
+What actually happened (differs from the steps below):
+- The backup is partial (`homeassistant.tar.gz` plus `ssl`, no database); Core `2026.9.4` equals the image.
+- **No YAML `http:` block:** the config already uses the UI-managed `.storage/http` (`yaml_migration_done`), so `10.244.0.0/16` (Envoy reaches HA from the pod network) was added to `trusted_proxies` there. The `recorder: db_url: !env_var RECORDER_DB_URL` block was added to `configuration.yaml`.
+- Sanitized copy: `automations.yaml` / `scenes.yaml` replaced by `[]` (originals kept), `cloud:`, `alexa:`, the RPi `generic_thermostat` and the RPi GPIO `switches/` commented out, `.cloud`, `deps`, `zigbee2mqtt`, `zigbee.db`, `music_assistant.db`, `node-red` and `custom_components/rpi_gpio` removed. Config entries disabled: `hassio raspberry_pi rpi_power adguard mqtt matter music_assistant zha smlight alexa_devices`. MQTT broker and the three Wyoming hosts were changed from LB IPs (`.26`, `.27`) to cluster service DNS names, because a macvlan pod cannot reach an LB IP held by its own node.
+- Copied with a busybox helper pod while HA was at 0 and verified by file-tree hash (2,481 files).
+- **Sidebar:** the old add-on panels are gone without the Supervisor. They were replaced with YAML dashboards (`lovelace: dashboards:` in `configuration.yaml`, ids must contain a hyphen: `z2m-panel`, `music-assistant-panel`, `adguard-home-panel`, `vscode-panel`) holding an iframe card each. A new dashboard needs an HA restart. None of the target sites sends `X-Frame-Options`.
+- **Gotcha:** clients still handed the RPi's AdGuard cannot resolve names added after the `agh` move (external-dns writes to the cluster AdGuard only), e.g. `dom.<domain>` did not load until the Mac renewed its DHCP lease.
+- Original automations: Daily reboot (`hassio.host_reboot`, drop), UPS changed state (NUT event, re-check), Dobranoc, Jenny screen on/off (assist satellite), a Matter IKEA switch driving a Zigbee bulb (needs Matter and Z2M). Scenes: Salon, Salon On.
 
 - [ ] **Step 1: [USER] Take a HAOS backup** (Settings → System → Backups, full, download the `.tar`). Never commit it.
 
@@ -1256,6 +1267,8 @@ Set `SECRET_EXTERNAL_URL: "https://hass.<secret:private-domain>"`. Remove the `h
 - [ ] **Step 2: [USER] Take a fresh HAOS backup and stop the RPi HA**
 
 Download the new full backup; then stop Home Assistant core on the RPi (`ha core stop` in the SSH/Terminal addon). From this moment the RPi's HA is down.
+
+- [ ] **Step 2b: Preconditions found during Phase 3:** Z2M must be running (it has been crash-looping since 2026-10-03 with `EHOSTUNREACH 192.168.50.239:7638`; check the SLZB power and the VLAN 48 to 50 path first) and VLAN 10 clients must be off the RPi's AdGuard (renew DHCP leases) or they will not resolve `hass.<domain>` consistently.
 
 - [ ] **Step 3: Re-extract and sanitize** exactly as Task 3.2 Steps 2–3, **but without** moving automations aside and **without** disabling config entries; still fix MQTT broker host (`home-assistant-mqtt-rmq.ha-rabbitmq.svc.cluster.local`, via the integration's reconfigure after boot or by editing `core.config_entries`) the Matter URL (`ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`) and the Music Assistant URL (`http://music-assistant.ha-music-assistant.svc.cluster.local:8095`); then in MA's Home Assistant provider, repoint its HA URL to the cluster HA service and rotate the long-lived token.
 
