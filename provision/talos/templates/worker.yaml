@@ -17,6 +17,9 @@ machine:
       rotate-server-certificates: "true"
     defaultRuntimeSeccompProfileEnabled: true
     disableManifestsDirectory: true
+    # CoreDNS is self-provisioned (cluster.coreDNS.disabled); pin the kube-dns Service address
+    clusterDNS:
+      - 10.96.0.10
   network:
     # Internal-only names (s3, qnap, the OIDC issuer, ...) exist only in AdGuard, so the two in-cluster
     # AdGuard instances come first; the UCG-Max (public names only) is the fallback if both are down.
@@ -95,3 +98,5 @@ cluster:
       kubernetes:
         disabled: true
       service: {}
+  coreDNS:
+    disabled: true
