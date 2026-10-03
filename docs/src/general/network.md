@@ -104,6 +104,18 @@ Static records are defined as `DNSEndpoint` CRDs in `cluster/apps/system/adguard
 Per-app A records pointing to `192.168.48.21` are created automatically by adguard-dns external-dns
 from each `HTTPRoute` annotated with `controller: dns-controller` attached to `envoy-internal`.
 
+### Resolver chain for cluster pods and nodes
+
+Nodes resolve through `192.168.48.25` and `.31` (the two AdGuard instances), then `192.168.48.254` (UCG-Max)
+as a last resort (see `provision/talos/templates/controlplane.yaml`). The UCG-Max knows no internal-only names
+and blocks nothing, so it must never be picked while AdGuard is up.
+
+CoreDNS is not deployed by Talos (`cluster.coreDNS.disabled: true`) and Talos offers no Corefile customisation,
+so it is managed by ArgoCD in `cluster/apps/system/coredns/`. Its `forward . /etc/resolv.conf` block uses
+`policy sequential`; the default `random` sent about a third of pod queries to the UCG-Max, which broke internal
+names and ad blocking. CoreDNS reads the node resolver list only at pod start, so restart it after changing
+node nameservers.
+
 ### External DNS records (Cloudflare)
 
 Static records defined as `DNSEndpoint` CRDs:
