@@ -33,3 +33,4 @@
 - [Hermes 64K context floor](reference_hermes_64k_context_floor.md) — Hermes rejects models <64K context; llama-server slots are 32K so main model + compression stay cloud
 - [Matter/Thread cross-VLAN setup](reference_matter_thread_cross_vlan.md) — prod HA/OTBR not in repo; static route + firewall + mDNS needed for phone commissioning
 - [Music Assistant in the cluster](reference_music_assistant_cluster.md) — VLAN 48 macvlan .62; base_url vs bind_port gotchas; NFS library via k8s volume
+- [Check live IPs before assigning one](feedback_check_live_ips_before_assigning.md) — list live LB IPs + pools first; update the network.md table in the same PR
