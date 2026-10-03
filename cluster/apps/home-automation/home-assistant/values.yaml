@@ -34,6 +34,9 @@ pgsql-cnpg:
         backupOwnerReference: self
 app-template:
   defaultPodOptions:
+    # macvlan (net1) needs the node's eth0, which only the control-plane nodes have
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
     securityContext:
       runAsUser: 568
       runAsGroup: 568
@@ -43,6 +46,12 @@ app-template:
     main:
       type: statefulset
       strategy: RollingUpdate
+      # Held at 0 until the restored config is copied into the PVC (Task 3.2); an empty
+      # config directory would otherwise be initialised by a first start.
+      replicas: 0
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.60/24"]}]'
       containers:
         main:
           image:
@@ -51,6 +60,13 @@ app-template:
           envFrom:
             - secretRef:
                 name: home-assistant-secret
+          env:
+            # referenced from configuration.yaml: recorder: db_url: !env_var RECORDER_DB_URL
+            RECORDER_DB_URL:
+              valueFrom:
+                secretKeyRef:
+                  name: home-assistant-cnpg-app
+                  key: uri
           resources:
             requests:
               cpu: 10m
