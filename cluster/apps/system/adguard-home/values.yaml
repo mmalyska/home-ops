@@ -1,0 +1,144 @@
+app-template:
+  defaultPodOptions:
+    labels:
+      adguard-home/role: dns
+    # primary and replica never share a node
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchLabels:
+                adguard-home/role: dns
+    # Cilium L2 announcements exclude nv1, so DNS pods stay on the mc nodes
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+  controllers:
+    primary:
+      strategy: Recreate
+      replicas: 0 # config seed first (plan Task 2.3); flipped to 1 in the start PR
+      containers:
+        main:
+          image:
+            repository: adguard/adguardhome
+            tag: v0.107.79@sha256:aba9e3bf0613be3ba3755e1fc311b126e2c24bec25e18b6483894a88283074f0
+          probes:
+            liveness: &probe
+              enabled: true
+              custom: true
+              spec:
+                tcpSocket:
+                  port: 3000
+                initialDelaySeconds: 10
+                periodSeconds: 10
+                timeoutSeconds: 3
+                failureThreshold: 6
+            readiness: *probe
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+    replica:
+      strategy: Recreate
+      replicas: 0 # config seed first (plan Task 2.3); flipped to 1 in the start PR
+      containers:
+        main:
+          image:
+            repository: adguard/adguardhome
+            tag: v0.107.79@sha256:aba9e3bf0613be3ba3755e1fc311b126e2c24bec25e18b6483894a88283074f0
+          probes:
+            liveness: *probe
+            readiness: *probe
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+    sync:
+      replicas: 0 # started together with primary/replica
+      containers:
+        main:
+          image:
+            repository: ghcr.io/bakito/adguardhome-sync
+            tag: v0.9.3@sha256:b3499852640866c5742fd72cca190f40e2741c279d60fd62b9130cd8142aafec
+          args: ["run"]
+          env:
+            ORIGIN_URL: http://adguard-home-web-primary.adguard-home.svc.cluster.local:3000
+            REPLICA1_URL: http://adguard-home-web-replica.adguard-home.svc.cluster.local:3000
+            CRON: "*/10 * * * *"
+            RUN_ON_START: "true"
+            FEATURES_DHCP_SERVER_CONFIG: "false"
+            FEATURES_DHCP_STATIC_LEASES: "false"
+          envFrom:
+            - secretRef:
+                name: adguard-home-secret
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+  service:
+    dns-primary:
+      controller: primary
+      type: LoadBalancer
+      # keep real client IPs (per-client stats and rate limits); traffic only reaches the node hosting the pod
+      externalTrafficPolicy: Local
+      annotations:
+        lbipam.cilium.io/ips: "192.168.48.25"
+      ports:
+        dns-udp:
+          port: 53
+          protocol: UDP
+        dns-tcp:
+          port: 53
+          protocol: TCP
+    dns-replica:
+      controller: replica
+      type: LoadBalancer
+      externalTrafficPolicy: Local
+      annotations:
+        lbipam.cilium.io/ips: "192.168.48.31"
+      ports:
+        dns-udp:
+          port: 53
+          protocol: UDP
+        dns-tcp:
+          port: 53
+          protocol: TCP
+    web-primary:
+      controller: primary
+      ports:
+        http:
+          port: 3000
+    web-replica:
+      controller: replica
+      ports:
+        http:
+          port: 3000
+  persistence:
+    data-primary:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      advancedMounts:
+        primary:
+          main:
+            - path: /opt/adguardhome/conf
+              subPath: conf
+            - path: /opt/adguardhome/work
+              subPath: work
+    data-replica:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      advancedMounts:
+        replica:
+          main:
+            - path: /opt/adguardhome/conf
+              subPath: conf
+            - path: /opt/adguardhome/work
+              subPath: work
