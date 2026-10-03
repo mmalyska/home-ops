@@ -111,7 +111,7 @@ as a last resort (see `provision/talos/templates/controlplane.yaml`). The UCG-Ma
 and blocks nothing, so it must never be picked while AdGuard is up.
 
 CoreDNS is not deployed by Talos (`cluster.coreDNS.disabled: true`) and Talos offers no Corefile customisation,
-so it is managed by ArgoCD in `cluster/apps/system/coredns/`. Its `forward . /etc/resolv.conf` block uses
+so it is deployed by ArgoCD from the upstream `coredns` Helm chart (`cluster/apps/system/coredns/`), as the Talos maintainers recommend. The kubelet `clusterDNS` is pinned to the `kube-dns` Service IP `10.96.0.10` in the Talos templates. The `forward . /etc/resolv.conf` block uses
 `policy sequential`; the default `random` sent about a third of pod queries to the UCG-Max, which broke internal
 names and ad blocking. CoreDNS reads the node resolver list only at pod start, so restart it after changing
 node nameservers.
