@@ -139,11 +139,7 @@ The pod gets an extra SLAAC address and the RA default route on `net1` as well; 
 
 ### External DNS records (Cloudflare)
 
-Static records defined as `DNSEndpoint` CRDs:
-
-| Record | Type | Target | Purpose |
-|---|---|---|---|
-| `haas.PRIVATE_DOMAIN` | CNAME | `external.PRIVATE_DOMAIN` | Home Assistant (HAOS on RPi) |
+There are no static external records any more (the old `haas.PRIVATE_DOMAIN` CNAME was removed). Everything is published from `HTTPRoute`s.
 
 HTTPRoutes attached to `envoy-external` are automatically published to Cloudflare by external-dns.
 
