@@ -1312,7 +1312,9 @@ Branch: `chore/rpi-decommission`
 - Modify: `.claude/memory/reference_home_network_hardware.md`, `reference_matter_thread_cross_vlan.md`, `reference_gateway_dns_architecture.md`
 - Delete (after the retention window): `cluster/apps/default/hass-proxy/`
 
-- [ ] **Step 1: [USER] Retention window**
+- [~] **Step 1: [USER] Retention window** _(in progress)_
+
+Status 2026-10-04: the RPi is powered off (so its AdGuard cannot be queried). The five former RPi DNS clients that had not yet shown up on the cluster AdGuard (VLAN 10: Mistek, Pan-Telefonik, an iPhone and two unnamed devices) were checked in UniFi by the user: off or idle, all fine. The UPS NUT server was moved to the QNAP and the nodes repointed first, and HA now has the NUT integration pointing at the QNAP. Remaining after the window ends (2026-10-17): retire the RPi, then the closing steps below.
 
 Keep the RPi powered off with its SD card/backup for **14 days** (user-confirmed). During the window nothing should have used it: re-check AdGuard queries by client and the `hass.<domain>` access logs for the old path.
 
