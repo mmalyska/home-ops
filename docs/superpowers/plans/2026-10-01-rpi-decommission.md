@@ -1229,7 +1229,19 @@ Expected: boots without the `hassio` errors, recorder connects to Postgres (`kub
 
 # PHASE 4 — Cutover and decommission
 
-### Task 4.1: Final cutover **[CONFIRM + USER]**
+### Task 4.1: Final cutover **[DONE 2026-10-04, user acceptance passed]**
+
+What actually happened (PRs #5445, #5447, #5448; the plan text below is the original):
+- The cutover PR (#5445) was merged before the final restore, so for a while `hass.<domain>` served the dry-run HA. The RPi HA was already stopped, so nothing was lost. The old backup was reused for the final config (the RPi HA had not changed since the dry-run backup).
+- **GitOps hold:** `selfHeal` reverts an imperative scale-down, so HA was held at `replicas: 0` by a PR (#5447), the PVC was cleared (keeping `.vscode`) and the final sanitized config copied with a helper pod (2,485 files, tree hash verified), then #5448 set `replicas: 1`.
+- **Final config:** original automations minus `Daily reboot` (needs the Supervisor), both scenes, `cloud`/`alexa` kept, RPi-only parts (thermostat, GPIO fan switch, `rpi_gpio`, `hassio`/`raspberry_pi`/`rpi_power`/`adguard`/`zha` entries) dropped, MQTT/Matter/Music Assistant/Wyoming pointed at cluster services, the dashboards and `RECORDER_DB_URL` re-applied. `Jenny screen on/off` stay disabled (their device is not in the registry; probably already broken on the RPi).
+- **Old route:** the `hass-proxy` HTTPRoute/Service/Endpoints had to be deleted by hand (prune is off) and were re-created once by Argo's self-heal from a cached older revision; refresh the app before deleting. Until then the older route won the `RouteRulesOverlap` and `hass.<domain>` returned 503.
+- `dom.<domain>` is gone; code-server moved to `hass-code.<domain>`.
+- The stray `haas.<domain>` Cloudflare CNAME was removed (PR #5446 plus the record deleted in the dashboard).
+
+**External DNS regression found on the way:** external-dns 1.23.0 / v0.23 (#5404, 2026-10-02) reads the Gateway target from `external-dns.kubernetes.io/target`; the alpha-prefixed annotation was ignored, so records fell back to the private LB IP, Cloudflare rejected them (1,500+ soft errors) and `hass`, `nextcloud`, `office` and `l` vanished from public DNS. Fixed by adding the un-prefixed annotation on the `envoy-external` Gateway (#5449); external-dns recreated the CNAMEs.
+
+**MQTT broker changed from RabbitMQ to Mosquitto:** RabbitMQ's MQTT plugin never delivers retained messages to wildcard subscriptions, so HA lost every MQTT-discovered entity (all Zigbee2MQTT devices) after each restart, and Z2M 2.x does not republish discovery on `homeassistant/status online`. New app `home-automation/mosquitto` (`ha-mosquitto`, eclipse-mosquitto 2.1.2, password file generated at start from the same Bitwarden users, PVC persistence), Z2M and HA repointed, `192.168.48.26` and `mqtt.<domain>` moved over (#5450-#5454, a missing `SECRET_PROVIDER` briefly broke the record), RabbitMQ app and namespace removed, operator and local chart kept. Verified: Z2M entities survive an HA restart.
 
 Branch: `feat/hass-cutover`
 
@@ -1311,7 +1323,7 @@ Keep the RPi powered off with its SD card/backup for **14 days** (user-confirmed
 - `matter-thread.md`: production HA and the Matter server are now in the repo (`home-automation/home-assistant`, `matter-server`); note the OMR route must be revisited if the Thread network is re-formed.
 - Memory files: update the three listed above; do not write the private domain literally.
 
-- [ ] **Step 3: Backups for the new HA**
+- [x] **Step 3: Backups for the new HA** (done: #5455, local `volsync` chart with the new `restore.enabled: false` flag so no restore-once ReplicationDestination is rendered over live data; HA config, Z2M, Matter and Music Assistant, every 6 hours; first runs Successful 2026-10-03; Mosquitto is not backed up, HA's database is covered by CNPG barman)
 
 Add a VolSync `ReplicationSource` (follow the repo's existing VolSync pattern, `grep -rn ReplicationSource cluster/apps | head`) for the HA config PVC, Z2M data PVC, Matter PVC and Music Assistant PVC; verify one backup completes (`kubectl get replicationsource -A`).
 
