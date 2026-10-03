@@ -19,24 +19,3 @@ subsets:
     ports:
       - name: hass-proxy
         port: 8123
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: agh-proxy
-spec:
-  ports:
-    - name: agh-proxy
-      port: 8812
-      targetPort: 8812
----
-kind: Endpoints
-apiVersion: v1
-metadata:
-  name: agh-proxy
-subsets:
-  - addresses:
-      - ip: 192.168.50.9
-    ports:
-      - name: agh-proxy
-        port: 8812
