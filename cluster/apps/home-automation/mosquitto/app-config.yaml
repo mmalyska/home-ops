@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: ha-mosquitto
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
