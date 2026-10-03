@@ -116,6 +116,20 @@ so it is deployed by ArgoCD from the upstream `coredns` Helm chart (`cluster/app
 names and ad blocking. CoreDNS reads the node resolver list only at pod start, so restart it after changing
 node nameservers.
 
+### IPv6 DNS for AdGuard
+
+The cluster is IPv4-only, so the DNS LoadBalancers cannot be dual-stack. Each AdGuard pod instead gets a second,
+IPv6-only macvlan interface (`vlan48-v6` NetworkAttachmentDefinition, static address) and listens on it:
+
+| Instance | IPv6 address |
+|---|---|
+| primary | `fd80:c04a:5687:48::25` |
+| replica | `fd80:c04a:5687:48::31` |
+
+AdGuard binds `0.0.0.0` by default; add the instance's IPv6 address to `dns.bind_hosts` in its `AdGuardHome.yaml`
+on the PVC (it is not synced between instances) and restart the pod. Then set these as the manual IPv6 DNS servers in UniFi.
+The pod needs the net1 interface first, otherwise AdGuard fails to bind.
+
 ### External DNS records (Cloudflare)
 
 Static records defined as `DNSEndpoint` CRDs:
