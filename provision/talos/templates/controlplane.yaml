@@ -19,7 +19,7 @@ machine:
     disableManifestsDirectory: true
   network:
     nameservers:
-      - 192.168.50.9
+      - 192.168.48.254
   install:
     disk: /dev/nvme0n1
     image: factory.talos.dev/metal-installer/a586a5113bc834fd711beb77c98fb6f407c824fa3ab2f1cdf2940840b6e807f0:${TALOS_VERSION}
@@ -41,7 +41,7 @@ machine:
   time:
     disabled: false
     # Public anycast NTP, by IP on purpose. etcd refuses to start until time
-    # syncs, so this must not depend on DNS (nameserver is AdGuard on the RPi)
+    # syncs, so this must not depend on DNS (nameserver is the UCG-Max)
     # or on any LAN host. The UCG-Max does not serve NTP on any interface.
     servers:
       - 162.159.200.123
