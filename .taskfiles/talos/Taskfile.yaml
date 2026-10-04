@@ -205,7 +205,6 @@ tasks:
       - test -f {{.TALOS_DIR}}/nodes.yaml
 
   upgrade:
-    internal: true
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=mc1)
     vars:
       NODE:
