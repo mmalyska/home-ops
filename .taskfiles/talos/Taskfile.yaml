@@ -234,6 +234,17 @@ tasks:
         vars: {TIMEOUT: 10m}
       - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }} --wait=false
       - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      # `talosctl upgrade` and the health check both succeed when the node reboots into a
+      # stale boot entry (Jetson UEFI does not persist the default entry, upstream Bug 25),
+      # so verify the node really runs the expected version.
+      - |
+        for i in 1 2 3 4 5 6; do
+          running=$(talosctl version --nodes {{ .NODE }} | sed -n '/Server:/,$p' | sed -n 's/^[[:space:]]*Tag:[[:space:]]*//p' | head -1)
+          [ "$running" = "{{ .NODE_TALOS_VERSION }}" ] && { echo "{{ .N }} runs $running"; exit 0; }
+          sleep 10
+        done
+        echo "ERROR: {{ .N }} runs ${running:-unknown}, expected {{ .NODE_TALOS_VERSION }}: it booted a stale boot entry. Do not re-run the upgrade; select the new entry in the sd-boot menu on the console." >&2
+        exit 1
 
   wait_for_health:
     internal: true
