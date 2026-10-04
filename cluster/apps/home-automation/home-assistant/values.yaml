@@ -17,7 +17,9 @@ pgsql-cnpg:
   #       parameters:
   #         barmanObjectName: home-assistant-objectstore
   objectStore:
-    destinationPath: "s3://k8s-at-home-backup/cnpg/home-assistant"
+    # -v2: the original path still holds a previous cluster's WAL/backups, which makes
+    # barman fail with "Expected empty archive" and blocks archiving. Left untouched on purpose.
+    destinationPath: "s3://k8s-at-home-backup/cnpg/home-assistant-v2"
     endpointURL: <secret:s3_endpoint>
     s3Credentials:
       accessKeyId:
