@@ -97,13 +97,53 @@ reachable at the TCP level, unmanageable, and fixable only over the
 console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
 `docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
 
-**Extension-only bumps need a manual boot-menu pick.** When only the nvgpu
-extension changes and the Talos version stays the same (e.g. `nvgpu5.11.1` to
-`nvgpu5.13.0` on v1.14.0), the Jetson UEFI does not persist the boot-entry
-variable, so `talosctl upgrade` reports success but boots the old UKI
-(upstream `BUGS.md`, Bug 25). Select the second `Talos vX` entry in the
-sd-boot menu on the console, and verify with `talosctl get extensions`.
-Upgrades that change the Talos version are not affected.
+#### nv1 boots the wrong UKI after an upgrade (Jetson UEFI)
+
+The Jetson UEFI does not persist the sd-boot default entry the installer sets
+(upstream `BUGS.md`, [Bug 25](https://github.com/schwankner/talos-jetson-orin/blob/main/BUGS.md#bug-25--same-version-talosctl-upgrade-never-boots-the-new-uki-on-jetson-uefi-reports-success-anyway)).
+The persisted `LoaderEntryDefault` keeps naming an old UKI, sd-boot honours it
+while that file exists, and the node reboots into the old version. `talosctl
+upgrade` and `talosctl health` both still succeed. `task talos:upgrade` now
+fails with `ERROR: nv1 runs vX, expected vY` when this happens. **Do not re-run
+the upgrade**, it repeats the same thing. The 1.13 -> 1.14 upgrade hit this.
+
+Check what sd-boot sees and what it picked:
+
+```sh
+export TALOSCONFIG=$PWD/provision/talos/clusterconfig/talosconfig
+G=4a67b082-0a4c-41cf-b6c7-440b29bb8c4f
+for v in LoaderEntryDefault LoaderEntrySelected; do
+  printf "$v: "; talosctl read /sys/firmware/efi/efivars/$v-$G -n 192.168.48.5 | tail -c +5 | iconv -f UTF-16LE -t UTF-8
+  echo
+done
+```
+
+Fix without a console (verified on nv1): make the stale default point at a file
+that does not exist, so sd-boot falls back to its own ordering (newest UKI
+first).
+
+1. Run a short-lived privileged pod pinned to nv1 in `kube-system` (exempt from
+   the PodSecurity baseline) with hostPath `/dev` and mount `/dev/nvme0n1p1`
+   (vfat). Talos does not mount the EFI partition at runtime and has no API to
+   write it, so this is the only remote route.
+2. Rename the stale UKI, do not delete it:
+   `mv EFI/Linux/Talos-vOLD.efi EFI/Linux/Talos-vOLD.efi.bak`, then `sync`,
+   `umount`, delete the pod.
+3. `talosctl reboot --nodes 192.168.48.5`, then confirm the running version,
+   `LoaderEntrySelected`, `nvidia.com/gpu: 1`, `/dev/dri` and `/etc/cri/containerd.toml`.
+
+Notes:
+
+- Editing `loader/loader.conf` (`default <entry>`) does **not** help: the
+  `LoaderEntryDefault` EFI variable outranks it. The installer rewrites that file
+  on every install anyway.
+- After the rename there is no fallback entry. If the new UKI does not boot, the
+  node needs the console or the USB image. Confirm a matching custom installer
+  exists first (see above).
+- Same-version bumps (only the nvgpu extension changes) hit this too, plus the
+  installer names the new UKI `Talos-vX~N.efi`. Expect to repeat the rename.
+- Do not upgrade nv1 before the control plane: worker one minor behind is fine,
+  the reverse is not.
 
 The version is read from the committed `nodes/*.yaml`, never from
 `clusterconfig/` — those are generated and gitignored, so on a fresh clone
