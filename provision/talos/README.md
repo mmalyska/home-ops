@@ -78,13 +78,13 @@ the node's installed version against that. A node with no
 falls back to the global `TALOS_VERSION` in
 `.taskfiles/talos/Taskfile.yaml`.
 
-So nv1 tracks `v1.13.8` purely because its image says so:
+So nv1 tracks the version in its image tag purely because its image says so:
 
 ```yaml
 # nodes/nv1.yaml
 machine:
   install:
-    image: ghcr.io/mmalyska/custom-installer:v1.13.8-6.18.42-nvgpu5.11.1-drm-noshim
+    image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
 ```
 
 To move such a node to a new Talos version, bump the tag in
@@ -96,6 +96,14 @@ image can leave the node with networking up but `apid` never starting —
 reachable at the TCP level, unmanageable, and fixable only over the
 console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
 `docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
+
+**Extension-only bumps need a manual boot-menu pick.** When only the nvgpu
+extension changes and the Talos version stays the same (e.g. `nvgpu5.11.1` to
+`nvgpu5.13.0` on v1.14.0), the Jetson UEFI does not persist the boot-entry
+variable, so `talosctl upgrade` reports success but boots the old UKI
+(upstream `BUGS.md`, Bug 25). Select the second `Talos vX` entry in the
+sd-boot menu on the console, and verify with `talosctl get extensions`.
+Upgrades that change the Talos version are not affected.
 
 The version is read from the committed `nodes/*.yaml`, never from
 `clusterconfig/` — those are generated and gitignored, so on a fresh clone
