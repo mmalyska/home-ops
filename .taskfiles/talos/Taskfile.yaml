@@ -241,4 +241,4 @@ tasks:
     cmds:
       - kubectl wait --timeout=5m --for=condition=Complete jobs --all --all-namespaces
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
-      - kubectl -n identity wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster keycloakdb-cnpg
+      - kubectl wait --for=condition=Ready --timeout {{ .TIMEOUT | default "30s" }} clusters.postgresql.cnpg.io --all --all-namespaces
