@@ -44,7 +44,8 @@
         "budimanjojo/talhelper",
         "ghcr.io/mmalyska/talos-installer",
         "mmalyska/talos-images",
-        "ghcr.io/siderolabs/installer"
+        "ghcr.io/siderolabs/installer",
+        "siderolabs/talos"
       ],
       "groupName": "talos",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},

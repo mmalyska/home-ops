@@ -9,8 +9,8 @@ vars:
     sh: yq '.nodes[] | select(.type == "controlplane") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
   WORKER_LIST:
     sh: yq '.nodes[] | select(.type == "worker") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
-  # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: "v1.13.10"
+  # renovate: datasource=github-releases depName=siderolabs/talos
+  TALOS_VERSION: "v1.14.2"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.35.9"
   TALOS_CONTROLLER:
