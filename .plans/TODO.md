@@ -12,14 +12,6 @@ General backlog items not tied to a specific plan.
   - Worth checking: is there an official Talos-supported flow for this (e.g. a documented "cordon, taint via kubectl, let Talos adopt/own it" pattern, a controller flag, elevated RBAC binding Talos is meant to have but doesn't in this cluster, or a `talosctl` subcommand that bypasses the kubelet identity)? Check Talos GitHub issues/docs for `NodeApplyController` + taints.
   - If no first-class fix exists, write a skill (e.g. `talos-taint-changes`) documenting the manual `kubectl taint` + config-reapply-to-confirm-no-drift procedure, so future taint renames/additions on already-registered nodes are a known, repeatable, low-risk operation instead of a surprise mid-plan.
 
-## Observability — Prometheus
-
-- [ ] **Prometheus is not scraping etcd** — found 2026-10-04 during the Talos 1.14 upgrade. There is no `kube-etcd` job in Prometheus and no `etcd_*` series at any point in the past 7 days (checked 10 min, 1 h, 1 d, 7 d back), although the `prometheus-stack-kube-prom-kube-etcd` ServiceMonitor exists in `monitoring` and `kubeEtcd.enabled: true` is set in `cluster/apps/system/prometheus-stack/values.yaml`. All 73 other targets are up. So etcd alerts and dashboards built on `etcd_*` metrics are blind.
-  - Likely cause (not verified): the ServiceMonitor has no matching Service/Endpoints, since Talos runs etcd as a static pod and the chart's `kube-etcd` Service in `kube-system` is missing or its selector/port does not match.
-  - The `metrics-proxy` DaemonSet (`cluster/apps/system/prometheus-stack/templates/metrics-proxy.yaml`) exposes `${NODE_IP}:2381` (haproxy to `127.0.0.1:2381`) and is meant to feed this. A plain `curl http://<node>:2381/metrics` returns 503 on both upgraded and non-upgraded nodes, so check the haproxy backend first.
-  - Talos 1.14 moves etcd's HTTP endpoints (`/metrics`, `/health`) from port 2379 to 2383. Re-check which port the proxy and any `listen-metrics-urls` should use after all nodes are on 1.14.
-  - Done when `up{job="kube-etcd"}` is 1 for all three control-plane nodes and the etcd alert rules evaluate.
-
 ## Observability — Grafana Dashboards
 
 - [ ] **nv1 iGPU utilization metrics** — `node-exporter` gives free thermal-zone temps for the Jetson Orin GA10B iGPU (`node_thermal_zone_temp{type="gpu-thermal"}`, already surfaced on the "Cluster Nodes" dashboard's "Thermal Zones" panel), but there is no exporter for GPU utilization/clocks — Jetson has no `nvidia-smi`. Investigate a `jtop`/jetson-stats Prometheus exporter or a `tegrastats`-parsing textfile-collector sidecar, in the spirit of the existing `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` pattern. Scope as its own design doc given nv1's GPU stack is still mid-rollout (see `docs/superpowers/plans/2026-08-13-jetson-igpu.md`).

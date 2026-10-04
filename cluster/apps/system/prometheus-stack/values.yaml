@@ -10,6 +10,13 @@ kube-prometheus-stack:
     enabled: true
   kubeEtcd:
     enabled: true
+    # etcd is a Talos host service, not a pod, so the chart's component=etcd selector matches nothing.
+    # Plain-HTTP metrics: etcd listens on 127.0.0.1:2381 (cluster.etcd.extraArgs in
+    # provision/talos/templates/controlplane.yaml); kube-system/metrics-proxy exposes it on each node IP.
+    endpoints:
+      - 192.168.48.2
+      - 192.168.48.3
+      - 192.168.48.4
   kubeProxy:
     enabled: false
   kubeScheduler:
