@@ -167,6 +167,10 @@ cluster:
     ca:
       crt: ${TALHELPER_ETCDCERT}
       key: ${TALHELPER_ETCDKEY}
+    extraArgs:
+      # Plain-HTTP /metrics on loopback only. Since Talos 1.14 the default /metrics is on :2383 behind
+      # client mTLS; kube-system/metrics-proxy (haproxy on <node-ip>:2381) forwards to this listener.
+      listen-metrics-urls: http://127.0.0.1:2381
   coreDNS:
     disabled: true
   allowSchedulingOnMasters: true
