@@ -62,7 +62,7 @@ Needed at the console: **HDMI monitor and USB keyboard, or the serial header**. 
 
 ## Things the plan did not have before
 
-- **Talos 1.13.10 to 1.14.0 at the same time.** The r39 image is Talos v1.14.0; nv1 runs v1.13.10 and the rest of the cluster v1.12.x (see the cluster reference). Check Talos 1.14 support for the cluster's Kubernetes version and for the control-plane version skew before C3. The USB maintenance-mode boot in C1 does not involve either.
+- **Talos 1.13.10 to 1.14.0 at the same time.** The r39 image is Talos v1.14.0; the whole cluster, nv1 included, runs v1.13.10. nv1 would be one minor ahead of the control plane (Talos supports this skew only within limits): check Talos 1.14's supported Kubernetes versions and the version-skew notes against the cluster's Kubernetes version before C3. The USB maintenance-mode boot in C1 does not involve either.
 - **Registry credentials.** The fork's packages must stay private (NVIDIA binaries). A node that pulls `ghcr.io/mmalyska/custom-installer:…` (upgrade or reinstall in C3, and the installer image in `nv1.yaml`) needs `machine.registries.config` with a pull token. The USB image carries everything and needs no pull. Today's installer comes from `ghcr.io/schwankner/…` (public).
 - **C1 stays non-destructive.** Booting the r39 USB image in maintenance mode touches neither the NVMe nor Kubernetes. Everything up to C2 can be judged from `dmesg` before deciding to continue.
 
