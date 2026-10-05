@@ -9,7 +9,7 @@ server:
     # NEVER use *-cu129 anything on nv1 (CUDA 13/12.9 does not initialize on
     # this driver and silently falls back to CPU).
     repository: ghcr.io/mmalyska/llama-cpp-jetson
-    tag: "v0.5.0@sha256:fa63364ad35e90a160daebe7a1b33fea4dbb72ed3abdb2bbd3e4b564f4f62d98"
+    tag: "v0.6.0@sha256:1857a5d85d40ddb2b3e538d87bf2bc7bb7b24133bb6d4e0d89c56ab0ead88688"
   fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
   model:
     file: LFM2.5-8B-A1B-UD-Q6_K_XL.gguf
