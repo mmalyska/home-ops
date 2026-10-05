@@ -35,7 +35,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/31-scheduler.yaml` | kube-scheduler listens on all addresses | live (the static pod restarts) | cluster.scheduler |  |
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
-| `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | machine.udev |  |
+| `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
@@ -71,7 +71,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/31-scheduler.yaml` | kube-scheduler listens on all addresses | live (the static pod restarts) | cluster.scheduler |  |
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
-| `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | machine.udev |  |
+| `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
@@ -107,7 +107,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/31-scheduler.yaml` | kube-scheduler listens on all addresses | live (the static pod restarts) | cluster.scheduler |  |
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
-| `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | machine.udev |  |
+| `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
