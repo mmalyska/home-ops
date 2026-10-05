@@ -246,6 +246,11 @@ tasks:
         echo "ERROR: {{ .N }} runs ${running:-unknown}, expected {{ .NODE_TALOS_VERSION }}: it booted a stale boot entry. Do not re-run the upgrade; select the new entry in the sd-boot menu on the console." >&2
         exit 1
 
+  parity:
+    desc: Compare two directories of rendered configs after normalizing, secrets masked (task talos:parity -- OLD NEW)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/parity.sh {{.CLI_ARGS}}"
+
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy
