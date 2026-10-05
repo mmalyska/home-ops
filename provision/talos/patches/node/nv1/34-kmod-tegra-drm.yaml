@@ -1,0 +1,7 @@
+# What:   Kernel module tegra_drm
+# Why:    OE4T DRM stack, creates /dev/dri/renderD128 and is required for CUDA. The load order is the file order: 31 to 38, the host1x stack first. Modules are ABI-bound to the custom installer's kernel (nv1's install image)
+# Nodes:  nv1
+# Apply:  reboot (modules and their parameters are only loaded at boot)
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: tegra_drm
