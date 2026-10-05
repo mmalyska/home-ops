@@ -18,7 +18,8 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -28,7 +29,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
-| `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
+| `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version; install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/all/30-install.yaml |
 | `provision/talos/patches/controlplane/10-etcd-metrics.yaml` | Serve etcd /metrics over plain HTTP on 127.0.0.1:2381 | reboot (etcd reads its arguments only at start; applying does not restart it and talosctl refuses to restart etcd) | cluster.etcd |  |
 | `provision/talos/patches/controlplane/20-apiserver.yaml.tpl` | kube-apiserver image at the Kubernetes version and the extra names its certificate is valid for | live (the kube-apiserver static pod restarts) | KubeAPIServerConfig |  |
 | `provision/talos/patches/controlplane/21-apiserver-pod-security.yaml` | PodSecurity admission: enforce baseline, audit and warn on restricted, kube-system exempt | live (the kube-apiserver static pod restarts) | KubeAdmissionControlConfig/PodSecurity |  |
@@ -62,7 +63,8 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -72,7 +74,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
-| `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
+| `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version; install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/all/30-install.yaml |
 | `provision/talos/patches/controlplane/10-etcd-metrics.yaml` | Serve etcd /metrics over plain HTTP on 127.0.0.1:2381 | reboot (etcd reads its arguments only at start; applying does not restart it and talosctl refuses to restart etcd) | cluster.etcd |  |
 | `provision/talos/patches/controlplane/20-apiserver.yaml.tpl` | kube-apiserver image at the Kubernetes version and the extra names its certificate is valid for | live (the kube-apiserver static pod restarts) | KubeAPIServerConfig |  |
 | `provision/talos/patches/controlplane/21-apiserver-pod-security.yaml` | PodSecurity admission: enforce baseline, audit and warn on restricted, kube-system exempt | live (the kube-apiserver static pod restarts) | KubeAdmissionControlConfig/PodSecurity |  |
@@ -106,7 +108,8 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -116,7 +119,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
-| `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
+| `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version; install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/all/30-install.yaml |
 | `provision/talos/patches/controlplane/10-etcd-metrics.yaml` | Serve etcd /metrics over plain HTTP on 127.0.0.1:2381 | reboot (etcd reads its arguments only at start; applying does not restart it and talosctl refuses to restart etcd) | cluster.etcd |  |
 | `provision/talos/patches/controlplane/20-apiserver.yaml.tpl` | kube-apiserver image at the Kubernetes version and the extra names its certificate is valid for | live (the kube-apiserver static pod restarts) | KubeAPIServerConfig |  |
 | `provision/talos/patches/controlplane/21-apiserver-pod-security.yaml` | PodSecurity admission: enforce baseline, audit and warn on restricted, kube-system exempt | live (the kube-apiserver static pod restarts) | KubeAdmissionControlConfig/PodSecurity |  |
@@ -150,7 +153,8 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -160,11 +164,11 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
-| `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
+| `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version; install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/all/30-install.yaml |
 | `provision/talos/patches/worker/20-sysctls.yaml` | BPF JIT hardening | live | SysctlConfig |  |
 | `provision/talos/patches/worker/30-node-taints.yaml` | Taint workers nvidia.com/gpu=present:NoSchedule | live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it) | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network |  |
-| `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX) | install-only | machine.install | shares machine.install with provision/talos/patches/worker/05-install-image.yaml.tpl |
+| `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/worker/05-install-image.yaml.tpl |
 | `provision/talos/patches/node/nv1/31-kmod-host1x.yaml` | Kernel module host1x | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x |  |
 | `provision/talos/patches/node/nv1/32-kmod-host1x-fence.yaml` | Kernel module host1x_fence | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x_fence |  |
 | `provision/talos/patches/node/nv1/33-kmod-host1x-nvhost.yaml` | Kernel module host1x_nvhost | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x_nvhost |  |
