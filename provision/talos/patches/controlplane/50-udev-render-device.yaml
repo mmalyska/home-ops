@@ -2,7 +2,7 @@
 # Why:    Intel GPU workloads (intel-device-plugins) need access to the render node
 # Nodes:  control plane
 # Apply:  live
-machine:
-  udev:
-    rules:
-      - SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="44", MODE="0660"
+apiVersion: v1alpha1
+kind: UdevRulesConfig
+rules:
+  - SUBSYSTEM=="drm", KERNEL=="renderD*", GROUP="44", MODE="0660"
