@@ -24,7 +24,8 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
-| `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
+| `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
+| `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
@@ -63,7 +64,8 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
-| `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
+| `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
+| `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
@@ -102,7 +104,8 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
-| `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
+| `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
+| `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
@@ -141,7 +144,8 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
-| `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
+| `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
+| `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
