@@ -34,7 +34,7 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 
 ## Talos Configuration
 
-- Managed with `talosctl` + `envsubst` from `provision/talos/templates/` and `provision/talos/nodes/`
+- Rendered from `talosctl gen config` plus the layered patch files in `provision/talos/patches/` (see `provision/talos/README.md`)
 - Node index: `provision/talos/nodes.yaml`; generate: `task talos:generate`
 - Current versions: Talos v1.14.x, Kubernetes v1.35.x (updated by Renovate)
 - 3 control plane nodes (scheduling enabled on control plane, no dedicated workers)
@@ -44,7 +44,7 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 
 ### Talos upgrades
 
-- `TALOS_VERSION` in `.taskfiles/talos/Taskfile.yaml` is tracked by Renovate via `github-releases siderolabs/talos`. Talos 1.14 stopped publishing `ghcr.io/siderolabs/installer`; the install image is the Image Factory schematic (`factory.talos.dev/metal-installer/<id>:${TALOS_VERSION}`) in `templates/controlplane.yaml`. Kubernetes is held at `<=1.35` in `.github/renovate/allowedVersions.json5`.
+- `TALOS_VERSION` in `.taskfiles/talos/Taskfile.yaml` is tracked by Renovate via `github-releases siderolabs/talos`. Talos 1.14 stopped publishing `ghcr.io/siderolabs/installer`; the install image is the Image Factory schematic (`factory.talos.dev/metal-installer/<id>:${TALOS_VERSION}`) in `patches/controlplane/05-install-image.yaml.tpl` (worker: `patches/worker/`). Kubernetes is held at `<=1.35` in `.github/renovate/allowedVersions.json5`.
 - Roll out one node at a time, control plane first (`mc1` -> `mc2` -> `mc3`), then `nv1`: `task talos:upgrade N=mc1`. It gates on `wait_for_health` (jobs, Ceph `HEALTH_OK`, **every** CNPG cluster Ready) and now fails if the node boots a different version than expected.
 - `talosctl reboot` is blocked for Claude by permissions. Ask the user to run it with `!`.
 - A drain stuck on a CNPG primary (PDB, 0 disruptions allowed) means a replica is unhealthy. Fix the replica first. Do not force the drain. `kubectl uncordon <node>` restores evicted Ceph mon/OSD pods; Ceph recovers on its own.
@@ -61,7 +61,7 @@ Node subnet: `192.168.48.0/24` (VLAN 48, gateway `192.168.48.254`) · Pod networ
 LB IP pool: `192.168.48.20–50` (annotate new services with `lbipam.cilium.io/ips: "192.168.48.XX"`)
 
 > VLAN 48's gateway is `.254`, not `.1` — `192.168.48.1` is the Talos control-plane VIP.
-> DHCP is disabled on VLAN 48; all node addresses are static in `provision/talos/nodes/`.
+> DHCP is disabled on VLAN 48; all node addresses are static in `provision/talos/patches/node/`.
 
 Full IP allocation and gateway architecture: `@docs/src/general/network.md`.
 

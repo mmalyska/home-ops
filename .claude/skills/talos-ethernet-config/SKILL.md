@@ -44,12 +44,15 @@ rings:
 
 ## Repo Pattern
 
-Add a template file and append it in the `generate` task — same pattern as `extension-nut-client.yaml`:
+Add the document as its own patch file, with the header the repo requires (`provision/talos/README.md`):
 
-1. Create `provision/talos/templates/ethernet-rings.yaml`:
+`provision/talos/patches/controlplane/90-ethernet-rings.yaml`
 
 ```yaml
----
+# What:   NIC ring buffers rx/tx 4096 on eth0
+# Why:    Avoids packet drops under load
+# Nodes:  control plane
+# Apply:  live
 apiVersion: v1alpha1
 kind: EthernetConfig
 name: eth0
@@ -58,13 +61,8 @@ rings:
   tx: 4096
 ```
 
-2. Append it in `.taskfiles/talos/Taskfile.yaml` for controlplane nodes:
-
-```bash
-envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
-cat templates/ethernet-rings.yaml >> /tmp/talos-patched.yaml   # ← add this line
-mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
-```
+No Taskfile change is needed: files in the layer directory are merged automatically. Run
+`provision/talos/scripts/check-patches.sh` and `task talos:generate`.
 
 ## Check Supported Values First
 
