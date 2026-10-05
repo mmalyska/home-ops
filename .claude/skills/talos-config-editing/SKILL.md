@@ -22,7 +22,8 @@ talosctl machineconfig patch … in this order:
 → clusterconfig/home-<node>.yaml   (gitignored, contains secrets)
 ```
 
-Output is multi-document YAML. Read `provision/talos/README.md` for the full picture.
+Output is multi-document YAML. Read `provision/talos/README.md` for the full picture, or run
+`task talos:explain -- <node>` to see every effective document and the file it comes from.
 
 ## Edit Decision Map
 
@@ -91,6 +92,7 @@ Then `scripts/check-patches.sh` and `task talos:generate`. No Taskfile edit is n
 ```sh
 scripts/check-patches.sh     # conventions
 task talos:generate          # re-render clusterconfig/
+task talos:explain -- mc1    # what is configured, from where
 
 task talos:apply N=mc1       # apply (most fields are live)
 # or

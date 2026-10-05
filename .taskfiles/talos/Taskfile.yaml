@@ -224,6 +224,11 @@ tasks:
     cmds:
       - "{{.TALOS_DIR}}/scripts/parity.sh {{.CLI_ARGS}}"
 
+  explain:
+    desc: What is configured per node, from the patch headers (task talos:explain -- mc1, or --markdown)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/explain.sh {{.CLI_ARGS}}"
+
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy

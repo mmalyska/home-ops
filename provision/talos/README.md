@@ -204,6 +204,12 @@ Notes:
 - Do not upgrade nv1 before the control plane: worker one minor behind is fine,
   the reverse is not.
 
+## Inspecting the config
+
+`task talos:explain -- mc1` lists, for a node, every patch file in merge order with what it does, why, what applying
+it costs, what it touches and which earlier file touches the same top-level item. Without arguments it shows all nodes;
+`--markdown` prints the tables used for the generated config map.
+
 ## Secrets
 
 All secrets come from Bitwarden Secrets Manager: `.envrc` runs `bws` and exports them as `TALHELPER_*` environment
