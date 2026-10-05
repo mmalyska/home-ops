@@ -37,7 +37,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
-| `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
+| `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels |  |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
@@ -73,7 +73,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
-| `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
+| `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels |  |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
@@ -109,7 +109,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
-| `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
+| `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels |  |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
