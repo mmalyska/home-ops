@@ -1,7 +1,8 @@
 # What:   Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version; install disk /dev/nvme0n1
 # Why:    Default worker image; nv1 overrides it with its custom installer (node/nv1/20-install-image.yaml).
-#         The disk selector (CEL) is repeated in every file that is applied last for a node (controlplane/05, worker/05,
-#         node/nv1/20) because talosctl machineconfig patch drops provisioning.diskSelector.match when a later patch
+#         The disk selector (CEL) is repeated in every file that sets the installer image (controlplane/05, worker/05,
+#         node/nv1/20): the last patch applied for a node must carry it, because talosctl machineconfig patch drops
+#         provisioning.diskSelector.match when a later patch
 #         merges into the document; `talosctl validate` fails with "provisioning.diskSelector.match is required" if it is lost
 # Nodes:  workers
 # Apply:  install-only

@@ -62,7 +62,7 @@ tasks:
       - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} shutdown --wait
 
   upgrade:k8s:
-    desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s N=mc1)
+    desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s N=mc1). Bump KUBERNETES_VERSION in this file first; it changes the live config, so run task talos:generate and task talos:diff afterwards
     vars:
       NODE:
         sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml

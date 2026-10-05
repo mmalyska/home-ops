@@ -1,8 +1,9 @@
 # What:   Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1
 # Why:    The Jetson GPU needs the matching kernel and out-of-tree modules, built by schwankner/talos-jetson-orin.
 #         The tag is <talos>-<kernel>-nvgpu<version>; the kernel module ABI must match the image (see provision/talos/README.md).
-#         The disk selector (CEL) is repeated in every file that is applied last for a node (controlplane/05, worker/05,
-#         node/nv1/20) because talosctl machineconfig patch drops provisioning.diskSelector.match when a later patch
+#         The disk selector (CEL) is repeated in every file that sets the installer image (controlplane/05, worker/05,
+#         node/nv1/20): the last patch applied for a node must carry it, because talosctl machineconfig patch drops
+#         provisioning.diskSelector.match when a later patch
 #         merges into the document; `talosctl validate` fails with "provisioning.diskSelector.match is required" if it is lost
 # Nodes:  nv1
 # Apply:  install-only

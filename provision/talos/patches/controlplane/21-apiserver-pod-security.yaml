@@ -1,7 +1,7 @@
 # What:   PodSecurity admission: enforce baseline, audit and warn on restricted, kube-system exempt
 # Why:    Baseline blocks the dangerous pod settings without breaking existing workloads; restricted is reported only.
 #         kube-system runs privileged system pods, so it is exempt (the generated base used to add this exemption to
-#         the legacy field, which 23-apiserver-legacy-admission-audit-delete.yaml removes)
+#         the legacy field, which 23-apiserver-legacy-delete.yaml removes)
 # Nodes:  control plane
 # Apply:  live (the kube-apiserver static pod restarts)
 apiVersion: v1alpha1

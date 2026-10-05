@@ -1,8 +1,8 @@
-# What:   Install behaviour for every node: the system disk is never wiped
+# What:   Install behaviour for every node: the unattended install never wipes the system disk
 # Why:    The UnattendedInstallConfig document only acts when a node is not installed yet (a node booted from USB or PXE
 #         in maintenance mode installs itself with it); on an installed node it is inert apart from naming the installer
 #         image that upgrades use. wipe defaults to true in this document, so false is written explicitly: a deliberate
-#         wipe is a manual decision. The installer image and the disk selector are set per role and per node
+#         wipe is a manual decision (talosctl reset still wipes when asked). The installer image and the disk selector are set per role and per node
 #         (controlplane/05, worker/05, node/nv1/20). The legacy grubUseUKICmdline has no counterpart: the nodes boot
 #         with UKI, grub is not involved
 # Nodes:  all nodes

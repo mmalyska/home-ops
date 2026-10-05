@@ -51,6 +51,13 @@ assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory (with the secrets 
 (unset TALHELPER_UPSMONHOST; TMPDIR="$TMP/tmpdir" "$SCRIPTS/render.sh" mc1 "$TMP/unset2.yaml" >/dev/null 2>&1 || true)
 assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory is left behind after a failed render either"
 
+echo "-- install document on every node"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq 'disk.dev_path == "/dev/nvme0n1"|false' "$(yq 'select(.kind == "UnattendedInstallConfig") | .provisioning.diskSelector.match + "|" + (.provisioning.wipe | tostring)' "$TMP/$n.yaml")" "$n renders the install disk selector and wipe false"
+  assert_ok "$n output is a valid metal config (a lost selector fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
+
 echo "-- safety"
 out="$(cat "$TMP/mc1.yaml" "$TMP/nv1.yaml")"
 assert_not_contains "$out" "leaked" "variables outside the allowlist are never substituted"
