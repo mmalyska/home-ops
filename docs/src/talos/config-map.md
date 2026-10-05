@@ -20,7 +20,8 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
 | `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
@@ -56,7 +57,8 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
 | `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
@@ -92,7 +94,8 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
 | `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
@@ -128,7 +131,8 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
 | `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
