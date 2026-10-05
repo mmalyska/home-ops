@@ -50,7 +50,7 @@ Output is multi-document YAML. Read `provision/talos/README.md` for the full pic
   # Apply:  live | install-only | reboot   (optionally followed by a reason in brackets)
   ```
 
-  `live` takes effect immediately, `install-only` only matters at the next install or upgrade (`machine.install`),
+  `live` takes effect immediately, `install-only` only matters at the next install or upgrade (the `UnattendedInstallConfig` document),
   `reboot` needs a node reboot (etcd settings, kernel modules, containerd config, env, volume encryption).
 
 - `${VAR}` only in `.yaml.tpl` files, only variables from `TPL_VARS`. An unset variable fails the render.
@@ -68,6 +68,7 @@ Patches are partial documents: only the keys to override.
 - Remove something the base generates with `$patch: delete` (see `all/05-hostname-config-delete.yaml` and `controlplane/85-delete-lb-exclusion-label.yaml`)
 - A single patch file cannot modify the same document twice; hence one document per file
 - A `KubeAPIServerConfig` document does not add the `Node` and `RBAC` authorizers on its own: they are the `KubeAuthorizerConfig` documents `controlplane/25-apiserver-authorizer-node.yaml` and `26-apiserver-authorizer-rbac.yaml`, in that order. `talosctl validate` accepts a config without them, but `tests/test_render.sh` checks for them, so keep both files
+- `UnattendedInstallConfig` has two traps: `provisioning.wipe` defaults to true (we write `wipe: false` in `all/30-install.yaml`), and `talosctl machineconfig patch` drops `provisioning.diskSelector.match` (a CEL expression) when a later patch merges into the document, so the selector is repeated in `controlplane/05`, `worker/05` and `node/nv1/20`; `tests/test_render.sh` guards it and `talosctl validate` fails with "match is required" if it is lost
 - A new document can also remove things Talos adds implicitly while only the legacy field exists. `KubeNodeConfig` is the case seen: with it on a control plane Talos no longer adds `node-role.kubernetes.io/control-plane` and removes the label from the node (workloads select it and `talosctl health` finds control planes by it), so list it in `labels`. Before applying a migration, compare the live labels, taints and resources of the node with what the new document lists, and apply the first node alone.
 - When migrating a legacy field to its new document, check that `talosctl gen config` does not add the legacy field itself: the contract-pinned base carries some (for example `machine.features.kubePrism`), and Talos refuses a legacy field next to its new document (`talosctl validate --mode metal` says so). Delete it from the base with `$patch: delete` in the v1alpha1 patch file (see `all/60-features.yaml`). The diff against the live node shows whether the legacy field is really gone.
 

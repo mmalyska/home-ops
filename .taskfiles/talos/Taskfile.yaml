@@ -217,7 +217,7 @@ tasks:
       FILE:
         sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .N }}.yaml
       TALOS_IMAGE:
-        sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
+        sh: yq -N 'select(.kind == "UnattendedInstallConfig") | .installer.image' "{{.FILE}}"
       FORCE: "{{ .FORCE | default false }}"
       # The expected version is the tag of the install image in the rendered config (FILE above, which
       # must exist, so there is no silent fallback): a Factory tag is the version, a custom installer

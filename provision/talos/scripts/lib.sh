@@ -69,7 +69,7 @@ touches() {
 # install image ("v1.14.2" for a Factory image, "v1.14.0" for v1.14.0-6.18.48-nvgpu... custom tags)
 expected_version() {
   local image tag
-  image="$(yq -N 'select(.machine != null) | .machine.install.image' "$1")"
+  image="$(yq -N 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$1")"
   tag="${image##*:}"
   echo "${tag%%-*}"
 }

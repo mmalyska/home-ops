@@ -63,8 +63,12 @@ echo "-- expected-version.sh"
 cat > "$TMP/r.yaml" <<'YAML'
 version: v1alpha1
 machine:
-  install:
-    image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
+  token: sometoken
+---
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+installer:
+  image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
 YAML
 assert_eq "v1.14.0" "$("$SCRIPTS/expected-version.sh" "$TMP/r.yaml")" "prints the leading Talos version of a custom tag"
 assert_fails "fails without an argument" "$SCRIPTS/expected-version.sh"
