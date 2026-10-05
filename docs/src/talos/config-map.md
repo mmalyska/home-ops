@@ -15,12 +15,12 @@ controlplane, 192.168.48.2
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
-| `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
+| `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
@@ -42,7 +42,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/controlplane/60-node-labels.yaml |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
-| `provision/talos/patches/node/mc1/10-network.yaml` | mc1 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network | shares machine.network with provision/talos/patches/all/20-nameservers.yaml |
+| `provision/talos/patches/node/mc1/10-network.yaml` | mc1 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 
 ## mc2
 
@@ -52,12 +52,12 @@ controlplane, 192.168.48.3
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
-| `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
+| `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
@@ -79,7 +79,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/controlplane/60-node-labels.yaml |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
-| `provision/talos/patches/node/mc2/10-network.yaml` | mc2 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network | shares machine.network with provision/talos/patches/all/20-nameservers.yaml |
+| `provision/talos/patches/node/mc2/10-network.yaml` | mc2 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 
 ## mc3
 
@@ -89,12 +89,12 @@ controlplane, 192.168.48.4
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
-| `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
+| `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
@@ -116,7 +116,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/controlplane/60-node-labels.yaml |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
-| `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network | shares machine.network with provision/talos/patches/all/20-nameservers.yaml |
+| `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 
 ## nv1
 
@@ -126,12 +126,12 @@ worker, 192.168.48.5
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
-| `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
+| `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
-| `provision/talos/patches/all/60-features.yaml` | Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field | live | machine.features |  |
+| `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
@@ -141,7 +141,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
 | `provision/talos/patches/worker/20-sysctls.yaml` | BPF JIT hardening | live | SysctlConfig |  |
 | `provision/talos/patches/worker/30-node-taints.yaml` | Taint workers nvidia.com/gpu=present:NoSchedule | live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it) | machine.nodeTaints |  |
-| `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network | shares machine.network with provision/talos/patches/all/20-nameservers.yaml |
+| `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network |  |
 | `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX) | install-only | machine.install | shares machine.install with provision/talos/patches/worker/05-install-image.yaml.tpl |
 | `provision/talos/patches/node/nv1/30-kernel-modules.yaml` | Kernel modules for the Jetson iGPU: host1x stack, tegra_drm, nvmap, nvgpu and the frequency governor | reboot (module parameters and removals only apply when a module is loaded) | machine.kernel |  |
 | `provision/talos/patches/node/nv1/40-node-labels.yaml` | Labels accelerator=jetson-orin and nvidia.com/gpu.type=igpu | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
