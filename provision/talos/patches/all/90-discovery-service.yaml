@@ -1,6 +1,6 @@
-# What:   Cluster member discovery through the discovery service only; the Kubernetes registry is off
-# Why:    Members discover each other without depending on the Kubernetes API. With no Kubernetes registry document the
-#         registry stays off; the default public endpoint is the one `service: {}` used before
+# What:   Cluster member discovery through the discovery service (default public endpoint, as `service: {}` before)
+# Why:    Members discover each other without depending on the Kubernetes API. The Kubernetes registry has no document of
+#         its own; it is expected to stay off, to be confirmed on the first node after apply (plan 2026-10-05, Task 4)
 # Nodes:  all nodes
 # Apply:  live
 apiVersion: v1alpha1

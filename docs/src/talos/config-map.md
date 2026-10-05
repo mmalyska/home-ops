@@ -27,7 +27,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
-| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | DiscoveryServiceConfig/primary |  |
+| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service (default public endpoint, as `service: {}` before) | live | DiscoveryServiceConfig/primary |  |
 | `provision/talos/patches/all/91-discovery-identity.yaml.tpl` | Cluster identity used by the discovery service: the cluster id and the shared secret | live | DiscoveryIdentityConfig |  |
 | `provision/talos/patches/all/92-discovery-legacy-delete.yaml` | Remove the cluster.id, cluster.secret and cluster.discovery fields that talosctl gen config adds | live | cluster.id cluster.secret cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
@@ -74,7 +74,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
-| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | DiscoveryServiceConfig/primary |  |
+| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service (default public endpoint, as `service: {}` before) | live | DiscoveryServiceConfig/primary |  |
 | `provision/talos/patches/all/91-discovery-identity.yaml.tpl` | Cluster identity used by the discovery service: the cluster id and the shared secret | live | DiscoveryIdentityConfig |  |
 | `provision/talos/patches/all/92-discovery-legacy-delete.yaml` | Remove the cluster.id, cluster.secret and cluster.discovery fields that talosctl gen config adds | live | cluster.id cluster.secret cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
@@ -121,7 +121,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
-| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | DiscoveryServiceConfig/primary |  |
+| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service (default public endpoint, as `service: {}` before) | live | DiscoveryServiceConfig/primary |  |
 | `provision/talos/patches/all/91-discovery-identity.yaml.tpl` | Cluster identity used by the discovery service: the cluster id and the shared secret | live | DiscoveryIdentityConfig |  |
 | `provision/talos/patches/all/92-discovery-legacy-delete.yaml` | Remove the cluster.id, cluster.secret and cluster.discovery fields that talosctl gen config adds | live | cluster.id cluster.secret cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
@@ -168,7 +168,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
-| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | DiscoveryServiceConfig/primary |  |
+| `provision/talos/patches/all/90-discovery-service.yaml` | Cluster member discovery through the discovery service (default public endpoint, as `service: {}` before) | live | DiscoveryServiceConfig/primary |  |
 | `provision/talos/patches/all/91-discovery-identity.yaml.tpl` | Cluster identity used by the discovery service: the cluster id and the shared secret | live | DiscoveryIdentityConfig |  |
 | `provision/talos/patches/all/92-discovery-legacy-delete.yaml` | Remove the cluster.id, cluster.secret and cluster.discovery fields that talosctl gen config adds | live | cluster.id cluster.secret cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
