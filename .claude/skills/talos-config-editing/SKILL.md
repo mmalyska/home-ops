@@ -67,6 +67,7 @@ Patches are partial documents: only the keys to override.
 - Lists append, so do not repeat a value the generated base already carries (the PodSecurity `kube-system` exemption)
 - Remove something the base generates with `$patch: delete` (see `all/05-hostname-config-delete.yaml` and `controlplane/85-delete-lb-exclusion-label.yaml`)
 - A single patch file cannot modify the same document twice; hence one document per file
+- When migrating a legacy field to its new document, check that `talosctl gen config` does not add the legacy field itself: the contract-pinned base carries some (for example `machine.features.kubePrism`), and Talos refuses a legacy field next to its new document (`talosctl validate --mode metal` says so). Delete it from the base with `$patch: delete` in the v1alpha1 patch file (see `all/60-features.yaml`). The diff against the live node shows whether the legacy field is really gone.
 
 ## Adding a New Config Document
 
