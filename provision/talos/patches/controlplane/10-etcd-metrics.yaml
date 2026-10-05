@@ -1,0 +1,9 @@
+# What:   Serve etcd /metrics over plain HTTP on 127.0.0.1:2381
+# Why:    Since Talos 1.14 the default /metrics is on :2383 behind client mTLS; kube-system/metrics-proxy
+#         (haproxy on <node-ip>:2381) forwards to this loopback listener for Prometheus
+# Nodes:  control plane
+# Apply:  reboot (etcd reads its arguments only at start; applying does not restart it and talosctl refuses to restart etcd)
+cluster:
+  etcd:
+    extraArgs:
+      listen-metrics-urls: http://127.0.0.1:2381

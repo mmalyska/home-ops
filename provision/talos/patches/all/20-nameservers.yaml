@@ -1,0 +1,13 @@
+# What:   DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last
+# Why:    Internal-only names (S3, QNAP, the OIDC issuer) exist only in AdGuard; the router serves public names only
+# Nodes:  all nodes
+# Apply:  live
+machine:
+  network:
+    # Host-originated traffic reaches both LB addresses from every node (externalTrafficPolicy: Local
+    # does not apply to it), including nodes that run no AdGuard pod. The UCG-Max (public names only)
+    # is the fallback if both AdGuard instances are down.
+    nameservers:
+      - 192.168.48.25
+      - 192.168.48.31
+      - 192.168.48.254

@@ -1,0 +1,6 @@
+# What:   Ordinary pods may run on the control-plane nodes
+# Why:    There are no dedicated workers besides nv1 (a GPU node)
+# Nodes:  control plane
+# Apply:  live
+cluster:
+  allowSchedulingOnMasters: true

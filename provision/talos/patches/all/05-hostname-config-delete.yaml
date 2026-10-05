@@ -1,0 +1,8 @@
+# What:   Remove the HostnameConfig document that talosctl gen config adds
+# Why:    Hostnames are set statically per node (node/<name>/10-network.yaml); the generated
+#         "auto: stable" document would conflict with them
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: HostnameConfig
+$patch: delete

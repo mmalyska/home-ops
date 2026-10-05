@@ -1,0 +1,7 @@
+# What:   Label daytona-sandbox-c=true on the control-plane nodes
+# Why:    Scheduling label from the Daytona installation (docs/superpowers/archive/2026-06-02-daytona-installation.md)
+# Nodes:  control plane
+# Apply:  live
+machine:
+  nodeLabels:
+    daytona-sandbox-c: "true"

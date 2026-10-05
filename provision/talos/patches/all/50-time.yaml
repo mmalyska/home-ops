@@ -1,0 +1,13 @@
+# What:   NTP servers, by IP
+# Why:    etcd refuses to start until time syncs, so time must not depend on DNS (the nameserver is the router) or on any LAN host
+# Nodes:  all nodes
+# Apply:  live
+machine:
+  time:
+    disabled: false
+    # Public anycast NTP. The UCG-Max does not serve NTP on any interface.
+    servers:
+      - 162.159.200.123
+      - 162.159.200.1
+      - 216.239.35.0
+      - 216.239.35.4

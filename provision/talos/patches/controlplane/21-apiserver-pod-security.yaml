@@ -1,0 +1,22 @@
+# What:   PodSecurity admission: enforce baseline, audit and warn on restricted
+# Why:    Baseline blocks the dangerous pod settings without breaking existing workloads; restricted is reported only.
+#         kube-system is exempt through the generated base configuration (do not list it again, lists append)
+# Nodes:  control plane
+# Apply:  live (the kube-apiserver static pod restarts)
+cluster:
+  apiServer:
+    admissionControl:
+      - name: PodSecurity
+        configuration:
+          apiVersion: pod-security.admission.config.k8s.io/v1alpha1
+          defaults:
+            audit: restricted
+            audit-version: latest
+            enforce: baseline
+            enforce-version: latest
+            warn: restricted
+            warn-version: latest
+          exemptions:
+            runtimeClasses: []
+            usernames: []
+          kind: PodSecurityConfiguration

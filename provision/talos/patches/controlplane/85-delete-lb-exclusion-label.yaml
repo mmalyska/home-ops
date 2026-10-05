@@ -1,0 +1,9 @@
+# What:   Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes
+# Why:    Keeps parity with the configuration the nodes already run (they never had the label). Delete this file to adopt
+#         the Talos default, after checking LoadBalancer behaviour
+# Nodes:  control plane
+# Apply:  live
+machine:
+  nodeLabels:
+    node.kubernetes.io/exclude-from-external-load-balancers:
+      $patch: delete

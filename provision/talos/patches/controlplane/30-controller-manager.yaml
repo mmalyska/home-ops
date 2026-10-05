@@ -1,0 +1,8 @@
+# What:   kube-controller-manager listens on all addresses
+# Why:    Exposes the metrics endpoint so Prometheus can scrape it
+# Nodes:  control plane
+# Apply:  live (the static pod restarts)
+cluster:
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0

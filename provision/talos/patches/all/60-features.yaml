@@ -1,0 +1,14 @@
+# What:   Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution
+# Why:    Platform features the cluster relies on: XFS project quotas, API access that does not depend on the VIP, member names in host DNS
+# Nodes:  all nodes
+# Apply:  live
+machine:
+  features:
+    diskQuotaSupport: true
+    kubePrism:
+      enabled: true
+      port: 7445
+    hostDNS:
+      enabled: true
+      forwardKubeDNSToHost: false
+      resolveMemberNames: true

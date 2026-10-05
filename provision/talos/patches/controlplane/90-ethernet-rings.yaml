@@ -1,0 +1,10 @@
+# What:   NIC ring buffers rx/tx 4096 on eth0
+# Why:    Avoids packet drops under load (see the talos-ethernet-config skill)
+# Nodes:  control plane
+# Apply:  live
+apiVersion: v1alpha1
+kind: EthernetConfig
+name: eth0
+rings:
+  rx: 4096
+  tx: 4096
