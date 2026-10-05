@@ -250,3 +250,9 @@ All secrets come from Bitwarden Secrets Manager: `.envrc` runs `bws` and exports
 variables (the prefix is inherited from talhelper, which is no longer used). `secrets.yaml.tpl` maps them to the
 talosctl secrets bundle format, and the few `.yaml.tpl` patches substitute the values they need. Nothing encrypted
 is committed; the rendered files in `clusterconfig/` contain secrets and stay gitignored.
+
+`TALHELPER_CLUSTERNAME` and `TALHELPER_CLUSTERSECRET` feed two places: the secrets bundle (`secrets.yaml.tpl`, as
+`cluster.id` and `cluster.secret`) and the `DiscoveryIdentityConfig` document (`patches/all/91-discovery-identity.yaml.tpl`).
+`patches/all/92-discovery-legacy-delete.yaml` removes the legacy `cluster.id`, `cluster.secret` and `cluster.discovery`
+fields that `talosctl gen config` adds, because Talos refuses them next to the documents. `task talos:diff` masks both
+document keys, so it cannot show a changed value; compare by hash (see the discovery spec and plan) if you ever change them.

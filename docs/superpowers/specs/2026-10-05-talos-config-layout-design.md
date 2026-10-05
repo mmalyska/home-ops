@@ -64,8 +64,9 @@ upgrades to an in-cluster controller driven by Renovate PRs.
 - The nv1 boot-entry problem (stale `LoaderEntryDefault` on the Jetson UEFI).
 - Adopting TOPF or talstomize now. The layout is the model both use, so a later
   switch is cheap.
-- Migrating the PKI, secret and discovery fields (tier 3 in
-  `.plans/TODO.md`) until upstream publishes a removal timeline.
+- Migrating the PKI and secret fields (tier 3 in `.plans/TODO.md`) until
+  upstream publishes a removal timeline. The discovery fields moved separately,
+  see `2026-10-05-talos-discovery-documents-design.md`.
 
 ## Phase 1 design
 
