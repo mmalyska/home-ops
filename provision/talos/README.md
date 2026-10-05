@@ -219,6 +219,12 @@ difference with secret values masked, plus the running Talos version against the
 environment as `task talos:generate` and a reachable cluster, and changes nothing. A node whose stored install-image tag
 lags (for example nv1 after an upgrade) shows up here.
 
+## Checks
+
+`task talos:check` runs, without secrets or a cluster, the patch convention check (`scripts/check-patches.sh`), the
+config map freshness check and the shell tests (`tests/run.sh`). The same three run in CI
+(`.github/workflows/talos-config.yaml`) on pull requests that touch `provision/talos/**`.
+
 ## Secrets
 
 All secrets come from Bitwarden Secrets Manager: `.envrc` runs `bws` and exports them as `TALHELPER_*` environment

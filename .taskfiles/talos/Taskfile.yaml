@@ -242,6 +242,13 @@ tasks:
     cmds:
       - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
 
+  check:
+    desc: Offline checks, no secrets or cluster needed (task talos:check)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/check-patches.sh"
+      - "{{.TALOS_DIR}}/scripts/config-map.sh --check"
+      - "{{.TALOS_DIR}}/tests/run.sh"
+
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy
