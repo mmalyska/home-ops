@@ -1,0 +1,8 @@
+# What:   Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX)
+# Why:    The Jetson GPU needs the matching kernel and out-of-tree modules, built by schwankner/talos-jetson-orin.
+#         The tag is <talos>-<kernel>-nvgpu<version>; the kernel module ABI must match the image (see provision/talos/README.md)
+# Nodes:  nv1
+# Apply:  install-only
+machine:
+  install:
+    image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim

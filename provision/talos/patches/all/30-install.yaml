@@ -1,0 +1,9 @@
+# What:   Install target: the NVMe system disk, no wipe, keep the UKI kernel command line
+# Why:    Every node boots from /dev/nvme0n1; the install image itself is set per role and per node
+# Nodes:  all nodes
+# Apply:  install-only
+machine:
+  install:
+    disk: /dev/nvme0n1
+    wipe: false
+    grubUseUKICmdline: true

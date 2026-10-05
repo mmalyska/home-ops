@@ -1,0 +1,17 @@
+# What:   mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1
+# Why:    DHCP is disabled on VLAN 48, so every node address is static; the VIP is shared by the three control planes
+# Nodes:  mc3
+# Apply:  live (a wrong address or route can make the node unreachable)
+machine:
+  network:
+    hostname: mc3
+    interfaces:
+      - interface: eth0
+        addresses:
+          - 192.168.48.4/24
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.48.254
+        vip:
+          ip: 192.168.48.1

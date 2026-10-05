@@ -1,0 +1,7 @@
+# What:   BPF JIT hardening
+# Why:    Hardening setting carried over from the original worker template; not set on control planes
+# Nodes:  workers
+# Apply:  live
+machine:
+  sysctls:
+    net.core.bpf_jit_harden: "1"
