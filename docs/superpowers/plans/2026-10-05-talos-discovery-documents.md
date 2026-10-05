@@ -324,10 +324,10 @@ export TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfi
 talosctl -n 192.168.48.2 get members
 talosctl -n 192.168.48.2 get affiliates
 talosctl -n 192.168.48.2 get machineconfig v1alpha1 -o yaml | yq '.spec | select(.kind == "DiscoveryServiceConfig")'
-talosctl -n 192.168.48.2 get discoveryconfig -o yaml 2>/dev/null | head -30
+talosctl -n 192.168.48.2 get discoveryconfig -o yaml | head -30
 ```
 
-Expected: all four nodes in `members`; the live config has the `DiscoveryServiceConfig`; the discovery config shows the service registry on and the Kubernetes registry off. If the Kubernetes registry shows on, add a `KubernetesRegistryConfig`-style document that disables it (check `talosctl docs --config` for the exact kind on 1.14) in a follow-up patch before applying further, and update the spec.
+Expected: all four nodes in `members`; the live config has the `DiscoveryServiceConfig`; the discovery config shows the service registry on and the Kubernetes registry off. Talos 1.14 has no document for the Kubernetes registry (`talosctl docs --config` lists only `DiscoveryIdentityConfig` and `DiscoveryServiceConfig`), so if the Kubernetes registry shows on there is no forward fix: stop, do not apply to the other nodes, and roll back mc1 (Step 7), then rewrite the spec. A command that prints nothing is not a pass: if `get discoveryconfig` errors, find the right resource with `talosctl get rd | grep -i discovery`.
 
 - [ ] **Step 5: Apply to the remaining nodes, one at a time**
 
