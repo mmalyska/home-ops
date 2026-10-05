@@ -83,6 +83,27 @@ tasks:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
 
+  node_health:
+    internal: true
+    desc: Health of one node after a change (task talos:node_health N=mc1). A worker cannot report k8s state itself, so it is checked through the control plane
+    dir: provision/talos
+    vars:
+      NODE:
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
+      TYPE:
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .type' < {{.TALOS_DIR}}/nodes.yaml
+      CP_IPS:
+        sh: yq '.nodes[] | select(.type == "controlplane") | .ip' < {{.TALOS_DIR}}/nodes.yaml | paste -sd, -
+      CP_FIRST:
+        sh: yq '[.nodes[] | select(.type == "controlplane") | .ip][0]' < {{.TALOS_DIR}}/nodes.yaml
+    cmds:
+      - |
+        if [ "{{.TYPE}}" = "worker" ]; then
+          talosctl --nodes {{.CP_FIRST}} health --control-plane-nodes {{.CP_IPS}} --worker-nodes {{.NODE}} --wait-timeout=10m --server=false
+        else
+          talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+        fi
+
   apply:restart:
     desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=mc1)
     dir: provision/talos
@@ -96,7 +117,8 @@ tasks:
       - task: apply-config
         vars: {CLI_ARGS: "-m staged"}
       - talosctl reboot --nodes {{ .NODE }} --wait
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - task: node_health
+        vars: {N: "{{.N}}"}
 
   apply:
     desc: Apply Talos config to a specific node without reboot (task talos:apply N=mc1)
@@ -110,7 +132,8 @@ tasks:
         vars: {TIMEOUT: 10m}
       - task: apply-config
         vars: {CLI_ARGS: "-m auto"}
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - task: node_health
+        vars: {N: "{{.N}}"}
 
   apply:reinstall:
     desc: Apply Talos config to a specific node and reinstall (task talos:apply:reinstall N=mc1)
@@ -210,7 +233,8 @@ tasks:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
       - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }} --wait=false
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - task: node_health
+        vars: {N: "{{.N}}"}
       # `talosctl upgrade` and the health check both succeed when the node reboots into a
       # stale boot entry (Jetson UEFI does not persist the default entry, upstream Bug 25),
       # so verify the node really runs the expected version.
