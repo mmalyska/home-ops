@@ -229,6 +229,11 @@ tasks:
     cmds:
       - "{{.TALOS_DIR}}/scripts/explain.sh {{.CLI_ARGS}}"
 
+  config-map:
+    desc: Regenerate docs/src/talos/config-map.md (task talos:config-map)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/config-map.sh"
+
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy

@@ -210,6 +210,10 @@ Notes:
 it costs, what it touches and which earlier file touches the same top-level item. Without arguments it shows all nodes;
 `--markdown` prints the tables used for the generated config map.
 
+`task talos:config-map` writes the same information for all nodes to `docs/src/talos/config-map.md`
+(published with the docs). The file is generated from the patch headers, contains no secrets, and CI fails when it
+is stale; regenerate it after any change to a patch file.
+
 ## Secrets
 
 All secrets come from Bitwarden Secrets Manager: `.envrc` runs `bws` and exports them as `TALHELPER_*` environment

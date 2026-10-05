@@ -8,3 +8,4 @@
 **/*.sec.*
 **/gotk-components.yaml
 **/templates/*.y*ml
+docs/src/talos/config-map.md
