@@ -1,13 +1,12 @@
-# What:   No Talos-managed CNI, cluster DNS domain, pod and service CIDRs
-# Why:    Cilium is installed by ArgoCD, so Talos must not install a CNI; the CIDRs were fixed at cluster creation
+# What:   Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI
+# Why:    Cilium is installed by ArgoCD, so Talos must not install a CNI (no KubeFlannelCNIConfig document: deleting
+#         that document is how Flannel is turned off); the CIDRs were fixed at cluster creation
 # Nodes:  all nodes
 # Apply:  live (never change the CIDRs of a running cluster)
-cluster:
-  network:
-    cni:
-      name: none
-    dnsDomain: cluster.local
-    podSubnets:
-      - 10.244.0.0/16
-    serviceSubnets:
-      - 10.96.0.0/12
+apiVersion: v1alpha1
+kind: KubeNetworkConfig
+dnsDomain: cluster.local
+podSubnets:
+  - 10.244.0.0/16
+serviceSubnets:
+  - 10.96.0.0/12
