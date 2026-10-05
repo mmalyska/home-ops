@@ -1,6 +1,6 @@
-# What:   Disk quota support, host DNS with member-name resolution; drops the generated legacy kubePrism field
-# Why:    Platform features the cluster relies on: XFS project quotas, member names in host DNS. The gen config
-#         base adds machine.features.kubePrism, which Talos refuses next to the KubePrismConfig document (61-kubeprism.yaml)
+# What:   Disk quota support; drops the generated legacy kubePrism and hostDNS fields
+# Why:    XFS project quotas. The gen config base adds machine.features.kubePrism and hostDNS, which Talos refuses next
+#         to their new documents (61-kubeprism.yaml, 20-resolver.yaml)
 # Nodes:  all nodes
 # Apply:  live
 machine:
@@ -9,6 +9,4 @@ machine:
     kubePrism:
       $patch: delete
     hostDNS:
-      enabled: true
-      forwardKubeDNSToHost: false
-      resolveMemberNames: true
+      $patch: delete
