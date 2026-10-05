@@ -1,5 +1,2 @@
 talosconfig
-home-mc1.yaml
-home-mc2.yaml
-home-mc3.yaml
-home-nv1.yaml
+home-*.yaml

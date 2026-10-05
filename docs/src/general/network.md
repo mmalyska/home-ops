@@ -113,7 +113,7 @@ from each `HTTPRoute` annotated with `controller: dns-controller` attached to `e
 ### Resolver chain for cluster pods and nodes
 
 Nodes resolve through `192.168.48.25` and `.31` (the two AdGuard instances), then `192.168.48.254` (UCG-Max)
-as a last resort (see `provision/talos/templates/controlplane.yaml`). The UCG-Max knows no internal-only names
+as a last resort (see `provision/talos/patches/all/20-nameservers.yaml`). The UCG-Max knows no internal-only names
 and blocks nothing, so it must never be picked while AdGuard is up.
 
 CoreDNS is not deployed by Talos (`cluster.coreDNS.disabled: true`) and Talos offers no Corefile customisation,
@@ -160,7 +160,7 @@ This is the single source of truth for addresses on VLAN 48. **Update it in the 
 | Range | Use |
 |---|---|
 | `.1` | Control-plane VIP (kube-apiserver) |
-| `.2`–`.5` | Nodes (static in `provision/talos/nodes/`) |
+| `.2`–`.5` | Nodes (static in `provision/talos/patches/node/`) |
 | `.6`–`.19` | Unused |
 | `.20`–`.50` | Cilium LoadBalancer pool `pool` |
 | `.51`–`.59` | Cilium LoadBalancer pool `coder-pool` (Coder workspace SSH services) |
