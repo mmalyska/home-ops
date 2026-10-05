@@ -18,7 +18,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
-| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start; the CRICustomizationConfig document restarts it itself) | machine.files |  |
+| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
@@ -54,7 +54,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
-| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start; the CRICustomizationConfig document restarts it itself) | machine.files |  |
+| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
@@ -90,7 +90,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
-| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start; the CRICustomizationConfig document restarts it itself) | machine.files |  |
+| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |
@@ -126,7 +126,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/20-nameservers.yaml` | DNS servers for the node itself: the two in-cluster AdGuard instances first, the router last | live | machine.network |  |
 | `provision/talos/patches/all/25-kubelet.yaml` | Kubelet: rotate serving certificates, default seccomp profile, no static manifests directory, pinned cluster DNS | live | machine.kubelet |  |
 | `provision/talos/patches/all/30-install.yaml` | Install target: the NVMe system disk, no wipe, keep the UKI kernel command line | install-only | machine.install |  |
-| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start; the CRICustomizationConfig document restarts it itself) | machine.files |  |
+| `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | reboot (containerd reads its config files only at start) | machine.files |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support, KubePrism (local API load balancer on :7445), host DNS with member-name resolution | live | machine.features |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | machine.nodeLabels |  |

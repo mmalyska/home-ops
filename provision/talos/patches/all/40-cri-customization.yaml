@@ -1,7 +1,7 @@
 # What:   containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept
 # Why:    Pods may bind ports below 1024 and send ICMP without extra capabilities; discard_unpacked_layers stays false
 # Nodes:  all nodes
-# Apply:  reboot (containerd reads its config files only at start; the CRICustomizationConfig document restarts it itself)
+# Apply:  reboot (containerd reads its config files only at start)
 machine:
   files:
     - content: |
