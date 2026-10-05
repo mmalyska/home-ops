@@ -234,6 +234,14 @@ tasks:
     cmds:
       - "{{.TALOS_DIR}}/scripts/config-map.sh"
 
+  diff:
+    desc: Repo vs live machine config and running version per node, secrets masked (task talos:diff -- mc1)
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+      KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
+
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy

@@ -93,6 +93,7 @@ Then `scripts/check-patches.sh` and `task talos:generate`. No Taskfile edit is n
 scripts/check-patches.sh     # conventions
 task talos:generate          # re-render clusterconfig/
 task talos:explain -- mc1    # what is configured, from where
+task talos:diff -- mc1       # repo vs the live node, secrets masked
 
 task talos:apply N=mc1       # apply (most fields are live)
 # or

@@ -214,6 +214,11 @@ it costs, what it touches and which earlier file touches the same top-level item
 (published with the docs). The file is generated from the patch headers, contains no secrets, and CI fails when it
 is stale; regenerate it after any change to a patch file.
 
+`task talos:diff -- mc1` renders the node from the repo, reads the config the node actually runs, and shows the
+difference with secret values masked, plus the running Talos version against the expected one. It needs the same
+environment as `task talos:generate` and a reachable cluster, and changes nothing. A node whose stored install-image tag
+lags (for example nv1 after an upgrade) shows up here.
+
 ## Secrets
 
 All secrets come from Bitwarden Secrets Manager: `.envrc` runs `bws` and exports them as `TALHELPER_*` environment
