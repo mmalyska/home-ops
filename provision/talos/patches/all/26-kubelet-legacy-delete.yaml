@@ -1,0 +1,7 @@
+# What:   Remove the machine.kubelet block that talosctl gen config adds
+# Why:    Talos refuses the legacy machine.kubelet next to the KubeletConfig document (25-kubelet.yaml.tpl)
+# Nodes:  all nodes
+# Apply:  live
+machine:
+  kubelet:
+    $patch: delete
