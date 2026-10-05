@@ -1,7 +1,0 @@
-# What:   Talos does not deploy CoreDNS
-# Why:    CoreDNS is managed as an ArgoCD app (cluster/apps/system/coredns)
-# Nodes:  all nodes
-# Apply:  live
-cluster:
-  coreDNS:
-    disabled: true
