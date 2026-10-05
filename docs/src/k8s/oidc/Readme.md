@@ -16,7 +16,7 @@ Add configuration to `/etc/kubernetes/manifests/kube-apiserver.yaml`:
     - "--oidc-groups-prefix=oidc:"
 ```
 
-Add RBAC entry for admin group `oidc-admin-role` or for specifig NS in `/ns-roles`.
+Bind the OIDC groups with RBAC (a `ClusterRoleBinding` or per-namespace `RoleBinding` whose subject is the group, with the `oidc:` prefix); the old example manifests were removed because nothing used them.
 
 Konfigure `kubectl`:
 
