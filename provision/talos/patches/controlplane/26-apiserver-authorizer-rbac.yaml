@@ -1,0 +1,8 @@
+# What:   kube-apiserver authorizer 2 of 2: RBAC
+# Why:    Role-based access control for users and service accounts; follows the Node authorizer (25-apiserver-authorizer-node.yaml)
+# Nodes:  control plane
+# Apply:  live (the kube-apiserver static pod restarts)
+apiVersion: v1alpha1
+kind: KubeAuthorizerConfig
+name: rbac
+type: RBAC

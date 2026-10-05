@@ -1,0 +1,10 @@
+# What:   kube-apiserver authorizer 1 of 2: Node
+# Why:    The Node authorizer lets each kubelet read and write only what concerns its own node. A KubeAPIServerConfig
+#         document does not inject the default authorizers, so they are declared here; the order of the files (25, 26)
+#         is the order of the authorizers
+# Nodes:  control plane
+# Apply:  live (the kube-apiserver static pod restarts)
+apiVersion: v1alpha1
+kind: KubeAuthorizerConfig
+name: node
+type: Node

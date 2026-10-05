@@ -1,0 +1,8 @@
+# What:   Remove the cluster.apiServer block that talosctl gen config adds
+# Why:    Talos refuses the legacy block next to the KubeAPIServerConfig document and the documents that replace its
+#         parts (20 to 22 and 24 to 26); the generated image, admission and audit values are carried by those documents
+# Nodes:  control plane
+# Apply:  live
+cluster:
+  apiServer:
+    $patch: delete
