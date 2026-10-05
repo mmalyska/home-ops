@@ -95,7 +95,7 @@ untouched.
 One PR, because these documents depend on each other:
 
 - `controlplane/20-apiserver.yaml.tpl`: `KubeAPIServerConfig` with `image:
-  registry.k8s.io/kube-apiserver:${KUBERNETES_VERSION}` and
+registry.k8s.io/kube-apiserver:${KUBERNETES_VERSION}` and
   `certExtraSANs` (`${TALHELPER_CLUSTERENDPOINTIP}`,
   `${TALHELPER_CLUSTERDOMAIN}`, `127.0.0.1`). No `extraArgs`.
 - `KubeAuthenticationConfig` with the default content, in its own file.
@@ -114,13 +114,13 @@ One PR, because these documents depend on each other:
 Live reads that do not need the Kubernetes API, before and after each apply,
 compared with the expectations below:
 
-| Read | Expectation after the change |
-|---|---|
-| `talosctl get apiserverconfig -o yaml` | image `registry.k8s.io/kube-apiserver:v1.35.9`, no `oidc-*` arguments, `useAuthenticationConfig: true` |
-| `talosctl get authorizationconfig -o yaml` | exactly `node` (Node) then `rbac` (RBAC) |
-| `talosctl get authenticationconfig -o yaml` | the default content: anonymous only on the three health paths, empty `jwt` |
-| `talosctl get admissioncontrolconfig -o yaml` | PodSecurity, same defaults, `kube-system` exempt, as before |
-| `talosctl get auditpolicyconfig -o yaml` | the same `Metadata` policy |
+| Read                                          | Expectation after the change                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `talosctl get apiserverconfig -o yaml`        | image `registry.k8s.io/kube-apiserver:v1.35.9`, no `oidc-*` arguments, `useAuthenticationConfig: true` |
+| `talosctl get authorizationconfig -o yaml`    | exactly `node` (Node) then `rbac` (RBAC)                                                               |
+| `talosctl get authenticationconfig -o yaml`   | the default content: anonymous only on the three health paths, empty `jwt`                             |
+| `talosctl get admissioncontrolconfig -o yaml` | PodSecurity, same defaults, `kube-system` exempt, as before                                            |
+| `talosctl get auditpolicyconfig -o yaml`      | the same `Metadata` policy                                                                             |
 
 Then Kubernetes-level checks:
 
@@ -141,21 +141,21 @@ kube-apiserver and nothing to apply.
 ### Rollback
 
 - Revert the PR, render the previous config, and apply it with `talosctl
-  apply-config --nodes <ip> --file ... --mode auto`. Do **not** use `task
-  talos:apply` for recovery: its health gate needs kubectl, which may not work
+apply-config --nodes <ip> --file ... --mode auto`. Do **not** use `task
+talos:apply` for recovery: its health gate needs kubectl, which may not work
   against a broken node.
 - The Talos API (port 50000, client certificates) does not depend on the
   Kubernetes API and stays available if kube-apiserver on a node is broken.
 
 ## Risks
 
-| Risk | Effect | Mitigation |
-|---|---|---|
-| Authorizers missing or in the wrong order | Kubelet or users rejected, or the API server insecure | `get authorizationconfig` compared before the node can degrade; mc1 alone first |
-| Anonymous access tighter than today | An external probe of a path other than `/livez`, `/readyz`, `/healthz` gets 401 | None found in the repo; accepted |
-| `kube-system` exemption lost in stage 1 | PodSecurity would block system pods that need privileges | The exemption is written in the document and checked in `get admissioncontrolconfig` |
-| `talosctl upgrade-k8s` does not understand the new documents | A later Kubernetes upgrade fails | Test `upgrade-k8s --dry-run` before relying on it (open item) |
-| `certExtraSANs` does not replace `certSANs` exactly | Clients using the VIP or domain fail TLS verification | Compare the certificate SANs of the apiserver before and after (`openssl s_client`) |
+| Risk                                                         | Effect                                                                          | Mitigation                                                                           |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Authorizers missing or in the wrong order                    | Kubelet or users rejected, or the API server insecure                           | `get authorizationconfig` compared before the node can degrade; mc1 alone first      |
+| Anonymous access tighter than today                          | An external probe of a path other than `/livez`, `/readyz`, `/healthz` gets 401 | None found in the repo; accepted                                                     |
+| `kube-system` exemption lost in stage 1                      | PodSecurity would block system pods that need privileges                        | The exemption is written in the document and checked in `get admissioncontrolconfig` |
+| `talosctl upgrade-k8s` does not understand the new documents | A later Kubernetes upgrade fails                                                | Test `upgrade-k8s --dry-run` before relying on it (open item)                        |
+| `certExtraSANs` does not replace `certSANs` exactly          | Clients using the VIP or domain fail TLS verification                           | Compare the certificate SANs of the apiserver before and after (`openssl s_client`)  |
 
 ## Out of scope
 
