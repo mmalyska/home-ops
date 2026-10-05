@@ -204,6 +204,27 @@ Notes:
 - Do not upgrade nv1 before the control plane: worker one minor behind is fine,
   the reverse is not.
 
+## Inspecting the config
+
+`task talos:explain -- mc1` lists, for a node, every patch file in merge order with what it does, why, what applying
+it costs, what it touches and which earlier file touches the same top-level item. Without arguments it shows all nodes;
+`--markdown` prints the tables used for the generated config map.
+
+`task talos:config-map` writes the same information for all nodes to `docs/src/talos/config-map.md`
+(published with the docs). The file is generated from the patch headers, contains no secrets, and CI fails when it
+is stale; regenerate it after any change to a patch file.
+
+`task talos:diff -- mc1` renders the node from the repo, reads the config the node actually runs, and shows the
+difference with secret values masked, plus the running Talos version against the expected one. It needs the same
+environment as `task talos:generate` and a reachable cluster, and changes nothing. A node whose stored install-image tag
+lags (for example nv1 after an upgrade) shows up here.
+
+## Checks
+
+`task talos:check` runs, without secrets or a cluster, the patch convention check (`scripts/check-patches.sh`), the
+config map freshness check and the shell tests (`tests/run.sh`). The same three run in CI
+(`.github/workflows/talos-config.yaml`) on pull requests that touch `provision/talos/**`.
+
 ## Secrets
 
 All secrets come from Bitwarden Secrets Manager: `.envrc` runs `bws` and exports them as `TALHELPER_*` environment

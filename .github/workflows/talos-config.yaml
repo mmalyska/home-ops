@@ -1,0 +1,46 @@
+---
+name: Talos config
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "provision/talos/**"
+      - ".taskfiles/talos/**"
+      - "docs/src/talos/**"
+      - ".github/workflows/talos-config.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Talos config checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gettext-base
+          version="$(yq '.vars.TALOS_VERSION' .taskfiles/talos/Taskfile.yaml)"
+          curl -fsSL -o talosctl "https://github.com/siderolabs/talos/releases/download/${version}/talosctl-linux-amd64"
+          sudo install -m 0755 talosctl /usr/local/bin/talosctl
+          talosctl version --client --short
+
+      - name: Patch conventions
+        run: provision/talos/scripts/check-patches.sh
+
+      - name: Config map is up to date
+        run: provision/talos/scripts/config-map.sh --check
+
+      - name: Tests
+        run: provision/talos/tests/run.sh

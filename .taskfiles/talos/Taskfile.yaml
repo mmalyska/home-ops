@@ -224,6 +224,31 @@ tasks:
     cmds:
       - "{{.TALOS_DIR}}/scripts/parity.sh {{.CLI_ARGS}}"
 
+  explain:
+    desc: What is configured per node, from the patch headers (task talos:explain -- mc1, or --markdown)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/explain.sh {{.CLI_ARGS}}"
+
+  config-map:
+    desc: Regenerate docs/src/talos/config-map.md (task talos:config-map)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/config-map.sh"
+
+  diff:
+    desc: Repo vs live machine config and running version per node, secrets masked (task talos:diff -- mc1)
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+      KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
+
+  check:
+    desc: Offline checks, no secrets or cluster needed (task talos:check)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/check-patches.sh"
+      - "{{.TALOS_DIR}}/scripts/config-map.sh --check"
+      - "{{.TALOS_DIR}}/tests/run.sh"
+
   wait_for_health:
     internal: true
     desc: Wait for services in cluster to be healthy
