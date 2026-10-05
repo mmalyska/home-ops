@@ -9,6 +9,7 @@ export SECRETS_FILE="$TMP/secrets.yaml"
 export KUBERNETES_VERSION=v1.35.9 TALOS_VERSION=v1.14.2
 export TALHELPER_CLUSTERDOMAIN=cluster.test TALHELPER_CLUSTERENDPOINTIP=192.0.2.1
 export TALHELPER_UPSMONHOST=ups.test TALHELPER_UPSMONUSER=upsuser TALHELPER_UPSMONPASSWD=upspass
+export TALHELPER_CLUSTERNAME="$(printf "A%.0s" $(seq 43))=" TALHELPER_CLUSTERSECRET="$(printf "B%.0s" $(seq 43))="
 export SECRET_SHOULD_NOT_LEAK=leaked
 
 render() { "$SCRIPTS/render.sh" "$1" "$TMP/$1.yaml"; }
@@ -24,6 +25,9 @@ assert_eq "192.0.2.1 cluster.test 127.0.0.1" "$(yq 'select(.kind == "KubeAPIServ
 assert_contains "$out" "ups.test 1 upsuser upspass secondary" "the nut-client secrets are substituted"
 assert_eq 'disk.dev_path == "/dev/nvme0n1"|false' "$(yq 'select(.kind == "UnattendedInstallConfig") | .provisioning.diskSelector.match + "|" + (.provisioning.wipe | tostring)' "$TMP/mc1.yaml")" "the install disk selector survives the merge and wipe is false"
 assert_eq "null" "$(yq 'select(.machine != null) | .machine.install' "$TMP/mc1.yaml")" "the legacy machine.install block is removed"
+assert_eq "$TALHELPER_CLUSTERNAME|$TALHELPER_CLUSTERSECRET" "$(yq 'select(.kind == "DiscoveryIdentityConfig") | .clusterID + "|" + .clusterSecret' "$TMP/mc1.yaml")" "the discovery identity is rendered from the TALHELPER variables"
+assert_eq "primary|https://discovery.talos.dev/" "$(yq 'select(.kind == "DiscoveryServiceConfig") | .name + "|" + .endpoint' "$TMP/mc1.yaml")" "the discovery service document uses the default endpoint"
+assert_eq "false" "$(yq 'select(.machine != null) | .cluster | (has("id") or has("secret") or has("discovery"))' "$TMP/mc1.yaml")" "the legacy cluster.id, cluster.secret and cluster.discovery are removed"
 assert_eq "node rbac" "$(yq 'select(.kind == "KubeAuthorizerConfig") | .name' "$TMP/mc1.yaml" | grep -v '^---' | tr '\n' ' ' | sed 's/ $//')" "the API server authorizers are node then rbac"
 assert_eq "kube-system" "$(yq 'select(.kind == "KubeAdmissionControlConfig") | .configuration.exemptions.namespaces[]' "$TMP/mc1.yaml")" "kube-system is exempt from PodSecurity"
 assert_not_contains "$out" "kind: HostnameConfig" "the generated HostnameConfig document is removed"
@@ -45,6 +49,8 @@ assert_eq "ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-n
 
 echo "-- failure modes"
 (unset TALHELPER_UPSMONHOST; assert_fails "an unset variable used by a .tpl patch fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml")
+(unset TALHELPER_CLUSTERSECRET; assert_fails "an unset cluster secret fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml")
+(TALHELPER_CLUSTERNAME=""; export TALHELPER_CLUSTERNAME; assert_fails "an empty cluster id fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml")
 mkdir -p "$TMP/tmpdir"
 TMPDIR="$TMP/tmpdir" "$SCRIPTS/render.sh" mc1 "$TMP/clean.yaml" >/dev/null 2>&1
 assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory (with the secrets bundle) is left behind"
@@ -62,4 +68,11 @@ echo "-- safety"
 out="$(cat "$TMP/mc1.yaml" "$TMP/nv1.yaml")"
 assert_not_contains "$out" "leaked" "variables outside the allowlist are never substituted"
 assert_fails "an unknown node is rejected" "$SCRIPTS/render.sh" nope "$TMP/x.yaml"
+
+echo "-- discovery documents on every node"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq "1 1" "$(yq 'select(.kind == "DiscoveryIdentityConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ') $(yq 'select(.kind == "DiscoveryServiceConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has exactly one identity and one service document"
+  assert_ok "$n output is a valid metal config (a legacy field left next to the documents fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
 finish

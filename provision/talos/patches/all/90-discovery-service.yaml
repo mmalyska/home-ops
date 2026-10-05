@@ -1,0 +1,9 @@
+# What:   Cluster member discovery through the discovery service only; the Kubernetes registry is off
+# Why:    Members discover each other without depending on the Kubernetes API. With no Kubernetes registry document the
+#         registry stays off; the default public endpoint is the one `service: {}` used before
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: DiscoveryServiceConfig
+name: primary
+endpoint: https://discovery.talos.dev/
