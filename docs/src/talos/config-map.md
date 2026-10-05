@@ -18,7 +18,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
@@ -63,7 +63,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
@@ -108,7 +108,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
@@ -153,7 +153,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
 | `provision/talos/patches/all/26-kubelet-legacy-delete.yaml` | Remove the machine.kubelet block that talosctl gen config adds | live | machine.kubelet |  |
-| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the system disk is never wiped | install-only | UnattendedInstallConfig |  |
+| `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
