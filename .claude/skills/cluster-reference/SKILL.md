@@ -52,7 +52,8 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 - The Rook `CephCluster` status lags the real Ceph health by about a minute, and `talos:upgrade` waits on it.
 - `nv1` runs the custom Jetson installer from `ghcr.io/schwankner/custom-installer`. After an upgrade it can boot the old UKI. The fix and the checks are in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade").
 - Talos 1.14 sets `net.ipv4.conf.{all,default}.send_redirects=0` (was 1). No impact seen: Cilium runs in VXLAN tunnel mode.
-- etcd HTTP endpoints move from port 2379 to 2383 in 1.14. Prometheus does not currently scrape etcd at all (see `.plans/TODO.md`).
+- etcd HTTP endpoints move from port 2379 to 2383 (client mTLS) in 1.14. Prometheus scrapes etcd through `cluster.etcd.extraArgs.listen-metrics-urls: http://127.0.0.1:2381` plus `kube-system/metrics-proxy` and `kubeEtcd.endpoints` (the three control-plane IPs) in the prometheus-stack values.
+- Changing `cluster.etcd.extraArgs` is stored by `task talos:apply` but etcd is **not** restarted, and `talosctl service etcd restart` is refused ("doesn't support restart operation via API"). It only takes effect after a node reboot: apply, cordon + drain, reboot (user runs it), uncordon, wait for the gate; one control-plane node at a time.
 
 ## Network Topology
 
