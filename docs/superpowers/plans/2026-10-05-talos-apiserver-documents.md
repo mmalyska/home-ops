@@ -36,7 +36,7 @@ The spec implies these inputs and failure modes that no task's file-level checks
 1. **Authorizer order.** `node` must precede `rbac`; `talosctl get authorizationconfig` must show exactly that. Pinned by Task 2 Step 3 and Task 4 Step 3.
 2. **PodSecurity exemption.** `kube-system` must stay exempt; if it is lost, system pods that need privileges are blocked. Pinned by the `get admissioncontrolconfig` comparison (Task 2, Task 4).
 3. **Certificate SANs.** `certExtraSANs` must produce the same names as the legacy `certSANs`; clients using the VIP or the cluster domain would fail TLS verification otherwise. Pinned by the before and after SAN comparison (Task 4 Step 3).
-4. **Anonymous access.** The new default allows anonymous requests only on `/livez`, `/readyz` and `/healthz`; today anonymous `/version` works. This tightening is intended; any other anonymous probe now gets 401. Pinned by Task 4 Step 3.
+4. **Anonymous access.** The new default allows anonymous requests only on `/livez`, `/readyz` and `/healthz`. Today every anonymous request is refused (legacy mode sets `--anonymous-auth=false`), so these three paths open up; everything else stays 401. Accepted by the user. Pinned by Task 4 Step 3.
 5. **Unset template variable.** Removing the OIDC variables must not leave a `.tpl` file that references them: `check-patches.sh` and the render test fail if one does. Pinned by Task 3 Step 6.
 
 ---
@@ -459,7 +459,7 @@ kubectl get node $N --no-headers | awk '{print $1,$2,$5}'                      #
 kubectl -n kube-system get pod kube-apiserver-$N --no-headers | awk '{print $1,$2,$3}'   # Expected: 1/1 Running
 kubectl auth can-i '*' '*'                                                      # Expected: yes (Talos admin)
 curl -sk https://$IP:6443/livez; echo                                           # Expected: ok (anonymous health endpoint)
-curl -sk -o /dev/null -w "anonymous /version after: %{http_code}\n" https://$IP:6443/version   # Expected: 401 (the intended tightening; before it was 200)
+curl -sk -o /dev/null -w "anonymous /version after: %{http_code}\n" https://$IP:6443/version   # Expected: 401 (before it was 401 too: anonymous access was fully off)
 talosctl -n $IP logs kubelet 2>/dev/null | tail -300 | grep -ci "forbidden"    # Expected: 0 new lines
 echo "pods not Running: $(kubectl get pods -A --no-headers | awk '$4!="Running" && $4!="Completed"' | wc -l)"   # Expected: 0
 kubectl get applications -A --no-headers | awk '$3!="Synced" || $4!="Healthy"' | diff - "$cap/argocd-baseline.txt" && echo "ArgoCD same as baseline"
