@@ -1,9 +1,7 @@
 # What:   kube-proxy is not deployed
-# Why:    Cilium replaces kube-proxy; bind-address is kept as configured
+# Why:    Cilium replaces kube-proxy. The legacy bind-address argument is dropped: it has no effect on a proxy that is not deployed
 # Nodes:  control plane
 # Apply:  live
-cluster:
-  proxy:
-    disabled: true
-    extraArgs:
-      bind-address: 0.0.0.0
+apiVersion: v1alpha1
+kind: KubeProxyConfig
+enabled: false

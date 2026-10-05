@@ -25,7 +25,6 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
-| `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
@@ -35,8 +34,10 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/22-apiserver-audit-policy.yaml` | API audit log: every request at Metadata level | live (the kube-apiserver static pod restarts) | cluster.apiServer | shares cluster.apiServer with provision/talos/patches/controlplane/21-apiserver-pod-security.yaml |
 | `provision/talos/patches/controlplane/30-controller-manager.yaml.tpl` | kube-controller-manager listens on all addresses | live (the static pod restarts) | KubeControllerManagerConfig |  |
 | `provision/talos/patches/controlplane/31-scheduler.yaml.tpl` | kube-scheduler listens on all addresses | live (the static pod restarts) | KubeSchedulerConfig |  |
-| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
+| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
+| `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
+| `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
@@ -63,7 +64,6 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
-| `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
@@ -73,8 +73,10 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/22-apiserver-audit-policy.yaml` | API audit log: every request at Metadata level | live (the kube-apiserver static pod restarts) | cluster.apiServer | shares cluster.apiServer with provision/talos/patches/controlplane/21-apiserver-pod-security.yaml |
 | `provision/talos/patches/controlplane/30-controller-manager.yaml.tpl` | kube-controller-manager listens on all addresses | live (the static pod restarts) | KubeControllerManagerConfig |  |
 | `provision/talos/patches/controlplane/31-scheduler.yaml.tpl` | kube-scheduler listens on all addresses | live (the static pod restarts) | KubeSchedulerConfig |  |
-| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
+| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
+| `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
+| `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
@@ -101,7 +103,6 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
-| `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/controlplane/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with the i915, intel-ucode and nut-client extensions, at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
@@ -111,8 +112,10 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/22-apiserver-audit-policy.yaml` | API audit log: every request at Metadata level | live (the kube-apiserver static pod restarts) | cluster.apiServer | shares cluster.apiServer with provision/talos/patches/controlplane/21-apiserver-pod-security.yaml |
 | `provision/talos/patches/controlplane/30-controller-manager.yaml.tpl` | kube-controller-manager listens on all addresses | live (the static pod restarts) | KubeControllerManagerConfig |  |
 | `provision/talos/patches/controlplane/31-scheduler.yaml.tpl` | kube-scheduler listens on all addresses | live (the static pod restarts) | KubeSchedulerConfig |  |
-| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | cluster.proxy |  |
+| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
+| `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
+| `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
@@ -139,7 +142,6 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | No Talos-managed CNI, cluster DNS domain, pod and service CIDRs | live (never change the CIDRs of a running cluster) | cluster.network |  |
-| `provision/talos/patches/all/85-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | cluster.coreDNS |  |
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
