@@ -127,7 +127,9 @@ Then Kubernetes-level checks:
 - The node is Ready (the kubelet is authorized through the Node authorizer).
 - `kubectl auth can-i '*' '*'` as the Talos admin returns yes.
 - An anonymous `GET /livez` returns `ok`; an anonymous request to another path
-  is refused (the intended tightening).
+  is refused (401). Before the migration every anonymous request was refused,
+  the health paths included (Talos's legacy mode set `--anonymous-auth=false`),
+  so the default configuration opens exactly those three paths: accepted.
 - `kube-apiserver-<node>` is Running at v1.35.9 and ArgoCD stays healthy.
 - `task talos:diff` shows no differences.
 
@@ -149,13 +151,13 @@ talos:apply` for recovery: its health gate needs kubectl, which may not work
 
 ## Risks
 
-| Risk                                                         | Effect                                                                          | Mitigation                                                                           |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Authorizers missing or in the wrong order                    | Kubelet or users rejected, or the API server insecure                           | `get authorizationconfig` compared before the node can degrade; mc1 alone first      |
-| Anonymous access tighter than today                          | An external probe of a path other than `/livez`, `/readyz`, `/healthz` gets 401 | None found in the repo; accepted                                                     |
-| `kube-system` exemption lost in stage 1                      | PodSecurity would block system pods that need privileges                        | The exemption is written in the document and checked in `get admissioncontrolconfig` |
-| `talosctl upgrade-k8s` does not understand the new documents | A later Kubernetes upgrade fails                                                | Test `upgrade-k8s --dry-run` before relying on it (open item)                        |
-| `certExtraSANs` does not replace `certSANs` exactly          | Clients using the VIP or domain fail TLS verification                           | Compare the certificate SANs of the apiserver before and after (`openssl s_client`)  |
+| Risk                                                         | Effect                                                                                                | Mitigation                                                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Authorizers missing or in the wrong order                    | Kubelet or users rejected, or the API server insecure                                                 | `get authorizationconfig` compared before the node can degrade; mc1 alone first          |
+| Anonymous access looser than today on the health paths       | `/livez`, `/readyz` and `/healthz` answer anonymous requests (a bare `ok`); everything else stays 401 | Accepted by the user (Talos default, needed for the probes); verified live on mc1 to mc3 |
+| `kube-system` exemption lost in stage 1                      | PodSecurity would block system pods that need privileges                                              | The exemption is written in the document and checked in `get admissioncontrolconfig`     |
+| `talosctl upgrade-k8s` does not understand the new documents | A later Kubernetes upgrade fails                                                                      | Test `upgrade-k8s --dry-run` before relying on it (open item)                            |
+| `certExtraSANs` does not replace `certSANs` exactly          | Clients using the VIP or domain fail TLS verification                                                 | Compare the certificate SANs of the apiserver before and after (`openssl s_client`)      |
 
 ## Out of scope
 
