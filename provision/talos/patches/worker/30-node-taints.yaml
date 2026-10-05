@@ -2,7 +2,8 @@
 # Why:    Keeps ordinary pods off the GPU node (nv1 shares 16 GB between CPU and GPU); GPU pods tolerate the taint
 # Nodes:  workers
 # Apply:  live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it)
-machine:
-  nodeTaints:
-    # value:effect, parsed by Talos labels.ParseTaint (strings.Cut on ":")
-    nvidia.com/gpu: present:NoSchedule
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+taints:
+  # value:effect, parsed by Talos labels.ParseTaint (strings.Cut on ":")
+  nvidia.com/gpu: present:NoSchedule
