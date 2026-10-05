@@ -67,6 +67,7 @@ Patches are partial documents: only the keys to override.
 - Lists append, so do not repeat a value the generated base already carries (the PodSecurity `kube-system` exemption)
 - Remove something the base generates with `$patch: delete` (see `all/05-hostname-config-delete.yaml` and `controlplane/85-delete-lb-exclusion-label.yaml`)
 - A single patch file cannot modify the same document twice; hence one document per file
+- A new document can also remove things Talos adds implicitly while only the legacy field exists. `KubeNodeConfig` is the case seen: with it on a control plane Talos no longer adds `node-role.kubernetes.io/control-plane` and removes the label from the node (workloads select it and `talosctl health` finds control planes by it), so list it in `labels`. Before applying a migration, compare the live labels, taints and resources of the node with what the new document lists, and apply the first node alone.
 - When migrating a legacy field to its new document, check that `talosctl gen config` does not add the legacy field itself: the contract-pinned base carries some (for example `machine.features.kubePrism`), and Talos refuses a legacy field next to its new document (`talosctl validate --mode metal` says so). Delete it from the base with `$patch: delete` in the v1alpha1 patch file (see `all/60-features.yaml`). The diff against the live node shows whether the legacy field is really gone.
 
 ## Adding a New Config Document
