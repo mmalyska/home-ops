@@ -26,13 +26,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Install tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq gettext-base
           version="$(yq '.vars.TALOS_VERSION' .taskfiles/talos/Taskfile.yaml)"
-          curl -fsSL -o talosctl "https://github.com/siderolabs/talos/releases/download/${version}/talosctl-linux-amd64"
+          base="https://github.com/siderolabs/talos/releases/download/${version}"
+          curl -fsSL -o talosctl "${base}/talosctl-linux-amd64"
+          curl -fsSL "${base}/sha256sum.txt" | grep ' talosctl-linux-amd64$' | sed 's/talosctl-linux-amd64/talosctl/' | sha256sum -c -
           sudo install -m 0755 talosctl /usr/local/bin/talosctl
           talosctl version --client --short
 

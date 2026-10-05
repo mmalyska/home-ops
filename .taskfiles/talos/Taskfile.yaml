@@ -179,14 +179,15 @@ tasks:
     env:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
     cmds:
-      - envsubst < secrets.yaml.tpl > /tmp/talos-secrets.yaml
-      - >
-        talosctl gen config home https://${TALHELPER_CLUSTERDOMAIN}:6443
-        --with-secrets /tmp/talos-secrets.yaml
-        --output-types talosconfig
-        --force
-        -o clusterconfig/talosconfig
-      - rm -f /tmp/talos-secrets.yaml
+      - |
+        set -euo pipefail
+        work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
+        envsubst < secrets.yaml.tpl > "$work/secrets.yaml"
+        talosctl gen config home https://${TALHELPER_CLUSTERDOMAIN}:6443 \
+          --with-secrets "$work/secrets.yaml" \
+          --output-types talosconfig \
+          --force \
+          -o clusterconfig/talosconfig
       - >
         talosctl --talosconfig=clusterconfig/talosconfig config endpoint
         $(yq '.nodes[] | select(.type == "controlplane") | .ip' < nodes.yaml | tr '\n' ' ')

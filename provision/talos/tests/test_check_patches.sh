@@ -72,7 +72,7 @@ assert_fails "a node directory with another node's name in Nodes fails" check
 echo "-- file naming and layout"
 mkfix; mv "$TMP/p/all/10-time.yaml" "$TMP/p/all/time.yaml"
 assert_fails "a file without a NN- prefix fails" check
-mkfix; mkdir -p "$TMP/p/node/ghost"; cp "$TMP/p/node/mc1/10-net.yaml.tpl" "$TMP/p/node/ghost/10-net.yaml.tpl"
+mkfix; mkdir -p "$TMP/p/node/ghost"; sed 's/^# Nodes:.*/# Nodes:  ghost/' "$TMP/p/node/mc1/10-net.yaml.tpl" > "$TMP/p/node/ghost/10-net.yaml.tpl"
 assert_fails "a node directory that is not in nodes.yaml fails" check
 mkfix; cat >> "$TMP/p/all/10-time.yaml" <<'YAML'
 ---
@@ -92,4 +92,10 @@ mkfix; sed -i 's/TALHELPER_CLUSTERDOMAIN/SOMETHING_ELSE/' "$TMP/p/node/mc1/10-ne
 assert_fails "a variable outside the allowlist in a .tpl file fails" check
 mkfix; printf '\n# a stray ${NOT_ALLOWED} in a comment\n' >> "$TMP/p/node/mc1/10-net.yaml.tpl"
 assert_fails "a variable outside the allowlist in a comment of a .tpl file fails" check
+mkfix; sed -i 's/\${TALHELPER_CLUSTERDOMAIN}/$TALHELPER_CLUSTERDOMAIN/' "$TMP/p/node/mc1/10-net.yaml.tpl"
+assert_fails "a variable without braces in a .tpl file fails" check
+
+echo "-- layout"
+mkfix; mkdir -p "$TMP/p/all/sub"; cp "$TMP/p/all/10-time.yaml" "$TMP/p/all/sub/20-time.yaml"
+assert_fails "a file nested deeper than its layer fails (it would never be rendered)" check
 finish

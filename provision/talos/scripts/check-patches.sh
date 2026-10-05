@@ -30,8 +30,11 @@ while IFS= read -r f; do
 
   [[ "$base" =~ ^[0-9]{2}-[a-z0-9-]+\.yaml(\.tpl)?$ ]] || err "$rel" "name must look like NN-some-name.yaml or NN-some-name.yaml.tpl"
 
+  [[ "$rel" =~ ^(all|controlplane|worker)/[^/]+$ || "$rel" =~ ^node/[^/]+/[^/]+$ ]] \
+    || err "$rel" "must sit directly in all/, controlplane/, worker/ or node/<name>/ (deeper files are never rendered)"
+
   case "$rel" in
-    node/*/*) n="${rel#node/}"; n="${n%%/*}"; grep -qx "$n" <<<"$nodes" || err "$rel" "node directory '$n' is not in nodes.yaml" ;;
+    node/*/*) n="${rel#node/}"; n="${n%%/*}"; grep -qxF "$n" <<<"$nodes" || err "$rel" "node directory '$n' is not in nodes.yaml" ;;
   esac
 
   for key in What Why Nodes Apply; do
@@ -46,6 +49,10 @@ while IFS= read -r f; do
 
   docs="$(yq ea '[.] | length' "$f" 2>/dev/null || echo 0)"
   [ "$docs" = "1" ] || err "$rel" "must contain exactly one YAML document (found $docs)"
+
+  if [[ "$base" == *.tpl ]] && grep -v '^[[:space:]]*#' "$f" | grep -qE '\$([A-Za-z_]|$)' ; then
+    err "$rel" "uses \$VAR without braces; envsubst would replace it silently, write \${VAR}"
+  fi
 
   if grep -q '\${' "$f"; then
     if [[ "$base" != *.tpl ]]; then

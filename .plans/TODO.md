@@ -6,6 +6,17 @@ General backlog items not tied to a specific plan.
 
 ## Talos — Node Operations
 
+- [ ] **Talos config layout: leftover review findings** — from the final review of the layered patch pipeline (`docs/superpowers/specs/2026-10-05-talos-config-layout-design.md`). None affects the rendered config; each is small.
+  - README (`provision/talos/README.md`): state the rule "apply never restarts etcd, `talosctl service etcd restart` is refused" (only in the skill now), add `task talos:diff` to the flow diagram and to "Changing the config", and add a step "regenerate the config map" (CI fails without it).
+  - Add `docs/src/talos/config-map.md` to the explicit `nav` in `.github/mkdocs/mkdocs.yml` (it is built but has no menu entry).
+  - Decide whether `task talos:check` belongs in `task lint:all`; today it runs only through `task talos:check` and the `Talos config` workflow.
+  - `task talos:diff`: add the talosctl-equals-`TALOS_VERSION` precondition that `generate` has, and stop hiding talosctl's stderr in `scripts/diff-live.sh` so "cannot read the live config" gives a cause.
+  - `scripts/explain.sh`: a yq failure leaves the "touches" column empty without an error (check-patches catches invalid YAML first, so low risk).
+  - `scripts/mask.sh` is line-based: a block-scalar secret (`crt: |`) would leak its continuation lines. Current Talos output keeps secrets on single lines; add a test or a block-aware mask before that changes.
+  - `scripts/lib.sh`: `expected_version` misreads digest-pinned (`tag@sha256:...`) and empty/null install images; `node_field` interpolates its arguments into the yq expression (safe for repo node names).
+  - `tests/test_check_patches.sh`: the other "fails" cases only assert a non-zero exit, not the message, and the "stray file outside the layers" message reads `Nodes: must be ''`.
+  - Next in the migration entry below: Tier 1 deprecated fields; then tuppr (separate spec and plan).
+
 - [ ] **Investigate Talos taint modification on existing nodes** — during the Jetson iGPU work (`docs/superpowers/plans/2026-08-13-jetson-igpu.md`, Phase 0 Task 4), `task talos:apply` on nv1's renamed `nodeTaints` key (`nv` → `nvidia.com/gpu`) never reached the live Node object. `talosctl dmesg` showed `k8s.NodeApplyController` repeatedly failing: `nodes "nv1" is forbidden: node "nv1" is not allowed to modify taints`, even though `talosctl get nodetaintspecs` showed Talos had the correct desired state internally.
   - Root cause (as understood in the moment, not deeply verified): Kubernetes' `NodeRestriction` admission controller allows a kubelet to set taints only via `--register-with-taints` at **initial node registration** (a `CREATE`), and blocks any later `UPDATE` to `.spec.taints` from that same node identity — so Talos's config-driven taint reconciliation only works the first time a node joins, not on a config change to an already-running node.
   - Worked around by manually `kubectl taint`-ing the new key, then reapplying the Talos config to confirm no further drift (errors stopped once live state matched Talos's `NodeTaintSpec`).
