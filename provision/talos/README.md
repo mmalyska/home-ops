@@ -55,7 +55,7 @@ clusterconfig/             gitignored output of task talos:generate
 
   `Nodes:` must match the directory (`all nodes`, `control plane`, `workers` or the node name). `Apply:` says what
   applying costs: `live` takes effect immediately, `install-only` only matters at the next install or upgrade
-  (the `machine.install` fields), `reboot` takes effect only after a node reboot (etcd settings, kernel modules,
+  (the `UnattendedInstallConfig` document), `reboot` takes effect only after a node reboot (etcd settings, kernel modules,
   containerd config, environment variables, volume encryption, workload isolation). A reason in brackets is welcome.
 
 - **Variables only in `*.yaml.tpl` files**, and only the ones listed in `TPL_VARS` in `scripts/lib.sh`.
@@ -144,9 +144,13 @@ when the node comes back on something else.
 nv1 is such a node. Its image lives in `patches/node/nv1/20-install-image.yaml`:
 
 ```yaml
-machine:
-  install:
-    image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+installer:
+  image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
+provisioning:
+  diskSelector:
+    match: disk.dev_path == "/dev/nvme0n1"
 ```
 
 To move such a node to a new Talos version, bump the tag in that file, nothing else. **Confirm a matching custom
@@ -155,6 +159,10 @@ kernel build in that image, and Talos loads them during the boot sequence before
 image can leave the node with networking up but `apid` never starting: reachable at the TCP level, unmanageable, and
 fixable only over the console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
 `docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
+
+The disk selector is repeated in this file on purpose: `talosctl machineconfig patch` drops `provisioning.diskSelector.match`
+when a later patch merges into the document, so it must be in the last file applied for the node (see the header of the
+file).
 
 #### nv1 boots the wrong UKI after an upgrade (Jetson UEFI)
 
@@ -218,6 +226,17 @@ is stale; regenerate it after any change to a patch file.
 difference with secret values masked, plus the running Talos version against the expected one. It needs the same
 environment as `task talos:generate` and a reachable cluster, and changes nothing. A node whose stored install-image tag
 lags (for example nv1 after an upgrade) shows up here.
+
+## Install settings and reinstalling a node
+
+`patches/all/30-install.yaml` (explicit `wipe: false`), the role files `controlplane/05` and `worker/05` and
+`node/nv1/20` build one `UnattendedInstallConfig` document per node: installer image, disk selector
+(`disk.dev_path == "/dev/nvme0n1"`) and `wipe: false`. On an installed node the document is inert apart from
+naming the installer image that upgrades use. It is meant to act when a node is not installed yet: a node booted
+from USB or PXE in maintenance mode that is given this config should install itself to the matched disk, without a
+separate `talosctl install`. **That path is expected but untested here**; try it on the first real reinstall and
+record what you find. `wipe` defaults to true in this document and is set to false explicitly, so a wipe stays a
+deliberate manual step.
 
 ## Checks
 
