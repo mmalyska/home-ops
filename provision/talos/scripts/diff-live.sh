@@ -23,8 +23,10 @@ for node in "${nodes[@]}"; do
   if [ -n "${RENDERED_DIR:-}" ]; then rendered="$RENDERED_DIR/home-$node.yaml"
   else rendered="$tmp/rendered-$node.yaml"; "$SCRIPTS/render.sh" "$node" "$rendered" || { status=1; continue; }; fi
 
+  # Talos 1.14 keeps a second MachineConfig resource (id persistent) after an apply; read only the
+  # effective one (v1alpha1), or every document appears twice
   if [ -n "${LIVE_DIR:-}" ]; then live="$LIVE_DIR/$node.yaml"
-  else live="$tmp/live-$node.yaml"; talosctl get machineconfig -n "$ip" -o yaml 2>/dev/null | yq '.spec' > "$live" || { echo "$node: cannot read the live config" >&2; status=1; continue; }; fi
+  else live="$tmp/live-$node.yaml"; talosctl get machineconfig v1alpha1 -n "$ip" -o yaml 2>/dev/null | yq '.spec' > "$live" || { echo "$node: cannot read the live config" >&2; status=1; continue; }; fi
 
   "$SCRIPTS/normalize.sh" "$live" > "$tmp/live.norm" && "$SCRIPTS/normalize.sh" "$rendered" > "$tmp/repo.norm" \
     || { echo "$node: cannot normalize" >&2; status=1; continue; }
