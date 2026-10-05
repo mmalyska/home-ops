@@ -22,6 +22,8 @@ assert_contains "$out" "kind: ExtensionServiceConfig" "every node gets the nut-c
 assert_contains "$out" "listen-metrics-urls: http://127.0.0.1:2381" "etcd metrics argument is applied"
 assert_eq "192.0.2.1 cluster.test 127.0.0.1" "$(yq 'select(.kind == "KubeAPIServerConfig") | .certExtraSANs | join(" ")' "$TMP/mc1.yaml")" "template variables are substituted in .tpl patches"
 assert_contains "$out" "ups.test 1 upsuser upspass secondary" "the nut-client secrets are substituted"
+assert_eq "node rbac" "$(yq 'select(.kind == "KubeAuthorizerConfig") | .name' "$TMP/mc1.yaml" | grep -v '^---' | tr '\n' ' ' | sed 's/ $//')" "the API server authorizers are node then rbac"
+assert_eq "kube-system" "$(yq 'select(.kind == "KubeAdmissionControlConfig") | .configuration.exemptions.namespaces[]' "$TMP/mc1.yaml")" "kube-system is exempt from PodSecurity"
 assert_not_contains "$out" "kind: HostnameConfig" "the generated HostnameConfig document is removed"
 assert_not_contains "$out" 'exclude-from-external-load-balancers' "the generated load-balancer exclusion label is removed"
 assert_not_contains "$out" '${' "no unexpanded variable is left"
@@ -35,6 +37,7 @@ assert_contains "$out" "ghcr.io/schwankner/custom-installer:" "nv1 uses its cust
 assert_not_contains "$out" "factory.talos.dev/metal-installer" "the role image is overridden by the node patch"
 assert_contains "$out" "nvidia.com/gpu: present:NoSchedule" "workers get the GPU taint"
 assert_not_contains "$out" "kind: EthernetConfig" "workers do not get the control-plane EthernetConfig"
+assert_not_contains "$out" "kind: KubeAuthorizerConfig" "workers have no kube-apiserver authorizer documents"
 
 echo "-- failure modes"
 (unset TALHELPER_UPSMONHOST; assert_fails "an unset variable used by a .tpl patch fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml")
