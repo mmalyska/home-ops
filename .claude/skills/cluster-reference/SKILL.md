@@ -39,7 +39,7 @@ For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 - Current versions: Talos v1.14.x, Kubernetes v1.35.x (updated by Renovate)
 - 3 control plane nodes (scheduling enabled on control plane, no dedicated workers)
 - Custom extensions: `siderolabs/i915`, `siderolabs/intel-ucode`, `siderolabs/nut-client`
-- OIDC on kube-apiserver pointing to Keycloak
+- kube-apiserver: no OIDC (kubectl uses the Talos-generated kubeconfig); authentication, authorizers (node, rbac), admission and audit are config documents in provision/talos/patches/controlplane/ (files 20 to 26)
 - **To make config changes**: use the `talos-config-editing` skill — it has the edit decision map, patch semantics, and how to add new config documents.
 
 ### Talos upgrades
