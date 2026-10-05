@@ -37,7 +37,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | machine.udev |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
-| `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | machine.sysctls |  |
+| `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/controlplane/60-node-labels.yaml |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
@@ -73,7 +73,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | machine.udev |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
-| `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | machine.sysctls |  |
+| `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/controlplane/60-node-labels.yaml |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
@@ -109,7 +109,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | machine.udev |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Label daytona-sandbox-c=true on the control-plane nodes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/all/70-node-labels.yaml |
-| `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | machine.sysctls |  |
+| `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/80-schedule-on-control-plane.yaml` | Ordinary pods may run on the control-plane nodes | live | cluster.allowSchedulingOnMasters |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels | shares machine.nodeLabels with provision/talos/patches/controlplane/60-node-labels.yaml |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
@@ -135,7 +135,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/90-discovery.yaml` | Cluster member discovery through the discovery service only; the Kubernetes registry is off | live | cluster.discovery |  |
 | `provision/talos/patches/all/98-nut-client.yaml.tpl` | NUT client: watch the UPS and power the node off when it reports low battery | live | ExtensionServiceConfig/nut-client |  |
 | `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version | install-only | machine.install | shares machine.install with provision/talos/patches/all/30-install.yaml |
-| `provision/talos/patches/worker/20-sysctls.yaml` | BPF JIT hardening | live | machine.sysctls |  |
+| `provision/talos/patches/worker/20-sysctls.yaml` | BPF JIT hardening | live | SysctlConfig |  |
 | `provision/talos/patches/worker/30-node-taints.yaml` | Taint workers nvidia.com/gpu=present:NoSchedule | live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it) | machine.nodeTaints |  |
 | `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network | shares machine.network with provision/talos/patches/all/20-nameservers.yaml |
 | `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX) | install-only | machine.install | shares machine.install with provision/talos/patches/worker/05-install-image.yaml.tpl |
