@@ -2,10 +2,10 @@
 # Why:    Who did what is recorded without storing request or response bodies
 # Nodes:  control plane
 # Apply:  live (the kube-apiserver static pod restarts)
-cluster:
-  apiServer:
-    auditPolicy:
-      apiVersion: audit.k8s.io/v1
-      kind: Policy
-      rules:
-        - level: Metadata
+apiVersion: v1alpha1
+kind: KubeAuditPolicyConfig
+configuration:
+  apiVersion: audit.k8s.io/v1
+  kind: Policy
+  rules:
+    - level: Metadata
