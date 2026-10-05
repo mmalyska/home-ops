@@ -7,6 +7,7 @@
 # Bitwarden-derived TALHELPER_* secrets (rendered into secrets.yaml.tpl) or SECRETS_FILE pointing at a
 # talosctl secrets bundle (tests and CI use a throwaway one).
 set -euo pipefail
+umask 077
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 node="${1:?usage: render.sh <node> [out-file]}"

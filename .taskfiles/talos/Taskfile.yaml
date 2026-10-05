@@ -200,6 +200,10 @@ tasks:
       # tag (v1.14.0-6.18.48-nvgpu...) yields its leading Talos version.
       NODE_TALOS_VERSION:
         sh: "{{.TALOS_DIR}}/scripts/expected-version.sh {{.FILE}}"
+    preconditions:
+      # A config rendered before a TALOS_VERSION bump would make the node look up to date.
+      - sh: 'case "{{.TALOS_IMAGE}}" in *factory.talos.dev*:{{.TALOS_VERSION}}) ;; *factory.talos.dev*) exit 1 ;; esac'
+        msg: "{{.FILE}} was rendered for another Talos version than {{.TALOS_VERSION}}, run task talos:generate first"
     status:
       - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .NODE_TALOS_VERSION }}' || return 1)
     cmds:
