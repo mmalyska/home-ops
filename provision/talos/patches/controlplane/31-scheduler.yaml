@@ -1,8 +1,0 @@
-# What:   kube-scheduler listens on all addresses
-# Why:    Exposes the metrics endpoint so Prometheus can scrape it
-# Nodes:  control plane
-# Apply:  live (the static pod restarts)
-cluster:
-  scheduler:
-    extraArgs:
-      bind-address: 0.0.0.0
