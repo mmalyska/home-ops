@@ -9,10 +9,14 @@ NODES_FILE="${NODES_FILE:-$TALOS_DIR/nodes.yaml}"
 # run: the 1.14 contract generates a fully multi-document base that cannot be mixed with the
 # legacy fields still used here. Bump it deliberately, see README.md.
 TALOS_CONTRACT="${TALOS_CONTRACT:-v1.13}"
+# Contract of the second render that supplies the PKI documents (CA, aggregator CA, service account key).
+# Remove it, scripts/pki-documents.sh and the 96-pki-legacy-delete.yaml patches together when TALOS_CONTRACT
+# reaches v1.14 (the base then carries those documents itself).
+PKI_CONTRACT="${PKI_CONTRACT:-v1.14}"
 CLUSTER_NAME="${CLUSTER_NAME:-home}"
 
 # The only variables envsubst may replace, and only inside *.yaml.tpl patches.
-TPL_VARS='${TALHELPER_CLUSTERENDPOINTIP} ${TALHELPER_CLUSTERDOMAIN} ${TALHELPER_UPSMONHOST} ${TALHELPER_UPSMONUSER} ${TALHELPER_UPSMONPASSWD} ${TALOS_VERSION} ${KUBERNETES_VERSION} ${TALHELPER_CLUSTERNAME} ${TALHELPER_CLUSTERSECRET}'
+TPL_VARS='${TALHELPER_CLUSTERENDPOINTIP} ${TALHELPER_CLUSTERDOMAIN} ${TALHELPER_UPSMONHOST} ${TALHELPER_UPSMONUSER} ${TALHELPER_UPSMONPASSWD} ${TALOS_VERSION} ${KUBERNETES_VERSION} ${TALHELPER_CLUSTERNAME} ${TALHELPER_CLUSTERSECRET} ${TALHELPER_AESCBCENCYPTIONKEY}'
 
 die() { echo "error: $*" >&2; exit 1; }
 

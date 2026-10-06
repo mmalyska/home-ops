@@ -10,6 +10,7 @@ export KUBERNETES_VERSION=v1.35.9 TALOS_VERSION=v1.14.2
 export TALHELPER_CLUSTERDOMAIN=cluster.test TALHELPER_CLUSTERENDPOINTIP=192.0.2.1
 export TALHELPER_UPSMONHOST=ups.test TALHELPER_UPSMONUSER=upsuser TALHELPER_UPSMONPASSWD=upspass
 export TALHELPER_CLUSTERNAME="$(printf "A%.0s" $(seq 43))=" TALHELPER_CLUSTERSECRET="$(printf "B%.0s" $(seq 43))="
+export TALHELPER_AESCBCENCYPTIONKEY="$(yq '.secrets.secretboxencryptionsecret' "$TMP/secrets.yaml")"
 export SECRET_SHOULD_NOT_LEAK=leaked
 
 render() { "$SCRIPTS/render.sh" "$1" "$TMP/$1.yaml"; }
@@ -28,6 +29,10 @@ assert_eq "null" "$(yq 'select(.machine != null) | .machine.install' "$TMP/mc1.y
 assert_eq "$TALHELPER_CLUSTERNAME|$TALHELPER_CLUSTERSECRET" "$(yq 'select(.kind == "DiscoveryIdentityConfig") | .clusterID + "|" + .clusterSecret' "$TMP/mc1.yaml")" "the discovery identity is rendered from the TALHELPER variables"
 assert_eq "primary|https://discovery.talos.dev/" "$(yq 'select(.kind == "DiscoveryServiceConfig") | .name + "|" + .endpoint' "$TMP/mc1.yaml")" "the discovery service document uses the default endpoint"
 assert_eq "false" "$(yq 'select(.machine != null) | .cluster | (has("id") or has("secret") or has("discovery"))' "$TMP/mc1.yaml")" "the legacy cluster.id, cluster.secret and cluster.discovery are removed"
+assert_eq "false" "$(yq 'select(.machine != null) | .cluster | (has("ca") or has("aggregatorCA") or has("serviceAccount") or has("secretboxEncryptionSecret"))' "$TMP/mc1.yaml")" "the legacy PKI fields are removed from a control plane"
+assert_eq "4" "$(yq 'select(.kind == "KubeAPIServerCAConfig" or .kind == "KubeAggregatorCAConfig" or .kind == "KubeServiceAccountConfig" or .kind == "KubeEtcdEncryptionConfig") | .kind' "$TMP/mc1.yaml" | grep -vc '^---')" "a control plane has the four PKI documents"
+assert_eq "key2|secretbox identity" "$(yq 'select(.kind == "KubeEtcdEncryptionConfig") | .config.resources[0].providers[0].secretbox.keys[0].name + "|" + (.config.resources[0].providers | map(keys | .[0]) | join(" "))' "$TMP/mc1.yaml")" "the etcd encryption key is named key2 with the identity provider as fallback (never rename: it is part of every stored ciphertext)"
+assert_eq "$TALHELPER_AESCBCENCYPTIONKEY" "$(yq 'select(.kind == "KubeEtcdEncryptionConfig") | .config.resources[0].providers[0].secretbox.keys[0].secret' "$TMP/mc1.yaml")" "the etcd encryption secret is the bundle's secretbox secret"
 assert_eq "node rbac" "$(yq 'select(.kind == "KubeAuthorizerConfig") | .name' "$TMP/mc1.yaml" | grep -v '^---' | tr '\n' ' ' | sed 's/ $//')" "the API server authorizers are node then rbac"
 assert_eq "kube-system" "$(yq 'select(.kind == "KubeAdmissionControlConfig") | .configuration.exemptions.namespaces[]' "$TMP/mc1.yaml")" "kube-system is exempt from PodSecurity"
 assert_not_contains "$out" "kind: HostnameConfig" "the generated HostnameConfig document is removed"
@@ -47,10 +52,16 @@ assert_not_contains "$out" "kind: KubeAuthorizerConfig" "workers have no kube-ap
 assert_eq 'disk.dev_path == "/dev/nvme0n1"|false' "$(yq 'select(.kind == "UnattendedInstallConfig") | .provisioning.diskSelector.match + "|" + (.provisioning.wipe | tostring)' "$TMP/nv1.yaml")" "nv1 keeps the disk selector and wipe false"
 assert_eq "ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim" "$(yq 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$TMP/nv1.yaml")" "nv1's custom installer image is carried by the document"
 
+assert_eq "1|none|false" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | (.acceptedCAs | length | tostring) + "|" + (.issuingCA // "none" | tostring)' "$TMP/nv1.yaml")|$(yq 'select(.machine != null) | .cluster | has("ca")' "$TMP/nv1.yaml")" "a worker has the accepted CA only and no legacy cluster.ca"
+assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: KubeEtcdEncryptionConfig" "a worker has no etcd encryption document"
+
 echo "-- failure modes"
-(unset TALHELPER_UPSMONHOST; assert_fails "an unset variable used by a .tpl patch fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml")
-(unset TALHELPER_CLUSTERSECRET; assert_fails "an unset cluster secret fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml")
-(TALHELPER_CLUSTERNAME=""; export TALHELPER_CLUSTERNAME; assert_fails "an empty cluster id fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml")
+assert_fails "an unset variable used by a .tpl patch fails the render" env -u TALHELPER_UPSMONHOST "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml"
+assert_fails "an unset cluster secret fails the render" env -u TALHELPER_CLUSTERSECRET "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml"
+assert_fails "an empty cluster id fails the render" env TALHELPER_CLUSTERNAME= "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml"
+assert_fails "an unset etcd encryption secret fails the render" env -u TALHELPER_AESCBCENCYPTIONKEY "$SCRIPTS/render.sh" mc1 "$TMP/unset4.yaml"
+assert_fails "an empty etcd encryption secret fails the render" env TALHELPER_AESCBCENCYPTIONKEY= "$SCRIPTS/render.sh" mc1 "$TMP/empty2.yaml"
+assert_fails "a failing PKI document generation fails the render" env PKI_CONTRACT=v1.13 "$SCRIPTS/render.sh" mc1 "$TMP/nopki.yaml"
 mkdir -p "$TMP/tmpdir"
 TMPDIR="$TMP/tmpdir" "$SCRIPTS/render.sh" mc1 "$TMP/clean.yaml" >/dev/null 2>&1
 assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory (with the secrets bundle) is left behind"
@@ -74,5 +85,12 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
   [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
   assert_eq "1 1" "$(yq 'select(.kind == "DiscoveryIdentityConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ') $(yq 'select(.kind == "DiscoveryServiceConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has exactly one identity and one service document"
   assert_ok "$n output is a valid metal config (a legacy field left next to the documents fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
+
+echo "-- PKI documents on every node"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq "1" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has exactly one API server CA document"
+  assert_ok "$n output is a valid metal config (a legacy PKI field left next to the documents fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
 finish

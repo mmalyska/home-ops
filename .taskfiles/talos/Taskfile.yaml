@@ -275,6 +275,14 @@ tasks:
     cmds:
       - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
 
+  pki-parity:
+    desc: Compare the PKI values a node runs with the rendered ones by hash, printing no values (task talos:pki-parity -- mc1)
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+      KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/pki-parity.sh {{.CLI_ARGS}}"
+
   check:
     desc: Offline checks, no secrets or cluster needed (task talos:check)
     cmds:
