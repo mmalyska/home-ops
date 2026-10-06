@@ -1,0 +1,9 @@
+# What:   Remove the cluster.clusterName and cluster.controlPlane fields that talosctl gen config adds
+# Why:    Talos refuses the legacy fields next to the KubeClusterConfig document (07-cluster-config.yaml.tpl)
+# Nodes:  all nodes
+# Apply:  live
+cluster:
+  clusterName:
+    $patch: delete
+  controlPlane:
+    $patch: delete

@@ -14,6 +14,8 @@ controlplane, 192.168.48.2
 | File | What | Apply | Touches | Notes |
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
+| `provision/talos/patches/all/07-cluster-config.yaml.tpl` | Cluster name and the Kubernetes API endpoint | live | KubeClusterConfig |  |
+| `provision/talos/patches/all/08-cluster-legacy-delete.yaml` | Remove the cluster.clusterName and cluster.controlPlane fields that talosctl gen config adds | live | cluster.clusterName cluster.controlPlane |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
@@ -21,7 +23,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
-| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
+| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
@@ -46,7 +48,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -63,6 +65,8 @@ controlplane, 192.168.48.3
 | File | What | Apply | Touches | Notes |
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
+| `provision/talos/patches/all/07-cluster-config.yaml.tpl` | Cluster name and the Kubernetes API endpoint | live | KubeClusterConfig |  |
+| `provision/talos/patches/all/08-cluster-legacy-delete.yaml` | Remove the cluster.clusterName and cluster.controlPlane fields that talosctl gen config adds | live | cluster.clusterName cluster.controlPlane |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
@@ -70,7 +74,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
-| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
+| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
@@ -95,7 +99,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -112,6 +116,8 @@ controlplane, 192.168.48.4
 | File | What | Apply | Touches | Notes |
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
+| `provision/talos/patches/all/07-cluster-config.yaml.tpl` | Cluster name and the Kubernetes API endpoint | live | KubeClusterConfig |  |
+| `provision/talos/patches/all/08-cluster-legacy-delete.yaml` | Remove the cluster.clusterName and cluster.controlPlane fields that talosctl gen config adds | live | cluster.clusterName cluster.controlPlane |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
@@ -119,7 +125,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
-| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
+| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
@@ -144,7 +150,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | machine.features | shares machine.features with provision/talos/patches/all/60-features.yaml |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -161,6 +167,8 @@ worker, 192.168.48.5
 | File | What | Apply | Touches | Notes |
 | --- | --- | --- | --- | --- |
 | `provision/talos/patches/all/05-hostname-config-delete.yaml` | Remove the HostnameConfig document that talosctl gen config adds | live | HostnameConfig |  |
+| `provision/talos/patches/all/07-cluster-config.yaml.tpl` | Cluster name and the Kubernetes API endpoint | live | KubeClusterConfig |  |
+| `provision/talos/patches/all/08-cluster-legacy-delete.yaml` | Remove the cluster.clusterName and cluster.controlPlane fields that talosctl gen config adds | live | cluster.clusterName cluster.controlPlane |  |
 | `provision/talos/patches/all/10-api-sans.yaml.tpl` | Names and IPs the node API certificate is valid for: the control-plane VIP, the cluster domain, loopback | live | machine.certSANs |  |
 | `provision/talos/patches/all/20-resolver.yaml` | DNS servers for the node itself (the two in-cluster AdGuard instances first, the router last) and the host DNS caching resolver | live | ResolverConfig |  |
 | `provision/talos/patches/all/25-kubelet.yaml.tpl` | Kubelet: rotate serving certificates, default seccomp profile, pinned cluster DNS, kubelet image at the Kubernetes version | live | KubeletConfig |  |
@@ -168,7 +176,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/30-install.yaml` | Install behaviour for every node: the unattended install never wipes the system disk | install-only | UnattendedInstallConfig |  |
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
-| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | machine.time |  |
+| `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
