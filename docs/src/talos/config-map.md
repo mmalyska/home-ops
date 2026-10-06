@@ -24,6 +24,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
+| `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
@@ -75,6 +76,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
+| `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
@@ -126,6 +128,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
+| `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
@@ -177,6 +180,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
+| `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
