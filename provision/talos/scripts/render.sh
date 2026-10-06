@@ -51,6 +51,11 @@ while IFS= read -r f; do
   i=$((i + 1))
 done < <(patch_files "$node")
 
+# The PKI documents are generated from the same secrets bundle (see pki-documents.sh), after the file patches
+"$(dirname "${BASH_SOURCE[0]}")/pki-documents.sh" "$type" "$work/secrets.yaml" > "$work/pki-documents.yaml" \
+  || die "generating the PKI documents failed"
+args+=(--patch "@$work/pki-documents.yaml")
+
 mkdir -p "$(dirname "$out")"
 talosctl machineconfig patch "$work/base.yaml" "${args[@]}" -o "$out"
 chmod 600 "$out"
