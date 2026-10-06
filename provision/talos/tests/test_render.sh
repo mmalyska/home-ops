@@ -124,4 +124,11 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
   assert_eq "1|false" "$(yq 'select(.kind == "VolumeConfig" and .name == "EPHEMERAL") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "VolumeConfig" and .name == "EPHEMERAL") | .mount.secure | tostring' "$TMP/$n.yaml")" "$n has one EPHEMERAL VolumeConfig with mount.secure explicitly false (unset would mean true)"
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
+
+echo "-- hardware watchdog on every node"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq "1|/dev/watchdog0|4m0s" "$(yq 'select(.kind == "WatchdogTimerConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "WatchdogTimerConfig") | .device + "|" + .timeout' "$TMP/$n.yaml")" "$n has one WatchdogTimerConfig on /dev/watchdog0 with a 4 minute timeout (nv1's Tegra watchdog accepts at most 255 s)"
+  assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
 finish

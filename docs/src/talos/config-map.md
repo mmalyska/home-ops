@@ -24,6 +24,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/35-ephemeral-volume.yaml` | The EPHEMERAL volume (/var) mount options, declared: mount.secure false, so /var has no nosuid and nodev | live (the volume is already provisioned; check the /var line of /proc/mounts after applying) | VolumeConfig/EPHEMERAL |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
+| `provision/talos/patches/all/45-watchdog.yaml` | Hardware watchdog: reset the node if Talos is unresponsive for 4 minutes | live | WatchdogTimerConfig |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -77,6 +78,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/35-ephemeral-volume.yaml` | The EPHEMERAL volume (/var) mount options, declared: mount.secure false, so /var has no nosuid and nodev | live (the volume is already provisioned; check the /var line of /proc/mounts after applying) | VolumeConfig/EPHEMERAL |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
+| `provision/talos/patches/all/45-watchdog.yaml` | Hardware watchdog: reset the node if Talos is unresponsive for 4 minutes | live | WatchdogTimerConfig |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -130,6 +132,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/35-ephemeral-volume.yaml` | The EPHEMERAL volume (/var) mount options, declared: mount.secure false, so /var has no nosuid and nodev | live (the volume is already provisioned; check the /var line of /proc/mounts after applying) | VolumeConfig/EPHEMERAL |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
+| `provision/talos/patches/all/45-watchdog.yaml` | Hardware watchdog: reset the node if Talos is unresponsive for 4 minutes | live | WatchdogTimerConfig |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
@@ -183,6 +186,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/31-install-legacy-delete.yaml` | Remove the machine.install block that talosctl gen config adds | install-only | machine.install |  |
 | `provision/talos/patches/all/35-ephemeral-volume.yaml` | The EPHEMERAL volume (/var) mount options, declared: mount.secure false, so /var has no nosuid and nodev | live (the volume is already provisioned; check the /var line of /proc/mounts after applying) | VolumeConfig/EPHEMERAL |  |
 | `provision/talos/patches/all/40-cri-customization.yaml` | containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept | live (containerd restarts by itself; running pods keep running, but do it one node at a time) | CRICustomizationConfig/pod-defaults |  |
+| `provision/talos/patches/all/45-watchdog.yaml` | Hardware watchdog: reset the node if Talos is unresponsive for 4 minutes | live | WatchdogTimerConfig |  |
 | `provision/talos/patches/all/50-time.yaml` | NTP servers, by IP | live | TimeSyncConfig |  |
 | `provision/talos/patches/all/55-filesystem-trim.yaml` | Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE) | live | FilesystemTrimConfig |  |
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |

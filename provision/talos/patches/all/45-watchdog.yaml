@@ -1,0 +1,11 @@
+# What:   Hardware watchdog: reset the node if Talos is unresponsive for 4 minutes
+# Why:    The nodes have no remote power switch, so a frozen node stays frozen until someone power-cycles it. Talos feeds the
+#         watchdog every timeout/3 and disarms it on a graceful stop (shutdown, reboot, upgrade), so planned maintenance does
+#         not trip it. 4m, not 5m: nv1's Tegra watchdog accepts at most 255 s (the mc nodes use iTCO_wdt, which takes 300 s).
+#         The device is /dev/watchdog0 on all four nodes. It protects against a hung kernel or machined, not an unhealthy node
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: WatchdogTimerConfig
+device: /dev/watchdog0
+timeout: 4m
