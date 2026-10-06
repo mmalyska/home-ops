@@ -1,0 +1,10 @@
+# What:   Weekly filesystem scrub (xfs_scrub) of the mounted XFS filesystems (the NVMe system disks: /var and STATE)
+# Why:    Scrubbing was off. It checks metadata online and records problems early. 168h is the upstream default; Talos starts
+#         each volume's scrub at a stable hash-derived time inside the interval. An hourly pilot on mc3 and nv1 (2026-10-06)
+#         showed no XFS errors and no etcd latency hit, but a scrub on mc3 wrote about 2.7 GB (vs 1.4 GB in a quiet window),
+#         about 65 GB a day if hourly, so the interval stays weekly. The Ceph OSD disk is raw and not affected
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: FilesystemScrubConfig
+interval: 168h

@@ -132,14 +132,10 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
 
-echo "-- filesystem scrub pilot (temporary: mc3 and nv1 only, hourly)"
-for n in mc3 nv1; do
+echo "-- filesystem scrub (weekly, every node)"
+for n in mc1 mc2 mc3 nv1; do
   [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
-  assert_eq "1|1h0m0s" "$(yq 'select(.kind == "FilesystemScrubConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "FilesystemScrubConfig") | .interval' "$TMP/$n.yaml")" "$n has the pilot FilesystemScrubConfig with a 1 hour interval"
+  assert_eq "1|168h0m0s" "$(yq 'select(.kind == "FilesystemScrubConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "FilesystemScrubConfig") | .interval' "$TMP/$n.yaml")" "$n has one FilesystemScrubConfig with a 168 hour interval"
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
-done
-for n in mc1 mc2; do
-  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
-  assert_not_contains "$(cat "$TMP/$n.yaml")" "kind: FilesystemScrubConfig" "$n has no scrub yet (the pilot covers mc3 and nv1 only)"
 done
 finish
