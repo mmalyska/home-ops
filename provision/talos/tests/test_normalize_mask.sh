@@ -51,6 +51,8 @@ masked="$(printf '%s\n' \
   '     token: abc.def' \
   '+  secret: s3cr3t' \
   '+  secretboxEncryptionSecret: xyz' \
+  '+clusterID: c2lkLXZhbHVl' \
+  '-clusterSecret: c2VjLXZhbHVl' \
   '       MONITOR ups.example 1 user pass secondary' \
   '+    hostname: mc1' | "$SCRIPTS/mask.sh")"
 assert_not_contains "$masked" "LS0tLS1CRUdJTg" "certificate value is masked"
@@ -58,6 +60,9 @@ assert_not_contains "$masked" "c2VjcmV0" "private key value is masked"
 assert_not_contains "$masked" "abc.def" "token value is masked"
 assert_not_contains "$masked" "s3cr3t" "secret value is masked"
 assert_not_contains "$masked" "xyz" "secretboxEncryptionSecret value is masked"
+assert_not_contains "$masked" "c2lkLXZhbHVl" "clusterID value is masked"
+assert_not_contains "$masked" "c2VjLXZhbHVl" "clusterSecret value is masked"
+assert_contains "$masked" "-clusterSecret: <masked>" "the key name and diff marker of clusterSecret stay visible"
 assert_not_contains "$masked" "ups.example" "nut MONITOR line is masked"
 assert_contains "$masked" "+    hostname: mc1" "ordinary lines are untouched"
 assert_contains "$masked" "+    crt: <masked>" "the key name and diff marker stay visible"
