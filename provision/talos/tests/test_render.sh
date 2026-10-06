@@ -56,12 +56,12 @@ assert_eq "1|none|false" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | (.acc
 assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: KubeEtcdEncryptionConfig" "a worker has no etcd encryption document"
 
 echo "-- failure modes"
-(unset TALHELPER_UPSMONHOST; assert_fails "an unset variable used by a .tpl patch fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml")
-(unset TALHELPER_CLUSTERSECRET; assert_fails "an unset cluster secret fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml")
-(TALHELPER_CLUSTERNAME=""; export TALHELPER_CLUSTERNAME; assert_fails "an empty cluster id fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml")
-(unset TALHELPER_AESCBCENCYPTIONKEY; assert_fails "an unset etcd encryption secret fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/unset4.yaml")
-(TALHELPER_AESCBCENCYPTIONKEY=""; export TALHELPER_AESCBCENCYPTIONKEY; assert_fails "an empty etcd encryption secret fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/empty2.yaml")
-(PKI_CONTRACT=v1.13; export PKI_CONTRACT; assert_fails "a failing PKI document generation fails the render" "$SCRIPTS/render.sh" mc1 "$TMP/nopki.yaml")
+assert_fails "an unset variable used by a .tpl patch fails the render" env -u TALHELPER_UPSMONHOST "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml"
+assert_fails "an unset cluster secret fails the render" env -u TALHELPER_CLUSTERSECRET "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml"
+assert_fails "an empty cluster id fails the render" env TALHELPER_CLUSTERNAME= "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml"
+assert_fails "an unset etcd encryption secret fails the render" env -u TALHELPER_AESCBCENCYPTIONKEY "$SCRIPTS/render.sh" mc1 "$TMP/unset4.yaml"
+assert_fails "an empty etcd encryption secret fails the render" env TALHELPER_AESCBCENCYPTIONKEY= "$SCRIPTS/render.sh" mc1 "$TMP/empty2.yaml"
+assert_fails "a failing PKI document generation fails the render" env PKI_CONTRACT=v1.13 "$SCRIPTS/render.sh" mc1 "$TMP/nopki.yaml"
 mkdir -p "$TMP/tmpdir"
 TMPDIR="$TMP/tmpdir" "$SCRIPTS/render.sh" mc1 "$TMP/clean.yaml" >/dev/null 2>&1
 assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory (with the secrets bundle) is left behind"

@@ -24,8 +24,8 @@ run() { RENDERED_DIR="$TMP/rendered" LIVE_DIR="$TMP/live" "$SCRIPTS/pki-parity.s
 echo "-- legacy fields on the node, documents in the repo"
 assert_ok "a control plane with the same values passes" run mc1
 out="$(run mc1)"
-assert_eq "6" "$(echo "$out" | grep -c ' ok$')" "all six control plane fields compare equal"
-assert_not_contains "$out" "absent" "no control plane field is absent on both sides (a broken extraction would show up here)"
+assert_eq "8" "$(echo "$out" | grep -c ' ok$')" "all eight control plane fields compare equal (key name and provider list included)"
+assert_eq "mc1: aescbc absent" "$(echo "$out" | grep absent)" "only the aescbc field is absent on a control plane, as expected"
 assert_ok "a worker with the same values passes" run nv1
 out="$(run nv1)"
 assert_contains "$out" "nv1: ca_crt ok" "the worker CA certificate equals the accepted CA"
@@ -34,6 +34,7 @@ assert_contains "$out" "nv1: ca_key absent" "a worker has no CA key on either si
 echo "-- documents on the node too (after the rollout)"
 cp "$TMP/rendered/home-mc1.yaml" "$TMP/live/mc1.yaml"
 assert_ok "documents against documents pass" run mc1
+assert_eq "8" "$(run mc1 | grep -c ' ok$')" "documents against documents compare all eight fields, not vacuously"
 
 echo "-- a difference is found"
 cp "$TMP/live/mc1.yaml" "$TMP/keep.yaml"
@@ -46,6 +47,28 @@ assert_contains "$(run mc1 2>&1 || true)" "mc1: aggregator_crt DIFFERS" "a missi
 cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
 yq -i '(select(.kind == "KubeEtcdEncryptionConfig") | .config.resources[0].providers[0].secretbox.keys[0].secret) = "AAAA"' "$TMP/live/mc1.yaml"
 assert_contains "$(run mc1 2>&1 || true)" "mc1: etcd_encryption_secret DIFFERS" "a changed etcd encryption secret is a difference"
+
+echo "-- the encryption layout is compared, not just the secret"
+cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
+yq -i '(select(.kind == "KubeEtcdEncryptionConfig") | .config.resources[0].providers[0].secretbox.keys[0].name) = "key9"' "$TMP/live/mc1.yaml"
+assert_fails "a renamed etcd encryption key fails" run mc1
+assert_contains "$(run mc1 2>&1 || true)" "mc1: etcd_key_name DIFFERS" "the renamed key is named"
+cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
+yq -i '(select(.kind == "KubeEtcdEncryptionConfig") | .config.resources[0].providers) |= [.[0]]' "$TMP/live/mc1.yaml"
+assert_contains "$(run mc1 2>&1 || true)" "mc1: etcd_providers DIFFERS" "a dropped identity fallback is a difference"
+cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
+yq -i '(select(.machine != null) | .cluster.aescbcEncryptionSecret) = "AAAA"' "$TMP/live/mc1.yaml"
+yq -i 'select(.kind != "KubeEtcdEncryptionConfig")' "$TMP/live/mc1.yaml"
+assert_contains "$(run mc1 2>&1 || true)" "mc1: aescbc DIFFERS" "a legacy aescbc secret on the node is a difference"
+echo "-- missing data is a failure, not a pass"
+cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
+mkdir -p "$TMP/empty-live" "$TMP/empty-rendered"
+assert_fails "missing config files fail instead of printing absent" env RENDERED_DIR="$TMP/empty-rendered" LIVE_DIR="$TMP/empty-live" "$SCRIPTS/pki-parity.sh" mc1
+printf 'machine: {}\n' > "$TMP/empty-live/mc1.yaml"; cp "$TMP/empty-live/mc1.yaml" "$TMP/empty-rendered/home-mc1.yaml"
+assert_fails "configs with no PKI at all fail on a control plane" env RENDERED_DIR="$TMP/empty-rendered" LIVE_DIR="$TMP/empty-live" "$SCRIPTS/pki-parity.sh" mc1
+assert_contains "$(env RENDERED_DIR="$TMP/empty-rendered" LIVE_DIR="$TMP/empty-live" "$SCRIPTS/pki-parity.sh" mc1 2>&1 || true)" "mc1: ca_crt MISSING" "an unexpectedly absent field is named MISSING"
+printf 'machine: {}\n' > "$TMP/empty-live/nv1.yaml"; cp "$TMP/empty-live/nv1.yaml" "$TMP/empty-rendered/home-nv1.yaml"
+assert_fails "a worker with no CA at all fails" env RENDERED_DIR="$TMP/empty-rendered" LIVE_DIR="$TMP/empty-live" "$SCRIPTS/pki-parity.sh" nv1
 
 echo "-- no value is ever printed"
 cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"

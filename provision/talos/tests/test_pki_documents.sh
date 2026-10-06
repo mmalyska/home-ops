@@ -35,8 +35,8 @@ assert_eq "$(lv worker .cluster.ca.crt)" "$(yq 'select(.kind == "KubeAPIServerCA
 echo "-- failure modes"
 assert_fails "an unknown role is rejected" "$SCRIPTS/pki-documents.sh" nope "$TMP/secrets.yaml"
 assert_fails "a missing secrets file is rejected" "$SCRIPTS/pki-documents.sh" worker "$TMP/none.yaml"
-(unset KUBERNETES_VERSION; assert_fails "an unset KUBERNETES_VERSION fails" "$SCRIPTS/pki-documents.sh" worker "$TMP/secrets.yaml")
-(PKI_CONTRACT=v1.13; export PKI_CONTRACT; assert_fails "a contract that generates no PKI documents fails instead of printing nothing" "$SCRIPTS/pki-documents.sh" controlplane "$TMP/secrets.yaml")
+assert_fails "an unset KUBERNETES_VERSION fails" env -u KUBERNETES_VERSION "$SCRIPTS/pki-documents.sh" worker "$TMP/secrets.yaml"
+assert_fails "a contract that generates no PKI documents fails instead of printing nothing" env PKI_CONTRACT=v1.13 "$SCRIPTS/pki-documents.sh" controlplane "$TMP/secrets.yaml"
 mkdir -p "$TMP/tmpdir"
 TMPDIR="$TMP/tmpdir" "$SCRIPTS/pki-documents.sh" controlplane "$TMP/secrets.yaml" >/dev/null 2>&1
 assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory is left behind"
