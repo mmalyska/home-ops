@@ -117,4 +117,11 @@ done
 
 echo "-- containerd config on nv1"
 assert_eq "0" "$(yq 'select(.machine != null) | (.machine.files // []) | map(select(.path == "/etc/cri/containerd.toml")) | length' "$TMP/nv1.yaml")" "nv1 does not overwrite /etc/cri/containerd.toml (the generated config already enables CDI)"
+
+echo "-- EPHEMERAL volume config on every node"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq "1|false" "$(yq 'select(.kind == "VolumeConfig" and .name == "EPHEMERAL") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "VolumeConfig" and .name == "EPHEMERAL") | .mount.secure | tostring' "$TMP/$n.yaml")" "$n has one EPHEMERAL VolumeConfig with mount.secure explicitly false (unset would mean true)"
+  assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
 finish
