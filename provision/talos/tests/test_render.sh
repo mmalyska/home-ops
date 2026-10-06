@@ -114,4 +114,7 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
   assert_eq "1|168h0m0s" "$(yq 'select(.kind == "FilesystemTrimConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "FilesystemTrimConfig") | .interval' "$TMP/$n.yaml")" "$n has exactly one FilesystemTrimConfig with a weekly interval"
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
+
+echo "-- containerd config on nv1"
+assert_eq "0" "$(yq 'select(.machine != null) | (.machine.files // []) | map(select(.path == "/etc/cri/containerd.toml")) | length' "$TMP/nv1.yaml")" "nv1 does not overwrite /etc/cri/containerd.toml (the generated config already enables CDI)"
 finish
