@@ -305,7 +305,7 @@ The masked diff cannot show a changed value. Compare hashes for each node IP (mc
 cd /workspaces/home-ops/provision/talos
 for n in mc1 mc2 mc3 nv1; do
   ip=$(yq ".nodes[] | select(.name == \"$n\") | .ip" nodes.yaml)
-  live=$(talosctl get machineconfig v1alpha1 -n "$ip" -o yaml | yq '.spec | select(.machine != null) | .cluster.id + "|" + .cluster.secret' | sha256sum)
+  live=$(talosctl get machineconfig v1alpha1 -n "$ip" -o yaml | yq '.spec' | yq 'select(.machine != null) | .cluster.id + "|" + .cluster.secret' | sha256sum)
   repo=$(yq 'select(.kind == "DiscoveryIdentityConfig") | .clusterID + "|" + .clusterSecret' clusterconfig/home-$n.yaml | sha256sum)
   [ "$live" = "$repo" ] && echo "$n: identity unchanged" || echo "$n: IDENTITY DIFFERS"
 done
@@ -349,3 +349,12 @@ Revert the PR on a branch, `task talos:generate`, and `task talos:apply N=<node>
 - **Spec coverage:** goals 1 and 2 are Tasks 2 and 4 (documents present, legacy removed, hash proof); goal 3 is Task 4 Step 1 and 6; masking requirement is Task 1; unset/empty variable and per-node validation are Task 2; docs list in the spec is Task 3; Kubernetes registry confirmation and rollback are Task 4.
 - **Placeholders:** none; the one wording-dependent edit (layout spec bullet, TODO "Next" line) says to read the text first because exact line wrapping is not copied here.
 - **Names:** `90-discovery-service.yaml`, `91-discovery-identity.yaml.tpl`, `92-discovery-legacy-delete.yaml`, `TALHELPER_CLUSTERNAME`, `TALHELPER_CLUSTERSECRET` are used identically in every task.
+
+## Rollout log (2026-10-06)
+
+Rolled out mc1, mc2, mc3, nv1 one at a time (live, no reboot). Identity hashes matched live on all four before applying; after each apply every control plane node saw four members, and `task talos:diff` showed no differences for all four nodes. The live discovery config shows the Kubernetes registry off and the service registry on. nv1 still advertises `nvidia.com/gpu: 1`.
+
+Notes for next time:
+
+- Step 2: `.spec` is a YAML text block, so the live query needs the second `yq` (fixed above). The one-step form returns empty and looks like "IDENTITY DIFFERS".
+- `task talos:apply` ends with an error on control-plane nodes: its `node_health` step runs `talosctl health` without `--control-plane-nodes`, so it expects only the node itself ("etcd member ips ... are not subset of control plane node ips"). The apply itself succeeded each time. Check with `talosctl --nodes <ip> health --control-plane-nodes 192.168.48.2,192.168.48.3,192.168.48.4 --worker-nodes 192.168.48.5 --server=false` instead. Not caused by this change as far as known; not investigated.
