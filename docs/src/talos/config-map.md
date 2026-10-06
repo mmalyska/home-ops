@@ -168,6 +168,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
+| `provision/talos/patches/node/mc3/60-filesystem-scrub.yaml` | TEMPORARY pilot: hourly filesystem scrub (xfs_scrub) on this node (the pilot is mc3 and nv1 only) | live | FilesystemScrubConfig |  |
 
 ## nv1
 
@@ -213,3 +214,4 @@ worker, 192.168.48.5
 | `provision/talos/patches/node/nv1/37-kmod-nvgpu.yaml` | Kernel module nvgpu | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/nvgpu |  |
 | `provision/talos/patches/node/nv1/38-kmod-governor-pod-scaling.yaml` | Kernel module governor_pod_scaling | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/governor_pod_scaling |  |
 | `provision/talos/patches/node/nv1/40-node-labels.yaml` | Labels accelerator=jetson-orin and nvidia.com/gpu.type=igpu | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/worker/30-node-taints.yaml |
+| `provision/talos/patches/node/nv1/60-filesystem-scrub.yaml` | TEMPORARY pilot: hourly filesystem scrub (xfs_scrub) on this node (the pilot is mc3 and nv1 only) | live | FilesystemScrubConfig |  |
