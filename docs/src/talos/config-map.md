@@ -205,4 +205,3 @@ worker, 192.168.48.5
 | `provision/talos/patches/node/nv1/37-kmod-nvgpu.yaml` | Kernel module nvgpu | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/nvgpu |  |
 | `provision/talos/patches/node/nv1/38-kmod-governor-pod-scaling.yaml` | Kernel module governor_pod_scaling | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/governor_pod_scaling |  |
 | `provision/talos/patches/node/nv1/40-node-labels.yaml` | Labels accelerator=jetson-orin and nvidia.com/gpu.type=igpu | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/worker/30-node-taints.yaml |
-| `provision/talos/patches/node/nv1/50-containerd-config.yaml` | Whole-file replacement of /etc/cri/containerd.toml with CDI enabled | reboot (containerd reads its config file only at start) | machine.files |  |

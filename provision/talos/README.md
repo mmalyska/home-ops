@@ -197,7 +197,10 @@ first).
    `mv EFI/Linux/Talos-vOLD.efi EFI/Linux/Talos-vOLD.efi.bak`, then `sync`,
    `umount`, delete the pod.
 3. `talosctl reboot --nodes 192.168.48.5`, then confirm the running version,
-   `LoaderEntrySelected`, `nvidia.com/gpu: 1`, `/dev/dri` and `/etc/cri/containerd.toml`.
+   `LoaderEntrySelected`, `nvidia.com/gpu: 1` and `/dev/dri`. Also confirm CDI is still on in containerd, because nv1
+   no longer carries its own `containerd.toml` and relies on the generated config:
+   `talosctl -n 192.168.48.5 logs cri | grep '"config":"' | tail -1 | grep -o 'enableCDI[^,]*,[^]]*]'` must show
+   `enableCDI` true and `cdiSpecDirs` `/run/cdi` (`/var/run` is a symlink to `/run`, which is where `nvidia-cdi-setup` writes the spec).
 
 Notes:
 
