@@ -107,4 +107,11 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
 done
 assert_eq "os:etcd:backup|talos-backup" "$(yq 'select(.kind == "KubeTalosAPIAccessConfig") | (.allowedRoles | join(",")) + "|" + (.allowedKubernetesNamespaces | join(","))' "$TMP/mc1.yaml")" "a control plane lets the talos-backup namespace use the etcd backup role"
 assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: KubeTalosAPIAccessConfig" "a worker has no Talos API access document"
+
+echo "-- filesystem trim on every node"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq "1|168h0m0s" "$(yq 'select(.kind == "FilesystemTrimConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "FilesystemTrimConfig") | .interval' "$TMP/$n.yaml")" "$n has exactly one FilesystemTrimConfig with a weekly interval"
+  assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
 finish
