@@ -256,3 +256,13 @@ is committed; the rendered files in `clusterconfig/` contain secrets and stay gi
 `patches/all/92-discovery-legacy-delete.yaml` removes the legacy `cluster.id`, `cluster.secret` and `cluster.discovery`
 fields that `talosctl gen config` adds, because Talos refuses them next to the documents. `task talos:diff` masks both
 document keys, so it cannot show a changed value; compare by hash (see the discovery spec and plan) if you ever change them.
+
+The PKI documents (`KubeAPIServerCAConfig`, `KubeAggregatorCAConfig`, `KubeServiceAccountConfig`) are not patch files:
+`scripts/pki-documents.sh` prints them from a second `talosctl gen config` (`PKI_CONTRACT`, v1.14) of the same secrets
+bundle and `render.sh` appends them as the last patch, because the pinned `TALOS_CONTRACT` (v1.13) still generates the
+legacy `cluster.ca`, `aggregatorCA`, `serviceAccount` and `secretboxEncryptionSecret` fields, which
+`patches/*/96-pki-legacy-delete.yaml` remove. `KubeEtcdEncryptionConfig` is the exception: `patches/controlplane/95-etcd-encryption.yaml.tpl`
+writes it out (key name `key2`, `secretbox` then `identity`, the secret from `TALHELPER_AESCBCENCYPTIONKEY`) because the key
+name is part of every stored ciphertext and must never follow a generated default. `task talos:pki-parity -- <node>`
+compares the PKI values a node runs with the rendered ones by hash and prints no values. When `TALOS_CONTRACT` reaches
+v1.14, remove `pki-documents.sh`, `PKI_CONTRACT` and the `96-pki-legacy-delete.yaml` patches together.

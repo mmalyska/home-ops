@@ -52,6 +52,8 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels |  |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
+| `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
+| `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc1/10-network.yaml` | mc1 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 
 ## mc2
@@ -99,6 +101,8 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels |  |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
+| `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
+| `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc2/10-network.yaml` | mc2 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 
 ## mc3
@@ -146,6 +150,8 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
 | `provision/talos/patches/controlplane/85-delete-lb-exclusion-label.yaml` | Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes | live | machine.nodeLabels |  |
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
+| `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
+| `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 
 ## nv1
@@ -175,6 +181,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/worker/05-install-image.yaml.tpl` | Installer image: Image Factory schematic with kernel arguments only (no extensions), at the Talos version; install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/all/30-install.yaml |
 | `provision/talos/patches/worker/20-sysctls.yaml` | BPF JIT hardening | live | SysctlConfig |  |
 | `provision/talos/patches/worker/30-node-taints.yaml` | Taint workers nvidia.com/gpu=present:NoSchedule | live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it) | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
+| `provision/talos/patches/worker/96-pki-legacy-delete.yaml` | Remove the cluster.ca field that talosctl gen config adds | live | cluster.ca |  |
 | `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network |  |
 | `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/worker/05-install-image.yaml.tpl |
 | `provision/talos/patches/node/nv1/31-kmod-host1x.yaml` | Kernel module host1x | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x |  |
