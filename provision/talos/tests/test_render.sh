@@ -93,4 +93,18 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
   assert_eq "1" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has exactly one API server CA document"
   assert_ok "$n output is a valid metal config (a legacy PKI field left next to the documents fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
+
+echo "-- cluster, time and API access documents"
+cluster_name="$(bash -c 'source "$1/lib.sh"; echo "$CLUSTER_NAME"' _ "$SCRIPTS")"
+for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+  assert_eq "$cluster_name|https://cluster.test:6443" "$(yq 'select(.kind == "KubeClusterConfig") | .clusterName + "|" + .endpoint' "$TMP/$n.yaml")" "$n has the KubeClusterConfig document with the base cluster name and the endpoint"
+  assert_eq "false" "$(yq 'select(.machine != null) | .cluster | (has("clusterName") or has("controlPlane"))' "$TMP/$n.yaml")" "$n has no legacy cluster.clusterName or cluster.controlPlane"
+  assert_eq "true|162.159.200.123,162.159.200.1,216.239.35.0,216.239.35.4" "$(yq 'select(.kind == "TimeSyncConfig") | (.enabled | tostring) + "|" + (.ntp.servers | join(","))' "$TMP/$n.yaml")" "$n has the TimeSyncConfig document with the four NTP servers by IP"
+  assert_eq "false" "$(yq 'select(.machine != null) | .machine | has("time")' "$TMP/$n.yaml")" "$n has no legacy machine.time"
+  assert_eq "false" "$(yq 'select(.machine != null) | (.machine.features // {}) | has("kubernetesTalosAPIAccess")' "$TMP/$n.yaml")" "$n has no legacy kubernetesTalosAPIAccess"
+  assert_ok "$n output is a valid metal config (a legacy field left next to its document fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
+assert_eq "os:etcd:backup|talos-backup" "$(yq 'select(.kind == "KubeTalosAPIAccessConfig") | (.allowedRoles | join(",")) + "|" + (.allowedKubernetesNamespaces | join(","))' "$TMP/mc1.yaml")" "a control plane lets the talos-backup namespace use the etcd backup role"
+assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: KubeTalosAPIAccessConfig" "a worker has no Talos API access document"
 finish
