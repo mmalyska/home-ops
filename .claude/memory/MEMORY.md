@@ -35,3 +35,4 @@
 - [Music Assistant in the cluster](reference_music_assistant_cluster.md) — VLAN 48 macvlan .62; base_url vs bind_port gotchas; NFS library via k8s volume
 - [Check live IPs before assigning one](feedback_check_live_ips_before_assigning.md) — list live LB IPs + pools first; update the network.md table in the same PR
 - [CoreDNS/Argo bootstrap deadlock](reference_coredns_argo_bootstrap_deadlock.md) — deleting coredns kills Argo's DNS; create the app before deleting
+- [Talos live config + apply health quirk](reference_talos_live_config_yq_spec.md) — yq needs two passes on .spec; task talos:apply health step fails on cp nodes after a good apply

@@ -96,12 +96,16 @@ tasks:
         sh: yq '.nodes[] | select(.type == "controlplane") | .ip' < {{.TALOS_DIR}}/nodes.yaml | paste -sd, -
       CP_FIRST:
         sh: yq '[.nodes[] | select(.type == "controlplane") | .ip][0]' < {{.TALOS_DIR}}/nodes.yaml
+      WORKER_IPS:
+        sh: yq '.nodes[] | select(.type == "worker") | .ip' < {{.TALOS_DIR}}/nodes.yaml | paste -sd, -
     cmds:
+      # The node lists are always explicit: without them talosctl reads the discovery members once at startup, and right
+      # after an apply (the discovery client restarts) that list is only the node itself, so the check fails until the timeout
       - |
         if [ "{{.TYPE}}" = "worker" ]; then
           talosctl --nodes {{.CP_FIRST}} health --control-plane-nodes {{.CP_IPS}} --worker-nodes {{.NODE}} --wait-timeout=10m --server=false
         else
-          talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+          talosctl --nodes {{.NODE}} health --control-plane-nodes {{.CP_IPS}} --worker-nodes {{.WORKER_IPS}} --wait-timeout=10m --server=false
         fi
 
   apply:restart:
