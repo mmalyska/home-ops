@@ -195,9 +195,13 @@ for v in LoaderEntryDefault LoaderEntrySelected; do
 done
 ```
 
-Fix without a console (verified on nv1): make the stale default point at a file
-that does not exist, so sd-boot falls back to its own ordering (newest UKI
-first).
+Fix without a console (verified on nv1 twice, the second time on 2026-10-07 for
+v1.14.0 to v1.14.2): make the stale default point at a file that does not exist,
+so sd-boot falls back to its own ordering (newest UKI first). On 2026-10-07 the
+installer had set `LoaderEntryDefault` to `Talos-v1.14.0~1.efi`, the file of the
+version being replaced, while the new file was `Talos-v1.14.2.efi`; renaming the
+old one to `.bak` and one more reboot booted v1.14.2. Expect to do this on every
+nv1 upgrade.
 
 1. Run a short-lived privileged pod pinned to nv1 in `kube-system` (exempt from
    the PodSecurity baseline) with hostPath `/dev` and mount `/dev/nvme0n1p1`
@@ -206,6 +210,21 @@ first).
 2. Rename the stale UKI, do not delete it:
    `mv EFI/Linux/Talos-vOLD.efi EFI/Linux/Talos-vOLD.efi.bak`, then `sync`,
    `umount`, delete the pod.
+   The pod can do the rename and refuse when it would leave no bootable entry
+   (this is the script that was run; the pod is `privileged`, pinned to nv1 with
+   `nodeName: nv1`, with hostPath `/dev` mounted at `/dev`):
+
+   ```sh
+   set -eu
+   mkdir -p /mnt/efi && mount /dev/nvme0n1p1 /mnt/efi && cd /mnt/efi/EFI/Linux
+   ls -la
+   NEW=$(ls | grep -i -E '^talos-v<NEW VERSION>.*\.efi$' | head -1 || true)   # e.g. v1.14.2
+   [ -n "$NEW" ] || { echo "ABORT: no new UKI, nothing renamed"; cd /; umount /mnt/efi; exit 3; }
+   OLD='Talos-v<OLD VERSION>.efi'                                            # the file named by LoaderEntryDefault
+   [ -f "$OLD" ] || { echo "ABORT: $OLD not found"; cd /; umount /mnt/efi; exit 4; }
+   mv "$OLD" "$OLD.bak" && sync && ls -la && cd / && umount /mnt/efi
+   ```
+
 3. `talosctl reboot --nodes 192.168.48.5`, then confirm the running version,
    `LoaderEntrySelected`, `nvidia.com/gpu: 1` and `/dev/dri`. Also confirm CDI is still on in containerd, because nv1
    no longer carries its own `containerd.toml` and relies on the generated config:
