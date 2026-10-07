@@ -292,9 +292,11 @@ Things to know for a real reinstall:
 `SecurityProfileConfig` with `workloadIsolation: true` runs CRI containerd, the kubelet and every pod in their own PID and
 mount namespace, anchored by the `sandboxd` service, instead of sharing the namespaces of `machined` (PID 1). It is rolled
 out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`, plan
-`docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: the setting is explicit for every node through `patches/all/65-security-profile.yaml`. Isolation takes
-effect on each node at its next reboot after an apply. It is running on mc3 and nv1 as of 2026-10-07; mc1 and mc2 are still
-to be applied and rebooted.
+`docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: the setting is explicit for every node
+through `patches/all/65-security-profile.yaml`. Isolation takes effect on each node at its next reboot after an apply. It
+is running on mc3 and nv1 as of 2026-10-07; mc1 and mc2 are still to be applied and rebooted. Until then `task talos:diff`
+shows the document as a difference on mc1 and mc2, and any `task talos:apply` to them writes it too, so their next
+reboot, planned or not, enables isolation: apply those two nodes only as part of the rollout procedure (plan Task 5).
 
 - **A reboot is needed.** `sandboxd` reads the setting only when it starts, so apply, cordon, drain, reboot, uncordon, in
   both directions. Rollback is the same with `workloadIsolation: false`.
