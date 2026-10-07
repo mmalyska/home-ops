@@ -139,4 +139,14 @@ for n in mc1 mc2 mc3 nv1; do
   assert_eq "1|168h0m0s" "$(yq 'select(.kind == "FilesystemScrubConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "FilesystemScrubConfig") | .interval' "$TMP/$n.yaml")" "$n has one FilesystemScrubConfig with a 168 hour interval"
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
+
+echo "-- workload isolation (phase 1: pilot on mc3 only)"
+for n in mc1 mc2 mc3 nv1; do
+  [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
+done
+assert_eq "1|true" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/mc3.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$TMP/mc3.yaml")" "mc3 has exactly one SecurityProfileConfig with workloadIsolation true"
+assert_ok "mc3 output is a valid metal config" talosctl validate --config "$TMP/mc3.yaml" --mode metal
+for n in mc1 mc2 nv1; do
+  assert_eq "0" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has no SecurityProfileConfig yet (isolation is off there)"
+done
 finish
