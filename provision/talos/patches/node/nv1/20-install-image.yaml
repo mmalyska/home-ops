@@ -1,5 +1,7 @@
 # What:   Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1
-# Why:    The Jetson GPU needs the matching kernel and out-of-tree modules, built by schwankner/talos-jetson-orin.
+# Why:    The Jetson GPU needs the matching kernel and out-of-tree modules. The image is our own build of the fork
+#         mmalyska/talos-jetson-orin (upstream: schwankner/talos-jetson-orin), published to ghcr.io/mmalyska/custom-installer;
+#         the package must stay public because nv1 pulls it anonymously.
 #         The tag is <talos>-<kernel>-nvgpu<version>; the kernel module ABI must match the image (see provision/talos/README.md).
 #         The disk selector (CEL) is repeated in every file that sets the installer image (controlplane/05, worker/05,
 #         node/nv1/20): the last patch applied for a node must carry it, because talosctl machineconfig patch drops
@@ -10,7 +12,7 @@
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 installer:
-  image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
+  image: ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim
 provisioning:
   diskSelector:
     match: disk.dev_path == "/dev/nvme0n1"
