@@ -16,7 +16,7 @@
 - Every patch file starts with the header lines `# What:`, `# Why:`, `# Nodes:`, `# Apply:`; `# Nodes:` must equal the layer (`all nodes`, `control plane`, `workers` or the node name); `# Apply:` is `live`, `install-only` or `reboot`, optionally followed by `(reason)`. `scripts/check-patches.sh` enforces it. One YAML document per file.
 - **Never apply config, drain, reboot or create/delete anything in the cluster without the user's explicit confirmation** for that step (CLAUDE.md hard rule). `talosctl reboot` is blocked for Claude by the permission settings: ask the user to run it with `!`.
 - Read-only cluster access (`kubectl get`, `talosctl get/read/services/processes/logs/etcd status`) is free. The cluster is only reachable from the home network; if `kubectl get nodes` fails with a DNS or timeout error, stop and tell the user.
-- One node at a time. Ceph must be exactly `HEALTH_OK` before each node's drain and after each node's uncordon, and the node's health gate (`task talos:node_health N=<node>`) must pass before the next node.
+- One node at a time. Ceph must be exactly `HEALTH_OK` before each node's drain and after each node's uncordon, and the node's health gate (the `talosctl health` command of the internal `node_health` task, see Task 3 Step 6; `task talos:node_health` itself cannot be invoked) must pass before the next node.
 - Never push to `main`; branch prefixes `feat/`, `fix/`, `chore/`, `docs/`; open the PR right after pushing. Run `task talos:check` before each commit that touches `provision/talos/`.
 - Do not write the private cluster domain literally anywhere (comments, docs, memory, plan): the NFS server name is read from the live PV at run time.
 - Memory edits go to `.claude/memory/` and are committed on the branch being worked on (CLAUDE.md "Memory").
@@ -389,7 +389,7 @@ git add -A && git commit -m "feat(talos): isolation-check.sh, a read-only proof 
 
 **Interfaces:**
 
-- Consumes: `scripts/isolation-check.sh <node> [on|off]` (Task 2), `task talos:apply N=<node>`, `task talos:node_health N=<node>`, the merged PR 1.
+- Consumes: `scripts/isolation-check.sh <node> [on|off]` (Task 2), `task talos:apply N=<node>`, the `talosctl health` command from Step 6 below, the merged PR 1.
 - Produces: a go/no-go decision from the user for Task 4.
 
 Every step that changes the cluster waits for the user's explicit yes. Set these in each shell:
@@ -460,14 +460,16 @@ Ask the user to run: `! TALOSCONFIG=/workspaces/home-ops/provision/talos/cluster
 
 ```bash
 kubectl uncordon $NODE
-task talos:node_health N=$NODE
+talosctl --nodes $IP health --control-plane-nodes 192.168.48.2,192.168.48.3,192.168.48.4 --worker-nodes 192.168.48.5 --wait-timeout=4m --server=false   # what the internal node_health task runs for a control plane
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph status | head -12
 provision/talos/scripts/isolation-check.sh $NODE on | tee $S/isolation/$NODE-check-after.txt
 talosctl -n $IP logs sandboxd | tail -5
 kubectl -n kube-system get pods -o wide --field-selector spec.nodeName=$NODE | grep -E 'cilium|multus'
 ```
 
-Expected: `node_health` passes; the cilium agent, cilium-envoy and multus pods on mc3 are `Running` and ready; Ceph returns to `HEALTH_OK` (the CephCluster status lags the real health by about a minute); `isolation-check: mc3 ok (on)` with both namespace lines `ok`; `sandboxd` logs `started as PID 1 of the sandbox namespace`. If any of this fails: roll back (Global Constraints) and stop.
+Expected: the health command exits 0; the cilium agent, cilium-envoy and multus pods on mc3 are `Running` and ready; Ceph returns to `HEALTH_OK` (the CephCluster status lags the real health by about a minute); `isolation-check: mc3 ok (on)` with both namespace lines `ok`; `sandboxd` logs `started as PID 1 of the sandbox namespace`. If any of this fails: roll back (Global Constraints) and stop.
+
+If only the Ceph line of `isolation-check` fails right after the uncordon, wait a minute and rerun it: the check reads the `CephCluster` status, which lags the real health (`ceph health` says `HEALTH_OK` first).
 
 - [ ] **Step 7: Active checks with test pods pinned to mc3 — ask the user first (creates and deletes a namespace, a PVC and two pods)**
 
@@ -506,8 +508,8 @@ spec:
     seccompProfile: {type: RuntimeDefault}
   containers:
     - name: probe
-      image: busybox:1.38@sha256:365a051f12e05767b598e643676f14a450fb678a75ccf2beb0052c95d5c73b83
-      command: ["sh", "-c", "echo ok > /data/probe && grep -q ok /data/probe"]
+      image: busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+      command: ["sh", "-c", "echo ok > /data/probe && grep -q ok /data/probe && echo RBD-OK"]
       securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: ["ALL"]}}
       volumeMounts: [{name: data, mountPath: /data}]
   volumes:
@@ -528,8 +530,8 @@ spec:
     seccompProfile: {type: RuntimeDefault}
   containers:
     - name: probe
-      image: busybox:1.38@sha256:365a051f12e05767b598e643676f14a450fb678a75ccf2beb0052c95d5c73b83
-      command: ["sh", "-c", "grep -q ' /mnt nfs' /proc/mounts"]
+      image: busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+      command: ["sh", "-c", "grep -q ' /mnt nfs' /proc/mounts && echo NFS-OK"]
       securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: ["ALL"]}}
       volumeMounts: [{name: share, mountPath: /mnt, readOnly: true}]
   volumes:
@@ -540,7 +542,65 @@ kubectl -n isolation-check wait --for=jsonpath='{.status.phase}'=Succeeded pod/r
 kubectl -n isolation-check get pods -o wide
 ```
 
+The image digest must be the multi-arch index (`fd7dc986…`). The `365a051f…` digest that the nvidia pods use is busybox's arm64-only child manifest and fails with `exec format error` on the amd64 control planes (found 2026-10-07). A PodSecurity `restricted` warning about the NFS volume is expected (the namespace enforces `baseline`).
+
 Expected: both pods `Succeeded` on mc3 (the RBD volume attached and was written, the in-tree NFS volume was mounted by the kubelet inside the sandbox). On failure keep the pods for diagnosis, `kubectl -n isolation-check describe pod <name>`, and treat it as a failed gate. Clean up once the user agrees: `kubectl delete namespace isolation-check` (this also deletes the PVC and its RBD image).
+
+- [ ] **Step 7b: Red test, the isolation boundary — ask the user first (creates and deletes two privileged `hostPID` pods in `kube-system`, read-only commands)**
+
+Run the same probe on the node just isolated (`$NODE`) and on a control that still runs without isolation (mc1 while it is still off; after that nv1). The control proves the probe can see `machined` at all, so the isolated result cannot pass vacuously.
+
+```bash
+IMG='busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e'
+for N in <control node> $NODE; do export NODE=$N IMG; envsubst '${NODE} ${IMG}' <<'YAML' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: isolation-probe-${NODE}
+  namespace: kube-system
+spec:
+  nodeName: ${NODE}
+  restartPolicy: Never
+  hostPID: true
+  tolerations:
+    - operator: Exists
+  containers:
+    - name: probe
+      image: ${IMG}
+      securityContext:
+        privileged: true
+      command:
+        - sh
+        - -c
+        - |
+          echo "pid1 comm      : $(cat /proc/1/comm)"
+          echo "pid1 cmdline   : $(tr '\0' ' ' < /proc/1/cmdline | cut -c1-60)"
+          echo "pid1 pidns     : $(readlink /proc/1/ns/pid)   (own: $(readlink /proc/self/ns/pid))"
+          echo "processes seen : $(ls -d /proc/[0-9]* | wc -l)"
+          for n in init apid etcd sandboxd containerd kubelet; do
+            echo "visible $n$(printf '%*s' $((11 - ${#n})) '')  : $(grep -l -x -s "$n" /proc/[0-9]*/comm | wc -l)"
+          done
+          echo "pid1 fds read  : $(ls /proc/1/fd 2>/dev/null | wc -l)"
+          echo "pid1 mounts    : $(wc -l < /proc/1/mountinfo)"
+          echo DONE
+YAML
+done
+for N in <control node> $NODE; do kubectl -n kube-system wait --for=jsonpath='{.status.phase}'=Succeeded pod/isolation-probe-$N --timeout=3m; echo "######## $N"; kubectl -n kube-system logs isolation-probe-$N; done
+kubectl -n kube-system delete pod isolation-probe-<control node> isolation-probe-$NODE
+```
+
+Expected (measured on 2026-10-07, mc1 as the control and mc3 isolated; counts vary with the workload, the pattern is what matters):
+
+| Line                                    | Control (isolation off) | Isolated node                                  |
+| --------------------------------------- | ----------------------- | ---------------------------------------------- |
+| `pid1 comm`                             | `init` (machined)       | `sandboxd`                                     |
+| `visible init`, `visible apid`          | 1, 1                    | **0, 0**                                       |
+| `visible etcd` (control planes)         | 1                       | 1 (etcd runs inside the sandbox, see the spec) |
+| `visible containerd`, `visible kubelet` | present                 | present                                        |
+| `pid1 fds read`                         | hundreds (209)          | a handful (13, sandboxd's own)                 |
+| `processes seen`                        | all of the host (615)   | the sandbox only (86)                          |
+
+The step passes only when the control shows `init` and `apid` visible **and** the isolated node shows both at 0 with `pid1 comm` = `sandboxd`. If the control does not see `machined`, the probe is broken and says nothing about isolation.
 
 - [ ] **Step 8: Compare with the baseline (read-only)**
 
@@ -712,11 +772,11 @@ Expected: the diff for nv1 is clean; the check passes for `off` (nv1 runs host n
 
 - [ ] **Step 3: mc2**
 
-Repeat Task 3 steps 1 (baseline, with `NODE=mc2 IP=192.168.48.3 I="192.168.48.3(:.*)?"`), 3 (apply), 4 (cordon and drain), 5 (the user reboots mc2), 6 (uncordon and gate, check `on`), 7 (test pods with `NODE=mc2`; mc2 also runs the jellyfin and nextcloud NFS workloads, so check they are Running after the pods return) and 8 (compare). The soak is the next morning's check of `isolation-check.sh mc2 on` and Alertmanager, not 48 hours. Ceph must be `HEALTH_OK` before starting mc1.
+Repeat Task 3 steps 1 (baseline, with `NODE=mc2 IP=192.168.48.3 I="192.168.48.3(:.*)?"`), 3 (apply), 4 (cordon and drain), 5 (the user reboots mc2), 6 (uncordon and gate, check `on`), 7 (test pods with `NODE=mc2`; mc2 also runs the jellyfin and nextcloud NFS workloads, so check they are Running after the pods return), 7b (red test, mc1 is the isolation-off control) and 8 (compare). The soak is the next morning's check of `isolation-check.sh mc2 on` and Alertmanager, not 48 hours. Ceph must be `HEALTH_OK` before starting mc1.
 
 - [ ] **Step 4: mc1**
 
-Same as Step 3 with `NODE=mc1 IP=192.168.48.2 I="192.168.48.2(:.*)?"`. mc1 last: it is the first endpoint in the talosconfig.
+Same as Step 3 with `NODE=mc1 IP=192.168.48.2 I="192.168.48.2(:.*)?"`. mc1 last: it is the first endpoint in the talosconfig. In Step 7b use nv1 as the isolation-off control, since mc2 and mc3 are isolated by then.
 
 - [ ] **Step 5: Final state check (read-only)**
 
