@@ -140,13 +140,15 @@ for n in mc1 mc2 mc3 nv1; do
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
 
-echo "-- workload isolation (phase 1: pilot on mc3 only)"
+echo "-- workload isolation (on for mc3 and nv1, not yet for mc1 and mc2)"
 for n in mc1 mc2 mc3 nv1; do
   [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
 done
-assert_eq "1|true" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/mc3.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$TMP/mc3.yaml")" "mc3 has exactly one SecurityProfileConfig with workloadIsolation true"
-assert_ok "mc3 output is a valid metal config" talosctl validate --config "$TMP/mc3.yaml" --mode metal
-for n in mc1 mc2 nv1; do
+for n in mc3 nv1; do
+  assert_eq "1|true" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$TMP/$n.yaml")" "$n has exactly one SecurityProfileConfig with workloadIsolation true"
+  assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
+done
+for n in mc1 mc2; do
   assert_eq "0" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has no SecurityProfileConfig yet (isolation is off there)"
 done
 finish

@@ -19,7 +19,7 @@ v1.14.2 source); details and the test plan are in the SecurityProfileConfig bull
 
 **How to apply:** before the contract bump, decide and write the document in a patch (true or false). Live check
 2026-10-07: mc1-mc3 run v1.14.2 and nv1 was upgraded to v1.14.2 the same day (the v1.14.0 boot bug no longer applies),
-so test on **mc3 first** (a normal rolling reboot) and nv1 last, after it has soaked on v1.14.2. Workloads most likely to
+so test on **mc3 first** (a normal rolling reboot). The owner then chose to enable **nv1 early** (2026-10-07, soak waived, v1.14.2 has the boot-bug fix), before mc2 and mc1; the end state is `true` on all four nodes, no nv1 `false` override. Workloads most likely to
 notice: Ceph RBD/CephFS CSI (hostPID, bidirectional `/var/lib/kubelet` mounts), multus, cilium `mount-bpf-fs`,
 node-exporter (hostPID), `nvidia-cdi-setup` and the in-tree NFS mounts.
 
