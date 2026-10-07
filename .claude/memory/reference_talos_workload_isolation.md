@@ -19,7 +19,7 @@ v1.14.2 source); details and the test plan are in the SecurityProfileConfig bull
 
 **How to apply:** before the contract bump, decide and write the document in a patch (true or false). Live check
 2026-10-07: mc1-mc3 run v1.14.2 and nv1 was upgraded to v1.14.2 the same day (the v1.14.0 boot bug no longer applies),
-so test on **mc3 first** (a normal rolling reboot). The owner then chose to enable **nv1 early** (2026-10-07, soak waived, v1.14.2 has the boot-bug fix), before mc2 and mc1; the end state is `true` on all four nodes, no nv1 `false` override. Workloads most likely to
+so test on **mc3 first** (a normal rolling reboot). The owner then chose to enable **nv1 early** (done 2026-10-07: clean first reboot, GPU stack intact at 26.2 tokens/s as before, red test passed) (2026-10-07, soak waived, v1.14.2 has the boot-bug fix), before mc2 and mc1; the end state is `true` on all four nodes, no nv1 `false` override. Workloads most likely to
 notice: Ceph RBD/CephFS CSI (hostPID, bidirectional `/var/lib/kubelet` mounts), multus, cilium `mount-bpf-fs`,
 node-exporter (hostPID), `nvidia-cdi-setup` and the in-tree NFS mounts.
 
@@ -30,3 +30,7 @@ readable PID-1 fds on a non-isolated node (mc1), and on the isolated node (mc3) 
 invisible and 13 fds. **etcd is inside the sandbox** when isolation is on (`NSpid` `<host> <sandbox> 1`), contrary to the
 first assumption, so the sandbox hides machined and apid but not etcd, and a `sandboxd` crash would restart a control
 plane's etcd. Probe manifest and expected values: plan Task 3 Step 7b.
+
+**State 2026-10-07 evening:** isolation is ON on mc3 and nv1 (node patches `patches/node/{mc3,nv1}/65-security-profile.yaml`),
+OFF on mc1 and mc2 until plan Task 4 (consolidate to `patches/all/`) and their reboots. `scripts/isolation-check.sh <node>
+[on|off]` proves a node's state; plan Task 3 Step 7b is the red-test probe. `task talos:node_health N=<node>` is the health gate.
