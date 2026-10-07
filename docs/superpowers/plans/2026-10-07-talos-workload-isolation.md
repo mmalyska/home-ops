@@ -33,6 +33,29 @@
 
 ---
 
+## Amendment 2026-10-07: nv1 is enabled early (owner's decision)
+
+nv1 is enabled right after its v1.14.2 upgrade, before mc2 and mc1 (spec amendment of the same date). Where the plan
+below conflicts with this section, this section wins:
+
+- **New step, "Task 3N: nv1" (before Task 4):** the Task 3 procedure with `NODE=nv1 IP=192.168.48.5 I="192.168.48.5(:.*)?"`:
+  baseline (Step 1), render and diff (Step 2), apply (Step 3), cordon and drain (Step 4), the user reboots (Step 5),
+  uncordon and gate (Step 6, `task talos:node_health N=nv1`), test pods (Step 7, the busybox index digest is multi-arch so
+  it runs on arm64), red test (Step 7b, mc1 as the isolation-off control) and the comparison (Step 8). nv1 extras in the
+  gate: `nvidia.com/gpu` allocatable, `/run/cdi` has `nvidia-jetson.yaml`, `/var/fw-fresh/ga10b` has the firmware,
+  `llama-server` Running and the GPU load (`/sys/devices/platform/bus@0/17000000.gpu/load`) high during a request. Its repo
+  PR adds `patches/node/nv1/65-security-profile.yaml` (`true`) with the render test, like Task 1.
+- **Task 4 changes:** do not create `patches/node/nv1/65-security-profile.yaml` as `false`; delete both node files (mc3 and
+  nv1) and create only `patches/all/65-security-profile.yaml` (`true`, its Why no longer mentions an nv1 override). The tests
+  expect `true` on every node (drop the `want=false` branch) and the contract-bump guard expects `true` on every node. The
+  README sentences use the all-nodes wording.
+- **Task 5 changes:** Step 2 (apply nv1 `false`) is dropped; the final check is `isolation-check.sh nv1 on`; Step 7b uses
+  mc1 as the isolation-off control for mc2, and nv1 is no longer a control for mc1 (use no control: the earlier red test
+  results stand, or run the probe on mc1 before its reboot).
+- **Task 6 changes:** the TODO and memory text say "on for all four nodes"; there is no conditional nv1 phase left.
+
+---
+
 ## File Structure
 
 | File                                                                                                        | Responsibility                                                          |
