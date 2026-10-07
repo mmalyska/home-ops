@@ -123,7 +123,8 @@ kustomize build cluster/apps/core/argocd | argocd-secret-replacer sops -f cluste
    checks the running Talos version. The diff should show only the change you meant to make.
 4. `task talos:config-map` regenerates `docs/src/talos/config-map.md` from the patch headers. Commit it with the
    patch change: `task talos:check` and the `Talos config` workflow fail when it is stale.
-5. Apply one node at a time with `task talos:apply N=<node>` and wait for the cluster to be healthy in between.
+5. Apply one node at a time with `task talos:apply N=<node>` and wait for the cluster to be healthy in between
+   (`task talos:node_health N=<node>` is the node health gate that `talos:upgrade` also uses).
    Changes marked `reboot` need the cordon, drain, reboot, uncordon routine. Applying never restarts etcd and
    `talosctl service etcd restart` is refused, so an etcd setting only takes effect at the node's next reboot.
    A changed node taint (`KubeNodeConfig` `taints`) on a worker that is already in the cluster is not applied by Talos:
