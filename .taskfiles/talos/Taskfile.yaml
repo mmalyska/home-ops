@@ -274,6 +274,12 @@ tasks:
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
       - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
+    preconditions:
+      - which envsubst
+      - which yq
+      - which talosctl
+      - sh: talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+        msg: talosctl does not match {{ .TALOS_VERSION }}, run task talos:install
 
   pki-parity:
     desc: Compare the PKI values a node runs with the rendered ones by hash, printing no values (task talos:pki-parity -- mc1)
@@ -282,6 +288,12 @@ tasks:
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
       - "{{.TALOS_DIR}}/scripts/pki-parity.sh {{.CLI_ARGS}}"
+    preconditions:
+      - which envsubst
+      - which yq
+      - which talosctl
+      - sh: talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+        msg: talosctl does not match {{ .TALOS_VERSION }}, run task talos:install
 
   check:
     desc: Offline checks, no secrets or cluster needed (task talos:check)

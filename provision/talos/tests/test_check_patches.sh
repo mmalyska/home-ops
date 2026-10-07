@@ -55,47 +55,57 @@ machine:
 YAML
 }
 check() { PATCHES_DIR="$TMP/p" NODES_FILE="$TMP/nodes.yaml" "$SCRIPTS/check-patches.sh"; }
+# says <name> <text>: the check must fail and its output must contain the text (a bare non-zero exit would
+# also pass for the wrong reason)
+says() {
+  local out
+  if out="$(check 2>&1)"; then fail "$1" "check unexpectedly passed"; else assert_contains "$out" "$2" "$1"; fi
+}
 
 echo "-- valid tree"
 mkfix; assert_ok "a valid tree passes" check
 
 echo "-- header rules"
 mkfix; sed -i '/^# Why:/d' "$TMP/p/all/10-time.yaml"
-assert_fails "a missing Why line fails" check
+says "a missing Why line fails" "missing or empty '# Why:'"
 mkfix; sed -i 's/^# Apply:  live/# Apply:  sometimes/' "$TMP/p/all/10-time.yaml"
-assert_fails "an unknown Apply value fails" check
+says "an unknown Apply value fails" "'# Apply:' must be live, install-only or reboot"
 mkfix; sed -i 's/^# Nodes:  all nodes/# Nodes:  workers/' "$TMP/p/all/10-time.yaml"
-assert_fails "a Nodes line that does not match the directory fails" check
+says "a Nodes line that does not match the directory fails" "'# Nodes:' must be 'all nodes'"
 mkfix; sed -i 's/^# Nodes:  mc1/# Nodes:  mc2/' "$TMP/p/node/mc1/10-net.yaml.tpl"
-assert_fails "a node directory with another node's name in Nodes fails" check
+says "a node directory with another node's name in Nodes fails" "'# Nodes:' must be 'mc1'"
 
 echo "-- file naming and layout"
 mkfix; mv "$TMP/p/all/10-time.yaml" "$TMP/p/all/time.yaml"
-assert_fails "a file without a NN- prefix fails" check
+says "a file without a NN- prefix fails" "name must look like NN-some-name.yaml"
 mkfix; mkdir -p "$TMP/p/node/ghost"; sed 's/^# Nodes:.*/# Nodes:  ghost/' "$TMP/p/node/mc1/10-net.yaml.tpl" > "$TMP/p/node/ghost/10-net.yaml.tpl"
-assert_fails "a node directory that is not in nodes.yaml fails" check
+says "a node directory that is not in nodes.yaml fails" "node directory 'ghost' is not in nodes.yaml"
 mkfix; cat >> "$TMP/p/all/10-time.yaml" <<'YAML'
 ---
 machine:
   type: worker
 YAML
-assert_fails "two documents in one file fail" check
+says "two documents in one file fail" "must contain exactly one YAML document"
 
 echo "-- node types"
 mkfix; sed -i 's/type: worker/type: master/' "$TMP/nodes.yaml"
-assert_fails "an unknown node type in nodes.yaml fails" check
+says "an unknown node type in nodes.yaml fails" "node 'nv1' has type 'master'"
 
 echo "-- secrets and variables"
 mkfix; sed -i 's/disabled: false/disabled: ${TALHELPER_CLUSTERDOMAIN}/' "$TMP/p/all/10-time.yaml"
-assert_fails "a variable in a plain .yaml file fails" check
+says "a variable in a plain .yaml file fails" "is not a .yaml.tpl file"
 mkfix; sed -i 's/TALHELPER_CLUSTERDOMAIN/SOMETHING_ELSE/' "$TMP/p/node/mc1/10-net.yaml.tpl"
-assert_fails "a variable outside the allowlist in a .tpl file fails" check
+says "a variable outside the allowlist in a .tpl file fails" "is not in TPL_VARS"
 mkfix; printf '\n# a stray ${NOT_ALLOWED} in a comment\n' >> "$TMP/p/node/mc1/10-net.yaml.tpl"
-assert_fails "a variable outside the allowlist in a comment of a .tpl file fails" check
+says "a variable outside the allowlist in a comment of a .tpl file fails" 'variable ${NOT_ALLOWED} is not in TPL_VARS'
 mkfix; sed -i 's/\${TALHELPER_CLUSTERDOMAIN}/$TALHELPER_CLUSTERDOMAIN/' "$TMP/p/node/mc1/10-net.yaml.tpl"
-assert_fails "a variable without braces in a .tpl file fails" check
+says "a variable without braces in a .tpl file fails" 'uses $VAR without braces'
 
 echo "-- layout"
 mkfix; mkdir -p "$TMP/p/all/sub"; cp "$TMP/p/all/10-time.yaml" "$TMP/p/all/sub/20-time.yaml"
-assert_fails "a file nested deeper than its layer fails (it would never be rendered)" check
+says "a file nested deeper than its layer fails (it would never be rendered)" "must sit directly in"
+mkfix; cp "$TMP/p/all/10-time.yaml" "$TMP/p/10-stray.yaml"
+says "a file outside the layers fails" "must sit directly in"
+out="$(check 2>&1 || true)"
+assert_not_contains "$out" "must be ''" "a file outside the layers does not also get an empty Nodes message"
 finish

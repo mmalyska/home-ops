@@ -20,9 +20,11 @@ TPL_VARS='${TALHELPER_CLUSTERENDPOINTIP} ${TALHELPER_CLUSTERDOMAIN} ${TALHELPER_
 
 die() { echo "error: $*" >&2; exit 1; }
 
-# node_field <node> <field>: a field from nodes.yaml (empty when the node does not exist)
+# node_field <node> <field>: a field from nodes.yaml (empty when the node does not exist).
+# The node name goes in through the environment, not into the yq expression; the field is a plain key.
 node_field() {
-  yq -r ".nodes[] | select(.name == \"$1\") | .$2" "$NODES_FILE"
+  [[ "$2" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || die "node_field: invalid field name '$2'"
+  NODE_NAME="$1" yq -r ".nodes[] | select(.name == strenv(NODE_NAME)) | .$2" "$NODES_FILE"
 }
 
 # node_names: every node name, one per line
@@ -65,15 +67,27 @@ header_value() {
 # touches <file>: what a patch changes, one item per line: Kind/name for a document,
 # machine.<key> or cluster.<key> for the legacy v1alpha1 shape
 touches() {
-  yq -N 'select(.kind != null) | (.kind + "/" + (.name // "")) | sub("/$"; "")' "$1"
-  yq -N 'select(.kind == null) | ((.machine // {} | keys | map("machine." + .)) + (.cluster // {} | keys | map("cluster." + .))) | .[]' "$1"
+  yq -N 'select(.kind != null) | (.kind + "/" + (.name // "")) | sub("/$"; "")' "$1" || return 1
+  yq -N 'select(.kind == null) | ((.machine // {} | keys | map("machine." + .)) + (.cluster // {} | keys | map("cluster." + .))) | .[]' "$1" || return 1
 }
 
 # expected_version <rendered-config>: the Talos version a node should run, read from the tag of its
-# install image ("v1.14.2" for a Factory image, "v1.14.0" for v1.14.0-6.18.48-nvgpu... custom tags)
+# install image ("v1.14.2" for a Factory image, "v1.14.0" for v1.14.0-6.18.48-nvgpu... custom tags).
+# A digest after the tag (tag@sha256:...) is ignored. Fails, printing the reason, when the config has
+# no install image or the image has no tag.
 expected_version() {
-  local image tag
-  image="$(yq -N 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$1")"
-  tag="${image##*:}"
+  local image name tag
+  image="$(yq -N 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$1")" || return 1
+  if [ -z "$image" ] || [ "$image" = "null" ]; then
+    echo "expected_version: no UnattendedInstallConfig installer.image in $1" >&2
+    return 1
+  fi
+  image="${image%%@*}"
+  name="${image##*/}"
+  if [[ "$name" != *:* ]]; then
+    echo "expected_version: install image '$image' has no tag" >&2
+    return 1
+  fi
+  tag="${name##*:}"
   echo "${tag%%-*}"
 }

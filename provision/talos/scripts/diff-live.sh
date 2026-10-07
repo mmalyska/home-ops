@@ -26,7 +26,12 @@ for node in "${nodes[@]}"; do
   # Talos 1.14 keeps a second MachineConfig resource (id persistent) after an apply; read only the
   # effective one (v1alpha1), or every document appears twice
   if [ -n "${LIVE_DIR:-}" ]; then live="$LIVE_DIR/$node.yaml"
-  else live="$tmp/live-$node.yaml"; talosctl get machineconfig v1alpha1 -n "$ip" -o yaml 2>/dev/null | yq '.spec' > "$live" || { echo "$node: cannot read the live config" >&2; status=1; continue; }; fi
+  else
+    live="$tmp/live-$node.yaml"; err="$tmp/live-$node.err"
+    if ! talosctl get machineconfig v1alpha1 -n "$ip" -o yaml 2>"$err" | yq '.spec' > "$live"; then
+      echo "$node: cannot read the live config: $(head -c 400 "$err" | tr '\n' ' ')" >&2; status=1; continue
+    fi
+  fi
 
   "$SCRIPTS/normalize.sh" "$live" > "$tmp/live.norm" && "$SCRIPTS/normalize.sh" "$rendered" > "$tmp/repo.norm" \
     || { echo "$node: cannot normalize" >&2; status=1; continue; }
@@ -39,10 +44,13 @@ for node in "${nodes[@]}"; do
   fi
 
   if [ -z "${LIVE_DIR:-}" ]; then
-    want="$(expected_version "$rendered")"
-    have="$(talosctl version -n "$ip" 2>/dev/null | sed -n '/Server:/,$p' | sed -n 's/^[[:space:]]*Tag:[[:space:]]*//p' | head -1)"
+    if ! want="$(expected_version "$rendered")"; then status=1; continue; fi
+    have="$(talosctl version -n "$ip" 2>"$tmp/version-$node.err" | sed -n '/Server:/,$p' | sed -n 's/^[[:space:]]*Tag:[[:space:]]*//p' | head -1)"
     if [ "$have" = "$want" ]; then echo "$node: running $have"
-    else echo "$node: running ${have:-unknown}, expected $want"; status=1; fi
+    else
+      hint=""; [ -n "$have" ] || hint=" ($(head -c 300 "$tmp/version-$node.err" | tr '\n' ' '))"
+      echo "$node: running ${have:-unknown}, expected $want$hint"; status=1
+    fi
   fi
 done
 exit $status

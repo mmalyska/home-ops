@@ -49,4 +49,17 @@ sed -i 's/sometoken/othertoken/' "$TMP/live/mc1.yaml"
 out="$(run 2>&1 || true)"
 assert_not_contains "$out" "sometoken" "never prints the repo-side secret"
 assert_not_contains "$out" "othertoken" "never prints the live-side secret"
+echo "-- an unreachable node reports the cause"
+mkdir -p "$TMP/bin"
+cat > "$TMP/bin/talosctl" <<'SH'
+#!/bin/sh
+echo "rpc error: code = Unavailable desc = connection refused (fake)" >&2
+exit 1
+SH
+chmod +x "$TMP/bin/talosctl"
+out="$(PATH="$TMP/bin:$PATH" NODES_FILE="$TMP/nodes.yaml" RENDERED_DIR="$TMP/rendered" "$SCRIPTS/diff-live.sh" 2>&1 || true)"
+assert_contains "$out" "mc1: cannot read the live config" "says the live config could not be read"
+assert_contains "$out" "connection refused (fake)" "includes talosctl's own error"
+assert_fails "an unreachable node fails the run" env PATH="$TMP/bin:$PATH" NODES_FILE="$TMP/nodes.yaml" RENDERED_DIR="$TMP/rendered" "$SCRIPTS/diff-live.sh"
+
 finish
