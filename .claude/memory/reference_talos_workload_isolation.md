@@ -18,8 +18,8 @@ v1.14.2 source); details and the test plan are in the SecurityProfileConfig bull
 - v1.14.0 had a boot bug (CRI restart loop, siderolabs/talos#14374); fixed in v1.14.2, which the nodes run.
 
 **How to apply:** before the contract bump, decide and write the document in a patch (true or false). Live check
-2026-10-07: nv1 runs Talos **v1.14.0** (still has the boot bug), mc1-mc3 run v1.14.2, so test on **mc3 first** (a normal
-rolling reboot, etcd is a host service) and nv1 last, only after upgrading it to v1.14.2 or later. Workloads most likely to
+2026-10-07: mc1-mc3 run v1.14.2 and nv1 was upgraded to v1.14.2 the same day (the v1.14.0 boot bug no longer applies),
+so test on **mc3 first** (a normal rolling reboot, etcd is a host service) and nv1 last, after it has soaked on v1.14.2. Workloads most likely to
 notice: Ceph RBD/CephFS CSI (hostPID, bidirectional `/var/lib/kubelet` mounts), multus, cilium `mount-bpf-fs`,
 node-exporter (hostPID), `nvidia-cdi-setup` and the in-tree NFS mounts.
 
