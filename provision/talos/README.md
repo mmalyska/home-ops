@@ -292,19 +292,16 @@ Things to know for a real reinstall:
 `SecurityProfileConfig` with `workloadIsolation: true` runs CRI containerd, the kubelet and every pod in their own PID and
 mount namespace, anchored by the `sandboxd` service, instead of sharing the namespaces of `machined` (PID 1). It is rolled
 out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`, plan
-`docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: on for mc3 and nv1
-(`patches/node/mc3/65-security-profile.yaml`, `patches/node/nv1/65-security-profile.yaml`) once each has been rebooted;
-mc1 and mc2 have no document, so isolation is off there.
+`docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: the setting is explicit for every node through `patches/all/65-security-profile.yaml`. Isolation takes
+effect on each node at its next reboot after an apply. It is running on mc3 and nv1 as of 2026-10-07; mc1 and mc2 are still
+to be applied and rebooted.
 
 - **A reboot is needed.** `sandboxd` reads the setting only when it starts, so apply, cordon, drain, reboot, uncordon, in
   both directions. Rollback is the same with `workloadIsolation: false`.
 - **The v1.14 contract bump would turn it on.** `talosctl gen config` emits the document with `true` only for the v1.14
-  contract. Until phase 2 adds the all-layer document, do not bump `TALOS_CONTRACT`: mc1 and mc2 have no document and
-  would get the base's `true`. Phase 2 makes the setting explicit for every node, after which the bump changes nothing.
-- **nv1 is enabled early** (the owner's decision on 2026-10-07, before the spec's soak gate): v1.14.2 carries the fix for
-  the v1.14.0 boot bug with isolation (CRI restart-loops for 1-3 minutes on every boot, siderolabs/talos#14374). Its GPU
-  stack (`nvidia-cdi-setup`, the device plugin, the CDI spec in `/run/cdi`, the `fw-fresh` firmware) is what to verify after
-  the reboot.
+  contract. The repo carries the setting explicitly for every node, so the bump changes nothing (a render test guards it).
+- **nv1 was enabled early** (2026-10-07, the owner's decision, before the spec's soak gate): v1.14.2 has the fix for
+  siderolabs/talos#14374 (CRI restart-loops on boot with isolation), and the GPU stack was verified after the reboot.
 - **Check a node:** `scripts/isolation-check.sh <node> [on|off]` is read-only. It checks the PID namespace of containerd
   and the kubelet (`NSpid` in `/proc/<pid>/status` has two values inside the sandbox), the live config, the Talos
   services, node readiness, Ceph and etcd. A config that says `true` without a reboot fails it.

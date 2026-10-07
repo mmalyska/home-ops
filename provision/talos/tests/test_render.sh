@@ -140,15 +140,25 @@ for n in mc1 mc2 mc3 nv1; do
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
 
-echo "-- workload isolation (on for mc3 and nv1, not yet for mc1 and mc2)"
+echo "-- workload isolation (on for every node)"
+source "$SCRIPTS/lib.sh"
 for n in mc1 mc2 mc3 nv1; do
   [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
-done
-for n in mc3 nv1; do
   assert_eq "1|true" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$TMP/$n.yaml")" "$n has exactly one SecurityProfileConfig with workloadIsolation true"
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
-for n in mc1 mc2; do
-  assert_eq "0" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')" "$n has no SecurityProfileConfig yet (isolation is off there)"
+
+echo "-- workload isolation survives the v1.14 contract bump"
+# The v1.14 base already carries the document with true. The layer files for each node, applied over that base in
+# merge order, must still give true on every node.
+gen14="$TMP/gen14"
+talosctl gen config isolation-guard https://192.0.2.1:6443 --talos-version v1.14 -o "$gen14" >/dev/null 2>&1
+assert_eq "1" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$gen14/worker.yaml" | wc -l | tr -d ' ')" "the v1.14 contract base carries a SecurityProfileConfig (the premise of this guard)"
+for n in mc1 mc2 mc3 nv1; do
+  cur="$gen14/$(node_field "$n" type).yaml"; i=0
+  while IFS= read -r f; do
+    i=$((i + 1)); talosctl machineconfig patch "$cur" --patch "@$f" -o "$TMP/g14-$n-$i.yaml" >/dev/null 2>&1; cur="$TMP/g14-$n-$i.yaml"
+  done < <(patch_files "$n" | grep '/65-security-profile.yaml$')
+  assert_eq "true" "$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$cur")" "$n keeps workloadIsolation true on a v1.14-contract base"
 done
 finish

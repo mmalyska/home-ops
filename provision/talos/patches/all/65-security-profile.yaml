@@ -1,0 +1,10 @@
+# What:   Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1)
+# Why:    Separates the container plane from machined and its file descriptors, see
+#         docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md. The v1.14 contract base turns the setting
+#         on by itself, so it is explicit here for every node. sandboxd reads it only when it starts, so a node needs a
+#         reboot after the apply
+# Nodes:  all nodes
+# Apply:  reboot (sandboxd reads workloadIsolation only when the service starts)
+apiVersion: v1alpha1
+kind: SecurityProfileConfig
+workloadIsolation: true
