@@ -1,9 +1,0 @@
-# What:   Workload isolation on mc3: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1)
-# Why:    Pilot of the cluster-wide rollout, see docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md.
-#         sandboxd reads the setting only when it starts, so the node needs a reboot after the apply. Phase 2 moves this
-#         document to patches/all/65-security-profile.yaml and deletes this file
-# Nodes:  mc3
-# Apply:  reboot (sandboxd reads workloadIsolation only when the service starts)
-apiVersion: v1alpha1
-kind: SecurityProfileConfig
-workloadIsolation: true

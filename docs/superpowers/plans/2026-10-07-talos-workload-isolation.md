@@ -648,13 +648,17 @@ Wait about 48 hours. After the nights in between, check that the scheduled jobs 
 
 ---
 
-### Task 4: Phase 2 repo change: consolidate, nv1 false, guard (PR 2)
+### Task 4: Phase 2 repo change: consolidate into `patches/all/`, guard (PR 2)
+
+Isolation already runs on mc3 and nv1 through two node files. This task makes the repo explicit for every node: one patch in
+`patches/all/` and no node files. Merging changes nothing on the cluster by itself; applying and rebooting mc1 and mc2 is
+Task 5.
 
 **Files:**
 
 - Create: `provision/talos/patches/all/65-security-profile.yaml`
-- Create: `provision/talos/patches/node/nv1/65-security-profile.yaml`
 - Delete: `provision/talos/patches/node/mc3/65-security-profile.yaml`
+- Delete: `provision/talos/patches/node/nv1/65-security-profile.yaml`
 - Modify: `provision/talos/tests/test_render.sh` (replace the phase 1 section)
 - Modify: `provision/talos/README.md` (the "Workload isolation" section)
 - Regenerate: `docs/src/talos/config-map.md`
@@ -666,26 +670,25 @@ Wait about 48 hours. After the nights in between, check that the scheduled jobs 
 - [ ] **Step 1: Branch**
 
 ```bash
-cd /workspaces/home-ops && git checkout main && git pull && git checkout -b feat/talos-workload-isolation-rollout
+cd /workspaces/home-ops && git checkout main && git pull && git checkout -b feat/talos-workload-isolation-consolidate
 ```
 
 - [ ] **Step 2: Write the failing tests**
 
-In `provision/talos/tests/test_render.sh` replace the whole `-- workload isolation (phase 1: pilot on mc3 only)` section (added in Task 1) with:
+In `provision/talos/tests/test_render.sh` replace the whole `-- workload isolation (on for mc3 and nv1, not yet for mc1 and mc2)` section with:
 
 ```bash
-echo "-- workload isolation (on for the control planes, explicitly off on nv1)"
+echo "-- workload isolation (on for every node)"
 source "$SCRIPTS/lib.sh"
 for n in mc1 mc2 mc3 nv1; do
   [ -f "$TMP/$n.yaml" ] || render "$n" >/dev/null 2>&1
-  want=true; [ "$n" = nv1 ] && want=false
-  assert_eq "1|$want" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$TMP/$n.yaml")" "$n has exactly one SecurityProfileConfig with workloadIsolation $want"
+  assert_eq "1|true" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$TMP/$n.yaml" | wc -l | tr -d ' ')|$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$TMP/$n.yaml")" "$n has exactly one SecurityProfileConfig with workloadIsolation true"
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
 
 echo "-- workload isolation survives the v1.14 contract bump"
 # The v1.14 base already carries the document with true. The layer files for each node, applied over that base in
-# merge order, must give true on the control planes and false on nv1.
+# merge order, must still give true on every node.
 gen14="$TMP/gen14"
 talosctl gen config isolation-guard https://192.0.2.1:6443 --talos-version v1.14 -o "$gen14" >/dev/null 2>&1
 assert_eq "1" "$(yq 'select(.kind == "SecurityProfileConfig") | .kind' "$gen14/worker.yaml" | wc -l | tr -d ' ')" "the v1.14 contract base carries a SecurityProfileConfig (the premise of this guard)"
@@ -694,43 +697,31 @@ for n in mc1 mc2 mc3 nv1; do
   while IFS= read -r f; do
     i=$((i + 1)); talosctl machineconfig patch "$cur" --patch "@$f" -o "$TMP/g14-$n-$i.yaml" >/dev/null 2>&1; cur="$TMP/g14-$n-$i.yaml"
   done < <(patch_files "$n" | grep '/65-security-profile.yaml$')
-  want=true; [ "$n" = nv1 ] && want=false
-  assert_eq "$want" "$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$cur")" "$n keeps workloadIsolation $want on a v1.14-contract base (the contract bump cannot flip it)"
+  assert_eq "true" "$(yq 'select(.kind == "SecurityProfileConfig") | .workloadIsolation | tostring' "$cur")" "$n keeps workloadIsolation true on a v1.14-contract base"
 done
 ```
 
 - [ ] **Step 3: Run it to see it fail**
 
 Run: `cd provision/talos && bash tests/test_render.sh 2>&1 | grep -E "FAIL|tests,"`
-Expected: failures for mc1, mc2 (no document), nv1 (no document), and the guard lines. (mc3 still has its pilot file.)
+Expected: failures for mc1 and mc2 (no document yet). The guard lines already pass, because the v1.14 base itself carries `true`; the guard protects the state after this task.
 
 - [ ] **Step 4: Move the files**
 
 ```bash
 cd /workspaces/home-ops/provision/talos/patches
-git rm node/mc3/65-security-profile.yaml
+git rm node/mc3/65-security-profile.yaml node/nv1/65-security-profile.yaml
 cat > all/65-security-profile.yaml <<'YAML'
 # What:   Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1)
 # Why:    Separates the container plane from machined and its file descriptors, see
-#         docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md. sandboxd reads the setting only when it
-#         starts, so a node needs a reboot after the apply. The setting is explicit for every node because the v1.14
-#         contract base turns it on by itself; nv1 overrides it with false (node/nv1/65-security-profile.yaml)
+#         docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md. The v1.14 contract base turns the setting
+#         on by itself, so it is explicit here for every node. sandboxd reads it only when it starts, so a node needs a
+#         reboot after the apply
 # Nodes:  all nodes
 # Apply:  reboot (sandboxd reads workloadIsolation only when the service starts)
 apiVersion: v1alpha1
 kind: SecurityProfileConfig
 workloadIsolation: true
-YAML
-cat > node/nv1/65-security-profile.yaml <<'YAML'
-# What:   Workload isolation stays off on nv1: CRI, the kubelet and all pods keep sharing machined's namespaces
-# Why:    nv1 runs Talos v1.14.0, where isolation has a boot bug (CRI restart-loops for 1-3 minutes on every boot,
-#         siderolabs/talos#14374, fixed in v1.14.2), and nv1 has not been upgraded to v1.14.2 yet. Explicit false rather
-#         than no file: the v1.14 contract base would turn it on. Delete this file when nv1 runs v1.14.2 or later
-# Nodes:  nv1
-# Apply:  live (it only restates the current state; the later change that enables isolation needs a reboot)
-apiVersion: v1alpha1
-kind: SecurityProfileConfig
-workloadIsolation: false
 YAML
 cd .. && scripts/check-patches.sh
 ```
@@ -744,25 +735,20 @@ Expected: `0 failed`, including the guard lines for all four nodes.
 
 - [ ] **Step 6: README section**
 
-In `provision/talos/README.md` replace the sentence `Current state: pilot on mc3 only` through the end of that sentence (`so isolation is off there.`) with:
+In `provision/talos/README.md`, section "Workload isolation":
 
-```markdown
-Current state: on for mc1-mc3 once each has been rebooted (`patches/all/65-security-profile.yaml`), explicitly off on nv1
-(`patches/node/nv1/65-security-profile.yaml`).
-```
-
-Also replace the second and third sentences of the `**The v1.14 contract bump would turn it on.**` bullet (`Until phase 2 ... would get the base's `true`. Phase 2 makes the setting explicit ... changes nothing.`) with: `The repo therefore carries the setting explicitly for every node (the all-layer document and the nv1 `false` override), so the bump changes nothing.`
-
-Update the `**nv1 stays off**` bullet only when nv1 is enabled (phase 3).
+- `Current state` sentence: the setting is explicit for every node through `patches/all/65-security-profile.yaml`; isolation takes effect on each node at its next reboot after an apply; it is running on mc3 and nv1 as of 2026-10-07, mc1 and mc2 are still to be applied and rebooted.
+- `**The v1.14 contract bump would turn it on.**` bullet: the repo carries the setting explicitly for every node, so the bump changes nothing (a render test guards it).
+- `**nv1 is enabled early**` bullet: past tense and short (enabled 2026-10-07 on the owner's decision, v1.14.2 has the fix for siderolabs/talos#14374, GPU stack verified).
 
 - [ ] **Step 7: Regenerate, check, commit**
 
 ```bash
 cd /workspaces/home-ops && task talos:config-map && task talos:check 2>&1 | tail -3
-git add -A && git commit -m "feat(talos): workload isolation for every node, nv1 explicitly off" && git push -u origin HEAD && gh pr create --fill --base main
+git add -A && git commit -m "feat(talos): isolation setting explicit for every node (patches/all), node pilot files removed" && git push -u origin HEAD && gh pr create --fill --base main
 ```
 
-Expected: `0 failed`.
+Expected: `0 failed`; the config map loses the mc3 and nv1 node rows and gains the all-layer rows.
 
 ---
 
