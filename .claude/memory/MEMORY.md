@@ -25,7 +25,7 @@
 - [QNAP QuObjects + barman-cloud caveat](reference_qnap_s3_barman_caveat.md) — boto3 ≥1.34 checksum fix required; set AWS_REQUEST_CHECKSUM_CALCULATION=when_required on all CNPG ObjectStores
 - [App removal procedure](reference_app_removal_procedure.md) — deleting the app dir never auto-prunes; manual `kubectl delete application` + separate PVC check required
 - [Ceph alert job scoping gotcha](reference_ceph_alert_job_scoping.md) — Ceph-mixin PrometheusRules lack job filters, can false-positive on non-cluster targets (router); fix via prometheusRuleOverrides
-- [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks kubelet taint changes post-registration; one-time manual taint, then Talos adopts it
+- [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks workers changing taints after registration (official, no Talos fix); kubectl taint as admin, then Talos adopts; steps in the talos-node-taints skill
 - [llama-server nv1 memory budget](reference_llama_server_nv1_memory.md) — default cache/checkpoints OOM the node; 12Gi limit kills pod; thinking off by default
 - [Jetson llama.cpp CUDA tag](reference_jetson_llama_cuda_tag.md) — NVIDIA latest* tags are CUDA 13 and silently run on CPU; use pinned cu126
 - [nv1 META DHCP key](reference_nv1_meta_dhcp.md) — Talos META 0x0a DHCP operator flapped IP, restarted kubelet, GPU dropped to 0
