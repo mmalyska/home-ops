@@ -131,9 +131,12 @@ out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolati
 - **A reboot is needed.** `sandboxd` reads the setting only when it starts, so apply, cordon, drain, reboot, uncordon, in
   both directions. Rollback is the same with `workloadIsolation: false`.
 - **The v1.14 contract bump would turn it on.** `talosctl gen config` emits the document with `true` only for the v1.14
-  contract. The repo therefore carries the setting explicitly for every node, so the bump changes nothing.
-- **nv1 stays off** until it runs Talos v1.14.2 or later: v1.14.0 has a boot bug with isolation (CRI restart-loops for
-  1-3 minutes on every boot, siderolabs/talos#14374) and nv1 has not been upgraded to v1.14.2 yet.
+  contract. Until phase 2 adds the all-layer document and the nv1 `false` override, do not bump `TALOS_CONTRACT`: mc1,
+  mc2 and nv1 have no document and would get the base's `true`. Phase 2 makes the setting explicit for every node, after
+  which the bump changes nothing.
+- **nv1 stays off** until it has soaked on v1.14.2 (it was upgraded on 2026-10-07): v1.14.0 had a boot bug with
+  isolation (CRI restart-loops for 1-3 minutes on every boot, siderolabs/talos#14374), and the GPU stack must be
+  verified on the new version first.
 - **Check a node:** `scripts/isolation-check.sh <node> [on|off]` is read-only. It checks the PID namespace of containerd
   and the kubelet (`NSpid` in `/proc/<pid>/status` has two values inside the sandbox), the live config, the Talos
   services, node readiness, Ceph and etcd. A config that says `true` without a reboot fails it.
@@ -189,11 +192,19 @@ case "$*" in
   *" processes")
     echo "NODE PID STATE THREADS CPU-TIME VIRTMEM RESMEM ARGS"
     echo "192.168.48.4 135 S 12 1.0 1.5GB 70MB /sbin/sandboxd"
+    echo "192.168.48.4 148 S 12 1.0 1.5GB 70MB /bin/containerd --address /system/run/containerd/containerd.sock --state /system/run/containerd --root /system"
     echo "192.168.48.4 48397 S 20 1.0 1.6GB 216MB /bin/containerd --address /run/containerd/containerd.sock --config /etc/cri/containerd.toml"
     echo "192.168.48.4 552 S 105 1.0 5.6GB 230MB /usr/local/bin/kubelet --config=/etc/kubernetes/kubelet.yaml"
     ;;
   *"read /proc/"*)
-    if [ "${STUB_NSPID:-2}" = "2" ]; then printf 'Name:\tx\nNSpid:\t48397\t12\n'; else printf 'Name:\tx\nNSpid:\t48397\n'; fi
+    # per PID: 148 is the system containerd (always host namespace), 552 the kubelet, anything else the CRI containerd
+    args="$*"; pid="${args##*/proc/}"; pid="${pid%%/*}"
+    case "$pid" in
+      148) v=1 ;;
+      552) v="${STUB_NSPID_KUBELET:-${STUB_NSPID:-2}}" ;;
+      *) v="${STUB_NSPID:-2}" ;;
+    esac
+    if [ "$v" = "2" ]; then printf 'Name:\tx\nNSpid:\t%s\t12\n' "$pid"; else printf 'Name:\tx\nNSpid:\t%s\n' "$pid"; fi
     ;;
   *" services")
     echo "NODE SERVICE STATE HEALTH LAST-CHANGE LAST-EVENT"
@@ -240,6 +251,13 @@ assert_fails "isolated processes fail the check for off" env STUB_CONFIG=false "
 assert_fails "host processes fail the check for on" env STUB_NSPID=1 "$TMP/run.sh" mc3 on
 assert_ok "a node with no document and host processes passes the check for off" env STUB_NSPID=1 STUB_CONFIG=none "$TMP/run.sh" mc3 off
 assert_ok "a node with workloadIsolation false and host processes passes the check for off" env STUB_NSPID=1 STUB_CONFIG=false "$TMP/run.sh" mc3 off
+
+echo "-- the kubelet alone in the wrong namespace (the CRI containerd is told apart from the system one)"
+out="$(env STUB_NSPID=2 STUB_NSPID_KUBELET=1 "$TMP/run.sh" mc3 on 2>&1 || true)"
+assert_contains "$out" "FAIL kubelet runs in the sandbox PID namespace" "a kubelet on the host fails the check for on"
+assert_not_contains "$out" "FAIL containerd runs in the sandbox PID namespace" "the CRI containerd is still seen as isolated"
+out="$(env STUB_NSPID=1 STUB_NSPID_KUBELET=2 "$TMP/run.sh" mc3 off 2>&1 || true)"
+assert_contains "$out" "FAIL kubelet runs in the host PID namespace" "an isolated kubelet fails the check for off"
 
 echo "-- the apply without a reboot (config true, processes still on the host)"
 out="$(env STUB_NSPID=1 STUB_CONFIG=true "$TMP/run.sh" mc3 on 2>&1 || true)"
@@ -298,7 +316,7 @@ pid_of() { talosctl -n "$ip" processes 2>/dev/null | awk -v pat="$1" '$0 ~ pat {
 depth_of() { talosctl -n "$ip" read "/proc/$1/status" 2>/dev/null | awk '/^NSpid:/ { print NF - 1; found = 1 } END { if (!found) print 0 }'; }
 
 want_depth=1; [ "$expect" = on ] && want_depth=2
-for proc in "containerd:/bin/containerd --address" "kubelet:/usr/local/bin/kubelet --"; do
+for proc in "containerd:/bin/containerd --address /run/containerd/containerd.sock" "kubelet:/usr/local/bin/kubelet --"; do
   name="${proc%%:*}"; pattern="${proc#*:}"
   pid="$(pid_of "$pattern")"
   if [ -z "$pid" ]; then bad "$name process not found"; continue; fi
@@ -650,7 +668,9 @@ Current state: on for mc1-mc3 once each has been rebooted (`patches/all/65-secur
 (`patches/node/nv1/65-security-profile.yaml`).
 ```
 
-Also replace the `**nv1 stays off**` bullet's last clause so it ends with: `...nv1 has not been upgraded to v1.14.2 yet. When both are true, delete the nv1 patch, apply, and reboot nv1 (see the spec, phase 3).`
+Also replace the second and third sentences of the `**The v1.14 contract bump would turn it on.**` bullet (`Until phase 2 ... would get the base's `true`. Phase 2 makes the setting explicit ... changes nothing.`) with: `The repo therefore carries the setting explicitly for every node (the all-layer document and the nv1 `false` override), so the bump changes nothing.`
+
+Update the `**nv1 stays off**` bullet only when nv1 is enabled (phase 3).
 
 - [ ] **Step 7: Regenerate, check, commit**
 

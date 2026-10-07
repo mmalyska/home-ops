@@ -27,7 +27,7 @@ pid_of() { talosctl -n "$ip" processes 2>/dev/null | awk -v pat="$1" '$0 ~ pat {
 depth_of() { talosctl -n "$ip" read "/proc/$1/status" 2>/dev/null | awk '/^NSpid:/ { print NF - 1; found = 1 } END { if (!found) print 0 }'; }
 
 want_depth=1; [ "$expect" = on ] && want_depth=2
-for proc in "containerd:/bin/containerd --address" "kubelet:/usr/local/bin/kubelet --"; do
+for proc in "containerd:/bin/containerd --address /run/containerd/containerd.sock" "kubelet:/usr/local/bin/kubelet --"; do
   name="${proc%%:*}"; pattern="${proc#*:}"
   pid="$(pid_of "$pattern")"
   if [ -z "$pid" ]; then bad "$name process not found"; continue; fi

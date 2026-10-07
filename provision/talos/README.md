@@ -297,9 +297,12 @@ out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolati
 - **A reboot is needed.** `sandboxd` reads the setting only when it starts, so apply, cordon, drain, reboot, uncordon, in
   both directions. Rollback is the same with `workloadIsolation: false`.
 - **The v1.14 contract bump would turn it on.** `talosctl gen config` emits the document with `true` only for the v1.14
-  contract. The repo therefore carries the setting explicitly for every node, so the bump changes nothing.
-- **nv1 stays off** until it runs Talos v1.14.2 or later: v1.14.0 has a boot bug with isolation (CRI restart-loops for
-  1-3 minutes on every boot, siderolabs/talos#14374) and nv1 has not been upgraded to v1.14.2 yet.
+  contract. Until phase 2 adds the all-layer document and the nv1 `false` override, do not bump `TALOS_CONTRACT`: mc1,
+  mc2 and nv1 have no document and would get the base's `true`. Phase 2 makes the setting explicit for every node, after
+  which the bump changes nothing.
+- **nv1 stays off** until it has soaked on v1.14.2 (it was upgraded on 2026-10-07): v1.14.0 had a boot bug with
+  isolation (CRI restart-loops for 1-3 minutes on every boot, siderolabs/talos#14374), and the GPU stack must be
+  verified on the new version first.
 - **Check a node:** `scripts/isolation-check.sh <node> [on|off]` is read-only. It checks the PID namespace of containerd
   and the kubelet (`NSpid` in `/proc/<pid>/status` has two values inside the sandbox), the live config, the Talos
   services, node readiness, Ceph and etcd. A config that says `true` without a reboot fails it.

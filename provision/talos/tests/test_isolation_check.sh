@@ -12,11 +12,19 @@ case "$*" in
   *" processes")
     echo "NODE PID STATE THREADS CPU-TIME VIRTMEM RESMEM ARGS"
     echo "192.168.48.4 135 S 12 1.0 1.5GB 70MB /sbin/sandboxd"
+    echo "192.168.48.4 148 S 12 1.0 1.5GB 70MB /bin/containerd --address /system/run/containerd/containerd.sock --state /system/run/containerd --root /system"
     echo "192.168.48.4 48397 S 20 1.0 1.6GB 216MB /bin/containerd --address /run/containerd/containerd.sock --config /etc/cri/containerd.toml"
     echo "192.168.48.4 552 S 105 1.0 5.6GB 230MB /usr/local/bin/kubelet --config=/etc/kubernetes/kubelet.yaml"
     ;;
   *"read /proc/"*)
-    if [ "${STUB_NSPID:-2}" = "2" ]; then printf 'Name:\tx\nNSpid:\t48397\t12\n'; else printf 'Name:\tx\nNSpid:\t48397\n'; fi
+    # per PID: 148 is the system containerd (always host namespace), 552 the kubelet, anything else the CRI containerd
+    args="$*"; pid="${args##*/proc/}"; pid="${pid%%/*}"
+    case "$pid" in
+      148) v=1 ;;
+      552) v="${STUB_NSPID_KUBELET:-${STUB_NSPID:-2}}" ;;
+      *) v="${STUB_NSPID:-2}" ;;
+    esac
+    if [ "$v" = "2" ]; then printf 'Name:\tx\nNSpid:\t%s\t12\n' "$pid"; else printf 'Name:\tx\nNSpid:\t%s\n' "$pid"; fi
     ;;
   *" services")
     echo "NODE SERVICE STATE HEALTH LAST-CHANGE LAST-EVENT"
@@ -63,6 +71,13 @@ assert_fails "isolated processes fail the check for off" env STUB_CONFIG=false "
 assert_fails "host processes fail the check for on" env STUB_NSPID=1 "$TMP/run.sh" mc3 on
 assert_ok "a node with no document and host processes passes the check for off" env STUB_NSPID=1 STUB_CONFIG=none "$TMP/run.sh" mc3 off
 assert_ok "a node with workloadIsolation false and host processes passes the check for off" env STUB_NSPID=1 STUB_CONFIG=false "$TMP/run.sh" mc3 off
+
+echo "-- the kubelet alone in the wrong namespace (the CRI containerd is told apart from the system one)"
+out="$(env STUB_NSPID=2 STUB_NSPID_KUBELET=1 "$TMP/run.sh" mc3 on 2>&1 || true)"
+assert_contains "$out" "FAIL kubelet runs in the sandbox PID namespace" "a kubelet on the host fails the check for on"
+assert_not_contains "$out" "FAIL containerd runs in the sandbox PID namespace" "the CRI containerd is still seen as isolated"
+out="$(env STUB_NSPID=1 STUB_NSPID_KUBELET=2 "$TMP/run.sh" mc3 off 2>&1 || true)"
+assert_contains "$out" "FAIL kubelet runs in the host PID namespace" "an isolated kubelet fails the check for off"
 
 echo "-- the apply without a reboot (config true, processes still on the host)"
 out="$(env STUB_NSPID=1 STUB_CONFIG=true "$TMP/run.sh" mc3 on 2>&1 || true)"
