@@ -1,5 +1,7 @@
 # Talos Workload Isolation Implementation Plan
 
+**Status:** done 2026-10-07. Isolation is on for all four nodes (mc3 pilot, nv1 early by the owner's decision, then mc2 and mc1); nv1 needs no separate phase. Tracked in `.plans/TODO.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Enable Talos workload isolation (`SecurityProfileConfig` `workloadIsolation: true`) on mc3, then mc2 and mc1, with nv1 pinned to `false` until nv1 has been upgraded to v1.14.2 or later (its own task, the installer now exists).
