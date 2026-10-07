@@ -17,6 +17,8 @@ Bitwarden (bws, loaded by .envrc) ──▶ TALHELPER_* environment variables
                                                                            ▼
                                       clusterconfig/home-<node>.yaml  (gitignored, contains secrets)
                                                                            │
+                                                          task talos:diff -- <node>   (repo vs live, read-only)
+                                                                           │
                                                           task talos:apply N=<node>
 ```
 
@@ -117,8 +119,13 @@ kustomize build cluster/apps/core/argocd | argocd-secret-replacer sops -f cluste
 1. Find or create the patch file: the directory says which nodes it affects, the number sets the order.
    Run `scripts/check-patches.sh` after editing.
 2. `task talos:generate`, then inspect `clusterconfig/home-<node>.yaml`.
-3. Apply one node at a time with `task talos:apply N=<node>` and wait for the cluster to be healthy in between.
-   Changes marked `reboot` need the cordon, drain, reboot, uncordon routine.
+3. `task talos:diff -- <node>` compares the rendered config with what the node runs (read-only, secrets masked) and
+   checks the running Talos version. The diff should show only the change you meant to make.
+4. `task talos:config-map` regenerates `docs/src/talos/config-map.md` from the patch headers. Commit it with the
+   patch change: `task talos:check` and the `Talos config` workflow fail when it is stale.
+5. Apply one node at a time with `task talos:apply N=<node>` and wait for the cluster to be healthy in between.
+   Changes marked `reboot` need the cordon, drain, reboot, uncordon routine. Applying never restarts etcd and
+   `talosctl service etcd restart` is refused, so an etcd setting only takes effect at the node's next reboot.
    A changed node taint (`KubeNodeConfig` `taints`) on a worker that is already in the cluster is not applied by Talos:
    Kubernetes (NodeRestriction) forbids it. Run `kubectl taint` with admin credentials first, see the
    `talos-node-taints` skill (`.claude/skills/talos-node-taints/SKILL.md`).
@@ -265,6 +272,11 @@ Things to know for a real reinstall:
 `task talos:check` runs, without secrets or a cluster, the patch convention check (`scripts/check-patches.sh`), the
 config map freshness check and the shell tests (`tests/run.sh`). The same three run in CI
 (`.github/workflows/talos-config.yaml`) on pull requests that touch `provision/talos/**`.
+
+`task talos:check` is deliberately not part of `task lint:all`: `lint:all` is the repo-wide style lint (markdown, yaml,
+formatting) and needs no Talos tooling, while the Talos checks need `talosctl` at the pinned version, `yq`, `jq` and
+`envsubst`, and take about ten seconds. CI covers them on every pull request that touches Talos files, and
+`task talos:check` is the local equivalent.
 
 ## Secrets
 

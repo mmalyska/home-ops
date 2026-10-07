@@ -59,6 +59,32 @@ assert_eq "all/10-a.yaml all/20-b.yaml controlplane/10-c.yaml node/mc1/10-n.yaml
 assert_eq "all/10-a.yaml all/20-b.yaml worker/10-w.yaml" \
   "$(patch_files nv1 | sed "s#$TMP/p/##" | tr '\n' ' ' | sed 's/ $//')" "worker: all, then worker (a missing node directory is skipped)"
 
+echo "-- node_field"
+assert_eq "192.168.48.5" "$(node_field nv1 ip)" "reads a field of a node"
+assert_eq "" "$(node_field nope ip)" "an unknown node is empty"
+assert_eq "" "$(node_field 'mc1") | .ip' ip)" "a node name with yq syntax is matched literally, not evaluated"
+sub() { ( "$@" ); }   # die exits, so run it in a subshell
+assert_fails "an invalid field name is refused" sub node_field mc1 'ip) | .name'
+
+echo "-- touches on unreadable yaml"
+printf 'machine: [unclosed\n' > "$TMP/bad.yaml"
+assert_fails "touches fails when yq cannot read the file" touches "$TMP/bad.yaml"
+
+echo "-- expected_version edge cases"
+mkimg() { printf 'apiVersion: v1alpha1\nkind: UnattendedInstallConfig\ninstaller:\n  image: %s\n' "$1" > "$TMP/img.yaml"; }
+mkimg 'factory.talos.dev/metal-installer/abc:v1.14.2@sha256:0123456789abcdef'
+assert_eq "v1.14.2" "$(expected_version "$TMP/img.yaml")" "a digest after the tag is ignored"
+mkimg 'registry.local:5000/installer:v1.14.2'
+assert_eq "v1.14.2" "$(expected_version "$TMP/img.yaml")" "a registry port is not taken for the tag"
+mkimg 'registry.local:5000/installer'
+assert_fails "an image without a tag fails" expected_version "$TMP/img.yaml"
+assert_contains "$(expected_version "$TMP/img.yaml" 2>&1 || true)" "has no tag" "says the image has no tag"
+printf 'apiVersion: v1alpha1\nkind: UnattendedInstallConfig\ninstaller: {}\n' > "$TMP/img.yaml"
+assert_fails "an empty installer image fails" expected_version "$TMP/img.yaml"
+printf 'version: v1alpha1\nmachine: {}\n' > "$TMP/img.yaml"
+assert_fails "a config without the install document fails" expected_version "$TMP/img.yaml"
+assert_contains "$(expected_version "$TMP/img.yaml" 2>&1 || true)" "no UnattendedInstallConfig installer.image" "says the install image is missing"
+
 echo "-- expected-version.sh"
 cat > "$TMP/r.yaml" <<'YAML'
 version: v1alpha1

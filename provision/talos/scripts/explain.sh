@@ -29,7 +29,9 @@ for node in "${nodes[@]}"; do
   declare -A seen=()
   while IFS= read -r f; do
     what="$(header_value "$f" What)"; why="$(header_value "$f" Why)"; apply="$(header_value "$f" Apply)"
-    mapfile -t items < <(touches "$f")
+    touched_out="$(touches "$f")" || die "cannot read $(repo_path "$f") with yq"
+    mapfile -t items <<<"$touched_out"
+    [ -n "$touched_out" ] || items=()
     notes=""
     for item in "${items[@]}"; do
       if [ -n "${seen[$item]:-}" ]; then notes="${notes:+$notes; }shares $item with $(repo_path "${seen[$item]}")"; fi

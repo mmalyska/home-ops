@@ -146,3 +146,5 @@ nav:
           - "Debugging with egctl": k8s/egctl.md
           - "NVMe Replacement": k8s/nvme-replacement.md
           - "nv1 Jetson (GPU)": k8s/nv1-jetson.md
+      - "Talos":
+          - "Config Map": talos/config-map.md

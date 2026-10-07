@@ -72,6 +72,13 @@ assert_not_contains "$(ex nv1)" "10-rings.yaml" "a worker does not list control-
 assert_contains "$(ex)" "== nv1" "without arguments every node is shown"
 assert_fails "an unknown node fails" ex nope
 
+echo "-- an unreadable patch is an error, not an empty column"
+printf 'machine: [unclosed\n' >> "$TMP/p/worker/10-taint.yaml"
+bad="$(ex nv1 2>&1 || true)"
+assert_fails "explain fails when yq cannot read a patch" ex nv1
+assert_contains "$bad" "cannot read provision/talos/patches/worker/10-taint.yaml" "names the file yq could not read"
+head -n -1 "$TMP/p/worker/10-taint.yaml" > "$TMP/fixed" && mv "$TMP/fixed" "$TMP/p/worker/10-taint.yaml"
+
 echo "-- markdown output"
 md="$(ex --markdown mc1)"
 assert_contains "$md" "## mc1" "markdown has a heading per node"
