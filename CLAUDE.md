@@ -87,6 +87,12 @@ Project plans are tracked in `.plans/{plan-name}/` (committed to git):
 **When starting a plan**: create `.plans/{name}/plan.md` and `tasks.md`, add entry to `.plans/list.md`.  
 **When completing a plan**: move subfolder to `.archive/.plans/{name}/`, update both `list.md` files.
 
+## Memory
+
+Memory files and the `MEMORY.md` index live in `.claude/memory/` (git-tracked). `~/.claude/projects/-workspaces-home-ops/memory/` only holds symlinks into it, and anything written there directly is lost on a devcontainer rebuild.
+
+Future memory edits go to `.claude/memory/` directly and get committed on the branch I'm working on.
+
 ## Hard Rules
 
 - **Never commit secrets** — no credentials, tokens, or API keys in any tracked file; gitleaks will block the commit.

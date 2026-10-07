@@ -1,6 +1,6 @@
 ---
 name: reference-talos-taint-noderestriction
-description: "Talos cannot add or change a node taint on an already-registered node — NodeRestriction blocks it; a one-time manual kubectl taint is required, after which Talos adopts and maintains it"
+description: "Talos cannot add, change or remove a taint on an already-registered WORKER node — NodeRestriction blocks it (official docs say use kubectl taint as admin); control planes use admin creds; procedure is in the talos-node-taints skill"
 metadata:
   node_type: memory
   type: reference
@@ -10,7 +10,11 @@ metadata:
 
 Changing `machine.nodeTaints` in Talos config does **not** take effect on a node
 that is already registered in the cluster. Verified on nv1 during the Jetson
-iGPU work (2026-08-13).
+iGPU work (2026-08-13). Researched 2026-10-07: this is the **officially documented** behaviour
+(Talos docs "Node Labels and Node Taints"; siderolabs/talos#13443, #8193 closed as Kubernetes behaviour), there is
+no Talos-side fix. Applies to **workers** only: in v1.14.2 `NodeApplyController` uses an admin-credential client on
+control planes (source-read, not tested live). A rejected taint change also blocks label/annotation changes (one update).
+The procedure now lives in the repo skill `.claude/skills/talos-node-taints/SKILL.md`.
 
 **Why:** the apiserver runs with `--enable-admission-plugins=NodeRestriction`.
 Talos's `NodeApplyController` acts with the kubelet's credentials, and
