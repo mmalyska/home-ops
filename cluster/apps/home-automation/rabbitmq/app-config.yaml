@@ -1,6 +1,0 @@
-- enabled: "false"
-  namespace: ha-rabbitmq
-  syncPolicy:
-    enabled: true
-    selfHeal: true
-    prune: false

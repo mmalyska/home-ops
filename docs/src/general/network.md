@@ -15,7 +15,7 @@ flowchart TB
 
     subgraph GAR[Garage rack]
         SW[USW-Pro-Max-16-PoE\ncore switch]
-        RPi[Raspberry Pi 4B\nHAOS + AdGuard Home addon\n192.168.50.9]
+        RPi[Raspberry Pi 4B\nstopped 2026-10-04\nretained until 2026-10-17\n192.168.50.9]
         AP1[U7 Pro - salon]
         AP2[U7 Pro - upper floor]
     end
@@ -90,7 +90,13 @@ Both gateways are implemented with [Envoy Gateway](https://gateway.envoyproxy.io
 Two [external-dns](https://github.com/kubernetes-sigs/external-dns) controllers run in parallel, each scoped to its own gateway by annotation filter (`external-dns.alpha.kubernetes.io/controller`):
 
 - **cloudflare-dns** — watches resources annotated `controller: external`, writes records to Cloudflare DNS (proxied). Sources: `DNSEndpoint` CRDs + `gateway-httproute` from `envoy-external`.
-- **adguard-dns** — watches resources annotated `controller: internal`, writes records to AdGuard Home on the RPI (192.168.50.9). Sources: `DNSEndpoint` CRDs + `gateway-httproute` from `envoy-internal`.
+- **adguard-dns** — watches resources annotated `controller: internal`, writes records to the in-cluster AdGuard Home primary (via `https://agh.PRIVATE_DOMAIN/control`; `adguard-home-sync` copies them to the replica). Sources: `DNSEndpoint` CRDs + `gateway-httproute` from `envoy-internal`.
+
+### DNS flow
+
+- **Clients:** every VLAN's DHCP hands out `192.168.48.25` and `192.168.48.31` (both AdGuard Home instances, both blocking). The UCG-Max is deliberately not a client resolver: clients do not reliably prefer the first server, and the UCG-Max knows no internal names and blocks nothing. IPv6 DNS uses the two ULAs below.
+- **AdGuard upstreams / reverse lookups:** the UCG-Max (`192.168.48.254`) answers reverse lookups for local clients.
+- **Nodes and pods:** see "Resolver chain for cluster pods and nodes" below.
 
 ### Internal DNS records (AdGuard Home)
 
@@ -104,15 +110,42 @@ Static records are defined as `DNSEndpoint` CRDs in `cluster/apps/system/adguard
 Per-app A records pointing to `192.168.48.21` are created automatically by adguard-dns external-dns
 from each `HTTPRoute` annotated with `controller: dns-controller` attached to `envoy-internal`.
 
+### Resolver chain for cluster pods and nodes
+
+Nodes resolve through `192.168.48.25` and `.31` (the two AdGuard instances), then `192.168.48.254` (UCG-Max)
+as a last resort (see `provision/talos/patches/all/20-nameservers.yaml`). The UCG-Max knows no internal-only names
+and blocks nothing, so it must never be picked while AdGuard is up.
+
+CoreDNS is not deployed by Talos (`cluster.coreDNS.disabled: true`) and Talos offers no Corefile customisation,
+so it is deployed by ArgoCD from the upstream `coredns` Helm chart (`cluster/apps/system/coredns/`), as the Talos maintainers recommend. The kubelet `clusterDNS` is pinned to the `kube-dns` Service IP `10.96.0.10` in the Talos templates. The `forward . /etc/resolv.conf` block uses
+`policy sequential`; the default `random` sent about a third of pod queries to the UCG-Max, which broke internal
+names and ad blocking. CoreDNS reads the node resolver list only at pod start, so restart it after changing
+node nameservers.
+
+### IPv6 DNS for AdGuard
+
+The cluster is IPv4-only, so the DNS LoadBalancers cannot be dual-stack. Each AdGuard pod instead gets a second,
+IPv6-only macvlan interface (`vlan48-v6` NetworkAttachmentDefinition, static address) and listens on it:
+
+| Instance | IPv6 address |
+|---|---|
+| primary | `fd80:c04a:5687:48::25` |
+| replica | `fd80:c04a:5687:48::31` |
+
+No `bind_hosts` change is needed: AdGuard's `0.0.0.0` listener is dual-stack on the pod's sockets (`:::53`), so it
+answers on the macvlan address as soon as the interface exists. Verified by querying `fd80:c04a:5687:48::25` from another
+VLAN 48 pod (answers resolve, ad domains return `0.0.0.0`). Set both addresses as the manual IPv6 DNS servers in UniFi.
+The pod gets an extra SLAAC address and the RA default route on `net1` as well; both are harmless.
+
 ### External DNS records (Cloudflare)
 
-Static records defined as `DNSEndpoint` CRDs:
-
-| Record | Type | Target | Purpose |
-|---|---|---|---|
-| `haas.PRIVATE_DOMAIN` | CNAME | `external.PRIVATE_DOMAIN` | Home Assistant (HAOS on RPi) |
+There are no static external records any more (the old `haas.PRIVATE_DOMAIN` CNAME was removed). Everything is published from `HTTPRoute`s.
 
 HTTPRoutes attached to `envoy-external` are automatically published to Cloudflare by external-dns.
+
+## UPS monitoring (NUT)
+
+The CyberPower UPS is connected by USB to the **QNAP**, which serves it over NUT (`qnapups` on `192.168.50.8:3493`; the QNAP only answers the IPs on its allow list: the four node IPs `192.168.48.2-5`, plus anything else added there). All Talos nodes run the `nut-client` extension (`provision/talos/patches/all/`, the nut-client ExtensionServiceConfig) as secondaries: `MONITOR ${TALHELPER_UPSMONHOST} 1 ${TALHELPER_UPSMONUSER} ...`. `TALHELPER_UPSMONHOST` (`qnapups@192.168.50.8`), the user and the password are Bitwarden values read through `.envrc`, so a change needs Bitwarden first, then `task talos:generate` and `talosctl apply-config` per node (the extension service restarts on its own, no reboot). Until 2026-10-04 the NUT server was the RPi (`qnapups@192.168.50.9`); moving the USB cable to the QNAP removed that dependency. Check with `talosctl -n <node> logs ext-nut-client`: it should show `UPS: qnapups@... (secondary)` and no `connect failed`.
 
 ## External Access via Cloudflare Tunnel
 
@@ -120,23 +153,95 @@ HTTPRoutes attached to `envoy-external` are automatically published to Cloudflar
 
 ## IP Allocation
 
-Cilium LB IP pool: `192.168.48.20–50`. When adding a new `LoadBalancer` service, pick an unused IP from this range and annotate with `lbipam.cilium.io/ips: "192.168.48.XX"`.
+This is the single source of truth for addresses on VLAN 48. **Update it in the same PR that assigns or moves an address**, and run the checks below *before* picking one: the docs have been wrong about free addresses before.
 
-| IP | Service |
+### Ranges on VLAN 48 (`192.168.48.0/24`)
+
+| Range | Use |
+|---|---|
+| `.1` | Control-plane VIP (kube-apiserver) |
+| `.2`–`.5` | Nodes (static in `provision/talos/patches/node/`) |
+| `.6`–`.19` | Unused |
+| `.20`–`.50` | Cilium LoadBalancer pool `pool` |
+| `.51`–`.59` | Cilium LoadBalancer pool `coder-pool` (Coder workspace SSH services) |
+| `.60`–`.69` | Static addresses for pods with a Multus macvlan `net1` interface. **Outside every LB pool**; not known to Cilium, so a clash is silent |
+| `.70`–`.253` | Unused |
+| `.254` | UCG-Max, VLAN 48 gateway (also the nodes' NTP source and DNS resolver) |
+
+Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools and **neither has a `serviceSelector`**, so a `LoadBalancer` service without a fixed IP can draw an address from either pool. Always set a fixed IP with `lbipam.cilium.io/ips: "192.168.48.XX"`; services that deliberately share an IP also set `lbipam.cilium.io/sharing-key`. `coder-pool` used to span `.51–.70`, which overlapped the macvlan range; it now stops at `.59` so an auto-assigned address can never land on a pod-owned one.
+
+### Allocations
+
+| IP | Used by |
 |---|---|
 | `192.168.48.1` | Cluster VIP (kube-apiserver) |
-| `192.168.48.2` | mc1 — control plane node |
-| `192.168.48.3` | mc2 — control plane node |
-| `192.168.48.4` | mc3 — control plane node |
-| `192.168.48.5` | nv1 — Jetson Orin NX worker |
+| `192.168.48.2` | mc1, control plane node |
+| `192.168.48.3` | mc2, control plane node |
+| `192.168.48.4` | mc3, control plane node |
+| `192.168.48.5` | nv1, Jetson Orin NX worker |
 | `192.168.48.20` | `envoy-external` gateway |
 | `192.168.48.21` | `envoy-internal` gateway |
 | `192.168.48.22` | Jellyfin |
 | `192.168.48.23` | Minecraft Bedrock |
-| `192.168.48.27` | Home automation (Whisper, Piper, OpenWakeWord) |
+| `192.168.48.24` | `alloy-router-syslog` (monitoring: router syslog receiver) |
+| `192.168.48.25` | AdGuard Home primary (DNS, live; IPv6 `fd80:c04a:5687:48::25`) |
+| `192.168.48.26` | MQTT broker (Mosquitto, `mqtt.PRIVATE_DOMAIN`) |
+| `192.168.48.27` | Home automation voice services, shared (Whisper, Piper, OpenWakeWord) |
 | `192.168.48.28` | Vintage Story |
-| `192.168.48.29` | WoW (auth + world server) |
-| `192.168.48.30` | anytype any-sync services |
-| `192.168.48.254` | UCG-Max — VLAN 48 gateway, also the nodes' NTP source |
-| `192.168.50.8` | QNAP NAS |
-| `192.168.50.9` | RPi — HAOS (Home Assistant OS); AdGuard Home as HA addon |
+| `192.168.48.29` | WoW, shared (auth and world server) |
+| `192.168.48.30` | anytype any-sync services, shared |
+| `192.168.48.31` | AdGuard Home replica (DNS, live; IPv6 `fd80:c04a:5687:48::31`) |
+| `192.168.48.51`–`.55` | Coder workspace SSH services (devops, dotnet, node, mobile, researcher) |
+| `192.168.48.60` | Reserved: Home Assistant (macvlan `net1`) |
+| `192.168.48.61` | Matter server (macvlan `net1`, live) |
+| `192.168.48.62` | Music Assistant (macvlan `net1`, live) |
+| `192.168.48.69` | Reserved for temporary test pods that verify a macvlan attachment |
+| `192.168.48.254` | UCG-Max, VLAN 48 gateway |
+| `192.168.50.8` | QNAP NAS (also the UPS NUT server, see below) |
+| `192.168.50.9` | RPi (HAOS), stopped. Home Assistant, AdGuard Home, MQTT, Zigbee2MQTT, Matter and Music Assistant all moved to the cluster (2026-10-02 to 2026-10-04); kept powered off until 2026-10-17 |
+| `192.168.50.239` | SLZB-MR4U (Zigbee coordinator socket `:7638` and Thread border router) |
+
+### Check before assigning an address
+
+```sh
+# every LoadBalancer IP in use (shared IPs list several services)
+kubectl get svc -A --no-headers \
+  -o custom-columns=IP:.status.loadBalancer.ingress[0].ip,NS:.metadata.namespace,NAME:.metadata.name \
+  | awk '$1 ~ /^192\.168\.48\./' | sort -V
+
+# every macvlan (Multus) pod address in use
+kubectl get pods -A -o json | jq -r '.items[] | select(.metadata.annotations["k8s.v1.cni.cncf.io/networks"]) |
+  "\(.metadata.annotations["k8s.v1.cni.cncf.io/networks"]) \(.metadata.namespace)/\(.metadata.name)"'
+
+# the pools themselves
+kubectl get ciliumloadbalancerippool -o custom-columns=NAME:.metadata.name,BLOCKS:.spec.blocks,SELECTOR:.spec.serviceSelector
+```
+
+Also grep the repo (`grep -rn "192.168.48.XX" cluster provision docs`) for static references, and ping the address from a VLAN 48 host. Anything not in the table above and not seen in these checks (a device with a static IP or a DHCP reservation in UniFi) can still clash: check UniFi's client list for the VLAN.
+
+## MQTT and Zigbee2MQTT
+
+The MQTT broker is Eclipse Mosquitto (`home-automation/mosquitto`, namespace `ha-mosquitto`). It is exposed on `192.168.48.26:1883` (`mqtt.PRIVATE_DOMAIN`) for LAN clients; in-cluster clients use `mosquitto.ha-mosquitto.svc.cluster.local:1883`. Users (Home Assistant, Zigbee2MQTT) come from Bitwarden and the password file is generated at pod start; messages are persisted on a PVC. It replaced RabbitMQ's MQTT plugin because RabbitMQ never sends retained messages to wildcard subscriptions, so Home Assistant lost all MQTT-discovered entities (Zigbee2MQTT devices) after every restart.
+
+Zigbee2MQTT (`home-automation/zigbee2mqtt`, namespace `ha-zigbee2mqtt`) talks to the SLZB-MR4U Zigbee coordinator over TCP (`tcp://192.168.50.239:7638`, `zstack` adapter). Its data (`configuration.yaml`, `database.db`, coordinator backup) lives on a Ceph PVC; the Zigbee network key is part of that data and is never committed. The frontend is at `z2m.PRIVATE_DOMAIN` on `envoy-internal`. Only one Zigbee2MQTT may own the coordinator: the RPi's addon is stopped and must stay stopped.
+
+## Pods with their own VLAN 48 address (Multus macvlan)
+
+Some workloads need real LAN presence (mDNS, IPv6 to the Thread network, unrestricted ports to players), which a pod on the Cilium network cannot give them. They get a second interface, `net1`, a macvlan on the node's `eth0` on VLAN 48 with a static IP from the reserved block (`192.168.48.60–.69`). The cluster-side parts live in `cluster/apps/core/cilium` (`cni.exclusive: false`) and `cluster/apps/system/multus` (Multus thick plus a small DaemonSet that installs the `macvlan` and `static` CNI plugins, which Talos does not ship). The NetworkAttachmentDefinition is named `vlan48` and is defined in each consuming app's namespace; such pods are pinned to the control-plane nodes (`mc1`–`mc3`, parent interface `eth0`).
+
+What the setup relies on (all verified from a test pod on `net1` on 2026-10-02):
+
+- **IPv6 on VLAN 48:** UniFi Router Advertisements/SLAAC are enabled on the network, so `net1` gets a `fd80:c04a:5687:48::/64` address and a default route via the gateway. The Talos nodes also pick up addresses in that prefix; Kubernetes still reports only their IPv4 addresses as node IPs.
+- **Thread network:** the UniFi static route to the OMR prefix (see `matter-thread.md`) works from VLAN 48; a traceroute from `net1` goes gateway, then the SLZB border router.
+- **mDNS:** the UniFi mDNS reflector must forward the relevant services to VLAN 48 (Google Cast, Matter, Thread TREL and Spotify Connect were seen arriving; AirPlay and MeshCoP were not).
+- **macvlan host isolation:** a pod's `net1` cannot talk to its own node's addresses, including a LoadBalancer IP that node announces. In-cluster consumers must use `*.svc.cluster.local` names, never LB IPs.
+
+## Music Assistant
+
+Music Assistant (`home-automation/music-assistant`, namespace `ha-music-assistant`) runs on a Multus macvlan `net1` at `192.168.48.62` (see the macvlan section above): upstream documents host networking as mandatory because players are discovered through mDNS/UPnP and stream from random ports, so a plain pod network is not enough. The web UI is `ma.PRIVATE_DOMAIN` on `envoy-internal` (Service port 8095); the stream server is on `192.168.48.62:8097`.
+
+- **Library:** the QNAP export `/music` is mounted by Kubernetes (NFS volume, read-only) at `/media/music` and added in the UI as a Local filesystem provider. The RPi used MA's own in-container NFS provider, which needs `SYS_ADMIN`; that was deliberately not carried over.
+- **Settings that matter behind the gateway:** set the web server's **Base URL** (`base_url`) to the public `https://ma.PRIVATE_DOMAIN` (the default, `auto`, resolves to the pod address and breaks the Home Assistant OAuth callback); `external_url` can match. **Never change the web server `bind_port`:** the Service and route target 8095, and MA stops answering. Set the stream server's `bind_ip` to `192.168.48.62`; otherwise MA hands players its pod address.
+- **Login:** the restored admin was linked only to Home Assistant OAuth, so it was removed and the first admin was created on the server's `/setup` page (username/password). The Home Assistant integration's system user and token were kept.
+- **Home Assistant provider:** needs the HA URL and a long-lived token (kept in the UI, not in git). Repoint it when Home Assistant itself moves into the cluster.
+- **Players:** Chromecast/Shield (Google Cast) and the MacBook (AirPlay) work over the mDNS reflector. DLNA/SSDP discovery does not cross VLANs; no DLNA player is configured.

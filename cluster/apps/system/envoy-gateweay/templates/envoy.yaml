@@ -49,6 +49,9 @@ metadata:
   annotations:
     external-dns.alpha.kubernetes.io/controller: external
     external-dns.alpha.kubernetes.io/target: external.<secret:private-domain>
+    # external-dns >= 0.23 reads the target from the un-prefixed annotation; without it records fall back to the
+    # gateway's private LB IP, which Cloudflare rejects for proxied records (all external records vanished on 2026-10-02)
+    external-dns.kubernetes.io/target: external.<secret:private-domain>
 spec:
   gatewayClassName: envoy
   infrastructure:

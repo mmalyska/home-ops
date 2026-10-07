@@ -1,0 +1,10 @@
+# What:   Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds
+# Why:    Talos refuses the legacy blocks next to the KubeControllerManagerConfig and KubeSchedulerConfig documents
+#         (30-controller-manager.yaml.tpl, 31-scheduler.yaml.tpl)
+# Nodes:  control plane
+# Apply:  live
+cluster:
+  controllerManager:
+    $patch: delete
+  scheduler:
+    $patch: delete

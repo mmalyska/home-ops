@@ -1,0 +1,13 @@
+# What:   inotify limits, 64 MiB socket buffers and 1024 hugepages
+# Why:    Controllers and exporters hold many inotify watches; large socket buffers for network throughput;
+#         hugepages for workloads that request them
+# Nodes:  control plane
+# Apply:  live
+apiVersion: v1alpha1
+kind: SysctlConfig
+params:
+  fs.inotify.max_user_instances: "8192"
+  fs.inotify.max_user_watches: "1048576"
+  net.core.rmem_max: "67108864"
+  net.core.wmem_max: "67108864"
+  vm.nr_hugepages: "1024"

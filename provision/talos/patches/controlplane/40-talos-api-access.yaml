@@ -1,0 +1,10 @@
+# What:   Let the talos-backup namespace call the Talos API with the os:etcd:backup role
+# Why:    talos-backup takes etcd snapshots through the Kubernetes-to-Talos API bridge. The document enables the bridge by existing
+# Nodes:  control plane
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+allowedRoles:
+  - os:etcd:backup
+allowedKubernetesNamespaces:
+  - talos-backup

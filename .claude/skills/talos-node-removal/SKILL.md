@@ -34,8 +34,10 @@ talosctl version -n <other-node-ip>
 
 # Boot from Talos ISO, apply existing machine config
 talosctl apply-config --insecure -n <node-ip> \
-  -f provision/talos/clusterconfig/<node>.yaml
+  -f provision/talos/clusterconfig/home-<node>.yaml
 ```
+
+The config now carries an `UnattendedInstallConfig` document, so a node booted in maintenance mode should install itself to the matched disk (`/dev/nvme0n1`) without a separate install step. That path is expected but untested; see "Install settings and reinstalling a node" in `provision/talos/README.md` and record what you find.
 
 Talos installs onto the new disk and rejoins etcd automatically. No uncordon needed — nodes join uncordoned.
 

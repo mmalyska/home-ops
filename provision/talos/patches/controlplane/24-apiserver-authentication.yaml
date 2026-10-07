@@ -1,0 +1,17 @@
+# What:   kube-apiserver authentication: anonymous access only for the health endpoints, no JWT (OIDC) issuers
+# Why:    A KubeAPIServerConfig document always runs the API server with an authentication config file. This is
+#         Talos's default content, written out so the repo shows it. Client certificates (the Talos-generated
+#         kubeconfig, the kubelets) are authenticated separately and are not affected. To bring Keycloak OIDC back,
+#         add one entry to `jwt` (issuer url, audiences, claim mappings)
+# Nodes:  control plane
+# Apply:  live (the kube-apiserver static pod restarts)
+apiVersion: v1alpha1
+kind: KubeAuthenticationConfig
+configuration:
+  anonymous:
+    enabled: true
+    conditions:
+      - path: /livez
+      - path: /readyz
+      - path: /healthz
+  jwt: []

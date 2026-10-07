@@ -1,0 +1,11 @@
+# What:   The EPHEMERAL volume (/var) mount options, declared: mount.secure false, so /var has no nosuid and nodev
+# Why:    Keeps /var mounted as it is today (no document means no secure options) but writes the state down. Do not delete just
+#         the `secure` line: once this document exists an unset secure means true (nosuid, nodev). Turning it on is a separate
+#         decision (see .plans/TODO.md); a freshly generated 1.14 config writes secure: true. EPHEMERAL stays executable either way
+# Nodes:  all nodes
+# Apply:  live (the volume is already provisioned; check the /var line of /proc/mounts after applying)
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+mount:
+  secure: false

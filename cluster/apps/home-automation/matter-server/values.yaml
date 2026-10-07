@@ -1,0 +1,87 @@
+app-template:
+  defaultPodOptions:
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      fsGroupChangePolicy: "OnRootMismatch"
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: ""
+  controllers:
+    main:
+      strategy: Recreate
+      replicas: 1
+      pod:
+        annotations:
+          k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.61/24"]}]'
+      containers:
+        main:
+          image:
+            repository: ghcr.io/matter-js/matterjs-server
+            tag: 1.4.0@sha256:54232d0d3e7dff5a54759469d2753399270412b4c30c55b31750a4595e4cb236
+          # --fabricid/--vendorid must match the HA Matter Server addon (it passes 2 and 4939,
+          # i.e. 0x134b): together they select the stored fabric (server-2-134b). Without them
+          # the server defaults to fabric 1 / vendor 0xfff1 and creates a new, empty fabric.
+          args:
+            - --storage-path
+            - /data
+            - --primary-interface
+            - net1
+            - --fabricid
+            - "2"
+            - --vendorid
+            - "4939"
+            - --enable-time-sync
+            # The WebSocket API is unauthenticated: bind it to the pod network (eth0, reached by Home
+            # Assistant through the Service) instead of every interface, which includes the LAN-facing net1.
+            - --listen-address
+            - eth0
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+  service:
+    main:
+      controller: main
+      ports:
+        ws:
+          port: 5580
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /data
+
+volsync:
+  pvc:
+    existingClaim: matter-server
+    accessMode: ReadWriteOnce
+    capacity: 1Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    # root mover: reads files of any owner from the snapshot
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    backup:
+      schedule: "0 */6 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 0
+        daily: 6
+        weekly: 4
+        monthly: 2
+    restore:
+      # existing data: never render the restore-once ReplicationDestination
+      enabled: false
+      bootstrap: false

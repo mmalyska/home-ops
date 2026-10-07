@@ -11,3 +11,6 @@ dependencies:
   - name: pgsql-cnpg
     version: 1.5.0
     repository: file://../../../../charts/pgsql-cnpg/
+  - name: volsync
+    version: 1.0.0
+    repository: file://../../../../charts/volsync/

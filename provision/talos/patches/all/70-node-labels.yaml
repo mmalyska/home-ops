@@ -1,0 +1,9 @@
+# What:   Topology labels region=home and zone=m
+# Why:    Topology labels used for scheduling and spread constraints
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  topology.kubernetes.io/region: home
+  topology.kubernetes.io/zone: m

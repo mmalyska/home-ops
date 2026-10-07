@@ -1,0 +1,7 @@
+# What:   KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445
+# Why:    API access that does not depend on the control-plane VIP
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubePrismConfig
+port: 7445

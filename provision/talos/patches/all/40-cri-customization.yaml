@@ -1,0 +1,18 @@
+# What:   containerd: unprivileged ports and ICMP allowed in pods, unpacked image layers kept
+# Why:    Pods may bind ports below 1024 and send ICMP without extra capabilities; discard_unpacked_layers stays false.
+#         The legacy file /etc/cri/conf.d/20-customization.part is the reserved fragment name "customization", so
+#         this one is named pod-defaults. Talos restarts CRI itself when a customization is added or changed
+# Nodes:  all nodes
+# Apply:  live (containerd restarts by itself; running pods keep running, but do it one node at a time)
+apiVersion: v1alpha1
+kind: CRICustomizationConfig
+name: pod-defaults
+content: |
+  [plugins]
+    [plugins."io.containerd.grpc.v1.cri"]
+      enable_unprivileged_ports = true
+      enable_unprivileged_icmp = true
+  [plugins."io.containerd.grpc.v1.cri".containerd]
+    discard_unpacked_layers = false
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+    discard_unpacked_layers = false

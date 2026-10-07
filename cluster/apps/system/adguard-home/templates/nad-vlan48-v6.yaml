@@ -1,0 +1,20 @@
+---
+# IPv6-only macvlan on VLAN 48: lets UniFi hand out a stable IPv6 DNS address (ULA fd80:c04a:5687:48::/64).
+# The DNS LoadBalancers stay IPv4-only (the cluster is single-stack), so AdGuard also listens here.
+# Routes and the default gateway come from the UniFi router advertisements.
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: vlan48-v6
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "capabilities": { "ips": true },
+      "ipam": {
+        "type": "static"
+      }
+    }

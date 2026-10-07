@@ -1,0 +1,8 @@
+# What:   Talos does not deploy CoreDNS
+# Why:    CoreDNS is managed as an ArgoCD app (cluster/apps/system/coredns). The document is only allowed on
+#         control planes; workers never ran CoreDNS
+# Nodes:  control plane
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubeCoreDNSConfig
+enabled: false

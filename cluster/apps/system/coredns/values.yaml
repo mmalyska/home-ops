@@ -1,0 +1,78 @@
+---
+# CoreDNS is deployed with cluster.coreDNS.disabled: true in the Talos machine config, so
+# Talos neither deploys nor reconciles it. Names and labels keep the kube-dns identity that
+# the kubelet clusterDNS address (10.96.0.10) and existing NetworkPolicies expect.
+coredns:
+  fullnameOverride: coredns
+  k8sAppLabelOverride: kube-dns
+  isClusterService: true
+  replicaCount: 2
+  priorityClassName: system-cluster-critical
+  service:
+    clusterIP: 10.96.0.10
+    name: kube-dns
+  serviceAccount:
+    create: true
+    name: coredns
+  resources:
+    requests:
+      cpu: 100m
+      memory: 70Mi
+    limits:
+      cpu: null
+      memory: 170Mi
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchExpressions:
+                - key: k8s-app
+                  operator: In
+                  values:
+                    - kube-dns
+  # Upstreams come from the node resolver list (AdGuard .25, .31, then the UCG-Max), read at
+  # pod start. sequential keeps the UCG-Max a pure fallback: it knows no internal names and
+  # blocks nothing, so the default random policy broke both.
+  servers:
+    - zones:
+        - zone: .
+          use_tcp: true
+      port: 53
+      plugins:
+        - name: errors
+        - name: health
+          configBlock: |-
+            lameduck 5s
+        - name: ready
+        - name: log
+          parameters: .
+          configBlock: |-
+            class error
+        - name: prometheus
+          parameters: :9153
+        - name: kubernetes
+          parameters: cluster.local in-addr.arpa ip6.arpa
+          configBlock: |-
+            pods insecure
+            fallthrough in-addr.arpa ip6.arpa
+            ttl 30
+        - name: forward
+          parameters: . /etc/resolv.conf
+          configBlock: |-
+            max_concurrent 1000
+            policy sequential
+        - name: cache
+          parameters: 30
+          configBlock: |-
+            disable success cluster.local
+            disable denial cluster.local
+        - name: loop
+        - name: reload
+        - name: loadbalance

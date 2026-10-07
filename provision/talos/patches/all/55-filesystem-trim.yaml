@@ -1,0 +1,9 @@
+# What:   Weekly fstrim of the mounted filesystems (the NVMe system disks: /var and STATE)
+# Why:    The disks support discard but /var is not mounted with online discard, so free blocks were never handed back to the
+#         SSD and nothing trimmed them. 168h is the upstream default; Talos starts each volume's trim at a stable hash-derived
+#         time inside the interval, so the nodes do not trim at the same moment. The Ceph OSD disk is raw and not affected
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: FilesystemTrimConfig
+interval: 168h

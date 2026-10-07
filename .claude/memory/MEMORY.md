@@ -25,10 +25,14 @@
 - [QNAP QuObjects + barman-cloud caveat](reference_qnap_s3_barman_caveat.md) — boto3 ≥1.34 checksum fix required; set AWS_REQUEST_CHECKSUM_CALCULATION=when_required on all CNPG ObjectStores
 - [App removal procedure](reference_app_removal_procedure.md) — deleting the app dir never auto-prunes; manual `kubectl delete application` + separate PVC check required
 - [Ceph alert job scoping gotcha](reference_ceph_alert_job_scoping.md) — Ceph-mixin PrometheusRules lack job filters, can false-positive on non-cluster targets (router); fix via prometheusRuleOverrides
-- [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks kubelet taint changes post-registration; one-time manual taint, then Talos adopts it
+- [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks workers changing taints after registration (official, no Talos fix); kubectl taint as admin, then Talos adopts; steps in the talos-node-taints skill
 - [llama-server nv1 memory budget](reference_llama_server_nv1_memory.md) — default cache/checkpoints OOM the node; 12Gi limit kills pod; thinking off by default
 - [Jetson llama.cpp CUDA tag](reference_jetson_llama_cuda_tag.md) — NVIDIA latest* tags are CUDA 13 and silently run on CPU; use pinned cu126
 - [nv1 META DHCP key](reference_nv1_meta_dhcp.md) — Talos META 0x0a DHCP operator flapped IP, restarted kubelet, GPU dropped to 0
 - [Uncased BERT embeddings](reference_uncased_bert_embeddings.md) — llama-server lowercases nomic-embed-text, Ollama does not; no re-embed needed
 - [Hermes 64K context floor](reference_hermes_64k_context_floor.md) — Hermes rejects models <64K context; llama-server slots are 32K so main model + compression stay cloud
 - [Matter/Thread cross-VLAN setup](reference_matter_thread_cross_vlan.md) — prod HA/OTBR not in repo; static route + firewall + mDNS needed for phone commissioning
+- [Music Assistant in the cluster](reference_music_assistant_cluster.md) — VLAN 48 macvlan .62; base_url vs bind_port gotchas; NFS library via k8s volume
+- [Check live IPs before assigning one](feedback_check_live_ips_before_assigning.md) — list live LB IPs + pools first; update the network.md table in the same PR
+- [CoreDNS/Argo bootstrap deadlock](reference_coredns_argo_bootstrap_deadlock.md) — deleting coredns kills Argo's DNS; create the app before deleting
+- [Talos live config + apply health quirk](reference_talos_live_config_yq_spec.md) — yq needs two passes on .spec; task talos:apply health step fails on cp nodes after a good apply

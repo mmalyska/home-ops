@@ -1,0 +1,9 @@
+# What:   Labels accelerator=jetson-orin and nvidia.com/gpu.type=igpu
+# Why:    GPU workloads and the device plugin select the Jetson node by these labels
+# Nodes:  nv1
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  accelerator: jetson-orin
+  nvidia.com/gpu.type: igpu

@@ -1,0 +1,12 @@
+# What:   Remove the cluster.id, cluster.secret and cluster.discovery fields that talosctl gen config adds
+# Why:    Talos refuses the legacy fields next to the DiscoveryIdentityConfig and DiscoveryServiceConfig documents
+#         (90-discovery-service.yaml, 91-discovery-identity.yaml.tpl)
+# Nodes:  all nodes
+# Apply:  live
+cluster:
+  id:
+    $patch: delete
+  secret:
+    $patch: delete
+  discovery:
+    $patch: delete

@@ -32,4 +32,4 @@ metadata:
 spec:
   blocks:
     - start: "192.168.48.51"
-      stop: "192.168.48.70"
+      stop: "192.168.48.59" # keep .60-.69 free for Multus macvlan pods (static IPs unknown to Cilium)

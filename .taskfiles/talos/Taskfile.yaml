@@ -5,12 +5,8 @@ vars:
   N: '{{ .N | default "mc1" }}'
   NODE_LIST:
     sh: yq '.nodes[].name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
-  CP_LIST:
-    sh: yq '.nodes[] | select(.type == "controlplane") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
-  WORKER_LIST:
-    sh: yq '.nodes[] | select(.type == "worker") | .name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
-  # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-  TALOS_VERSION: "v1.13.10"
+  # renovate: datasource=github-releases depName=siderolabs/talos
+  TALOS_VERSION: "v1.14.2"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.35.9"
   TALOS_CONTROLLER:
@@ -66,7 +62,7 @@ tasks:
       - talosctl --talosconfig={{.TALOS_DIR}}/clusterconfig/talosconfig --nodes {{ .NODE }} shutdown --wait
 
   upgrade:k8s:
-    desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s N=mc1)
+    desc: Upgrade Kubernetes to {{ .KUBERNETES_VERSION }} (task talos:upgrade:k8s N=mc1). Bump KUBERNETES_VERSION in this file first; it changes the live config, so run task talos:generate and task talos:diff afterwards
     vars:
       NODE:
         sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
@@ -87,6 +83,31 @@ tasks:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
 
+  node_health:
+    internal: true
+    desc: Health of one node after a change (task talos:node_health N=mc1). A worker cannot report k8s state itself, so it is checked through the control plane
+    dir: provision/talos
+    vars:
+      NODE:
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .ip' < {{.TALOS_DIR}}/nodes.yaml
+      TYPE:
+        sh: yq '.nodes[] | select(.name == "{{ .N }}") | .type' < {{.TALOS_DIR}}/nodes.yaml
+      CP_IPS:
+        sh: yq '.nodes[] | select(.type == "controlplane") | .ip' < {{.TALOS_DIR}}/nodes.yaml | paste -sd, -
+      CP_FIRST:
+        sh: yq '[.nodes[] | select(.type == "controlplane") | .ip][0]' < {{.TALOS_DIR}}/nodes.yaml
+      WORKER_IPS:
+        sh: yq '.nodes[] | select(.type == "worker") | .ip' < {{.TALOS_DIR}}/nodes.yaml | paste -sd, -
+    cmds:
+      # The node lists are always explicit: without them talosctl reads the discovery members once at startup, and right
+      # after an apply (the discovery client restarts) that list is only the node itself, so the check fails until the timeout
+      - |
+        if [ "{{.TYPE}}" = "worker" ]; then
+          talosctl --nodes {{.CP_FIRST}} health --control-plane-nodes {{.CP_IPS}} --worker-nodes {{.NODE}} --wait-timeout=10m --server=false
+        else
+          talosctl --nodes {{.NODE}} health --control-plane-nodes {{.CP_IPS}} --worker-nodes {{.WORKER_IPS}} --wait-timeout=10m --server=false
+        fi
+
   apply:restart:
     desc: Apply Talos config to a specific node with reboot (task talos:apply:restart N=mc1)
     dir: provision/talos
@@ -100,7 +121,8 @@ tasks:
       - task: apply-config
         vars: {CLI_ARGS: "-m staged"}
       - talosctl reboot --nodes {{ .NODE }} --wait
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - task: node_health
+        vars: {N: "{{.N}}"}
 
   apply:
     desc: Apply Talos config to a specific node without reboot (task talos:apply N=mc1)
@@ -114,7 +136,8 @@ tasks:
         vars: {TIMEOUT: 10m}
       - task: apply-config
         vars: {CLI_ARGS: "-m auto"}
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - task: node_health
+        vars: {N: "{{.N}}"}
 
   apply:reinstall:
     desc: Apply Talos config to a specific node and reinstall (task talos:apply:reinstall N=mc1)
@@ -135,7 +158,7 @@ tasks:
       - test -f $KUBECONFIG
 
   generate:
-    desc: Generate Talos machine configurations (task talos:generate)
+    desc: Render Talos machine configs from provision/talos/patches (task talos:generate)
     dir: provision/talos
     env:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
@@ -143,30 +166,15 @@ tasks:
     cmds:
       - task: generate:talosconfig
       - for:
-          var: CP_LIST
+          var: NODE_LIST
           split: ","
-        cmd: |
-          envsubst < templates/controlplane.yaml > /tmp/talos-base.yaml
-          talosctl machineconfig patch /tmp/talos-base.yaml \
-            --patch @nodes/{{.ITEM}}.yaml \
-            -o /tmp/talos-patched.yaml
-          envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
-          cat templates/ethernet-rings.yaml >> /tmp/talos-patched.yaml
-          mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
-      - for:
-          var: WORKER_LIST
-          split: ","
-        cmd: |
-          envsubst < templates/worker.yaml > /tmp/talos-base.yaml
-          talosctl machineconfig patch /tmp/talos-base.yaml \
-            --patch @nodes/{{.ITEM}}.yaml \
-            -o /tmp/talos-patched.yaml
-          envsubst < templates/extension-nut-client.yaml >> /tmp/talos-patched.yaml
-          mv /tmp/talos-patched.yaml clusterconfig/home-{{.ITEM}}.yaml
-      - rm -f /tmp/talos-base.yaml
+        cmd: "{{.TALOS_DIR}}/scripts/render.sh {{.ITEM}}"
     preconditions:
       - which envsubst
+      - which yq
       - which talosctl
+      - sh: talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+        msg: talosctl does not match {{ .TALOS_VERSION }}, run task talos:install
       - test -n "$TALHELPER_OSCERT"
 
   generate:talosconfig:
@@ -175,14 +183,15 @@ tasks:
     env:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
     cmds:
-      - envsubst < templates/talosctl-secrets.yaml > /tmp/talos-secrets.yaml
-      - >
-        talosctl gen config home https://${TALHELPER_CLUSTERDOMAIN}:6443
-        --with-secrets /tmp/talos-secrets.yaml
-        --output-types talosconfig
-        --force
-        -o clusterconfig/talosconfig
-      - rm -f /tmp/talos-secrets.yaml
+      - |
+        set -euo pipefail
+        work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
+        envsubst < secrets.yaml.tpl > "$work/secrets.yaml"
+        talosctl gen config home https://${TALHELPER_CLUSTERDOMAIN}:6443 \
+          --with-secrets "$work/secrets.yaml" \
+          --output-types talosconfig \
+          --force \
+          -o clusterconfig/talosconfig
       - >
         talosctl --talosconfig=clusterconfig/talosconfig config endpoint
         $(yq '.nodes[] | select(.type == "controlplane") | .ip' < nodes.yaml | tr '\n' ' ')
@@ -205,7 +214,6 @@ tasks:
       - test -f {{.TALOS_DIR}}/nodes.yaml
 
   upgrade:
-    internal: true
     desc: Upgrade a single node to Talos version {{ .TALOS_VERSION }} (task talos:upgrade N=mc1)
     vars:
       NODE:
@@ -213,28 +221,86 @@ tasks:
       FILE:
         sh: ls {{.TALOS_DIR}}/clusterconfig/home-{{ .N }}.yaml
       TALOS_IMAGE:
-        sh: yq ea '[.machine.install.image].[0]' < "{{.FILE}}"
+        sh: yq -N 'select(.kind == "UnattendedInstallConfig") | .installer.image' "{{.FILE}}"
       FORCE: "{{ .FORCE | default false }}"
-      # Derived from the install image tag, which already encodes the version —
-      # one source of truth instead of two that can desync. Read from the
-      # committed nodes/*.yaml, never from clusterconfig/: those are generated
-      # and gitignored, so on a fresh clone they are absent and this would
-      # silently fall back to the global version instead of failing.
-      # Nodes on the stock factory installer have no install.image override and
-      # correctly fall back. NB: `sed -n …p` exits 0 even when nothing matches,
-      # so the fallback must test the captured value, not the exit status.
+      # The expected version is the tag of the install image in the rendered config (FILE above, which
+      # must exist, so there is no silent fallback): a Factory tag is the version, a custom installer
+      # tag (v1.14.0-6.18.48-nvgpu...) yields its leading Talos version.
       NODE_TALOS_VERSION:
-        sh: |
-          v=$(yq '.machine.install.image // ""' {{.TALOS_DIR}}/nodes/{{.N}}.yaml 2>/dev/null \
-                | sed -n 's|.*custom-installer:v\{0,1\}\([0-9.]*\)-.*|v\1|p')
-          echo "${v:-{{ .TALOS_VERSION }}}"
+        sh: "{{.TALOS_DIR}}/scripts/expected-version.sh {{.FILE}}"
+    preconditions:
+      # A config rendered before a TALOS_VERSION bump would make the node look up to date.
+      - sh: 'case "{{.TALOS_IMAGE}}" in *factory.talos.dev*:{{.TALOS_VERSION}}) ;; *factory.talos.dev*) exit 1 ;; esac'
+        msg: "{{.FILE}} was rendered for another Talos version than {{.TALOS_VERSION}}, run task talos:generate first"
     status:
       - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .NODE_TALOS_VERSION }}' || return 1)
     cmds:
       - task: wait_for_health
         vars: {TIMEOUT: 10m}
       - talosctl upgrade --nodes {{ .NODE }} --image {{ .TALOS_IMAGE }} --wait=false
-      - talosctl --nodes {{.NODE}} health --wait-timeout=10m --server=false
+      - task: node_health
+        vars: {N: "{{.N}}"}
+      # `talosctl upgrade` and the health check both succeed when the node reboots into a
+      # stale boot entry (Jetson UEFI does not persist the default entry, upstream Bug 25),
+      # so verify the node really runs the expected version.
+      - |
+        for i in 1 2 3 4 5 6; do
+          running=$(talosctl version --nodes {{ .NODE }} | sed -n '/Server:/,$p' | sed -n 's/^[[:space:]]*Tag:[[:space:]]*//p' | head -1)
+          [ "$running" = "{{ .NODE_TALOS_VERSION }}" ] && { echo "{{ .N }} runs $running"; exit 0; }
+          sleep 10
+        done
+        echo "ERROR: {{ .N }} runs ${running:-unknown}, expected {{ .NODE_TALOS_VERSION }}: it booted a stale boot entry. Do not re-run the upgrade; select the new entry in the sd-boot menu on the console." >&2
+        exit 1
+
+  parity:
+    desc: Compare two directories of rendered configs after normalizing, secrets masked (task talos:parity -- OLD NEW)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/parity.sh {{.CLI_ARGS}}"
+
+  explain:
+    desc: What is configured per node, from the patch headers (task talos:explain -- mc1, or --markdown)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/explain.sh {{.CLI_ARGS}}"
+
+  config-map:
+    desc: Regenerate docs/src/talos/config-map.md (task talos:config-map)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/config-map.sh"
+
+  diff:
+    desc: Repo vs live machine config and running version per node, secrets masked (task talos:diff -- mc1)
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+      KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
+    preconditions:
+      - which envsubst
+      - which yq
+      - which talosctl
+      - sh: talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+        msg: talosctl does not match {{ .TALOS_VERSION }}, run task talos:install
+
+  pki-parity:
+    desc: Compare the PKI values a node runs with the rendered ones by hash, printing no values (task talos:pki-parity -- mc1)
+    env:
+      TALOS_VERSION: "{{.TALOS_VERSION}}"
+      KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/pki-parity.sh {{.CLI_ARGS}}"
+    preconditions:
+      - which envsubst
+      - which yq
+      - which talosctl
+      - sh: talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+        msg: talosctl does not match {{ .TALOS_VERSION }}, run task talos:install
+
+  check:
+    desc: Offline checks, no secrets or cluster needed (task talos:check)
+    cmds:
+      - "{{.TALOS_DIR}}/scripts/check-patches.sh"
+      - "{{.TALOS_DIR}}/scripts/config-map.sh --check"
+      - "{{.TALOS_DIR}}/tests/run.sh"
 
   wait_for_health:
     internal: true
@@ -242,4 +308,4 @@ tasks:
     cmds:
       - kubectl wait --timeout=5m --for=condition=Complete jobs --all --all-namespaces
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
-      - kubectl -n identity wait --for jsonpath='{.status.readyInstances}'='2' --timeout {{ .TIMEOUT | default "30s" }} cluster keycloakdb-cnpg
+      - kubectl wait --for=condition=Ready --timeout {{ .TIMEOUT | default "30s" }} clusters.postgresql.cnpg.io --all --all-namespaces

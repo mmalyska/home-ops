@@ -1,0 +1,7 @@
+# What:   Remove the machine.install block that talosctl gen config adds
+# Why:    Talos refuses the legacy machine.install next to the UnattendedInstallConfig document (30-install.yaml)
+# Nodes:  all nodes
+# Apply:  install-only
+machine:
+  install:
+    $patch: delete

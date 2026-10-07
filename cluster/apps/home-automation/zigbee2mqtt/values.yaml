@@ -1,0 +1,79 @@
+app-template:
+  defaultPodOptions:
+    securityContext:
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
+      fsGroupChangePolicy: "OnRootMismatch"
+  controllers:
+    main:
+      replicas: 1
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: koenkk/zigbee2mqtt
+            tag: 2.14.2@sha256:addbfb08fcef2e4477de1535636118241e10d13e898fbe4d9faba8a4d7396311
+          envFrom:
+            - secretRef:
+                name: zigbee2mqtt-secret
+          env:
+            TZ: Europe/Warsaw
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+  service:
+    main:
+      controller: main
+      ports:
+        http:
+          port: 8080
+  route:
+    main:
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - z2m.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: main
+  persistence:
+    data:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      globalMounts:
+        - path: /app/data
+
+volsync:
+  pvc:
+    existingClaim: zigbee2mqtt
+    accessMode: ReadWriteOnce
+    capacity: 1Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    # root mover: reads files of any owner from the snapshot
+    moverSecurityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    backup:
+      schedule: "0 */6 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 0
+        daily: 6
+        weekly: 4
+        monthly: 2
+    restore:
+      # existing data: never render the restore-once ReplicationDestination
+      enabled: false
+      bootstrap: false

@@ -1,8 +1,8 @@
 # Matter over Thread
 
-The production Home Assistant (HAOS on the RPi, VLAN 50) and the Thread border
-router (SLZB-MR4U running OTBR, VLAN 50) are **not** managed in this repo. The
-`home-automation` apps here are a test instance. This page records the network
+The Thread border router (SLZB-MR4U running OTBR, VLAN 50) is **not** managed in
+this repo. Home Assistant and the Matter server run in the cluster
+(`home-automation/home-assistant`, `matter-server`; the RPi's HAOS was stopped on 2026-10-04). This page records the network
 configuration that makes commissioning Matter devices work from a phone on the
 Trusted VLAN, so it can be redone after a reset or rebuild.
 
@@ -66,3 +66,12 @@ MAC.
   phone means the reflector; mDNS but no traffic to the OMR prefix means the
   route or firewall.
 - Never commit the Thread network key or PSKc from the SLZB UI.
+
+## Matter server in the cluster
+
+The Matter server runs in the cluster (`cluster/apps/home-automation/matter-server`, namespace `ha-matter-server`) with its own VLAN 48 address `192.168.48.61` (Multus macvlan `net1`, see `network.md`). It is the matter.js server (`ghcr.io/matter-js/matterjs-server`, pinned to the version the Home Assistant addon bundled, 1.4.0). The Home Assistant Matter integration connects to `ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`. The WebSocket is unauthenticated, so the server is started with `--listen-address eth0` and only listens on the pod network (reached through the Service); `net1` (`192.168.48.61`) keeps carrying Matter and mDNS traffic only, and port 5580 is not reachable from the LAN. (Before the restriction it was open on `net1`; the RPi's HA used `ws://192.168.48.61:5580/ws`.)
+
+- **Start-up arguments matter:** the server must run with `--fabricid 2 --vendorid 4939` (hex `134b`), exactly as the HA addon passes them. Together they select the stored fabric `server-2-134b`. Without them it defaults to fabric 1 and vendor `0xfff1`, ignores the restored data and silently creates a new, empty fabric (log: `Using new server ID format: server-1-fff1`, `Found 0 nodes`).
+- **Reaching the Thread devices from VLAN 48:** the server uses IPv6 to the devices' OMR addresses, which works through the UniFi static route described above. If the Thread network is re-formed and the OMR prefix changes, update that route first.
+- **Data and backup:** the fabric data lives on the Ceph PVC at `/data` (matter.js storage: `server-2-134b`, `certificates`, `vendors`, `config`, `ota`). It was restored from a Home Assistant partial backup of the addon (stale `matter.lock`/`matter.pid` files removed). Never run two Matter servers on the same fabric or storage.
+- **Verified 2026-10-02:** all three Thread nodes connect (the sleepy sensor in about 15 seconds) and reconnect after a pod restart.
