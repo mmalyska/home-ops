@@ -249,7 +249,7 @@ tasks:
           [ "$running" = "{{ .NODE_TALOS_VERSION }}" ] && { echo "{{ .N }} runs $running"; exit 0; }
           sleep 10
         done
-        echo "ERROR: {{ .N }} runs ${running:-unknown}, expected {{ .NODE_TALOS_VERSION }}: it booted a stale boot entry. Do not re-run the upgrade; select the new entry in the sd-boot menu on the console." >&2
+        echo "ERROR: {{ .N }} runs ${running:-unknown}, expected {{ .NODE_TALOS_VERSION }}: it booted a stale boot entry. Do not re-run the upgrade; rename the stale UKI as described in provision/talos/README.md (nv1 boots the wrong UKI after an upgrade), no console is needed." >&2
         exit 1
 
   parity:
