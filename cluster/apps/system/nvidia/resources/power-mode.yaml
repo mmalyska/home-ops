@@ -228,7 +228,8 @@ spec:
               cpu: 5m
               memory: 4Mi
             limits:
-              cpu: 20m
+              # 20m throttled 50% of CFS periods (CPUThrottlingHigh) while the script runs its sysfs writes in short bursts
+              cpu: 100m
               memory: 16Mi
           volumeMounts:
             - name: sys
