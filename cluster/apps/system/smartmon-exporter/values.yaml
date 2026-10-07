@@ -3,10 +3,15 @@ prometheus-smartctl-exporter:
     repository: ghcr.io/home-operations/smartctl-exporter
     tag: "0.14.0@sha256:1ce54f6215b4e92ce600d292e6f88af100146521a8e54f449adf3c0f333a9571"
 
+  # the chart overwrites each instance's config with common.config, so the scan interval has to be set here
+  common:
+    config:
+      # SMART data changes slowly; the exporter scans in the background and serves cached values between scans
+      collect_not_more_than_period: 15m
+
   config:
     devices:
       - /dev/sda
-      - /dev/sdb
       - /dev/nvme0n1
 
   serviceMonitor:
@@ -32,9 +37,8 @@ prometheus-smartctl-exporter:
       cpu: 10m
       memory: 32Mi
     limits:
-      # 200m throttled 50-90% of CFS periods (CPUThrottlingHigh) although usage is ~2m: smartctl runs in short
-      # multi-threaded bursts. A higher limit costs nothing, the average stays tiny
-      cpu: 1
+      # no CPU limit: smartctl runs in short multi-threaded bursts, any limit (even 1 CPU) throttled a few periods
+      # (CPUThrottlingHigh) while average usage is ~10m. The chart ships without limits too
       memory: 64Mi
 
   extraInstances:
@@ -59,6 +63,5 @@ prometheus-smartctl-exporter:
           cpu: 10m
           memory: 32Mi
         limits:
-          # same burst pattern as the main instance, see above
-          cpu: 1
+          # no CPU limit, same burst pattern as the main instance, see above
           memory: 64Mi
