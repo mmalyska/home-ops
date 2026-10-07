@@ -1,5 +1,7 @@
 # Talos Workload Isolation (`SecurityProfileConfig`) — Design
 
+**Status:** done 2026-10-07. Isolation is on for all four nodes (mc3 pilot, nv1 early by the owner's decision, then mc2 and mc1); nv1 needs no separate phase. Tracked in `.plans/TODO.md`.
+
 ## Context
 
 Talos 1.14 can run the whole container plane (CRI containerd, the kubelet and every pod) in its own PID and mount
