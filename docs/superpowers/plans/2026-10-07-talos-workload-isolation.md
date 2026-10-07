@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Enable Talos workload isolation (`SecurityProfileConfig` `workloadIsolation: true`) on mc3, then mc2 and mc1, with nv1 pinned to `false` until a v1.14.2+ Jetson installer exists.
+**Goal:** Enable Talos workload isolation (`SecurityProfileConfig` `workloadIsolation: true`) on mc3, then mc2 and mc1, with nv1 pinned to `false` until nv1 has been upgraded to v1.14.2 or later (its own task, the installer now exists).
 
 **Architecture:** One patch file `65-security-profile.yaml` per layer: a pilot node patch on mc3 first, then consolidated into `patches/all/` with an explicit `false` override for nv1. A read-only script `scripts/isolation-check.sh` proves per node that the container plane really runs in the sandbox namespace (PID namespace depth from `/proc/<pid>/status`) and that the node is healthy. The rollout itself (apply, drain, reboot, uncordon, soak) is a gated manual procedure; the user confirms every step that changes the cluster.
 
@@ -133,7 +133,7 @@ out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolati
 - **The v1.14 contract bump would turn it on.** `talosctl gen config` emits the document with `true` only for the v1.14
   contract. The repo therefore carries the setting explicitly for every node, so the bump changes nothing.
 - **nv1 stays off** until it runs Talos v1.14.2 or later: v1.14.0 has a boot bug with isolation (CRI restart-loops for
-  1-3 minutes on every boot, siderolabs/talos#14374) and no v1.14.2 Jetson installer exists yet.
+  1-3 minutes on every boot, siderolabs/talos#14374) and nv1 has not been upgraded to v1.14.2 yet.
 - **Check a node:** `scripts/isolation-check.sh <node> [on|off]` is read-only. It checks the PID namespace of containerd
   and the kubelet (`NSpid` in `/proc/<pid>/status` has two values inside the sandbox), the live config, the Talos
   services, node readiness, Ceph and etcd. A config that says `true` without a reboot fails it.
@@ -623,7 +623,7 @@ YAML
 cat > node/nv1/65-security-profile.yaml <<'YAML'
 # What:   Workload isolation stays off on nv1: CRI, the kubelet and all pods keep sharing machined's namespaces
 # Why:    nv1 runs Talos v1.14.0, where isolation has a boot bug (CRI restart-loops for 1-3 minutes on every boot,
-#         siderolabs/talos#14374, fixed in v1.14.2), and no v1.14.2 Jetson installer exists yet. Explicit false rather
+#         siderolabs/talos#14374, fixed in v1.14.2), and nv1 has not been upgraded to v1.14.2 yet. Explicit false rather
 #         than no file: the v1.14 contract base would turn it on. Delete this file when nv1 runs v1.14.2 or later
 # Nodes:  nv1
 # Apply:  live (it only restates the current state; the later change that enables isolation needs a reboot)
@@ -650,7 +650,7 @@ Current state: on for mc1-mc3 once each has been rebooted (`patches/all/65-secur
 (`patches/node/nv1/65-security-profile.yaml`).
 ```
 
-Also replace the `**nv1 stays off**` bullet's last clause so it ends with: `...no v1.14.2 Jetson installer exists yet. When both are true, delete the nv1 patch, apply, and reboot nv1 (see the spec, phase 3).`
+Also replace the `**nv1 stays off**` bullet's last clause so it ends with: `...nv1 has not been upgraded to v1.14.2 yet. When both are true, delete the nv1 patch, apply, and reboot nv1 (see the spec, phase 3).`
 
 - [ ] **Step 7: Regenerate, check, commit**
 
@@ -727,16 +727,16 @@ git checkout main && git pull && git checkout -b docs/talos-workload-isolation-d
 In `.plans/TODO.md`, replace the whole `SecurityProfileConfig` `workloadIsolation: true` bullet under the migration entry (and its `Plan if wanted` sub-bullet) with:
 
 ```markdown
-    - `SecurityProfileConfig` `workloadIsolation`: **on for mc1-mc3 since the day of the last reboot (write the actual date)** (spec and plan `docs/superpowers/specs|plans/2026-10-07-talos-workload-isolation*`); nv1 is explicitly `false`. **Still to do, phase 3 (conditional, not time-boxed):** enable on nv1 once a v1.14.2 or later nvgpu installer exists in `ghcr.io/schwankner/custom-installer` (check the tags) and nv1 has been upgraded to it with the README procedure (including the UKI workaround); then delete `patches/node/nv1/65-security-profile.yaml`, apply, cordon, drain, reboot, uncordon, and run `scripts/isolation-check.sh nv1 on` plus `nvidia.com/gpu` allocatable, the CDI spec in `/var/run/cdi`, the `fw-fresh` firmware and `llama-server` on the GPU. The contract bump to v1.14 is safe for this setting (guarded by a render test).
+    - `SecurityProfileConfig` `workloadIsolation`: **on for mc1-mc3 since the day of the last reboot (write the actual date)** (spec and plan `docs/superpowers/specs|plans/2026-10-07-talos-workload-isolation*`); nv1 is explicitly `false`. **Still to do, phase 3 (conditional, not time-boxed):** enable on nv1 once nv1 has been upgraded to v1.14.2 or later (installer `ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim` exists; the upgrade is its own TODO entry, README procedure including the UKI workaround) and has soaked; then delete `patches/node/nv1/65-security-profile.yaml`, apply, cordon, drain, reboot, uncordon, and run `scripts/isolation-check.sh nv1 on` plus `nvidia.com/gpu` allocatable, the CDI spec in `/var/run/cdi`, the `fw-fresh` firmware and `llama-server` on the GPU. The contract bump to v1.14 is safe for this setting (guarded by a render test).
 ```
 
 - [ ] **Step 2: Memory**
 
-Rewrite the body of `.claude/memory/reference_talos_workload_isolation.md` (keep the frontmatter, change `description` to `"Talos workload isolation (sandboxd) is on for mc1-mc3, explicitly off on nv1 until a v1.14.2+ Jetson installer exists; switching needs a reboot"`) so it says: on for mc1-mc3 (patches/all/65), nv1 false (patches/node/nv1/65) and why, the contract bump is guarded by a render test, `scripts/isolation-check.sh <node> [on|off]` proves it per node (NSpid depth), reboot needed both ways, and the recorded verification results from Tasks 3 and 5 (what changed in node-exporter series, if anything). Update its line in `.claude/memory/MEMORY.md` the same way (one line, no content beyond the hook).
+Rewrite the body of `.claude/memory/reference_talos_workload_isolation.md` (keep the frontmatter, change `description` to `"Talos workload isolation (sandboxd) is on for mc1-mc3, explicitly off on nv1 until nv1 is upgraded to v1.14.2 or later; switching needs a reboot"`) so it says: on for mc1-mc3 (patches/all/65), nv1 false (patches/node/nv1/65) and why, the contract bump is guarded by a render test, `scripts/isolation-check.sh <node> [on|off]` proves it per node (NSpid depth), reboot needed both ways, and the recorded verification results from Tasks 3 and 5 (what changed in node-exporter series, if anything). Update its line in `.claude/memory/MEMORY.md` the same way (one line, no content beyond the hook).
 
 - [ ] **Step 3: Spec status, commit, PR**
 
-Add as the first line under the spec title: `**Status:** phases 1 and 2 done (write the actual date); phase 3 (nv1) waits for a v1.14.2+ Jetson installer, tracked in .plans/TODO.md.` Then:
+Add as the first line under the spec title: `**Status:** phases 1 and 2 done (write the actual date); phase 3 (nv1) waits for the nv1 upgrade to v1.14.2 or later, tracked in .plans/TODO.md.` Then:
 
 ```bash
 git add -A && git commit -m "docs(talos): workload isolation is rolled out on the control planes, nv1 tracked" && git push -u origin HEAD && gh pr create --fill --base main

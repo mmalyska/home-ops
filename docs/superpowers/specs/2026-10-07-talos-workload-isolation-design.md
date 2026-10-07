@@ -29,8 +29,12 @@ there. It is also where Talos is going: new 1.14 clusters have it on by default.
 - mc1-mc3 run Talos v1.14.2 and `sandboxd` already runs there, idle. **nv1 runs v1.14.0**, where `sandboxd` is not
   running and the CRI start-up bug applies (siderolabs/talos#14374: CRI restart-loops for 1-3 minutes on every boot,
   node degraded meanwhile; fixed in v1.14.2).
-- The Jetson installer `ghcr.io/schwankner/custom-installer` has no tag newer than `v1.14.0-6.18.48-...` (checked
-  2026-10-07), so nv1 cannot be upgraded to v1.14.2 yet.
+- The upstream Jetson installer `ghcr.io/schwankner/custom-installer` has no tag newer than `v1.14.0-6.18.48-...` (checked
+  2026-10-07). A v1.14.2 installer now exists in the owner's own registry:
+  `ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim` (public, arm64, built 2026-10-07, kernel
+  6.18.54 like the control planes; nvgpu 5.13.0 where nv1 runs 5.11.1 today). nv1 itself still runs v1.14.0 until it is
+  upgraded; that upgrade is a separate task, done and soaked before isolation is enabled on nv1 (two risky changes are
+  never put into one reboot of a node without a console).
 - The setting is read only when `sandboxd` starts: enabling or disabling needs a node reboot, not a live apply.
 - Merge behaviour (checked with `talosctl machineconfig patch`, v1.14.2): on the v1.13 base a patch adds the document;
   a later `workloadIsolation: false` overrides an earlier `true`; on the v1.14 base (which has `true`) a patch with
@@ -47,7 +51,8 @@ there. It is also where Talos is going: new 1.14 clusters have it on by default.
 1. **Scope: all four nodes, with gates.** mc3 is the pilot, then mc2 and mc1. nv1 is pinned to `false` now and enabled
    in a conditional final phase.
 2. **nv1 is pinned off explicitly**, not left to default, so the repo is correct when `TALOS_CONTRACT` moves to v1.14.
-   It is enabled only after a v1.14.2+ nvgpu installer exists and nv1 is upgraded (separate work, tracked in the TODO).
+   It is enabled only after nv1 has been upgraded to v1.14.2 or later with the installer above and has soaked (the
+   upgrade is separate work, tracked in the TODO).
 3. **Rollout through the repo: pilot patch, then consolidate.** A node patch for mc3 first, then one patch in
    `patches/all/` plus an nv1 override. The repo matches the live nodes at every step, except the two control planes
    still waiting for their turn in phase 2.
@@ -108,9 +113,9 @@ clean). Then mc2, then mc1, each as in phase 1 steps 2-4, with Ceph HEALTH_OK be
 first endpoint in the talosconfig. `task talos:apply N=nv1` applies the `false` document (no reboot needed, it changes
 nothing) so that `task talos:diff` is clean.
 
-**Phase 3, nv1 (conditional, not time-boxed).** Entry criteria, all required: a custom installer at v1.14.2 or later with
-nvgpu modules exists; nv1 is upgraded to it following the README procedure including the UKI workaround; the GPU stack is
-verified after the upgrade. Then PR 3 deletes the nv1 `false` file; apply; cordon, drain, reboot, uncordon; verification
+**Phase 3, nv1 (conditional, not time-boxed).** Entry criteria, all required: nv1 has been upgraded to v1.14.2 or later with the
+installer named above (it exists), following the README procedure including the UKI workaround; the GPU stack is verified
+after the upgrade; nv1 has soaked on the new version. Then PR 3 deletes the nv1 `false` file; apply; cordon, drain, reboot, uncordon; verification
 list plus `nvidia.com/gpu` allocatable, the CDI spec in `/var/run/cdi`, the `fw-fresh` firmware, `llama-server` on the GPU.
 Until then the TODO keeps one entry for it.
 
@@ -157,7 +162,7 @@ reach a healthy state after a reboot, stop the rollout and report; do not contin
 
 ## Out of scope
 
-- Building a v1.14.2 Jetson installer, upgrading nv1 itself, enforcing SELinux, tuppr.
+- Upgrading nv1 itself (its own task, before phase 3), building Jetson installers, enforcing SELinux, tuppr.
 - The `TALOS_CONTRACT` bump (its own change; this spec only makes it safe).
 - Any change to privileged workloads (Ceph, multus, the nvidia pods) to reduce what they can reach.
 
