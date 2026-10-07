@@ -237,9 +237,25 @@ lags (for example nv1 after an upgrade) shows up here.
 (`disk.dev_path == "/dev/nvme0n1"`) and `wipe: false`. On an installed node the document is inert apart from
 naming the installer image that upgrades use. It is meant to act when a node is not installed yet: a node booted
 from USB or PXE in maintenance mode that is given this config should install itself to the matched disk, without a
-separate `talosctl install`. **That path is expected but untested here**; try it on the first real reinstall and
-record what you find. `wipe` defaults to true in this document and is set to false explicitly, so a wipe stays a
+separate `talosctl install`. **Tested 2026-10-07 in a throwaway arm64 VM (Talos v1.14.2, UTM on a Mac):** booted from the
+metal ISO into maintenance mode with an empty NVMe disk, `talosctl apply-config --insecure` with a control-plane config
+holding this document, and the node installed itself to `/dev/nvme0n1` (the CEL selector matched), rebooted, and
+reported `UnattendedInstallStatus` `installed` with the EFI, META, STATE and EPHEMERAL partitions on the disk. Not tested:
+the extensions installer image of the real nodes (the test used the default Image Factory image), a selector that matches
+no disk, and `wipe: true`. `wipe` defaults to true in this document and is set to false explicitly, so a wipe stays a
 deliberate manual step.
+
+Things to know for a real reinstall:
+
+- The installer image must exist: in 1.14 `ghcr.io/siderolabs/installer:v1.14.2` is a 404 (v1.12 and v1.13 exist), the
+  installer is the Image Factory one (`factory.talos.dev/metal-installer/<schematic>:<version>`), which is what the repo uses.
+- A worker config cannot be used for a standalone test: a worker's `apid` gets its certificate from `trustd` on a
+  control-plane node, so with no reachable cluster endpoint it never starts. Use a control-plane config.
+- The VM firmware must have Secure Boot off for the stock ISO (UEFI "Access Denied" otherwise).
+- After the install reboot the firmware may boot the ISO again; eject it. Before a config is applied the maintenance
+  API presents a self-signed certificate, so `talosctl` with a `talosconfig` fails with "signed by unknown authority";
+  use `--insecure` (after the subcommand: `talosctl get disks --insecure -n <ip>`).
+- A node booted from the ISO shows the volume error `no such attribute(s): system_disk` in its log until it is installed; it is not a failure.
 
 ## Checks
 
