@@ -62,7 +62,7 @@ Exit gate for phase A: signed r39 module set builds in CI from a clean checkout.
 
 - [ ] D1. Update the fork README and `docs/jetpack7.md` (versions, supported boards/DTB notes, flash steps).
 - [ ] D2. Open an upstream PR or issue to `schwankner/talos-jetson-orin` (upstream issue about r39 was drafted but not posted; the token could not create issues there).
-- [ ] D3. In home-ops: bump the installer image in `provision/talos/nodes/nv1.yaml`, switch GPU images to CUDA 13 where wanted, update `docs/src/k8s/nv1-jetson.md` and `.plans/TODO.md`, archive this plan.
+- [ ] D3. In home-ops: bump the installer image in `provision/talos/patches/node/nv1/20-install-image.yaml` and replace the kernel-module files `31-kmod-*` to `38-kmod-*` (one `KernelModuleConfig` per module, load order is the file order) with the r39 list from A6 (adds `ivc_ext`, `tegra_hv`, `nvhwpm`), regenerate `docs/src/talos/config-map.md` with `task talos:config-map`, switch GPU images to CUDA 13 where wanted, update `docs/src/k8s/nv1-jetson.md` and `.plans/TODO.md`, archive this plan.
 
 ## Risks
 
@@ -72,7 +72,7 @@ Exit gate for phase A: signed r39 module set builds in CI from a clean checkout.
 - UEFI behaviour after r39 firmware (Bug 25 same-version upgrade quirk, boot order, USB priority) is unverified.
 - Licensing: GPU firmware and NVIDIA modules are distributed under NVIDIA licences (see Sidero PR #1518 discussion); keep the existing approach of pulling firmware from NVIDIA's apt.
 
-- Talos 1.13.10 to 1.14.0 jump and a private ghcr installer (registry pull credentials needed in the machine config) come with the r39 image (found in Phase B prep).
+- A private ghcr installer needs registry pull credentials in the machine config. The r39 install on nv1 is a same-version change (Talos v1.14.0 both ways), so the Jetson UEFI stale-boot-entry workaround in `provision/talos/README.md` applies to it and to a rollback.
 
 ## Open questions
 
