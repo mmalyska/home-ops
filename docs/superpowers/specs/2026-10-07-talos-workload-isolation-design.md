@@ -66,6 +66,24 @@ there. It is also where Talos is going: new 1.14 clusters have it on by default.
 5. **Nothing is applied, drained or rebooted without the user's confirmation** (CLAUDE.md hard rule). Reboots are run by
    the user: `talosctl reboot` is blocked for Claude by the permission settings.
 
+## Amendment 2026-10-07: nv1 is enabled early (owner's decision)
+
+The owner decided to enable isolation on nv1 right after its upgrade to v1.14.2, without the soak the spec asked for.
+This supersedes the nv1 parts of this document:
+
+- Decision 2 and phase 3: nv1 is no longer pinned to `false`. The entry criteria that still hold: nv1 runs v1.14.2
+  (the boot bug of #14374 is fixed there) and the GPU stack was verified after the upgrade (2026-10-07). The soak
+  criterion is waived. nv1 follows the mc3 pilot pattern: a node patch `patches/node/nv1/65-security-profile.yaml`
+  with `true`, apply, cordon, drain, reboot, uncordon, verification (including the GPU stack: `nvidia.com/gpu`
+  allocatable, the CDI spec, the `fw-fresh` firmware, `llama-server` on the GPU) and the red test.
+- End state: `true` on all four nodes. Phase 2 consolidates to `patches/all/65-security-profile.yaml` (`true`) and
+  deletes **both** node files (mc3 and nv1); there is no nv1 `false` override file, and the render tests and the
+  contract-bump guard expect `true` on every node.
+- The risk row "nv1 on v1.14.0 gets `true` by mistake" no longer applies. The new nv1 risk: the GPU stack under the
+  sandbox (`nvidia-cdi-setup` is `hostPID` and writes the CDI spec and firmware through hostPath; the device plugin
+  socket lives under `/var/lib/kubelet`). Mitigation: the verification list above; rollback is `workloadIsolation:
+false`, apply, reboot, and `apid` stays reachable because it runs outside the sandbox. nv1 has no console.
+
 ## Design
 
 ### 1. Config shape
