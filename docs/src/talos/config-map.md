@@ -30,6 +30,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/60-filesystem-scrub.yaml` | Weekly filesystem scrub (xfs_scrub) of the mounted XFS filesystems (the NVMe system disks: /var and STATE) | live | FilesystemScrubConfig |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
+| `provision/talos/patches/all/65-security-profile.yaml` | Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
@@ -85,6 +86,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/60-filesystem-scrub.yaml` | Weekly filesystem scrub (xfs_scrub) of the mounted XFS filesystems (the NVMe system disks: /var and STATE) | live | FilesystemScrubConfig |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
+| `provision/talos/patches/all/65-security-profile.yaml` | Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
@@ -140,6 +142,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/60-filesystem-scrub.yaml` | Weekly filesystem scrub (xfs_scrub) of the mounted XFS filesystems (the NVMe system disks: /var and STATE) | live | FilesystemScrubConfig |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
+| `provision/talos/patches/all/65-security-profile.yaml` | Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
@@ -171,7 +174,6 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
-| `provision/talos/patches/node/mc3/65-security-profile.yaml` | Workload isolation on mc3: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |
 
 ## nv1
 
@@ -196,6 +198,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/all/60-features.yaml` | Disk quota support; drops the generated legacy kubePrism and hostDNS fields | live | machine.features |  |
 | `provision/talos/patches/all/60-filesystem-scrub.yaml` | Weekly filesystem scrub (xfs_scrub) of the mounted XFS filesystems (the NVMe system disks: /var and STATE) | live | FilesystemScrubConfig |  |
 | `provision/talos/patches/all/61-kubeprism.yaml` | KubePrism, the node-local Kubernetes API load balancer on 127.0.0.1:7445 | live | KubePrismConfig |  |
+| `provision/talos/patches/all/65-security-profile.yaml` | Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |
 | `provision/talos/patches/all/70-node-labels.yaml` | Topology labels region=home and zone=m | live | KubeNodeConfig |  |
 | `provision/talos/patches/all/80-cluster-network.yaml` | Cluster DNS domain, pod and service CIDRs; no Talos-managed CNI | live (never change the CIDRs of a running cluster) | KubeNetworkConfig |  |
 | `provision/talos/patches/all/81-cluster-network-legacy-delete.yaml` | Remove the cluster.network block that talosctl gen config adds | live | cluster.network |  |
@@ -218,4 +221,3 @@ worker, 192.168.48.5
 | `provision/talos/patches/node/nv1/37-kmod-nvgpu.yaml` | Kernel module nvgpu | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/nvgpu |  |
 | `provision/talos/patches/node/nv1/38-kmod-governor-pod-scaling.yaml` | Kernel module governor_pod_scaling | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/governor_pod_scaling |  |
 | `provision/talos/patches/node/nv1/40-node-labels.yaml` | Labels accelerator=jetson-orin and nvidia.com/gpu.type=igpu | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/worker/30-node-taints.yaml |
-| `provision/talos/patches/node/nv1/65-security-profile.yaml` | Workload isolation on nv1: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |

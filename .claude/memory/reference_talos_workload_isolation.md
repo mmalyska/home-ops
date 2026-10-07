@@ -1,6 +1,6 @@
 ---
 name: reference-talos-workload-isolation
-description: "Talos 1.14 SecurityProfileConfig workloadIsolation (sandboxd) is off here; the v1.14 contract bump turns it on by default, switching needs a node reboot"
+description: "Talos 1.14 SecurityProfileConfig workloadIsolation (sandboxd) is on for mc3 and nv1, mc1/mc2 pending; the v1.14 contract bump turns it on by default, switching needs a node reboot"
 metadata:
   type: reference
 ---
@@ -10,7 +10,7 @@ namespace (`sandboxd`, `talosctl logs sandboxd`) instead of `machined`'s. Resear
 v1.14.2 source); details and the test plan are in the SecurityProfileConfig bullet of `.plans/TODO.md`.
 
 **Why it matters:**
-- The nodes have no such document, so isolation is off. A missing document means off and upgrades change nothing.
+- As of 2026-10-07 the repo carries the document for every node in `patches/all/65-security-profile.yaml`; it is running on mc3 and nv1, and mc1 and mc2 get it at their next reboot after an apply (plan Task 5). A missing document means off and upgrades change nothing.
 - `talosctl gen config` emits it with `workloadIsolation: true` only for the v1.14 contract. We pin `TALOS_CONTRACT`
   v1.13 (`provision/talos/scripts/lib.sh`), so **bumping the contract would enable isolation on the next apply and reboot
   unless a patch sets it explicitly first**.
@@ -31,6 +31,6 @@ invisible and 13 fds. **etcd is inside the sandbox** when isolation is on (`NSpi
 first assumption, so the sandbox hides machined and apid but not etcd, and a `sandboxd` crash would restart a control
 plane's etcd. Probe manifest and expected values: plan Task 3 Step 7b.
 
-**State 2026-10-07 evening:** isolation is ON on mc3 and nv1 (node patches `patches/node/{mc3,nv1}/65-security-profile.yaml`),
-OFF on mc1 and mc2 until plan Task 4 (consolidate to `patches/all/`) and their reboots. `scripts/isolation-check.sh <node>
+**State 2026-10-07 evening:** isolation is ON on mc3 and nv1 (through `patches/all/65-security-profile.yaml`),
+OFF on mc1 and mc2 until their plan Task 5 rollout and reboots. `scripts/isolation-check.sh <node>
 [on|off]` proves a node's state; plan Task 3 Step 7b is the red-test probe. `task talos:node_health N=<node>` is the health gate.
