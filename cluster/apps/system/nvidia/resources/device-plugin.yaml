@@ -79,7 +79,8 @@ spec:
               cpu: 5m
               memory: 8Mi
             limits:
-              cpu: 20m
+              # 20m throttled 30% of CFS periods (CPUThrottlingHigh): a shell loop that bursts for a few ms every 10 s
+              cpu: 100m
               memory: 32Mi
           volumeMounts:
             - name: device-plugin

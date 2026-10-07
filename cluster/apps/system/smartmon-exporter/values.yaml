@@ -32,7 +32,9 @@ prometheus-smartctl-exporter:
       cpu: 10m
       memory: 32Mi
     limits:
-      cpu: 200m
+      # 200m throttled 50-90% of CFS periods (CPUThrottlingHigh) although usage is ~2m: smartctl runs in short
+      # multi-threaded bursts. A higher limit costs nothing, the average stays tiny
+      cpu: 1
       memory: 64Mi
 
   extraInstances:
@@ -57,5 +59,6 @@ prometheus-smartctl-exporter:
           cpu: 10m
           memory: 32Mi
         limits:
-          cpu: 200m
+          # same burst pattern as the main instance, see above
+          cpu: 1
           memory: 64Mi
