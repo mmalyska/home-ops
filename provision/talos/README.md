@@ -119,6 +119,9 @@ kustomize build cluster/apps/core/argocd | argocd-secret-replacer sops -f cluste
 2. `task talos:generate`, then inspect `clusterconfig/home-<node>.yaml`.
 3. Apply one node at a time with `task talos:apply N=<node>` and wait for the cluster to be healthy in between.
    Changes marked `reboot` need the cordon, drain, reboot, uncordon routine.
+   A changed node taint (`KubeNodeConfig` `taints`) on a worker that is already in the cluster is not applied by Talos:
+   Kubernetes (NodeRestriction) forbids it. Run `kubectl taint` with admin credentials first, see the
+   `talos-node-taints` skill (`.claude/skills/talos-node-taints/SKILL.md`).
 
 Examples:
 
