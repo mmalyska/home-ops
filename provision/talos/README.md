@@ -147,17 +147,17 @@ Examples:
 
 There is no per-node `talosVersion` key. A node's expected version is **derived from the tag of the install image**
 in its rendered config (`scripts/expected-version.sh`): a Factory image tag such as `v1.14.2` is the version, and a
-custom installer tag such as `v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim` yields its leading Talos version, `v1.14.0`.
+custom installer tag such as `v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim` yields its leading Talos version, `v1.14.2`.
 `task talos:upgrade N=<name>` (and `task talos:upgrade:all`) compares the node's running version with that and fails
 when the node comes back on something else.
 
-nv1 is such a node. Its image lives in `patches/node/nv1/20-install-image.yaml`:
+nv1 has such an image. It lives in `patches/node/nv1/20-install-image.yaml`:
 
 ```yaml
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 installer:
-  image: ghcr.io/schwankner/custom-installer:v1.14.0-6.18.48-nvgpu5.11.1-drm-noshim
+  image: ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim
 provisioning:
   diskSelector:
     match: disk.dev_path == "/dev/nvme0n1"
