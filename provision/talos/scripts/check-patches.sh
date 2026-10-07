@@ -44,7 +44,7 @@ while IFS= read -r f; do
   [[ -z "$apply" || "$apply" =~ ^(live|install-only|reboot)([[:space:]]\(.+\))?$ ]] \
     || err "$rel" "'# Apply:' must be live, install-only or reboot, optionally followed by (reason); got '$apply'"
   want="$(expected_nodes "$rel")"
-  [ -z "$(header_value "$f" Nodes)" ] || [ "$(header_value "$f" Nodes)" = "$want" ] \
+  [ -z "$want" ] || [ -z "$(header_value "$f" Nodes)" ] || [ "$(header_value "$f" Nodes)" = "$want" ] \
     || err "$rel" "'# Nodes:' must be '$want' for this directory; got '$(header_value "$f" Nodes)'"
 
   docs="$(yq ea '[.] | length' "$f" 2>/dev/null || echo 0)"

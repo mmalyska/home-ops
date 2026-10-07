@@ -103,6 +103,7 @@ scripts/check-patches.sh     # conventions
 task talos:generate          # re-render clusterconfig/
 task talos:explain -- mc1    # what is configured, from where
 task talos:diff -- mc1       # repo vs the live node, secrets masked
+task talos:config-map        # regenerate docs/src/talos/config-map.md (task talos:check fails when it is stale)
 
 task talos:apply N=mc1       # apply (most fields are live)
 # or
