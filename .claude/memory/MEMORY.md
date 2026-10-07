@@ -26,7 +26,7 @@
 - [App removal procedure](reference_app_removal_procedure.md) — deleting the app dir never auto-prunes; manual `kubectl delete application` + separate PVC check required
 - [Ceph alert job scoping gotcha](reference_ceph_alert_job_scoping.md) — Ceph-mixin PrometheusRules lack job filters, can false-positive on non-cluster targets (router); fix via prometheusRuleOverrides
 - [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks workers changing taints after registration (official, no Talos fix); kubectl taint as admin, then Talos adopts; steps in the talos-node-taints skill
-- [Talos workload isolation (sandboxd)](reference_talos_workload_isolation.md) — on for mc3 and nv1, mc1/mc2 pending; the v1.14 contract bump would turn it on by default (guarded); switching needs a node reboot
+- [Talos workload isolation (sandboxd)](reference_talos_workload_isolation.md) — on for all four nodes since 2026-10-07; the v1.14 contract bump would turn it on by default (guarded); switching needs a node reboot
 - [llama-server nv1 memory budget](reference_llama_server_nv1_memory.md) — default cache/checkpoints OOM the node; 12Gi limit kills pod; thinking off by default
 - [Jetson llama.cpp CUDA tag](reference_jetson_llama_cuda_tag.md) — NVIDIA latest* tags are CUDA 13 and silently run on CPU; use pinned cu126
 - [nv1 META DHCP key](reference_nv1_meta_dhcp.md) — Talos META 0x0a DHCP operator flapped IP, restarted kubelet, GPU dropped to 0
