@@ -84,7 +84,6 @@ tasks:
         vars: {TIMEOUT: 10m}
 
   node_health:
-    internal: true
     desc: Health of one node after a change (task talos:node_health N=mc1). A worker cannot report k8s state itself, so it is checked through the control plane
     dir: provision/talos
     vars:
