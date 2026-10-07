@@ -171,6 +171,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
+| `provision/talos/patches/node/mc3/65-security-profile.yaml` | Workload isolation on mc3: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1) | reboot (sandboxd reads workloadIsolation only when the service starts) | SecurityProfileConfig |  |
 
 ## nv1
 
