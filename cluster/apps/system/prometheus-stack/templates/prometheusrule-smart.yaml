@@ -68,7 +68,7 @@ spec:
             summary: 'SATA drive temperature high on {{`{{ $labels.node }}`}}'
             description: 'Device {{`{{ $labels.device }}`}} on {{`{{ $labels.node }}`}} is at {{`{{ $value }}`}}°C'
         - alert: SATAWearHigh
-          expr: (100 - smartctl_device_attribute{device=~"sda|sdb", attribute_name="Percent_Lifetime_Remain", value_type="raw"}) > 80
+          expr: (100 - smartctl_device_attribute{device=~"sda|sdb", attribute_name="Percent_Lifetime_Remain", attribute_value_type="value"}) > 80
           labels:
             severity: warning
           annotations:

@@ -165,6 +165,7 @@ None currently. smartmon-exporter covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0
 | Trap | Reality |
 |------|---------|
 | `smartctl_device_attribute{..., value_type="raw"}` returns no data for SATA | The correct label name is `attribute_value_type`, not `value_type`. Use `attribute_value_type="value"` for the normalized % remaining. |
+| Instant query on any `smartctl_*` metric returns nothing, or only some nodes | The ServiceMonitor interval must stay under the 5m instant-query lookback. At 10m (until 2026-10-07) a series was visible only for 5 of every 10 minutes, so queries showed one random node and alert rules saw gaps. The scrape is cheap (exporter uses about 0.6 millicores and polls the disks itself every 120s); it is now 2m. Check `up` and `count_over_time(<metric>[1h])` before concluding a target is missing. |
 | `smartctl_device_percentage_used` returns no data for SATA | This metric is NVMe-only. SATA wear comes from attribute 202 via `smartctl_device_attribute`. |
 
 ## Drive Identity Reference
