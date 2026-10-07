@@ -36,6 +36,11 @@ there. It is also where Talos is going: new 1.14 clusters have it on by default.
   upgraded; that upgrade is a separate task, done and soaked before isolation is enabled on nv1 (two risky changes are
   never put into one reboot of a node without a console).
 - The setting is read only when `sandboxd` starts: enabling or disabling needs a node reboot, not a live apply.
+- Red test on mc3 after the pilot (2026-10-07), a privileged `hostPID` pod in `kube-system` run on mc1 (isolation off,
+  control) and mc3 (isolation on): mc1 shows PID 1 `init` (machined), `apid` and `etcd` visible, 615 processes, 209
+  readable file descriptors of PID 1; mc3 shows PID 1 `sandboxd`, `init` and `apid` **not** visible, 86 processes, 13
+  readable descriptors (sandboxd's own), and only the container plane plus etcd. So the sandbox hides `machined` and
+  `apid` from even the most privileged pod, and does not hide etcd.
 - Merge behaviour (checked with `talosctl machineconfig patch`, v1.14.2): on the v1.13 base a patch adds the document;
   a later `workloadIsolation: false` overrides an earlier `true`; on the v1.14 base (which has `true`) a patch with
   `false` or `true` is honoured. Every combination validates in metal mode.
@@ -132,8 +137,11 @@ After each node reboot:
 - No new alerts; the next scheduled backups (CNPG, volsync) succeed.
 
 Rollback, any phase, any node: set the node's `workloadIsolation` to `false` (or remove the patch before the all-layer
-one exists), `task talos:apply`, reboot. `apid`, etcd and the other Talos services run outside the sandbox, so the
-management path survives a broken container plane and no console is needed on the control planes. If a node cannot
+one exists), `task talos:apply`, reboot. `apid` and the other Talos services run outside the sandbox, so the
+management path survives a broken container plane and no console is needed on the control planes. etcd is **not**
+among them: with isolation on it is launched inside the sandbox too (observed on mc3, 2026-10-07: its `NSpid` is
+`<host pid> <sandbox pid> 1`, and a probe pod in the sandbox sees it), so a `sandboxd` crash on a control plane would
+also restart that node's etcd. Quorum holds with one member down, which is one more reason nodes go one at a time. If a node cannot
 reach a healthy state after a reboot, stop the rollout and report; do not continue to the next node.
 
 ### 4. Repo changes, tests, docs
@@ -149,16 +157,17 @@ reach a healthy state after a reboot, stop the rollout and report; do not contin
 
 ## Risks
 
-| Risk                                                       | Effect                                                 | Mitigation                                                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Ceph CSI mounts do not reach the kubelet in the sandbox    | RBD or CephFS volumes fail to attach after the reboot  | They move into the sandbox together with the kubelet; pilot on mc3, explicit attach test; rollback |
-| In-tree NFS mount fails inside the sandbox                 | NFS-backed pods stuck on that node                     | Docs name only iSCSI as broken; mc3 pilot has two NFS workloads; check each node                   |
-| node-exporter sees the sandbox's PID 1 and mount table     | Filesystem and process metrics change, alerts misfire  | Baseline before, compare after; the pilot shows it before the other nodes                          |
-| Cilium `mount-bpf-fs` and bidirectional propagation        | Datapath not reloaded after the namespace is recreated | Cilium agent Ready check; pilot; the sandbox restart path is the same as a reboot                  |
-| A control plane does not come back healthy                 | One of three control planes down                       | etcd quorum holds with one down; one node at a time; rollback by `talosctl` without a console      |
-| Unplanned reboot of mc1 or mc2 between PR 2 and their turn | That node starts isolated earlier than planned         | Do PR 2 and the two applies in one session; the verification list still applies                    |
-| nv1 on v1.14.0 gets `true` by mistake                      | CRI restart loop on every boot, no console             | Explicit `false` patch, render test, the contract-bump guard                                       |
-| The contract bump turns it on by itself                    | Unplanned isolation on the next apply and reboot       | The all-layer `true` and the nv1 `false` are explicit; render test with the v1.14 base             |
+| Risk                                                       | Effect                                                 | Mitigation                                                                                                            |
+| ---------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Ceph CSI mounts do not reach the kubelet in the sandbox    | RBD or CephFS volumes fail to attach after the reboot  | They move into the sandbox together with the kubelet; pilot on mc3, explicit attach test; rollback                    |
+| In-tree NFS mount fails inside the sandbox                 | NFS-backed pods stuck on that node                     | Docs name only iSCSI as broken; mc3 pilot has two NFS workloads; check each node                                      |
+| node-exporter sees the sandbox's PID 1 and mount table     | Filesystem and process metrics change, alerts misfire  | Baseline before, compare after; the pilot shows it before the other nodes                                             |
+| Cilium `mount-bpf-fs` and bidirectional propagation        | Datapath not reloaded after the namespace is recreated | Cilium agent Ready check; pilot; the sandbox restart path is the same as a reboot                                     |
+| A control plane does not come back healthy                 | One of three control planes down                       | etcd quorum holds with one down; one node at a time; rollback by `talosctl` without a console                         |
+| `sandboxd` crashes on a control plane                      | That node's etcd restarts with the container plane     | `sandboxd` has `oom_score_adj` -1000 and is restarted by Talos; quorum holds with one member down; one node at a time |
+| Unplanned reboot of mc1 or mc2 between PR 2 and their turn | That node starts isolated earlier than planned         | Do PR 2 and the two applies in one session; the verification list still applies                                       |
+| nv1 on v1.14.0 gets `true` by mistake                      | CRI restart loop on every boot, no console             | Explicit `false` patch, render test, the contract-bump guard                                                          |
+| The contract bump turns it on by itself                    | Unplanned isolation on the next apply and reboot       | The all-layer `true` and the nv1 `false` are explicit; render test with the v1.14 base                                |
 
 ## Out of scope
 
