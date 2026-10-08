@@ -22,6 +22,11 @@ descheduler:
     enabled: true
 
   deschedulerPolicy:
+    # the first dry-run cycle would have evicted 24 pods from mc3 at once (cert-manager, keycloak, the Ceph operator...):
+    # move a few per 10-minute cycle instead, and never more than two from one namespace
+    maxNoOfPodsToEvictTotal: 5
+    maxNoOfPodsToEvictPerNode: 5
+    maxNoOfPodsToEvictPerNamespace: 2
     profiles:
       - name: default
         pluginConfig:
@@ -49,6 +54,18 @@ descheduler:
                 cpu: 50
                 memory: 50
                 pods: 50
+              # platform and edge namespaces stay where they are; only plain apps are moved
+              evictableNamespaces:
+                exclude:
+                  - kube-system
+                  - rook-ceph
+                  - cnpg
+                  - cert-manager
+                  - argocd
+                  - external-secrets
+                  - envoy-gateway
+                  - cloudflared
+                  - identity
         plugins:
           balance:
             enabled:
