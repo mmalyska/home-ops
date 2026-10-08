@@ -50,7 +50,7 @@ assert_contains "$out" "nvidia.com/gpu: present:NoSchedule" "workers get the GPU
 assert_not_contains "$out" "kind: EthernetConfig" "workers do not get the control-plane EthernetConfig"
 assert_not_contains "$out" "kind: KubeAuthorizerConfig" "workers have no kube-apiserver authorizer documents"
 assert_eq 'disk.dev_path == "/dev/nvme0n1"|false' "$(yq 'select(.kind == "UnattendedInstallConfig") | .provisioning.diskSelector.match + "|" + (.provisioning.wipe | tostring)' "$TMP/nv1.yaml")" "nv1 keeps the disk selector and wipe false"
-assert_eq "ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim" "$(yq 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$TMP/nv1.yaml")" "nv1's custom installer image is carried by the document"
+assert_eq "ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu39.2.1-jp7" "$(yq 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$TMP/nv1.yaml")" "nv1's custom installer image is carried by the document"
 assert_eq "v1.14.2" "$("$SCRIPTS/expected-version.sh" "$TMP/nv1.yaml")" "nv1's expected Talos version is read as v1.14.2 from the custom tag"
 
 assert_eq "1|none|false" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | (.acceptedCAs | length | tostring) + "|" + (.issuingCA // "none" | tostring)' "$TMP/nv1.yaml")|$(yq 'select(.machine != null) | .cluster | has("ca")' "$TMP/nv1.yaml")" "a worker has the accepted CA only and no legacy cluster.ca"

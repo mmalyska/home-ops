@@ -212,9 +212,12 @@ worker, 192.168.48.5
 | `provision/talos/patches/worker/96-pki-legacy-delete.yaml` | Remove the cluster.ca field that talosctl gen config adds | live | cluster.ca |  |
 | `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network |  |
 | `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/worker/05-install-image.yaml.tpl |
-| `provision/talos/patches/node/nv1/31-kmod-host1x.yaml` | Kernel module host1x | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x |  |
+| `provision/talos/patches/node/nv1/28-kmod-ivc-ext.yaml` | Kernel module ivc_ext | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/ivc_ext |  |
+| `provision/talos/patches/node/nv1/29-kmod-tegra-hv.yaml` | Kernel module tegra_hv | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/tegra_hv |  |
+| `provision/talos/patches/node/nv1/30-kmod-host1x.yaml` | Kernel module host1x | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x |  |
+| `provision/talos/patches/node/nv1/31-kmod-host1x-nvhost.yaml` | Kernel module host1x_nvhost | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x_nvhost |  |
 | `provision/talos/patches/node/nv1/32-kmod-host1x-fence.yaml` | Kernel module host1x_fence | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x_fence |  |
-| `provision/talos/patches/node/nv1/33-kmod-host1x-nvhost.yaml` | Kernel module host1x_nvhost | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x_nvhost |  |
+| `provision/talos/patches/node/nv1/33-kmod-nvhwpm.yaml` | Kernel module nvhwpm | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/nvhwpm |  |
 | `provision/talos/patches/node/nv1/34-kmod-tegra-drm.yaml` | Kernel module tegra_drm | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/tegra_drm |  |
 | `provision/talos/patches/node/nv1/35-kmod-nvmap.yaml` | Kernel module nvmap | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/nvmap |  |
 | `provision/talos/patches/node/nv1/36-kmod-mc-utils.yaml` | Kernel module mc_utils | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/mc_utils |  |
