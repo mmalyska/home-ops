@@ -154,6 +154,8 @@ metadata:
   namespace: nvidia-system
   labels:
     app: nvidia-cdi-setup
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   selector:
     matchLabels:
@@ -165,6 +167,8 @@ spec:
       labels:
         app: nvidia-cdi-setup
     spec:
+      nodeSelector:
+        accelerator: jetson-orin
       tolerations:
         - operator: Exists
       priorityClassName: system-node-critical
@@ -173,7 +177,7 @@ spec:
       # Firmware + device setup + CDI spec (the libraries come with the node image)
       containers:
         - name: cdi-writer
-          image: busybox:1.36
+          image: busybox:1.38@sha256:365a051f12e05767b598e643676f14a450fb678a75ccf2beb0052c95d5c73b83
           command: ["/bin/sh", "/scripts/cdi-writer.sh"]
           securityContext:
             privileged: true
