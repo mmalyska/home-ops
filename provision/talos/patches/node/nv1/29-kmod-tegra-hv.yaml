@@ -1,0 +1,7 @@
+# What:   Kernel module tegra_hv
+# Why:    JetPack 7 (r39) hypervisor interface that nvmap, mc_utils and tegra_drm depend on. Loads and stays inert on bare metal. The load order is the file order: 28 to 38, the host1x stack first. Modules are ABI-bound to the custom installer's kernel (nv1's install image)
+# Nodes:  nv1
+# Apply:  reboot (modules and their parameters are only loaded at boot)
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: tegra_hv

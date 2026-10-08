@@ -1,7 +1,7 @@
-# What:   Kernel module host1x_fence
+# What:   Kernel module host1x_nvhost
 # Why:    OE4T host1x stack, prerequisite for all GPU modules. The load order is the file order: 28 to 38, the host1x stack first. Modules are ABI-bound to the custom installer's kernel (nv1's install image)
 # Nodes:  nv1
 # Apply:  reboot (modules and their parameters are only loaded at boot)
 apiVersion: v1alpha1
 kind: KernelModuleConfig
-name: host1x_fence
+name: host1x_nvhost
