@@ -1,6 +1,6 @@
 # Plan: port talos-jetson-orin to JetPack 7 (r39 / CUDA 13)
 
-Date: 2026-10-01. Status: Phase A done (build-only; r39 release workflow green, USB image and installer published), Phase B prepared (see the artifact below), Phase C not started. Research: `docs/superpowers/research/2026-10-01-jetpack7-nv1.md`.
+Date: 2026-10-01. Status: Phases A to C done on 2026-10-08 except the soak (C5): QSPI flashed to r39.2.0, nv1 runs the r39 image, `cuInit` works and `llama-server` runs on the GPU (25.7 tok/s, GPU load about 95%, CPU fallback about 6 tok/s). Phase D: nv1 docs PR and this plan's archive remain. Research: `docs/superpowers/research/2026-10-01-jetpack7-nv1.md`.
 
 ## Goal
 
@@ -51,10 +51,10 @@ Exit gate for phase A: signed r39 module set builds in CI from a clean checkout.
 
 ### Phase C: hardware bring-up (needs explicit user go-ahead; nv1 downtime)
 
-- [ ] C1. Flash r39 firmware (QSPI only if B2 allows). Boot the r39 USB image in Talos maintenance mode. Capture `dmesg` before applying config.
-- [ ] C2. Verify in order: `host1x` probes (no `actmon` errors), `/dev/dri/renderD128` exists, `nvmap`, `nvgpu` probes, `/dev/nvgpu/igpu0/*` exist, firmware loaded (no ACR bootstrap failure).
-- [ ] C3. Apply the nv1 machine config with the new installer image, reinstall, re-check the META DHCP key (`talosctl -n 192.168.48.5 get operatorspecs` must be empty).
-- [ ] C4. Run the CDI setup with r39 libs. Run a CUDA 13 smoke test (`deviceQuery` or a small llama.cpp build with sm_87) and confirm GPU, not CPU. Compare tok/s with the r36 baseline (`docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md` and the numbers in the research doc).
+- [x] C1. (done 2026-10-08: QSPI-only flash with `--qspi-only`, the old Talos kept booting on the r39 firmware, USB test skipped in favour of upgrading the NVMe install) Flash r39 firmware (QSPI only if B2 allows). Boot the r39 USB image in Talos maintenance mode. Capture `dmesg` before applying config.
+- [x] C2. (done 2026-10-08: host1x/tegra_drm/nvmap/nvgpu probe, renderD128 and igpu0 nodes, firmware needed a refresh in /var/fw-fresh) Verify in order: `host1x` probes (no `actmon` errors), `/dev/dri/renderD128` exists, `nvmap`, `nvgpu` probes, `/dev/nvgpu/igpu0/*` exist, firmware loaded (no ACR bootstrap failure).
+- [x] C3. (done 2026-10-08 via `talosctl upgrade --image ...@sha256:5bcfbf2b...`, config staged first; stale boot entry renamed twice; the node cached the first image under the tag) Apply the nv1 machine config with the new installer image, reinstall, re-check the META DHCP key (`talosctl -n 192.168.48.5 get operatorspecs` must be empty).
+- [x] C4. (done 2026-10-08: needed `libnvcucompat.so` in the userspace extension (v3) and fresh firmware in /var/fw-fresh; LFM2.5 25.7 tok/s on the GPU) Run the CDI setup with r39 libs. Run a CUDA 13 smoke test (`deviceQuery` or a small llama.cpp build with sm_87) and confirm GPU, not CPU. Compare tok/s with the r36 baseline (`docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md` and the numbers in the research doc).
 - [ ] C5. Soak: sustained multi-prompt load for hours, watch kernel logs for nvgpu faults (including the Orin NX 16 GB floorswept-GPC0 SLUB corruption report in research finding 4), memory (`MemAvailable`), and power mode behaviour.
 - [ ] C6. Go/no-go. If no-go or unstable: execute the rollback kit (B5).
 
