@@ -117,11 +117,26 @@ data:
       echo "[cdi-setup] CDI spec written: ${CDI_SPEC} (${DEV_COUNT} device nodes)"
     }
 
-    # ── Firmware copy (idempotent) ─────────────────────────────────────────
-    if [ ! -f "${FW_DEST}/gpmu_ucode_next_prod_image.bin" ]; then
-      echo "[cdi-setup] Copying GPU firmware to NVMe /var/fw-fresh..."
+    # ── Firmware sync (idempotent) ─────────────────────────────────────────
+    # /var survives node upgrades, and firmware_class.path below points at it,
+    # so a copy made once would shadow newer firmware from the node image
+    # (JetPack 6 PMU firmware on a JetPack 7 nvgpu: the PMU does not boot and the
+    # node resets). Copy every file that is missing or differs, drop the extras.
+    if [ -d "${FW_SRC}" ]; then
       mkdir -p "${FW_DEST}"
-      cp "${FW_SRC}/"* "${FW_DEST}/" 2>/dev/null || true
+      for f in "${FW_SRC}"/*; do
+        b=$(basename "${f}")
+        if ! cmp -s "${f}" "${FW_DEST}/${b}"; then
+          echo "[cdi-setup] firmware: updating ${b}"
+          cp -f "${f}" "${FW_DEST}/${b}"
+        fi
+      done
+      for f in "${FW_DEST}"/*; do
+        [ -e "${f}" ] || continue
+        [ -e "${FW_SRC}/$(basename "${f}")" ] || { echo "[cdi-setup] firmware: removing stale $(basename "${f}")"; rm -f "${f}"; }
+      done
+    else
+      echo "[cdi-setup] WARNING: ${FW_SRC} not found, firmware not synced"
     fi
     echo "[cdi-setup] Redirecting firmware_class.path -> /var/fw-fresh"
     echo -n '/var/fw-fresh' > /sys/module/firmware_class/parameters/path
