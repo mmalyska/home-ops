@@ -1,0 +1,6 @@
+- enabled: "true"
+  namespace: descheduler
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
