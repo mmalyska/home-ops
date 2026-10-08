@@ -58,8 +58,14 @@ mkdir -p l4t-gcc && tar xf aarch64--glibc--stable-2022.08-1.tar.bz2 -C l4t-gcc
 export ARCH=arm64
 export CROSS_COMPILE=$(realpath .)/l4t-gcc/aarch64--glibc--stable-2022.08-1/bin/aarch64-buildroot-linux-gnu-
 cd source
-./nvbuild.sh          # kernel + DTBs into kernel_out/ (do NOT pass -i)
-./do_copy.sh          # copies the finished DTBs to ../kernel/dtb/
+# Seeed's repo carries only some of the source trees. Fetch the rest from NVIDIA (nvethernetrm, nvgpu,
+# hwpm, nvdisplay, unifiedgpudisp, build/nvidia-public = the device-tree build tree). The messages
+# "exists but is not a git repository" for kernel-noble, hardware/... and nvidia-oot are expected:
+# the script leaves Seeed's copies of those alone.
+./source_sync.sh -k -s -t jetson_39.2.0
+for d in nvethernetrm nvgpu hwpm nvdisplay unifiedgpudisp build/nvidia-public; do [ -d "$d" ] && echo "ok  $d" || echo "MISSING $d"; done
+# all six must say ok, otherwise nvbuild.sh stops with 'Directory "nvethernetrm" is not found'
+./nvbuild.sh && ./do_copy.sh    # kernel + DTBs into kernel_out/ (do NOT pass -i); && so the copy only runs after a good build
 cd ..
 ls -l "kernel/dtb/tegra234-j401-p3768-0000+p3767-0000-recomputer.dtb" \
       kernel/dtb/tegra234-dcb-p3767-0000-hdmi.dtbo \
@@ -68,7 +74,7 @@ ls -l "kernel/dtb/tegra234-j401-p3768-0000+p3767-0000-recomputer.dtb" \
 sudo ./tools/l4t_update_initrd.sh
 ```
 
-*Verify:* all four files exist. If `nvbuild.sh` fails on the toolchain (the r36 toolchain URL is the one Seeed's README uses), stop and tell me the error. If `do_copy.sh` does not produce the `recomputer.dtb`, stop.
+*Verify:* all four files exist (a pile of `cp: cannot stat` from `do_copy.sh` means the build stopped early, usually on a missing source tree). If `nvbuild.sh` fails on the toolchain (the r36 toolchain URL is the one Seeed's README uses), stop and tell me the error. If `do_copy.sh` does not produce the `recomputer.dtb`, stop.
 
 ## 5. Board in recovery mode, then a harmless dry run
 
