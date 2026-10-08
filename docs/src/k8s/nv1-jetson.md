@@ -6,7 +6,7 @@ nv1 (`192.168.48.5`) is a Jetson Orin NX 16 GB running Talos with a custom nvgpu
 
 The installer image in `provision/talos/patches/node/nv1/20-install-image.yaml` is the JetPack 7 build (`...-nvgpu39.2.1-jp7`: Jetson Linux r39.2, CUDA 13 driver, kernel modules from NVIDIA's r39.2.1 sources). The module list changed with it: `ivc_ext`, `tegra_hv` and `nvhwpm` are new, and `host1x_nvhost` loads before `host1x_fence` (files `28` to `38`). The board firmware (QSPI) was flashed to r39.2.0 with Seeed's `recomputer-orin-j401` package on 2026-10-08.
 
-- The libraries (`libcuda` and what it needs) come from the `nvidia-tegra-userspace` extension in the image at `/usr/local/lib/nvidia-tegra`, not from a download. The deployed `nvidia-cdi-setup` still downloads the JetPack 6 libraries, so it has to be switched to the r39 variant (`manifests/gpu/cdi-setup-r39.yaml` in the fork) when nv1 runs this image.
+- The libraries (`libcuda` and what it needs) come from the `nvidia-tegra-userspace` extension in the image at `/usr/local/lib/nvidia-tegra`, not from a download. `nvidia-cdi-setup` is the JetPack 7 variant: no download, it mounts `/usr/local/lib/nvidia-tegra` into GPU containers and injects the `host1x-*`/`nvhost-*` device nodes that exist. It does not work on the JetPack 6 image (to roll back, revert this together with the installer image).
 - After the upgrade the Jetson UEFI can keep booting the old UKI; see `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade").
 - Rollback: the previous image was `ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu5.13.0-drm-noshim`. The r39 firmware also runs the JetPack 6 modules (seen on 2026-10-08).
 
