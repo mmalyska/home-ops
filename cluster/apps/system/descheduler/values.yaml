@@ -1,0 +1,60 @@
+descheduler:
+  # Deployment, not the CronJob default: one long-lived pod keeps its logs and exposes metrics
+  kind: Deployment
+  deschedulingInterval: 10m
+
+  # DRY RUN: only logs what it would evict ("Evicted pod in dry run mode"). Remove dry-run to let it evict, after a
+  # few days of reading the log
+  cmdOptions:
+    v: 4
+    dry-run: true
+
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  service:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+
+  deschedulerPolicy:
+    profiles:
+      - name: default
+        pluginConfig:
+          - name: DefaultEvictor
+            args:
+              # evict only when the pod would fit on another node (taints, affinity, resources): nv1 is tainted for
+              # GPU work and must not count as free room
+              nodeFit: true
+              podProtections:
+                defaultDisabled:
+                  - PodsWithLocalStorage
+                extraEnabled:
+                  # keeps CNPG, Ceph and every other pod with a volume where it is
+                  - PodsWithPVC
+          - name: RemoveDuplicates
+          - name: RemovePodsViolatingInterPodAntiAffinity
+          - name: RemovePodsViolatingTopologySpreadConstraint
+          - name: LowNodeUtilization
+            args:
+              thresholds:
+                cpu: 30
+                memory: 30
+                pods: 30
+              targetThresholds:
+                cpu: 50
+                memory: 50
+                pods: 50
+        plugins:
+          balance:
+            enabled:
+              - RemoveDuplicates
+              - RemovePodsViolatingTopologySpreadConstraint
+              - LowNodeUtilization
+          deschedule:
+            enabled:
+              - RemovePodsViolatingInterPodAntiAffinity
