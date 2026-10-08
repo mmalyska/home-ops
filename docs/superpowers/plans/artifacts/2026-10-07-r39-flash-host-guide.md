@@ -89,7 +89,8 @@ lsusb | grep -i nvidia      # must show one NVIDIA device in APX/recovery mode
 Dry run, builds the flash package and reads the module's identity, writes nothing to the board:
 
 ```sh
-sudo ./tools/kernel_flash/l4t_initrd_flash.sh \
+sudo rm -rf tools/kernel_flash/images      # drop any package generated without --qspi-only
+sudo ./tools/kernel_flash/l4t_initrd_flash.sh --qspi-only \
   -p "-c bootloader/generic/cfg/flash_t234_qspi.xml --no-systemimg" \
   --no-flash --showlogs --network usb0 recomputer-orin-j401 external 2>&1 | tee ~/r39/dryrun.log
 ```
@@ -97,19 +98,19 @@ sudo ./tools/kernel_flash/l4t_initrd_flash.sh \
 *Verify in `dryrun.log`:*
 - the DTB it picks is `tegra234-j401-p3768-0000+p3767-0000-recomputer.dtb`
 - `tegra234-carveouts.dtbo` is in the overlay list (nvgpu and nvmap need its `reserved-memory`)
-- it mentions only the SPI layout `flash_t234_qspi.xml`, no `nvme0n1p1` and no external device
+- **no external (NVMe) images are generated**: `ls tools/kernel_flash/images` shows no `external` directory, and the log has no `Generate image for external storage devices`, no `flash_l4t_nvme.xml` and no `system.img`/`esp.img`. Without `--qspi-only` the tool adds a default `--external-device nvme0n1p1 -c flash_l4t_nvme.xml` and builds GPT, ESP and rootfs images for the NVMe (seen in the first dry run on 2026-10-08); a plain `--flash-only` would then **repartition and overwrite the NVMe**. `--qspi-only` makes both the image generation and the on-device flash skip the external device.
 - no `Error`
 
 Send me `dryrun.log` (or the relevant lines) before continuing.
 
-Do **not** run the README's command with `--external-device nvme0n1p1 … internal`: that writes the NVMe.
+Do **not** run the README's command with `--external-device nvme0n1p1 … internal`: that writes the NVMe. **Always pass `--qspi-only`** (in the dry run and in the flash), see the check above.
 
 ## 6. Flash the QSPI
 
 Keep the board in recovery mode and do not touch the cable.
 
 ```sh
-sudo ./tools/kernel_flash/l4t_initrd_flash.sh \
+sudo ./tools/kernel_flash/l4t_initrd_flash.sh --qspi-only \
   -p "-c bootloader/generic/cfg/flash_t234_qspi.xml --no-systemimg" \
   --flash-only --showlogs --network usb0 recomputer-orin-j401 external 2>&1 | tee ~/r39/flash.log
 ```
