@@ -257,6 +257,15 @@ rook-ceph-cluster:
             limits:
               memory: "2G"
           priorityClassName: system-cluster-critical
+          # Rook sets no placement for the MDS: both daemons (active and standby) once landed on the same node, so losing
+          # that node took CephFS down. One per node.
+          placement:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app: rook-ceph-mds
+                  topologyKey: kubernetes.io/hostname
       storageClass:
         enabled: true
         isDefault: false

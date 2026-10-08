@@ -12,6 +12,18 @@ spec:
     kubernetes:
       envoyDeployment:
         replicas: 2
+        pod:
+          # both gateways share this EnvoyProxy: spread each gateway's own replicas over the nodes, so one node
+          # loss never takes out a whole gateway (matchLabelKeys keeps envoy-internal and envoy-external apart)
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: envoy
+              matchLabelKeys:
+                - gateway.envoyproxy.io/owning-gateway-name
         container:
           imageRepository: mirror.gcr.io/envoyproxy/envoy
           resources:
