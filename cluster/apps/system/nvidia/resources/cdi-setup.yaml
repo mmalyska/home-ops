@@ -56,7 +56,15 @@ data:
     PKGS="nvidia-l4t-core:277a6fb25f2c06cc2dee6d352bef3abb15929739f396fea1cee70d1dea83008b
     nvidia-l4t-cuda-nvgpu:a70b1a731eaaf8a528428f1f8fe882ba5b06d670d8ffe28c338342fd195eb302
     nvidia-l4t-cuda:a8f65b17c3dc9cae34d77e3a3481b809a49443d83241d85d5fea36525af6ab51"
-    MARK="${DEST}/.l4t-${REL}"
+    # PTX JIT compiler: libcuda loads it for any kernel without native sm_87 code (stock Ollama,
+    # PyTorch and vLLM wheels). It is not in the L4T debs; the "common" component's CUDA
+    # compat package carries it. Only this one file is used, never that package's libcuda.
+    # 595.71.05 is the newest 595.x there; the node driver is 595.78.
+    PTX_BASE="${PTX_BASE:-https://repo.download.nvidia.com/jetson/common}"
+    PTX_VER="595.71.05"
+    PTX_DEB="cuda-compat-13-2_${PTX_VER}-1ubuntu1_arm64.deb"
+    PTX_SHA="c0ff7784c64be2896997d1a5a64f774d6f2d13f3a152e496eeb8400a6ce2cd88"
+    MARK="${DEST}/.l4t-${REL}-ptx${PTX_VER}"
     MIN_SIZE=50000000   # libcuda.so.1.1 is about 91 MB
 
     if [ -f "${MARK}" ] && \
@@ -80,6 +88,14 @@ data:
       dpkg-deb -x "${TMP}/${f}" "${TMP}/x-${p}"
     done
 
+    curl -fsSL --retry 3 -o "${TMP}/${PTX_DEB}" \
+      "${PTX_BASE}/pool/main/n/nvidia-graphics-drivers/${PTX_DEB}"
+    echo "${PTX_SHA}  ${TMP}/${PTX_DEB}" | sha256sum -c -
+    # Extract just the one library (the package unpacks to about 400 MB).
+    PTX_LIB="usr/local/cuda-13.2/compat/libnvidia-ptxjitcompiler.so.${PTX_VER}"
+    mkdir -p "${TMP}/x-ptx"
+    dpkg-deb --fsys-tarfile "${TMP}/${PTX_DEB}" | tar -xf - -C "${TMP}/x-ptx" "./${PTX_LIB}"
+
     NEW="${DEST}.new"
     rm -rf "${NEW}" && mkdir -p "${NEW}"
     NV=usr/lib/aarch64-linux-gnu/nvidia
@@ -92,13 +108,16 @@ data:
     for l in libnvcucompat libnvcuextend; do
       cp -L "${TMP}/x-nvidia-l4t-cuda/${NV}/${l}.so" "${NEW}/"
     done
+    cp -L "${TMP}/x-ptx/${PTX_LIB}" "${NEW}/"
+    ln -s "libnvidia-ptxjitcompiler.so.${PTX_VER}" "${NEW}/libnvidia-ptxjitcompiler.so.1"
     ln -s libcuda.so.1.1 "${NEW}/libcuda.so.1"
     ln -s libcuda.so.1 "${NEW}/libcuda.so"
-    touch "${NEW}/.l4t-${REL}"
+    touch "${NEW}/${MARK##*/}"
     rm -rf "${DEST}" && mv "${NEW}" "${DEST}"
 
     echo "Done. $(ls "${DEST}" | wc -l) files installed."
     echo "  libcuda.so.1.1 : $(stat -c%s "${DEST}/libcuda.so.1.1") bytes"
+    echo "  ptxjit         : $(stat -c%s "${DEST}/libnvidia-ptxjitcompiler.so.${PTX_VER}") bytes"
 
   # ── cdi-writer.sh ─────────────────────────────────────────────────────────
   # Runs in the long-lived container: sets up firmware, device
