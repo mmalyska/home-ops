@@ -1,6 +1,5 @@
 server:
-  # TEMPORARY (JetPack 7.2 Ollama benchmark): 0 frees the only GPU; revert right after.
-  replicaCount: 0
+  replicaCount: 1
   image:
     # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
     # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
