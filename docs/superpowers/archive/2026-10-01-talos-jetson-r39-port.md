@@ -1,6 +1,6 @@
 # Plan: port talos-jetson-orin to JetPack 7 (r39 / CUDA 13)
 
-Date: 2026-10-01. Status: Phases A to C done on 2026-10-08 except the soak (C5): QSPI flashed to r39.2.0, nv1 runs the r39 image, `cuInit` works and `llama-server` runs on the GPU (25.7 tok/s, GPU load about 95%, CPU fallback about 6 tok/s). Phase D: nv1 docs PR and this plan's archive remain. Research: `docs/superpowers/research/2026-10-01-jetpack7-nv1.md`.
+Date: 2026-10-01. Status: Phases A to C done on 2026-10-08 except the soak (C5): QSPI flashed to r39.2.0, nv1 runs the r39 image, `cuInit` works and `llama-server` runs on the GPU (25.7 tok/s, GPU load about 95%, CPU fallback about 6 tok/s). Phase D done 2026-10-10 (archived; upstream PR #65 is open, follow-up in `.plans/TODO.md`). nv1 also moved to the runtime-download userspace libraries the same day (no `nvidia-tegra-userspace` extension on the node). Research: `docs/superpowers/research/2026-10-01-jetpack7-nv1.md`.
 
 ## Goal
 
@@ -60,8 +60,8 @@ Exit gate for phase A: signed r39 module set builds in CI from a clean checkout.
 
 ### Phase D: finish
 
-- [ ] D1. Update the fork README and `docs/jetpack7.md` (versions, supported boards/DTB notes, flash steps).
-- [ ] D2. Open an upstream PR or issue to `schwankner/talos-jetson-orin` (upstream issue about r39 was drafted but not posted; the token could not create issues there).
+- [x] D1. (done 2026-10-10: the fork's `docs/jetpack7.md` was rewritten for the upstream PR on `pr/jetpack7-r39`) Update the fork README and `docs/jetpack7.md` (versions, supported boards/DTB notes, flash steps).
+- [x] D2. (issue `schwankner/talos-jetson-orin#64` posted 2026-10-09; the draft PR `schwankner/talos-jetson-orin#65` from `pr/jetpack7-r39` was opened 2026-10-10; review follow-up is tracked in `.plans/TODO.md`) Open an upstream PR or issue to `schwankner/talos-jetson-orin` (upstream issue about r39 was drafted but not posted; the token could not create issues there).
 - [x] D3. (done 2026-10-10 in #5592 (installer and modules), #5593, #5594, #5595 (CDI and firmware sync), #5596 and #5610 (docs), and the TODO update; the userspace libraries move to a runtime download later) In home-ops: bump the installer image in `provision/talos/patches/node/nv1/20-install-image.yaml` and replace the kernel-module files `31-kmod-*` to `38-kmod-*` (one `KernelModuleConfig` per module, load order is the file order) with the r39 list from A6 (adds `ivc_ext`, `tegra_hv`, `nvhwpm`), regenerate `docs/src/talos/config-map.md` with `task talos:config-map`, switch GPU images to CUDA 13 where wanted, update `docs/src/k8s/nv1-jetson.md` and `.plans/TODO.md`, archive this plan.
 
 ## Risks
