@@ -6,7 +6,9 @@
   },
   "includeCoAuthoredBy": false,
   "attribution": {
-    "sessionUrl": false
+    "sessionUrl": false,
+    "commit": "",
+    "pr": ""
   },
   "permissions": {
     "allow": [
