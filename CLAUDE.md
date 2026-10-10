@@ -98,3 +98,4 @@ Future memory edits go to `.claude/memory/` directly and get committed on the br
 - **Never commit secrets** — no credentials, tokens, or API keys in any tracked file; gitleaks will block the commit.
 - **Never mutate cluster state** (kubectl apply/delete, ArgoCD sync, Talos apply) without explicit user confirmation — ask first.
 - **Never push to `main` directly** — all changes via PR; branch naming: `feat/`, `fix/`, `chore/` prefixes.
+- **No Claude attribution** — no co-author trailers, session URLs or "generated with" footers in commits or PR bodies. Enforced by the `no-claude-attribution` commit-msg hook and the `no-claude-attribution` CI workflow; keep `attribution` in `.claude/settings.json` set to empty.
