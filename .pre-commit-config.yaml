@@ -1,5 +1,6 @@
 ---
 fail_fast: false
+default_install_hook_types: [pre-commit, commit-msg]
 exclude: |
   (?x)^(
       docs/_assets/.*
@@ -23,3 +24,11 @@ repos:
     rev: v8.30.1
     hooks:
       - id: gitleaks
+  - repo: local
+    hooks:
+      - id: no-claude-attribution
+        name: no Claude attribution in commit message
+        description: Reject Claude Code co-author, session URL and "generated with" lines. Mirrors .github/workflows/no-claude-attribution.yaml.
+        language: pygrep
+        entry: '(?i)(noreply@anthropic\.com|claude\.ai/code/session|^Claude-Session:|Generated with \[Claude|^Co-Authored-By:\s*Claude)'
+        stages: [commit-msg]

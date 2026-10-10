@@ -1,0 +1,50 @@
+---
+name: No Claude attribution
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - main
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: No Claude attribution
+    # Renovate bodies quote upstream release notes, which may legitimately mention Claude Code
+    if: github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Check PR body and commit messages
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # keep in sync with the no-claude-attribution hook in .pre-commit-config.yaml
+          PATTERN: '(noreply@anthropic\.com|claude\.ai/code/session|^Claude-Session:|Generated with \[Claude|^Co-Authored-By:[[:space:]]*Claude)'
+        run: |
+          status=0
+          if printf '%s\n' "$PR_BODY" | grep -qiE "$PATTERN"; then
+            echo "::error title=Claude attribution::PR body contains a Claude attribution line"
+            printf '%s\n' "$PR_BODY" | grep -niE "$PATTERN"
+            status=1
+          fi
+          for sha in $(git rev-list "$BASE_SHA..$HEAD_SHA"); do
+            if git show -s --format=%B "$sha" | grep -qiE "$PATTERN"; then
+              echo "::error title=Claude attribution::commit $sha contains a Claude attribution line"
+              git show -s --format=%B "$sha" | grep -niE "$PATTERN"
+              status=1
+            fi
+          done
+          exit $status
