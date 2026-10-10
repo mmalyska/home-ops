@@ -5,6 +5,9 @@
     "MAX_THINKING_TOKENS": "10000"
   },
   "includeCoAuthoredBy": false,
+  "attribution": {
+    "sessionUrl": false
+  },
   "permissions": {
     "allow": [
       "Bash(kubectl get *)",
