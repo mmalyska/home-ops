@@ -3,11 +3,10 @@ descheduler:
   kind: Deployment
   deschedulingInterval: 10m
 
-  # DRY RUN: only logs what it would evict ("Evicted pod in dry run mode"). Remove dry-run to let it evict, after a
-  # few days of reading the log
+  # Live since the dry run showed only small stateless apps moving, never an excluded namespace or a PVC pod. To go back
+  # to log-only, add `dry-run: true` here ("Evicted pod in dry run mode" lines in the log)
   cmdOptions:
     v: 4
-    dry-run: true
 
   resources:
     requests:
