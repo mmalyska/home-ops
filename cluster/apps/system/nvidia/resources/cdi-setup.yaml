@@ -4,11 +4,12 @@
 # JetPack 7 version of the previous JetPack 6 setup (taken from mmalyska/talos-jetson-orin manifests/gpu/cdi-setup-r39.yaml,
 # docs/jetpack7.md there). Differences from the JetPack 6 one:
 #
-#   1. No library download. libcuda and the NVIDIA runtime libraries it needs (libnvrm_gpu,
-#      libnvrm_mem, libnvsciipc, ...) come inside the node image as the nvidia-tegra-userspace
-#      system extension (scripts/build-r39-userspace.sh) and appear on the host under
-#      /usr/local/lib/nvidia-tegra. The r39 packages are not in NVIDIA's apt repository, and
-#      the BSP tarball they live in is 1.3 GB, so a per-node download is not an option.
+#   1. Libraries come from NVIDIA's apt repository, component "som" (not "t234", which does
+#      not exist for r39): nvidia-l4t-core, nvidia-l4t-cuda-nvgpu and nvidia-l4t-cuda, about
+#      26 MB. The restore-libs init container downloads the three debs once per version,
+#      verifies their SHA-256 and copies the libcuda closure to
+#      /var/lib/nvidia-tegra-libs/tegra. Only the GA10B firmware (nvidia-firmware-ext
+#      extension) is part of the node image.
 #
 #   2. More device nodes. The r39 libraries also open /dev/host1x-fence (host1x-fence.ko) and
 #      the /dev/nvhost-* and /dev/host1x-* nodes that exist; every char device found is injected.
@@ -21,8 +22,7 @@
 #   4. Writes /var/run/cdi/nvidia-jetson.yaml (spec generated dynamically from the device nodes
 #      that actually exist) and keeps it alive across tmpfs resets.
 #
-# Only for nv1 running the JetPack 7 node image (custom-installer ...-nvgpu39.2.1-jp7). On the JetPack 6 image it has no
-# libraries to mount (/usr/local/lib/nvidia-tegra does not exist).
+# Only for nv1 running the JetPack 7 node image (custom-installer ...-nvgpu39.2.1-jp7).
 ---
 apiVersion: v1
 kind: Namespace
@@ -40,6 +40,66 @@ metadata:
   name: nvidia-cdi-setup-scripts
   namespace: nvidia-system
 data:
+  # ── restore-libs.sh ───────────────────────────────────────────────────────
+  # Downloads the r39 userspace libraries libcuda needs from NVIDIA's apt repository
+  # (component "som") into /var/lib/nvidia-tegra-libs/tegra if missing or of another version.
+  # The package versions and SHA-256 sums are pinned (taken from
+  # https://repo.download.nvidia.com/jetson/som/dists/r39.2/main/binary-arm64/Packages);
+  # CI (.github/workflows/check-r39-userspace.yaml) runs this very script and checks that the
+  # result is the complete closure of libcuda.so.1. DEST and APT_BASE can be overridden.
+  restore-libs.sh: |
+    #!/bin/sh
+    set -eu
+    DEST="${DEST:-/nvidia-libs/tegra}"
+    APT_BASE="${APT_BASE:-https://repo.download.nvidia.com/jetson/som}"
+    REL="39.2.1-20260806224157"
+    PKGS="nvidia-l4t-core:277a6fb25f2c06cc2dee6d352bef3abb15929739f396fea1cee70d1dea83008b
+    nvidia-l4t-cuda-nvgpu:a70b1a731eaaf8a528428f1f8fe882ba5b06d670d8ffe28c338342fd195eb302
+    nvidia-l4t-cuda:a8f65b17c3dc9cae34d77e3a3481b809a49443d83241d85d5fea36525af6ab51"
+    MARK="${DEST}/.l4t-${REL}"
+    MIN_SIZE=50000000   # libcuda.so.1.1 is about 91 MB
+
+    if [ -f "${MARK}" ] && \
+       [ "$(stat -c%s "${DEST}/libcuda.so.1.1" 2>/dev/null || echo 0)" -gt "${MIN_SIZE}" ]; then
+      echo "JetPack r39 libs ${REL} already present ($(ls "${DEST}" | wc -l) files). Skipping."
+      exit 0
+    fi
+
+    echo "JetPack r39 libs ${REL} missing or stale, installing from ${APT_BASE}..."
+    if ! command -v curl >/dev/null 2>&1; then
+      apt-get update -qq && apt-get install -y -qq curl ca-certificates
+    fi
+
+    TMP="$(mktemp -d)"
+    trap 'rm -rf "${TMP}"' EXIT
+    for e in ${PKGS}; do
+      p="${e%%:*}"; sha="${e##*:}"
+      f="${p}_${REL}_arm64.deb"
+      curl -fsSL --retry 3 -o "${TMP}/${f}" "${APT_BASE}/pool/main/n/${p}/${f}"
+      echo "${sha}  ${TMP}/${f}" | sha256sum -c -
+      dpkg-deb -x "${TMP}/${f}" "${TMP}/x-${p}"
+    done
+
+    NEW="${DEST}.new"
+    rm -rf "${NEW}" && mkdir -p "${NEW}"
+    NV=usr/lib/aarch64-linux-gnu/nvidia
+    for l in libnvos libnvrm_chip libnvrm_gpu libnvrm_host1x libnvrm_mem libnvrm_sync \
+             libnvsciipc libnvsocsys libnvtegrahv; do
+      cp -L "${TMP}/x-nvidia-l4t-core/${NV}/${l}.so" "${NEW}/"
+    done
+    cp -L "${TMP}/x-nvidia-l4t-cuda-nvgpu/opt/nvidia/l4t-gpu-libs/nvgpu/libcuda.so.1.1" "${NEW}/"
+    # libcuda dlopen()s these two at cuInit; without libnvcucompat.so cuInit returns 999
+    for l in libnvcucompat libnvcuextend; do
+      cp -L "${TMP}/x-nvidia-l4t-cuda/${NV}/${l}.so" "${NEW}/"
+    done
+    ln -s libcuda.so.1.1 "${NEW}/libcuda.so.1"
+    ln -s libcuda.so.1 "${NEW}/libcuda.so"
+    touch "${NEW}/.l4t-${REL}"
+    rm -rf "${DEST}" && mv "${NEW}" "${DEST}"
+
+    echo "Done. $(ls "${DEST}" | wc -l) files installed."
+    echo "  libcuda.so.1.1 : $(stat -c%s "${DEST}/libcuda.so.1.1") bytes"
+
   # ── cdi-writer.sh ─────────────────────────────────────────────────────────
   # Runs in the long-lived container: sets up firmware, device
   # permissions, and writes the CDI spec.  Loops every 60 s to regenerate the
@@ -99,9 +159,9 @@ data:
           printf '        - path: /dev/dri/renderD128\n          permissions: rw\n'
         fi
         echo '      mounts:'
-        echo '        # Bind-mount the JetPack r39 library directory shipped by the nvidia-tegra-userspace'
-        echo '        # system extension (libcuda and the libraries it needs).'
-        echo '        - hostPath: /usr/local/lib/nvidia-tegra'
+        echo '        # Bind-mount the JetPack r39 library directory written by the restore-libs'
+        echo '        # init container (libcuda and the libraries it needs).'
+        echo '        - hostPath: /var/lib/nvidia-tegra-libs/tegra'
         echo '          containerPath: /usr/lib/aarch64-linux-gnu/nvidia'
         echo '          options: [ro, bind]'
         echo '      env:'
@@ -189,7 +249,20 @@ spec:
       priorityClassName: system-node-critical
       hostPID: true
 
-      # Firmware + device setup + CDI spec (the libraries come with the node image)
+      # ── Step 1: fetch the JetPack r39 libs (once per version) ───────────
+      initContainers:
+        - name: restore-libs
+          image: ubuntu:22.04@sha256:30dfd7fe96f97c5f5ddf388ce8d098aa509644ad68fdef67244fb71b8169ffcb
+          command: ["/bin/sh", "/scripts/restore-libs.sh"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: nvidia-libs
+              mountPath: /nvidia-libs
+            - name: scripts
+              mountPath: /scripts
+
+      # ── Step 2: firmware + device setup + CDI spec ──────────────────────
       containers:
         - name: cdi-writer
           image: busybox:1.38@sha256:365a051f12e05767b598e643676f14a450fb678a75ccf2beb0052c95d5c73b83
@@ -219,6 +292,10 @@ spec:
               mountPath: /scripts
 
       volumes:
+        - name: nvidia-libs
+          hostPath:
+            path: /var/lib/nvidia-tegra-libs
+            type: DirectoryOrCreate
         - name: dev
           hostPath:
             path: /dev
