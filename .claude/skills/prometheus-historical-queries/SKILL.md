@@ -47,3 +47,13 @@ Then compare that snapshot against the current instant query (no `?time=`).
 ## When to Use
 Any time you need "now vs N days ago" comparisons in Prometheus.
 Prefer this over range functions when the metric has resets or sparse coverage.
+
+## Gotcha: group by a stable label, expect gaps in instant samples
+
+- Series identity is the full label set. `instance` (pod IP:port) and `pod` change when an exporter pod restarts, so the same
+  disk appears as several series. Group by a label that survives restarts: `max by (node, device) (...)` for the smartctl
+  exporter (`node` comes from the ServiceMonitor relabeling).
+- An instant `?time=` sample can land exactly in a scrape gap (a short hole existed on 2026-10-09 for every node) and return
+  nothing for some series. If a node is missing, retry at a few hours either side or use `query_range` (`step=3600`) before
+  concluding there is no history.
+- Per-node deltas over days: `query_range` of `max by (node, device) (metric)` and subtract the first value from the last.
