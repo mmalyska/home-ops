@@ -28,7 +28,8 @@
 - [Talos taints need manual kubectl on registered nodes](reference_talos_taint_noderestriction.md) — NodeRestriction blocks workers changing taints after registration (official, no Talos fix); kubectl taint as admin, then Talos adopts; steps in the talos-node-taints skill
 - [Talos workload isolation (sandboxd)](reference_talos_workload_isolation.md) — on for all four nodes since 2026-10-07; the v1.14 contract bump would turn it on by default (guarded); switching needs a node reboot
 - [llama-server nv1 memory budget](reference_llama_server_nv1_memory.md) — default cache/checkpoints OOM the node; 12Gi limit kills pod; thinking off by default
-- [Jetson llama.cpp CUDA tag](reference_jetson_llama_cuda_tag.md) — NVIDIA latest* tags are CUDA 13 and silently run on CPU; use pinned cu126
+- [nv1 CUDA image rules](reference_jetson_llama_cuda_tag.md) — JetPack 7 runs CUDA 13; builds without native sm_87 code need libnvidia-ptxjitcompiler (in the CDI libs since #5630)
+- [nv1 GPU test needs llama-server paused](reference_nv1_gpu_test_pause.md) — one GPU; pause via git replicaCount 0 (selfHeal reverts a scale), 30-40 min, critical alert after 10
 - [nv1 META DHCP key](reference_nv1_meta_dhcp.md) — Talos META 0x0a DHCP operator flapped IP, restarted kubelet, GPU dropped to 0
 - [Uncased BERT embeddings](reference_uncased_bert_embeddings.md) — llama-server lowercases nomic-embed-text, Ollama does not; no re-embed needed
 - [Hermes 64K context floor](reference_hermes_64k_context_floor.md) — Hermes rejects models <64K context; llama-server slots are 32K so main model + compression stay cloud
