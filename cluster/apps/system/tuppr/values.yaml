@@ -1,0 +1,12 @@
+tuppr:
+  monitoring:
+    serviceMonitor:
+      enabled: true
+    prometheusRule:
+      enabled: true
+    dashboards:
+      enabled: true
+  silences:
+    enabled: true
+    alertmanager:
+      address: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093

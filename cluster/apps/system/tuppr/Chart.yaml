@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: tuppr-subchart
+type: application
+version: 1.0.0
+appVersion: "0.5.7"
+dependencies:
+  - name: tuppr
+    version: 0.5.7
+    repository: oci://ghcr.io/home-operations/charts
