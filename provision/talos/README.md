@@ -163,13 +163,14 @@ nv1 has its own installer image (a custom build tagged like the other nodes' Fac
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 installer:
-  image: ghcr.io/mmalyska/custom-installer:${TALOS_VERSION}
+  image: ghcr.io/mmalyska/custom-installer-jp7:${TALOS_VERSION}
 provisioning:
   diskSelector:
     match: disk.dev_path == "/dev/nvme0n1"
 ```
 
-The repo uses the plain Talos version as the tag (`custom-installer:v1.14.2`). It is an alias that the fork
+The repo uses the plain Talos version as the tag (`custom-installer-jp7:v1.14.2`; the JetPack 7 installer has its own
+repository, r36 stays `custom-installer`). It is an alias that the fork
 `mmalyska/talos-jetson-orin` pushes next to the compound tag of the same image,
 `v<talos>-<kernel>-nvgpu<version>-<jetpack>` (for example `v1.14.2-6.18.54-nvgpu39.2.1-jp7`), so the tag follows
 `TALOS_VERSION` like the Factory image of the other nodes and tuppr can patch the live image to the same tag. The

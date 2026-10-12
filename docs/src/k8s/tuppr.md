@@ -29,7 +29,7 @@ behaviour taken from tuppr's source, not observed here.
 - **Order:** the node that runs the tuppr controller first, then by name (mc1, mc2, mc3), nv1 last (the controller cannot
   schedule on nv1).
 - **Pre-pull:** at the start of a run, before anything is cordoned, tuppr checks the installer image of every pending
-  node (for nv1 the alias tag `ghcr.io/mmalyska/custom-installer:v<talos>`) and pre-pulls it. A missing image holds the
+  node (for nv1 the alias tag `ghcr.io/mmalyska/custom-installer-jp7:v<talos>`) and pre-pulls it. A missing image holds the
   whole run: it parks as `Pending` with reason `PrePullFailed` and a 1 to 5 minute backoff, so mc1 to mc3 are held too and
   nothing is cordoned. `WaitingForImage` is the per-batch registry check.
 - **Drain:** with `policy.waitForVolumeDetach: true` tuppr drains the node itself: cordon, evict respecting PDBs, wait
@@ -130,25 +130,26 @@ Kubernetes is held at `<=1.35` in `.github/renovate/allowedVersions.json5`.
 ## nv1 and the alias tag
 
 nv1 runs our own Jetson installer. tuppr uses the node's install image with the tag swapped to the target version and
-patches the live config to it, so git holds the plain alias tag `ghcr.io/mmalyska/custom-installer:v<talos>`
+patches the live config to it, so git holds the plain alias tag `ghcr.io/mmalyska/custom-installer-jp7:v<talos>`
 (`provision/talos/patches/node/nv1/20-install-image.yaml.tpl`), not the compound `v<talos>-<kernel>-nvgpu...` tag.
-The fork `mmalyska/talos-jetson-orin` pushes that alias tag (same digest as the compound tag) next to the compound
-tag, and it must stay public. The kernel and nvgpu part stay in the fork's release notes. A change of the kernel or
+The JetPack 7 installer has its own repository `custom-installer-jp7` (the r36 line stays in `custom-installer`). The
+fork `mmalyska/talos-jetson-orin` pushes that alias tag (same digest as the compound tag) next to the compound
+tag, and the package must stay public. The kernel and nvgpu part stay in the fork's release notes. A change of the kernel or
 nvgpu part is built in the fork first and its alias re-pointed.
 
-**Prerequisite, not done yet:** the fork does not push the alias tag yet. On 2026-10-12 the public tag list of
-`ghcr.io/mmalyska/custom-installer` has only compound tags (latest `v1.14.2-6.18.54-nvgpu39.2.1-jp7`) and no plain
-`v1.14.2`. The change is the fork PR `mmalyska/talos-jetson-orin#11` (the release workflow also pushes the alias for
-tag pushes and runs on the default branch). After it is merged, re-run `Build USB Image` for the current Talos version
-so the alias for `v1.14.2` exists; a retag by hand is not possible (no registry write token outside CI). Until then,
-any bump parks the whole run as `Pending` / `PrePullFailed` (the run-start pre-pull covers every pending node, so mc1
+**Prerequisite, not done yet:** nothing is published to `custom-installer-jp7` yet. The fork change lives on branch
+`pr/jetpack7-r39` of `mmalyska/talos-jetson-orin` (the head of the upstream draft PR `schwankner/talos-jetson-orin#65`;
+the earlier fork PR #11 is superseded). It gives each JetPack line its own repository and pushes the alias tag. A
+publish has to be dispatched from that branch (`jetpack=both` or `r39`) so that `custom-installer-jp7:v1.14.2` exists;
+a retag by hand is not possible (no registry write token outside CI). The new ghcr package must be made public after
+the first publish, because nv1 pulls anonymously. Until then, any bump parks the whole run as `Pending` / `PrePullFailed` (the run-start pre-pull covers every pending node, so mc1
 to mc3 are held too).
 Verify before the first run, and before the nv1 install image is applied to the node:
 
 ```sh
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'https://ghcr.io/token?scope=repository:mmalyska/custom-installer:pull' | jq -r .token)" \
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'https://ghcr.io/token?scope=repository:mmalyska/custom-installer-jp7:pull' | jq -r .token)" \
   -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
-  https://ghcr.io/v2/mmalyska/custom-installer/manifests/v1.14.2   # 200 = alias exists
+  https://ghcr.io/v2/mmalyska/custom-installer-jp7/manifests/v1.14.2   # 200 = alias exists
 ```
 
 Upstreaming the alias tag change to `schwankner/talos-jetson-orin` is tracked in `.plans/TODO.md`.

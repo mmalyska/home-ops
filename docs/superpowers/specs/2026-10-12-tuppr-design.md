@@ -41,7 +41,7 @@ excluded it), and the health gate also covers running backups.
 
 | Decision | Choice | Why |
 | --- | --- | --- |
-| nv1 | Git holds the alias tag `ghcr.io/mmalyska/custom-installer:${TALOS_VERSION}` (a `.yaml.tpl`), pushed by the fork next to the compound tag | tuppr patches nv1's live install image to the alias tag, so a compound tag in git would leave `task talos:diff` dirty; the alias makes nv1 an ordinary node. The kernel and nvgpu part stay in the fork's release notes |
+| nv1 | Git holds the alias tag `ghcr.io/mmalyska/custom-installer-jp7:${TALOS_VERSION}` (a `.yaml.tpl`), pushed by the fork next to the compound tag | tuppr patches nv1's live install image to the alias tag, so a compound tag in git would leave `task talos:diff` dirty; the alias makes nv1 an ordinary node. The kernel and nvgpu part stay in the fork's release notes |
 | First rollout | CRs committed with `tuppr.home-operations.com/suspend: "true"`; a PR removing it is the go | Declarative, visible in git, no fight with ArgoCD `selfHeal` |
 | Autonomy afterwards | A second PR removes the annotation for good | The user's call: gated first, then fully automatic |
 | Health gate | CEL checks, no pre-hooks | Pre-hooks would suppress the inter-batch checks |
@@ -114,7 +114,7 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
   (`ghcr.io/siderolabs/kubelet`). `separateMajorMinor` and `separateMinorPatch` so each PR is one hop.
 - Two Renovate groups: Talos moves the `TalosUpgrade` version and `TALOS_VERSION`, Kubernetes moves the
   `KubernetesUpgrade` version and `KUBERNETES_VERSION` (both in `.taskfiles/talos/Taskfile.yaml`), each in one PR. nv1's installer image in git is the alias tag
-  `ghcr.io/mmalyska/custom-installer:${TALOS_VERSION}` (a `.yaml.tpl`, like the control-plane document), because tuppr
+  `ghcr.io/mmalyska/custom-installer-jp7:${TALOS_VERSION}` (a `.yaml.tpl`, like the control-plane document), because tuppr
   patches nv1's live install image to the alias tag and a compound tag in git would leave `task talos:diff` dirty. The alias
   is a tag that the fork re-points for a Talos version; the kernel and nvgpu part stay in the fork's release notes.
 - Why drift is transient: the PR changes the rendered install image in git, then tuppr patches the live install image to the
@@ -126,8 +126,9 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
 
 ### 6. nv1 prerequisite (outside this repo)
 
-`mmalyska/talos-jetson-orin`: the installer build workflow also pushes `custom-installer:v<talos>` for the same image
-(a second tag, same digest). It must stay public (nv1 pulls anonymously, see `node/nv1/20-install-image.yaml.tpl`).
+`mmalyska/talos-jetson-orin`, branch `pr/jetpack7-r39` (head of upstream draft PR `schwankner/talos-jetson-orin#65`): each JetPack
+line has its own repository (`custom-installer` for r36, `custom-installer-jp7` for r39), and the release workflow also pushes
+`custom-installer-jp7:v<talos>` for the same image (a second tag, same digest). The new package must be made public after the first publish and stay public (nv1 pulls anonymously, see `node/nv1/20-install-image.yaml.tpl`).
 **Follow-up:** offer the alias-tag change upstream to `schwankner/talos-jetson-orin`.
 
 ### 7. Observability, rollback, emergency stop
