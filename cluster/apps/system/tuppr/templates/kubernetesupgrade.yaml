@@ -3,8 +3,6 @@ kind: KubernetesUpgrade
 metadata:
   name: kubernetes
   annotations:
-    # Remove this annotation (in a PR) after the first clean Talos run. See docs/src/k8s/tuppr.md
-    tuppr.home-operations.com/suspend: "true"
     argocd.argoproj.io/sync-wave: "5"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:

@@ -2,11 +2,11 @@ tuppr:
   monitoring:
     serviceMonitor:
       enabled: true
-    # The chart rule TupprUpgradeBlocked (reason Suspended, for 30m, warning, routed to Discord) fires for every
-    # suspended CR, and both CRs are suspended in git. Re-enable this in the PR that unsuspends the
-    # KubernetesUpgrade (plan Task 11); until then the ServiceMonitor and the dashboards stay on.
+    # The chart rule TupprUpgradeBlocked (reason Waiting.* or Suspended, for 30m, warning, routed to Discord)
+    # fires for a suspended CR. Both CRs are unsuspended now, so the rules are on; suspending a CR again (to stop a
+    # run or hold an upgrade) pages after 30 minutes, which is intended.
     prometheusRule:
-      enabled: false
+      enabled: true
     dashboards:
       enabled: true
   silences:
