@@ -17,6 +17,11 @@ spec:
       - start: "0 7 * * 0"
         duration: 4h
         timezone: Europe/Warsaw
+      # One-off window (2026-10-12 17:00 to 20:00) so the first run, a no-op at the running version, completes
+      # today instead of next Sunday. Yearly cron on a fixed date; remove this entry after the first run.
+      - start: "0 17 12 10 *"
+        duration: 3h
+        timezone: Europe/Warsaw
   silences:
     - matchers:
         - name: alertname
