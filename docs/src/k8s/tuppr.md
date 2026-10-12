@@ -137,14 +137,15 @@ fork `mmalyska/talos-jetson-orin` pushes that alias tag (same digest as the comp
 tag, and the package must stay public. The kernel and nvgpu part stay in the fork's release notes. A change of the kernel or
 nvgpu part is built in the fork first and its alias re-pointed.
 
-**Prerequisite, not done yet:** nothing is published to `custom-installer-jp7` yet. The fork change lives on branch
-`pr/jetpack7-r39` of `mmalyska/talos-jetson-orin` (the head of the upstream draft PR `schwankner/talos-jetson-orin#65`;
-the earlier fork PR #11 is superseded). It gives each JetPack line its own repository and pushes the alias tag. A
-publish has to be dispatched from that branch (`jetpack=both` or `r39`) so that `custom-installer-jp7:v1.14.2` exists;
-a retag by hand is not possible (no registry write token outside CI). The new ghcr package must be made public after
-the first publish, because nv1 pulls anonymously. Until then, any bump parks the whole run as `Pending` / `PrePullFailed` (the run-start pre-pull covers every pending node, so mc1
-to mc3 are held too).
-Verify before the first run, and before the nv1 install image is applied to the node:
+**Done 2026-10-12:** the fork change lives on branch `pr/jetpack7-r39` of `mmalyska/talos-jetson-orin` (the head of the
+upstream draft PR `schwankner/talos-jetson-orin#65`; the earlier fork PR #11 is superseded). It gives each JetPack line
+its own repository and pushes the alias tag. The publish (run 38250608703 on commit 0193c66) succeeded and anonymous
+GETs return 200: `custom-installer-jp7:v1.14.2` is the same image as `:v1.14.2-6.18.54-nvgpu39.2.1-jp7`
+(`sha256:ce05b088dcb880975577d217454df6c7cdbc81af26d23376115d9a52105cfd34`), and the package is public. A retag by hand is not possible (no registry write token outside CI), so the alias
+is mutable and re-pointed by each publish. The jp7 installer is a fresh build; nothing has been applied to nv1 yet, so
+the first real bump installs it. If the alias is ever missing, any bump parks the whole run as `Pending` /
+`PrePullFailed` (the run-start pre-pull covers every pending node, so mc1 to mc3 are held too).
+Re-check before the first run, and before the nv1 install image is applied to the node:
 
 ```sh
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'https://ghcr.io/token?scope=repository:mmalyska/custom-installer-jp7:pull' | jq -r .token)" \
@@ -152,7 +153,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'ht
   https://ghcr.io/v2/mmalyska/custom-installer-jp7/manifests/v1.14.2   # 200 = alias exists
 ```
 
-A 404 means the alias tag is not published yet (dispatch the publish from `pr/jetpack7-r39`); a 401 or 403 means the
+A 404 means the alias tag is not published (dispatch the publish from `pr/jetpack7-r39`); a 401 or 403 means the
 package exists but is not public (make it public in the package settings).
 
 Upstreaming the alias tag change to `schwankner/talos-jetson-orin` is tracked in `.plans/TODO.md`.
