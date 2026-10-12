@@ -181,9 +181,18 @@ nv1's install image is applied only after the alias tag check above returns 200.
 
 ## The first run
 
-With every node already on the version in the CRs, unsuspending is a no-op: the run ends `Completed` with 0 nodes and no
-`HealthChecks` events. It proves only the Talos API access (GetNodeVersion, including nv1 through a control plane's
-`apid`); with no node pending, tuppr finishes before the health gate and the image pre-pull. Read-only precondition:
+With every node already on the version in the CRs, unsuspending is a no-op: the run ends `Completed` and no
+`HealthChecks` events are emitted. It proves only the Talos API access (GetNodeVersion, including nv1 through a control
+plane's `apid`); with no node pending, tuppr finishes before the health gate and the image pre-pull.
+
+**Observed 2026-10-12** (a one-off window was used so it did not wait for Sunday): the plan went `MaintenanceWindow` to
+`Completed` at the moment the window opened (`completedAt` 17:00 Warsaw), with `status.completedNodes: [mc1, mc2, mc3,
+nv1]` and the message "Successfully upgraded 4 nodes". That wording is misleading: `completedNodes` lists every node that
+was already at the target version. No upgrade Job was created, `prePulledNodes` stayed empty, no node was cordoned, node
+uptimes were unchanged (no reboot) and no events were emitted. The window is checked before anything else, so an
+unsuspend outside a window parks as `MaintenanceWindow` even when there is nothing to do.
+
+Read-only precondition:
 `talosctl version` per node and `kubectl get nodes -o wide` must show the CR's version everywhere, otherwise unsuspending
 is a real upgrade. The gate is first exercised by the first real patch bump: create a throwaway Job before the window
 opens, confirm the run waits with `HealthChecksFailed` naming the Jobs check, then delete the Job.
