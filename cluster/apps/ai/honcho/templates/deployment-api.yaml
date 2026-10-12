@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: honcho-api
+  annotations:
+    secret.reloader.stakater.com/reload: "honcho-secrets"
   namespace: honcho
 spec:
   replicas: 1

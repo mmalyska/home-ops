@@ -7,6 +7,8 @@ app-template:
       fsGroupChangePolicy: "OnRootMismatch"
   controllers:
     main:
+      annotations:
+        secret.reloader.stakater.com/reload: "zigbee2mqtt-secret"
       replicas: 1
       strategy: Recreate
       containers:

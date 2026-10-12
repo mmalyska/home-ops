@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: any-sync-coordinator
   namespace: {{ .Values.namespace }}
+  annotations:
+    secret.reloader.stakater.com/reload: "anytype-coordinator-config"
 spec:
   replicas: 1
   strategy:

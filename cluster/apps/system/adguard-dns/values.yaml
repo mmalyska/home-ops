@@ -1,4 +1,6 @@
 external-dns:
+  deploymentAnnotations:
+    secret.reloader.stakater.com/reload: "adguard-dns-secret"
   fullnameOverride: adguard-dns
   env:
     - name: DOMAIN_FILTER

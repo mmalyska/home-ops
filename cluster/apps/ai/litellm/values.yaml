@@ -1,4 +1,6 @@
 litellm-helm:
+  deploymentAnnotations:
+    secret.reloader.stakater.com/reload: "litellm-secrets"
   image:
     tag: main-latest
   ingress:

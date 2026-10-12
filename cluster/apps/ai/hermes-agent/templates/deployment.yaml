@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hermes-agent
+  annotations:
+    secret.reloader.stakater.com/reload: "hermes-agent-secrets"
   namespace: hermes-agent
 spec:
   replicas: {{ .Values.hermes.replicas }}

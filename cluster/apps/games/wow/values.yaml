@@ -12,6 +12,7 @@ controllers:
     replicas: 1
     annotations:
       argocd.argoproj.io/sync-wave: "4"
+      secret.reloader.stakater.com/reload: "wow-mysql-secret"
     containers:
       authserver:
         image:
@@ -36,6 +37,7 @@ controllers:
     replicas: 1
     annotations:
       argocd.argoproj.io/sync-wave: "4"
+      secret.reloader.stakater.com/reload: "wow-mysql-secret"
     initContainers:
       client-data:
         image:

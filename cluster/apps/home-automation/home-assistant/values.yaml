@@ -46,6 +46,8 @@ app-template:
       fsGroupChangePolicy: "OnRootMismatch"
   controllers:
     main:
+      annotations:
+        secret.reloader.stakater.com/reload: "home-assistant-secret"
       type: statefulset
       strategy: RollingUpdate
       replicas: 1
