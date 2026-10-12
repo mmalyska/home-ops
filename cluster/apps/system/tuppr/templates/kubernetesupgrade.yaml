@@ -1,0 +1,45 @@
+apiVersion: tuppr.home-operations.com/v1alpha1
+kind: KubernetesUpgrade
+metadata:
+  name: kubernetes
+  annotations:
+    # Remove this annotation (in a PR) after the first clean Talos run. See docs/src/k8s/tuppr.md
+    tuppr.home-operations.com/suspend: "true"
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  kubernetes:
+    # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+    version: v1.35.9
+  maintenance:
+    windows:
+      - start: "0 7 * * 0"
+        duration: 4h
+        timezone: Europe/Warsaw
+  healthChecks:
+    - apiVersion: v1
+      kind: Node
+      expr: status.conditions.exists(c, c.type == "Ready" && c.status == "True")
+      timeout: 10m
+    - apiVersion: ceph.rook.io/v1
+      kind: CephCluster
+      name: rook-ceph
+      namespace: rook-ceph
+      expr: status.ceph.health in ["HEALTH_OK"]
+      timeout: 30m
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      expr: status.conditions.exists(c, c.type == "Ready" && c.status == "True") && status.readyInstances == object.spec.instances
+      timeout: 30m
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Backup
+      expr: '!has(status.phase) || !(status.phase in ["started", "running", "finalizing"])'
+      timeout: 1h
+    - apiVersion: volsync.backube/v1alpha1
+      kind: ReplicationSource
+      expr: '!has(status.conditions) || !status.conditions.exists(c, c.type == "Synchronizing" && c.status == "True")'
+      timeout: 1h
+    - apiVersion: batch/v1
+      kind: Job
+      expr: "!has(status.active) || status.active == 0"
+      timeout: 1h

@@ -53,7 +53,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | KubeTalosAPIAccessConfig |  |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup and tuppr namespaces call the Talos API (os:etcd:backup and os:admin roles) | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -109,7 +109,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | KubeTalosAPIAccessConfig |  |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup and tuppr namespaces call the Talos API (os:etcd:backup and os:admin roles) | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -165,7 +165,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup namespace call the Talos API with the os:etcd:backup role | live | KubeTalosAPIAccessConfig |  |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup and tuppr namespaces call the Talos API (os:etcd:backup and os:admin roles) | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -211,7 +211,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/worker/30-node-taints.yaml` | Taint workers nvidia.com/gpu=present:NoSchedule | live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it) | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/worker/96-pki-legacy-delete.yaml` | Remove the cluster.ca field that talosctl gen config adds | live | cluster.ca |  |
 | `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network |  |
-| `provision/talos/patches/node/nv1/20-install-image.yaml` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/worker/05-install-image.yaml.tpl |
+| `provision/talos/patches/node/nv1/20-install-image.yaml.tpl` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/worker/05-install-image.yaml.tpl |
 | `provision/talos/patches/node/nv1/28-kmod-ivc-ext.yaml` | Kernel module ivc_ext | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/ivc_ext |  |
 | `provision/talos/patches/node/nv1/29-kmod-tegra-hv.yaml` | Kernel module tegra_hv | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/tegra_hv |  |
 | `provision/talos/patches/node/nv1/30-kmod-host1x.yaml` | Kernel module host1x | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/host1x |  |

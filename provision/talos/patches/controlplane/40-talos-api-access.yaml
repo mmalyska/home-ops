@@ -1,10 +1,16 @@
-# What:   Let the talos-backup namespace call the Talos API with the os:etcd:backup role
-# Why:    talos-backup takes etcd snapshots through the Kubernetes-to-Talos API bridge. The document enables the bridge by existing
+# What:   Let the talos-backup and tuppr namespaces call the Talos API (os:etcd:backup and os:admin roles)
+# Why:    talos-backup takes etcd snapshots and tuppr upgrades nodes through the Kubernetes-to-Talos API bridge. The document
+#         enables the bridge by existing. It has one roles list and one namespaces list; talos-backup only gains os:admin if its
+#         ServiceAccount's roles change (today os:etcd:backup only). Secret tuppr/tuppr-talosconfig now holds an os:admin Talos
+#         credential and tuppr's ClusterRole can read every Secret and create Jobs, so any principal that can read Secrets in the
+#         tuppr namespace (or all Secrets) reaches full Talos control of the control planes
 # Nodes:  control plane
 # Apply:  live
 apiVersion: v1alpha1
 kind: KubeTalosAPIAccessConfig
 allowedRoles:
   - os:etcd:backup
+  - os:admin
 allowedKubernetesNamespaces:
   - talos-backup
+  - tuppr

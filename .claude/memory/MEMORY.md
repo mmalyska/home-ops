@@ -38,3 +38,4 @@
 - [Check live IPs before assigning one](feedback_check_live_ips_before_assigning.md) — list live LB IPs + pools first; update the network.md table in the same PR
 - [CoreDNS/Argo bootstrap deadlock](reference_coredns_argo_bootstrap_deadlock.md) — deleting coredns kills Argo's DNS; create the app before deleting
 - [Talos live config + apply health quirk](reference_talos_live_config_yq_spec.md) — yq needs two passes on .spec; task talos:apply health step fails on cp nodes after a good apply
+- [tuppr upgrades](reference_tuppr_upgrades.md) — os:admin credential in tuppr's Secret, pre-hooks suppress inter-batch checks, Failed terminal until reset, nv1 alias tag and run-wide PrePullFailed

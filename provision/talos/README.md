@@ -87,7 +87,11 @@ Apply config with reboot:
 task talos:apply:restart N=mc1
 ```
 
-Upgrade Talos on all nodes (a node is only considered done when it runs the expected version):
+Upgrades are normally rolled out by tuppr (`cluster/apps/system/tuppr`, runbook in `docs/src/k8s/tuppr.md`): merging a
+Talos or Kubernetes version bump starts a one-node-at-a-time run behind a health gate. **Do not `task talos:apply` while a
+`TalosUpgrade` is running**; `task talos:diff` differs from git until the run ends. `task talos:upgrade` and
+`task talos:upgrade:all` are the manual fallback (suspend the `TalosUpgrade` first). A node is only considered done when
+it runs the expected version:
 
 ```bash
 task talos:upgrade:all
@@ -144,28 +148,36 @@ Examples:
 3. Add a per-node install image only if the node needs its own installer (see below). A per-node `UnattendedInstallConfig` patch must repeat `provisioning.diskSelector.match` (a node with another disk needs its own selector); see "Install settings and reinstalling a node".
 4. `scripts/check-patches.sh`, then `task talos:generate`.
 
-### Nodes on a non-default Talos version
+### Nodes with their own installer image
 
 There is no per-node `talosVersion` key. A node's expected version is **derived from the tag of the install image**
 in its rendered config (`scripts/expected-version.sh`): a Factory image tag such as `v1.14.2` is the version, and a
-custom installer tag such as `v1.14.2-6.18.54-nvgpu39.2.1-jp7` yields its leading Talos version, `v1.14.2`.
+compound custom installer tag such as `v1.14.2-6.18.54-nvgpu39.2.1-jp7` yields its leading Talos version, `v1.14.2`.
 `task talos:upgrade N=<name>` (and `task talos:upgrade:all`) compares the node's running version with that and fails
 when the node comes back on something else.
 
-nv1 has such an image. It lives in `patches/node/nv1/20-install-image.yaml`:
+nv1 has its own installer image (a custom build tagged like the other nodes' Factory images, so it follows
+`TALOS_VERSION`). It lives in `patches/node/nv1/20-install-image.yaml.tpl`:
 
 ```yaml
 apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 installer:
-  image: ghcr.io/mmalyska/custom-installer:v1.14.2-6.18.54-nvgpu39.2.1-jp7
+  image: ghcr.io/mmalyska/custom-installer-jp7:${TALOS_VERSION}
 provisioning:
   diskSelector:
     match: disk.dev_path == "/dev/nvme0n1"
 ```
 
-To move such a node to a new Talos version, bump the tag in that file, nothing else. **Confirm a matching custom
-installer exists first.** nv1's GPU kernel modules (`host1x`, `tegra_drm`, `nvgpu`, …) are ABI-bound to the exact
+The repo uses the plain Talos version as the tag (`custom-installer-jp7:v1.14.2`; the JetPack 7 installer has its own
+repository, r36 stays `custom-installer`). It is an alias that the fork
+`mmalyska/talos-jetson-orin` pushes next to the compound tag of the same image,
+`v<talos>-<kernel>-nvgpu<version>-<jetpack>` (for example `v1.14.2-6.18.54-nvgpu39.2.1-jp7`), so the tag follows
+`TALOS_VERSION` like the Factory image of the other nodes and tuppr can patch the live image to the same tag. The
+compound tag is still how to find out which kernel and nvgpu build the alias points at.
+
+To move such a node to a new Talos version, bump `TALOS_VERSION`, nothing else. **Confirm a matching custom
+installer exists first**, that is, the alias tag `v<new talos>` was pushed by the fork. nv1's GPU kernel modules (`host1x`, `tegra_drm`, `nvgpu`, …) are ABI-bound to the exact
 kernel build in that image, and Talos loads them during the boot sequence before starting services, so a mismatched
 image can leave the node with networking up but `apid` never starting: reachable at the TCP level, unmanageable, and
 fixable only over the console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
@@ -182,7 +194,8 @@ The Jetson UEFI does not persist the sd-boot default entry the installer sets
 The persisted `LoaderEntryDefault` keeps naming an old UKI, sd-boot honours it
 while that file exists, and the node reboots into the old version. `talosctl
 upgrade` and `talosctl health` both still succeed. `task talos:upgrade` now
-fails with `ERROR: nv1 runs vX, expected vY` when this happens. **Do not re-run
+fails with `ERROR: nv1 runs vX, expected vY` when this happens (the expected version is the alias tag,
+`TALOS_VERSION`; the same applies when tuppr does the upgrade: it patches the image to the alias tag). **Do not re-run
 the upgrade**, it repeats the same thing. The 1.13 -> 1.14 upgrade hit this.
 
 Check what sd-boot sees and what it picked:
