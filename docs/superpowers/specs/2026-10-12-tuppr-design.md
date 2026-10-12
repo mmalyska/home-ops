@@ -40,7 +40,7 @@ excluded it), and the health gate also covers running backups.
 
 | Decision | Choice | Why |
 | --- | --- | --- |
-| nv1 | Plain alias tag `ghcr.io/mmalyska/custom-installer:v<talos>` pushed next to the compound tag | tuppr swaps the tag for the plain version, so the alias makes nv1 an ordinary node. The compound tag stays the audit trail |
+| nv1 | Git holds the alias tag `ghcr.io/mmalyska/custom-installer:${TALOS_VERSION}` (a `.yaml.tpl`), pushed by the fork next to the compound tag | tuppr patches nv1's live install image to the alias tag, so a compound tag in git would leave `task talos:diff` dirty; the alias makes nv1 an ordinary node. The kernel and nvgpu part stay in the fork's release notes |
 | First rollout | CRs committed with `tuppr.home-operations.com/suspend: "true"`; a PR removing it is the go | Declarative, visible in git, no fight with ArgoCD `selfHeal` |
 | Autonomy afterwards | A second PR removes the annotation for good | The user's call: gated first, then fully automatic |
 | Health gate | CEL checks, no pre-hooks | Pre-hooks would suppress the inter-batch checks |
@@ -64,8 +64,9 @@ excluded it), and the health gate also covers running backups.
 ### 2. Talos API access
 
 `provision/talos/patches/controlplane/40-talos-api-access.yaml` (`KubeTalosAPIAccessConfig`) gains `os:admin` and
-`tuppr` under `allowedRoles` and `allowedKubernetesNamespaces`. Live apply, no reboot. The header lines are updated. The
-`os:admin` role is granted to the `tuppr` namespace only, and the namespace is not shared with another app.
+`tuppr` under `allowedRoles` and `allowedKubernetesNamespaces`. Live apply, no reboot. The header lines are updated.
+`KubeTalosAPIAccessConfig` is one document with one roles list and one namespaces list, so `talos-backup` gains `os:admin`
+as well; accepted, the namespace holds only the backup CronJobs.
 
 **Verify on the cluster (plan task):** the document is control-plane only here. tuppr's docs say to apply the setting to
 every node; confirm that the upgrade Job reaches nv1 through the control plane's `apid` and that nv1 needs no copy.
@@ -73,13 +74,13 @@ every node; confirm that the upgrade Job reaches nv1 through the control plane's
 ### 3. Upgrade plans
 
 - `TalosUpgrade/cluster`, no `nodeSelector`, so mc1, mc2, mc3 and nv1, one at a time (`parallelism: 1`).
-  **Verify (plan task):** the node order tuppr uses. If it can put nv1 before a control plane, split into two plans
-  (control plane first, nv1 second; plans queue).
+  tuppr sorts nodes by name and puts the node running its own controller first, so nv1 is always last (the controller
+  cannot schedule on nv1: it tolerates only control-plane and critical-addon taints). One plan is enough.
 - `policy`: `waitForVolumeDetach: true` (Ceph RBD), `timeout: 30m`, `drainTimeout` raised so the CNPG primary switchover fits.
   `prePull` stays on.
 - `KubernetesUpgrade/kubernetes`: same health checks. `task talos:upgrade:k8s` stays the manual route.
 - Both CRs: annotation `tuppr.home-operations.com/suspend: "true"` until the first-run PR.
-- `maintenance.windows`: one weekly window clear of the backup schedules, for example Sunday 08:00 for 4h in the cluster's
+- `maintenance.windows`: one weekly window clear of the backup schedules, for example Sunday 07:00 for 4h (ends 11:00, clear of the 12:00 syncs) in the cluster's
   timezone. VolSync syncs fire at 00:20-00:45, 02:00-03:00 and every 6h on the hour and last under 2 minutes; the exact slot
   is confirmed against `kubectl get replicationsources -A` when the plan is written.
 
@@ -107,17 +108,20 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
 - `renovate:` comments on `spec.talos.version` (`ghcr.io/siderolabs/talos`) and `spec.kubernetes.version`
   (`ghcr.io/siderolabs/kubelet`). `separateMajorMinor` and `separateMinorPatch` so each PR is one hop.
 - One Renovate group moves, in one PR: the `TalosUpgrade` version, `TALOS_VERSION` and `KUBERNETES_VERSION` in
-  `.taskfiles/talos/Taskfile.yaml`, and the nv1 compound tag in `provision/talos/patches/node/nv1/20-install-image.yaml`.
+  `.taskfiles/talos/Taskfile.yaml`. nv1's installer image in git is the alias tag
+  `ghcr.io/mmalyska/custom-installer:${TALOS_VERSION}` (a `.yaml.tpl`, like the control-plane document), because tuppr
+  patches nv1's live install image to the alias tag and a compound tag in git would leave `task talos:diff` dirty. The alias
+  is a tag that the fork re-points for a Talos version; the kernel and nvgpu part stay in the fork's release notes.
 - Why drift is transient: the PR changes the rendered install image in git, then tuppr patches the live install image to the
   same value. Between the merge and the end of the run `task talos:diff` shows the difference; do not `task talos:apply`
   during a run. After the run the diff must be clean (success criterion).
 - A bump merged before nv1's installer exists is safe: the pre-check parks the run as `WaitingForImage`. A PR that moves
-  the compound tag's kernel or nvgpu part is built first, in the fork.
+  the kernel or nvgpu part is built first, in the fork, and its alias tag re-pointed.
 
 ### 6. nv1 prerequisite (outside this repo)
 
 `mmalyska/talos-jetson-orin`: the installer build workflow also pushes `custom-installer:v<talos>` for the same image
-(a second tag, same digest). It must stay public (nv1 pulls anonymously, see `node/nv1/20-install-image.yaml`).
+(a second tag, same digest). It must stay public (nv1 pulls anonymously, see `node/nv1/20-install-image.yaml.tpl`).
 **Follow-up:** offer the alias-tag change upstream to `schwankner/talos-jetson-orin`.
 
 ### 7. Observability, rollback, emergency stop
@@ -150,5 +154,5 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
 | tuppr does not enforce the minor-by-minor path | Renovate groups one hop per PR; the version in git is reviewed |
 | nv1 boots a stale UKI after an upgrade (Jetson UEFI) | tuppr's version check fails the node; the existing procedure in `provision/talos/README.md` applies |
 | A bump merges while a backup runs | The gate waits; the window avoids the schedules |
-| `os:admin` for a namespace | Only `tuppr`; the namespace holds only the controller; RBAC reviewed in the chart |
+| `os:admin` for a namespace | `talos-backup` shares the document's roles list and gains it too (accepted: its namespace holds only the backup CronJobs); `tuppr` holds only the controller; RBAC reviewed in the chart |
 | AGPL-3.0 | Used unmodified as a service; no change to the repo's licence |
