@@ -106,7 +106,7 @@ for n in $(yq '.nodes[].name' "$SCRIPTS/../nodes.yaml"); do
   assert_eq "false" "$(yq 'select(.machine != null) | (.machine.features // {}) | has("kubernetesTalosAPIAccess")' "$TMP/$n.yaml")" "$n has no legacy kubernetesTalosAPIAccess"
   assert_ok "$n output is a valid metal config (a legacy field left next to its document fails here)" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
-assert_eq "os:etcd:backup|talos-backup" "$(yq 'select(.kind == "KubeTalosAPIAccessConfig") | (.allowedRoles | join(",")) + "|" + (.allowedKubernetesNamespaces | join(","))' "$TMP/mc1.yaml")" "a control plane lets the talos-backup namespace use the etcd backup role"
+assert_eq "os:etcd:backup,os:admin|talos-backup,tuppr" "$(yq 'select(.kind == "KubeTalosAPIAccessConfig") | (.allowedRoles | join(",")) + "|" + (.allowedKubernetesNamespaces | join(","))' "$TMP/mc1.yaml")" "a control plane lets the talos-backup and tuppr namespaces use the etcd backup and admin roles"
 assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: KubeTalosAPIAccessConfig" "a worker has no Talos API access document"
 
 echo "-- filesystem trim on every node"
