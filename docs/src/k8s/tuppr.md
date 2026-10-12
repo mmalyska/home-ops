@@ -138,8 +138,11 @@ nvgpu part is built in the fork first and its alias re-pointed.
 
 **Prerequisite, not done yet:** the fork does not push the alias tag yet. On 2026-10-12 the public tag list of
 `ghcr.io/mmalyska/custom-installer` has only compound tags (latest `v1.14.2-6.18.54-nvgpu39.2.1-jp7`) and no plain
-`v1.14.2`. Until the fork workflow is changed and the alias for the current version is backfilled, any bump parks the
-whole run as `Pending` / `PrePullFailed` (the run-start pre-pull covers every pending node, so mc1 to mc3 are held too).
+`v1.14.2`. The change is the fork PR `mmalyska/talos-jetson-orin#11` (the release workflow also pushes the alias for
+tag pushes and runs on the default branch). After it is merged, re-run `Build USB Image` for the current Talos version
+so the alias for `v1.14.2` exists; a retag by hand is not possible (no registry write token outside CI). Until then,
+any bump parks the whole run as `Pending` / `PrePullFailed` (the run-start pre-pull covers every pending node, so mc1
+to mc3 are held too).
 Verify before the first run, and before the nv1 install image is applied to the node:
 
 ```sh
