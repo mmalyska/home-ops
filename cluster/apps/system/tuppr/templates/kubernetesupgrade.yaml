@@ -14,6 +14,11 @@ spec:
       - start: "0 7 * * 0"
         duration: 4h
         timezone: Europe/Warsaw
+      # One-off window (2026-10-12 21:50 to 00:50) for the first real run, the 1.35.9 to 1.36.5 minor upgrade,
+      # watched live instead of waiting for Sunday. Yearly cron on a fixed date; remove this entry afterwards.
+      - start: "50 21 12 10 *"
+        duration: 3h
+        timezone: Europe/Warsaw
   healthChecks:
     - apiVersion: v1
       kind: Node
