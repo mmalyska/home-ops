@@ -152,6 +152,9 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'ht
   https://ghcr.io/v2/mmalyska/custom-installer-jp7/manifests/v1.14.2   # 200 = alias exists
 ```
 
+A 404 means the alias tag is not published yet (dispatch the publish from `pr/jetpack7-r39`); a 401 or 403 means the
+package exists but is not public (make it public in the package settings).
+
 Upstreaming the alias tag change to `schwankner/talos-jetson-orin` is tracked in `.plans/TODO.md`.
 
 ## Talos API access
