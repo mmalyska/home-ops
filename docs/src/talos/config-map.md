@@ -49,7 +49,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/26-apiserver-authorizer-rbac.yaml` | kube-apiserver authorizer 2 of 2: RBAC | live (the kube-apiserver static pod restarts) | KubeAuthorizerConfig/rbac |  |
 | `provision/talos/patches/controlplane/30-controller-manager.yaml.tpl` | kube-controller-manager listens on all addresses | live (the static pod restarts) | KubeControllerManagerConfig |  |
 | `provision/talos/patches/controlplane/31-scheduler.yaml.tpl` | kube-scheduler listens on all addresses | live (the static pod restarts) | KubeSchedulerConfig |  |
-| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | KubeProxyConfig |  |
+| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml.tpl` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
@@ -105,7 +105,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/26-apiserver-authorizer-rbac.yaml` | kube-apiserver authorizer 2 of 2: RBAC | live (the kube-apiserver static pod restarts) | KubeAuthorizerConfig/rbac |  |
 | `provision/talos/patches/controlplane/30-controller-manager.yaml.tpl` | kube-controller-manager listens on all addresses | live (the static pod restarts) | KubeControllerManagerConfig |  |
 | `provision/talos/patches/controlplane/31-scheduler.yaml.tpl` | kube-scheduler listens on all addresses | live (the static pod restarts) | KubeSchedulerConfig |  |
-| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | KubeProxyConfig |  |
+| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml.tpl` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
@@ -161,7 +161,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/26-apiserver-authorizer-rbac.yaml` | kube-apiserver authorizer 2 of 2: RBAC | live (the kube-apiserver static pod restarts) | KubeAuthorizerConfig/rbac |  |
 | `provision/talos/patches/controlplane/30-controller-manager.yaml.tpl` | kube-controller-manager listens on all addresses | live (the static pod restarts) | KubeControllerManagerConfig |  |
 | `provision/talos/patches/controlplane/31-scheduler.yaml.tpl` | kube-scheduler listens on all addresses | live (the static pod restarts) | KubeSchedulerConfig |  |
-| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml` | kube-proxy is not deployed | live | KubeProxyConfig |  |
+| `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml.tpl` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/35-control-plane-legacy-delete.yaml` | Remove the cluster.controllerManager and cluster.scheduler blocks that talosctl gen config adds | live | cluster.controllerManager cluster.scheduler |  |
 | `provision/talos/patches/controlplane/36-proxy-legacy-delete.yaml` | Remove the cluster.proxy block that talosctl gen config adds | live | cluster.proxy |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |

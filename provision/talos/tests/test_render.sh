@@ -35,6 +35,7 @@ assert_eq "key2|secretbox identity" "$(yq 'select(.kind == "KubeEtcdEncryptionCo
 assert_eq "$TALHELPER_AESCBCENCYPTIONKEY" "$(yq 'select(.kind == "KubeEtcdEncryptionConfig") | .config.resources[0].providers[0].secretbox.keys[0].secret' "$TMP/mc1.yaml")" "the etcd encryption secret is the bundle's secretbox secret"
 assert_eq "node rbac" "$(yq 'select(.kind == "KubeAuthorizerConfig") | .name' "$TMP/mc1.yaml" | grep -v '^---' | tr '\n' ' ' | sed 's/ $//')" "the API server authorizers are node then rbac"
 assert_eq "kube-system" "$(yq 'select(.kind == "KubeAdmissionControlConfig") | .configuration.exemptions.namespaces[]' "$TMP/mc1.yaml")" "kube-system is exempt from PodSecurity"
+assert_eq "false|registry.k8s.io/kube-proxy:v1.35.9" "$(yq 'select(.kind == "KubeProxyConfig") | (.enabled | tostring) + "|" + .image' "$TMP/mc1.yaml")" "kube-proxy stays disabled and its image follows KUBERNETES_VERSION (talosctl upgrade-k8s writes it into the live document, so git must carry it to keep talos:diff clean)"
 assert_not_contains "$out" "kind: HostnameConfig" "the generated HostnameConfig document is removed"
 assert_not_contains "$out" 'exclude-from-external-load-balancers' "the generated load-balancer exclusion label is removed"
 assert_not_contains "$out" '${' "no unexpanded variable is left"
