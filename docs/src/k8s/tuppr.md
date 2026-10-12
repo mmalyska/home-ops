@@ -19,10 +19,10 @@ The behaviour described here that is not marked "to be confirmed" comes from rea
 from a run in this cluster.
 
 **State:** both CRs are unsuspended in git. `TalosUpgrade/cluster` was unsuspended on 2026-10-12 and ran as a no-op at
-the running version (see "The first run" below). `KubernetesUpgrade/kubernetes` is unsuspended the same way: every
-kubelet already runs the CR's version, so its first run is also a no-op, and it parks as `MaintenanceWindow` until the
-next Sunday 07:00 window. No real upgrade has happened yet: the health gate, the installer pre-pull, the drain and the
-nv1 image swap are first exercised by the first real bump. The chart's `PrometheusRule` is on again (`values.yaml`);
+the running version (see "The first run" below). `KubernetesUpgrade/kubernetes` ran the first real upgrade on
+2026-10-12, Kubernetes 1.35.9 to 1.36.5 (see "The first real upgrade" below). Still not exercised: the installer
+pre-pull, the drain, the node reboot and the nv1 image swap; they come with the first Talos bump (a Kubernetes upgrade
+reboots nothing). The chart's `PrometheusRule` is on again (`values.yaml`);
 `TupprUpgradeBlocked` (reason `Waiting.*` or `Suspended`, for 30m, warning, routed to Discord) fires if a CR is
 suspended again, which is intended. Anything below marked "to be confirmed on the first run" is expected behaviour taken
 from tuppr's source, not observed here.
@@ -195,8 +195,29 @@ unsuspend outside a window parks as `MaintenanceWindow` even when there is nothi
 
 Read-only precondition:
 `talosctl version` per node and `kubectl get nodes -o wide` must show the CR's version everywhere, otherwise unsuspending
-is a real upgrade. The gate is first exercised by the first real patch bump: create a throwaway Job before the window
-opens, confirm the run waits with `HealthChecksFailed` naming the Jobs check, then delete the Job.
+is a real upgrade.
+
+## The first real upgrade
+
+**Observed 2026-10-12, Kubernetes 1.35.9 to 1.36.5** (a one-off window was used so it could be watched live; it has been
+removed again):
+
+- **Gate test:** a throwaway Job (`sleep 1800`, namespace `tuppr`) was created before the window opened. The window
+  opened at 21:50 and tuppr emitted `HealthChecksStarted`. While the Job was active there was no `HealthChecksPassed`
+  and nothing moved. The Job was deleted at 21:52:20 and `HealthChecksPassed` followed 11 seconds later, then
+  `UpgradeStarted`. **No `HealthChecksFailed` event is emitted while the gate waits**: tuppr blocks inside the check
+  (up to the largest per-check timeout, 1h) and the phase stays at its previous value until the wait returns. The
+  signal for "the gate is holding" is `HealthChecksStarted` without a `Passed`, then `Passed` once the blocker is gone.
+  Create the Job before the window opens, otherwise the first evaluation can pass before it exists.
+- **Rollout:** control plane components first (kube-apiserver on mc1, mc2, mc3 in turn; one API blip of about 20 s while
+  the last one restarted), then the kubelets; `Completed: Cluster successfully upgraded to v1.36.5` at 21:58, about six
+  minutes after the window opened. One upgrade Job (`kubernetes-mc1-...`) ran in the `tuppr` namespace; no node rebooted.
+- **Drift:** `talosctl upgrade-k8s` also writes `image: registry.k8s.io/kube-proxy:<version>` into the live
+  `KubeProxyConfig` of the control planes, although kube-proxy is disabled. The repo did not carry it, so `task
+talos:diff` showed that one line on mc1 to mc3. `controlplane/32-kube-proxy-disabled.yaml.tpl` now pins the image from
+  `KUBERNETES_VERSION`, and the diff is clean on all four nodes.
+- **During the rollout:** do not `task talos:apply` any node: the rendered configs already pin the target images.
+  `task talos:diff` shows drift until the run completes.
 
 ## When things go wrong
 
