@@ -148,7 +148,7 @@ Examples:
 3. Add a per-node install image only if the node needs its own installer (see below). A per-node `UnattendedInstallConfig` patch must repeat `provisioning.diskSelector.match` (a node with another disk needs its own selector); see "Install settings and reinstalling a node".
 4. `scripts/check-patches.sh`, then `task talos:generate`.
 
-### Nodes on a non-default Talos version
+### Nodes with their own installer image
 
 There is no per-node `talosVersion` key. A node's expected version is **derived from the tag of the install image**
 in its rendered config (`scripts/expected-version.sh`): a Factory image tag such as `v1.14.2` is the version, and a
@@ -156,7 +156,8 @@ compound custom installer tag such as `v1.14.2-6.18.54-nvgpu39.2.1-jp7` yields i
 `task talos:upgrade N=<name>` (and `task talos:upgrade:all`) compares the node's running version with that and fails
 when the node comes back on something else.
 
-nv1 has such an image. It lives in `patches/node/nv1/20-install-image.yaml.tpl`:
+nv1 has its own installer image (a custom build tagged like the other nodes' Factory images, so it follows
+`TALOS_VERSION`). It lives in `patches/node/nv1/20-install-image.yaml.tpl`:
 
 ```yaml
 apiVersion: v1alpha1

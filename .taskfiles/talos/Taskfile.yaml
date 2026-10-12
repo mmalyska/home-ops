@@ -228,8 +228,10 @@ tasks:
       NODE_TALOS_VERSION:
         sh: "{{.TALOS_DIR}}/scripts/expected-version.sh {{.FILE}}"
     preconditions:
-      # A config rendered before a TALOS_VERSION bump would make the node look up to date.
-      - sh: 'case "{{.TALOS_IMAGE}}" in *factory.talos.dev*:{{.TALOS_VERSION}}) ;; *factory.talos.dev*) exit 1 ;; esac'
+      # A config rendered before a TALOS_VERSION bump would make the node look up to date. Factory images
+      # carry the version as the tag; nv1's custom installer carries it as the plain alias tag, or as the
+      # leading part of a compound tag (v<talos>-<kernel>-nvgpu...).
+      - sh: 'case "{{.TALOS_IMAGE}}" in *factory.talos.dev*:{{.TALOS_VERSION}}|*/custom-installer:{{.TALOS_VERSION}}|*/custom-installer:{{.TALOS_VERSION}}-*) ;; *factory.talos.dev*|*/custom-installer:*) exit 1 ;; esac'
         msg: "{{.FILE}} was rendered for another Talos version than {{.TALOS_VERSION}}, run task talos:generate first"
     status:
       - $([ "{{ .FORCE }}" = "false" ] && talosctl version --nodes {{ .NODE }} --short | grep -q 'Tag.*{{ .NODE_TALOS_VERSION }}' || return 1)
