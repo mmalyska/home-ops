@@ -19,16 +19,19 @@ The behaviour described here that is not marked "to be confirmed" comes from rea
 from a run in this cluster.
 
 **State until the first run:** both CRs are committed with `tuppr.home-operations.com/suspend: "true"`, so nothing
-starts. The first run has not happened yet. Anything below marked "to be confirmed on the first run" is expected
+starts. The first run has not happened yet. The chart's `PrometheusRule` is off for now (`values.yaml`): its
+`TupprUpgradeBlocked` alert (reason `Suspended`, for 30m, warning, routed to Discord) would fire for every suspended CR.
+It is re-enabled in the PR that unsuspends the `KubernetesUpgrade`; the ServiceMonitor and dashboards are on. Anything below marked "to be confirmed on the first run" is expected
 behaviour taken from tuppr's source, not observed here.
 
 ## How a run goes
 
 - **Order:** the node that runs the tuppr controller first, then by name (mc1, mc2, mc3), nv1 last (the controller cannot
   schedule on nv1).
-- **Pre-pull:** before anything is cordoned tuppr checks that the installer image of every node exists (for nv1 the
-  alias tag `ghcr.io/mmalyska/custom-installer:v<talos>`) and pre-pulls it. A missing image parks the run as
-  `WaitingForImage`; nothing is cordoned.
+- **Pre-pull:** at the start of a run, before anything is cordoned, tuppr checks the installer image of every pending
+  node (for nv1 the alias tag `ghcr.io/mmalyska/custom-installer:v<talos>`) and pre-pulls it. A missing image holds the
+  whole run: it parks as `Pending` with reason `PrePullFailed` and a 1 to 5 minute backoff, so mc1 to mc3 are held too and
+  nothing is cordoned. `WaitingForImage` is the per-batch registry check.
 - **Drain:** with `policy.waitForVolumeDetach: true` tuppr drains the node itself: cordon, evict respecting PDBs, wait
   for the pods to terminate, then up to 2 minutes best-effort for CSI volume detach. The upgrade Job then runs with
   talosctl's own drain disabled. The drain timeout is hardcoded to 10 minutes (the CR's `drainTimeout` is not used and
@@ -91,12 +94,18 @@ kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%
 
 The value is any new string (the annotation is a trigger); to be confirmed on the first run.
 
-Emergency stop (unverified what this does to a run in progress: a running upgrade Job or an already-cordoned node may
-be affected, and a cordoned node has to be uncordoned by hand):
+Emergency stop (from tuppr 0.5.7 source): while a run waits on the health gate (up to 1h, blocking), a suspend
+annotation set during the wait is ignored if the gate then passes, because the same reconcile drains the node and creates
+the Job. In that case stop the controller:
 
 ```sh
 kubectl scale deployment tuppr -n tuppr --replicas=0
 ```
+
+What this does to a run already past the gate is unverified: a running upgrade Job or an already-cordoned node may be
+affected, and a cordoned node has to be uncordoned by hand. While the controller is down its webhook (`failurePolicy:
+Fail`) rejects edits to the tuppr CRs (from tuppr 0.5.7 source), so `kubectl annotate ... suspend` fails: scale the
+controller back up first, or delete the webhook configuration only with the owner's approval.
 
 ArgoCD `selfHeal` is expected to scale it back up (to be confirmed on the first run). If it does, `--replicas=0` is
 only a short stop; the durable stop is a PR that sets the suspend annotations (or disables the app).
@@ -129,8 +138,9 @@ nvgpu part is built in the fork first and its alias re-pointed.
 
 **Prerequisite, not done yet:** the fork does not push the alias tag yet. On 2026-10-12 the public tag list of
 `ghcr.io/mmalyska/custom-installer` has only compound tags (latest `v1.14.2-6.18.54-nvgpu39.2.1-jp7`) and no plain
-`v1.14.2`. Until the fork workflow is changed and the alias for the current version is backfilled, an nv1 upgrade parks
-as `WaitingForImage`. mc1 to mc3 do not need it. Verify before the first run:
+`v1.14.2`. Until the fork workflow is changed and the alias for the current version is backfilled, any bump parks the
+whole run as `Pending` / `PrePullFailed` (the run-start pre-pull covers every pending node, so mc1 to mc3 are held too).
+Verify before the first run, and before the nv1 install image is applied to the node:
 
 ```sh
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'https://ghcr.io/token?scope=repository:mmalyska/custom-installer:pull' | jq -r .token)" \
@@ -144,14 +154,36 @@ Upstreaming the alias tag change to `schwankner/talos-jetson-orin` is tracked in
 
 The upgrade Job and talosctl reach Talos through the `KubeTalosAPIAccessConfig` in
 `provision/talos/patches/controlplane/40-talos-api-access.yaml`, which lists `os:admin` and the `tuppr` namespace. The
-document has one roles list and one namespaces list, so `talos-backup` also gets `os:admin`. Whether nv1 needs a copy of
-the document (the upgrade Job reaches it through the control plane's `apid`) is to be confirmed on the first run.
+document has one roles list and one namespaces list; the `talos-backup` namespace only gains `os:admin` if its Talos
+ServiceAccount's roles change (today it requests `os:etcd:backup` only).
+
+The point to take from this: Secret `tuppr/tuppr-talosconfig` now holds an `os:admin` Talos credential, and tuppr's
+ClusterRole can read every Secret cluster-wide and create Jobs. Any principal that can read Secrets in the `tuppr`
+namespace (or read all Secrets) reaches full Talos control of the control planes.
+
+Whether nv1 needs a copy of the document (the upgrade Job reaches it through a control plane's `apid`) is to be confirmed
+on the first run; the no-op first run proves it (see "The first run").
+
+**Order:** the document must be live before the PR that installs the controller is merged. The controller mounts Secret
+`tuppr-talosconfig`, which Talos creates only once the document allows `tuppr` / `os:admin`, and the webhook has
+`failurePolicy: Fail`. Apply from the branch checkout (`task talos:generate`, then `task talos:apply` per control plane).
+nv1's install image is applied only after the alias tag check above returns 200.
+
+## The first run
+
+With every node already on the version in the CRs, unsuspending is a no-op: the run ends `Completed` with 0 nodes and no
+`HealthChecks` events. It proves only the Talos API access (GetNodeVersion, including nv1 through a control plane's
+`apid`); with no node pending, tuppr finishes before the health gate and the image pre-pull. Read-only precondition:
+`talosctl version` per node and `kubectl get nodes -o wide` must show the CR's version everywhere, otherwise unsuspending
+is a real upgrade. The gate is first exercised by the first real patch bump: create a throwaway Job before the window
+opens, confirm the run waits with `HealthChecksFailed` naming the Jobs check, then delete the Job.
 
 ## When things go wrong
 
-- **`WaitingForImage`:** the installer image of some node is not served by the registry. Check the tag (for nv1 the
-  alias tag, see above). The run is expected to resume by itself once the image exists (to be confirmed on the first run); nothing was
-  cordoned.
+- **`Pending` / `PrePullFailed`, or `WaitingForImage`:** the installer image of a node is not served by the registry
+  (`PrePullFailed` is the run-start pre-pull of every pending node, `WaitingForImage` the per-batch check). Check the tag
+  (for nv1 the alias tag, see above). The run is expected to resume by itself once the image exists (to be confirmed on
+  the first run); nothing was cordoned.
 - **`MaintenanceWindow`:** parked between nodes; expected to resume at the next window (to be confirmed on the first run). Remove the window from the CR only in
   git.
 - **`Failed`:** terminal. Read the controller logs and the node state, fix the cause, then annotate with `reset` (or

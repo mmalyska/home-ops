@@ -27,8 +27,9 @@ excluded it), and the health gate also covers running backups.
   every object must pass.
 - It upgrades to **exactly** the version in the CR. It does not enforce Talos's one-minor-at-a-time path.
 - Image resolution: the node's current install image with the tag swapped for the target version (a Factory schematic is
-  kept). It checks that the registry serves the image, and pre-pulls it, before anything is cordoned; a missing image parks
-  the run as `WaitingForImage`.
+  kept). At the start of a run it checks that the registry serves the image of every pending node, and pre-pulls it, before
+  anything is cordoned; a missing image parks the whole run as `Pending` / `PrePullFailed` (1 to 5 minute backoff), and
+  `WaitingForImage` is the per-batch registry check.
 - After a node upgrade it patches the **live** machine config's install image (`ApplyConfiguration`, `NO_REBOOT`).
 - Verification compares the version the node reports with the target version **exactly**. The per-node
   `tuppr.home-operations.com/version` annotation is used verbatim as the image tag *and* in that comparison, so it cannot
@@ -55,7 +56,8 @@ excluded it), and the health gate also covers running backups.
   The CRDs come with the chart; the CRs use a later `syncWave` (or `SkipDryRunOnMissingResource`) so they do not apply
   before the CRDs exist.
 - `Chart.yaml`: dependency `tuppr` from `oci://ghcr.io/home-operations/charts`, pinned version (Renovate-tracked).
-- `values.yaml`: ServiceMonitor, PrometheusRule and dashboards on; `silences.enabled: true` with
+- `values.yaml`: ServiceMonitor and dashboards on; PrometheusRule **off** until the `KubernetesUpgrade` is unsuspended
+  (the chart rule `TupprUpgradeBlocked` fires for every suspended CR); `silences.enabled: true` with
   `alertmanager.address: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093`; the controller tolerates the
   control-plane taint (the chart default).
 - `templates/`: `TalosUpgrade/cluster` and `KubernetesUpgrade/kubernetes`. They live in git so the `renovate:` comments are
@@ -65,8 +67,11 @@ excluded it), and the health gate also covers running backups.
 
 `provision/talos/patches/controlplane/40-talos-api-access.yaml` (`KubeTalosAPIAccessConfig`) gains `os:admin` and
 `tuppr` under `allowedRoles` and `allowedKubernetesNamespaces`. Live apply, no reboot. The header lines are updated.
-`KubeTalosAPIAccessConfig` is one document with one roles list and one namespaces list, so `talos-backup` gains `os:admin`
-as well; accepted, the namespace holds only the backup CronJobs.
+`KubeTalosAPIAccessConfig` is one document with one roles list and one namespaces list; `talos-backup` only gains
+`os:admin` if its Talos ServiceAccount's roles change (today it requests `os:etcd:backup` only). Secret
+`tuppr/tuppr-talosconfig` holds an `os:admin` Talos credential and tuppr's ClusterRole can read every Secret and create
+Jobs, so any principal that can read Secrets in the `tuppr` namespace (or all Secrets) reaches full Talos control of the
+control planes.
 
 **Verify on the cluster (plan task):** the document is control-plane only here. tuppr's docs say to apply the setting to
 every node; confirm that the upgrade Job reaches nv1 through the control plane's `apid` and that nv1 needs no copy.
@@ -76,8 +81,8 @@ every node; confirm that the upgrade Job reaches nv1 through the control plane's
 - `TalosUpgrade/cluster`, no `nodeSelector`, so mc1, mc2, mc3 and nv1, one at a time (`parallelism: 1`).
   tuppr sorts nodes by name and puts the node running its own controller first, so nv1 is always last (the controller
   cannot schedule on nv1: it tolerates only control-plane and critical-addon taints). One plan is enough.
-- `policy`: `waitForVolumeDetach: true` (Ceph RBD), `timeout: 30m`, `drainTimeout` raised so the CNPG primary switchover fits.
-  `prePull` stays on.
+- `policy`: `waitForVolumeDetach: true` (Ceph RBD), `timeout: 30m`. `drainTimeout` was removed: it is dead config together
+  with `waitForVolumeDetach`; tuppr's drain timeout is hardcoded to 10 minutes. `prePull` stays on.
 - `KubernetesUpgrade/kubernetes`: same health checks. `task talos:upgrade:k8s` stays the manual route.
 - Both CRs: annotation `tuppr.home-operations.com/suspend: "true"` until the first-run PR.
 - `maintenance.windows`: one weekly window clear of the backup schedules, for example Sunday 07:00 for 4h (ends 11:00, clear of the 12:00 syncs) in the cluster's
@@ -107,15 +112,16 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
 
 - `renovate:` comments on `spec.talos.version` (`ghcr.io/siderolabs/talos`) and `spec.kubernetes.version`
   (`ghcr.io/siderolabs/kubelet`). `separateMajorMinor` and `separateMinorPatch` so each PR is one hop.
-- One Renovate group moves, in one PR: the `TalosUpgrade` version, `TALOS_VERSION` and `KUBERNETES_VERSION` in
-  `.taskfiles/talos/Taskfile.yaml`. nv1's installer image in git is the alias tag
+- Two Renovate groups: Talos moves the `TalosUpgrade` version and `TALOS_VERSION`, Kubernetes moves the
+  `KubernetesUpgrade` version and `KUBERNETES_VERSION` (both in `.taskfiles/talos/Taskfile.yaml`), each in one PR. nv1's installer image in git is the alias tag
   `ghcr.io/mmalyska/custom-installer:${TALOS_VERSION}` (a `.yaml.tpl`, like the control-plane document), because tuppr
   patches nv1's live install image to the alias tag and a compound tag in git would leave `task talos:diff` dirty. The alias
   is a tag that the fork re-points for a Talos version; the kernel and nvgpu part stay in the fork's release notes.
 - Why drift is transient: the PR changes the rendered install image in git, then tuppr patches the live install image to the
   same value. Between the merge and the end of the run `task talos:diff` shows the difference; do not `task talos:apply`
   during a run. After the run the diff must be clean (success criterion).
-- A bump merged before nv1's installer exists is safe: the pre-check parks the run as `WaitingForImage`. A PR that moves
+- A bump merged before nv1's installer exists is safe: the run-start pre-pull parks the whole run as `Pending` /
+  `PrePullFailed` before anything is cordoned (mc1 to mc3 are held too). A PR that moves
   the kernel or nvgpu part is built first, in the fork, and its alias tag re-pointed.
 
 ### 6. nv1 prerequisite (outside this repo)
@@ -126,18 +132,23 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
 
 ### 7. Observability, rollback, emergency stop
 
-- Chart PrometheusRule and dashboard. A tuppr Alertmanager silence for
-  `CephMonDown|CephOSDDown|KubeNodeUnreachable|TargetDown`, `maxDuration: 2h`; confirm in the plan that it does not mask the
-  cluster's own alerts (the Ceph alert job-scoping caveat applies).
-- Stop: set the suspend annotation, or scale the controller to 0. Retry a failed run with the `reset` annotation.
+- Chart dashboard and ServiceMonitor; the chart PrometheusRule is off until the `KubernetesUpgrade` is unsuspended. A tuppr
+  Alertmanager silence for `CephMonDown|CephOSDDown|KubeNodeUnreachable|TargetDown`, `maxDuration: 2h`; confirm in the
+  plan that it does not mask the cluster's own alerts (the Ceph alert job-scoping caveat applies). The silence is capped
+  at 2h, so the last node (nv1) of a long run can reboot after it lapsed and `KubeNodeUnreachable` / `TargetDown` may
+  fire; accepted.
+- Stop: set the suspend annotation (ignored if set while a run waits on the health gate and the gate then passes), or
+  scale the controller to 0 (while it is down the webhook rejects CR edits). Retry a failed run with the `reset` annotation.
 - A failed or stuck node is handled with the existing procedures in `cluster-reference` (stale UKI on nv1, CNPG PDB drain).
 
 ## Rollout order
 
-1. Alias tag exists in the fork (nv1 prerequisite). mc1-mc3 do not need it.
-2. PR 1: app, values, access document, CRs **suspended**. Verify: render, lint, controller up, webhook, metrics.
+1. Alias tag exists in the fork (nv1 prerequisite): the run-start pre-pull holds every node without it.
+2. Talos API access document live first (the controller mounts the Secret Talos creates from it; the webhook is
+   `failurePolicy: Fail`), then PR 1: app, values, CRs **suspended**. Verify: render, lint, controller up, webhook, metrics.
 3. Evaluate the gate expressions read-only against live objects.
-4. PR 2: remove `suspend` from `TalosUpgrade`. First run is a no-op at the current version, then a patch bump.
+4. PR 2: remove `suspend` from `TalosUpgrade`. First run is a no-op at the current version (it proves only the Talos API
+   access), then a patch bump (the first real exercise of the health gate).
 5. After a clean Talos run and a clean `talos:diff`: remove `suspend` from `KubernetesUpgrade`, same procedure.
 6. PR 3: no `suspend` anywhere, docs and `cluster-reference` updated; `.plans/TODO.md` entry closed.
 
@@ -154,5 +165,5 @@ and fails for a deliberately running object (a manual `Job`, or a VolSync sync d
 | tuppr does not enforce the minor-by-minor path | Renovate groups one hop per PR; the version in git is reviewed |
 | nv1 boots a stale UKI after an upgrade (Jetson UEFI) | tuppr's version check fails the node; the existing procedure in `provision/talos/README.md` applies |
 | A bump merges while a backup runs | The gate waits; the window avoids the schedules |
-| `os:admin` for a namespace | `talos-backup` shares the document's roles list and gains it too (accepted: its namespace holds only the backup CronJobs); `tuppr` holds only the controller; RBAC reviewed in the chart |
+| `os:admin` for a namespace | Secret `tuppr/tuppr-talosconfig` holds an `os:admin` Talos credential and tuppr's ClusterRole can read every Secret and create Jobs: any principal that can read Secrets in `tuppr` (or all Secrets) reaches full Talos control of the control planes. `talos-backup` only gains `os:admin` if its ServiceAccount's roles change; RBAC reviewed in the chart |
 | AGPL-3.0 | Used unmodified as a service; no change to the repo's licence |
