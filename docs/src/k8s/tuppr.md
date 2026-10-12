@@ -128,7 +128,7 @@ One Renovate group for Talos and one for Kubernetes (`.github/renovate/groups.js
 Talos's one-minor-at-a-time path, it upgrades to exactly the version in the CR). Automerge is explicitly off for these
 files: merging the PR is the approval and starts the rollout.
 
-Kubernetes is held at `<=1.35` in `.github/renovate/allowedVersions.json5`.
+Kubernetes is held at `<=1.36` in `.github/renovate/allowedVersions.json5`.
 
 ## nv1 and the alias tag
 
