@@ -44,13 +44,13 @@ echo "-- worker (nv1)"
 assert_ok "nv1 renders" render nv1
 assert_ok "nv1 output is a valid metal config" talosctl validate --config "$TMP/nv1.yaml" --mode metal
 out="$(cat "$TMP/nv1.yaml")"
-assert_contains "$out" "ghcr.io/mmalyska/custom-installer:" "nv1 uses its custom installer image"
+assert_contains "$out" "ghcr.io/mmalyska/custom-installer-jp7:" "nv1 uses its custom installer image"
 assert_not_contains "$out" "factory.talos.dev/metal-installer" "the role image is overridden by the node patch"
 assert_contains "$out" "nvidia.com/gpu: present:NoSchedule" "workers get the GPU taint"
 assert_not_contains "$out" "kind: EthernetConfig" "workers do not get the control-plane EthernetConfig"
 assert_not_contains "$out" "kind: KubeAuthorizerConfig" "workers have no kube-apiserver authorizer documents"
 assert_eq 'disk.dev_path == "/dev/nvme0n1"|false' "$(yq 'select(.kind == "UnattendedInstallConfig") | .provisioning.diskSelector.match + "|" + (.provisioning.wipe | tostring)' "$TMP/nv1.yaml")" "nv1 keeps the disk selector and wipe false"
-assert_eq "ghcr.io/mmalyska/custom-installer:v1.14.2" "$(yq 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$TMP/nv1.yaml")" "nv1's custom installer image is the alias tag of the Talos version"
+assert_eq "ghcr.io/mmalyska/custom-installer-jp7:v1.14.2" "$(yq 'select(.kind == "UnattendedInstallConfig") | .installer.image' "$TMP/nv1.yaml")" "nv1's custom installer image is the alias tag of the Talos version"
 assert_eq "v1.14.2" "$("$SCRIPTS/expected-version.sh" "$TMP/nv1.yaml")" "nv1's expected Talos version is read as v1.14.2 from the alias tag"
 
 assert_eq "1|none|false" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | (.acceptedCAs | length | tostring) + "|" + (.issuingCA // "none" | tostring)' "$TMP/nv1.yaml")|$(yq 'select(.machine != null) | .cluster | has("ca")' "$TMP/nv1.yaml")" "a worker has the accepted CA only and no legacy cluster.ca"
