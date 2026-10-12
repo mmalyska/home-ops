@@ -15,6 +15,9 @@ tuppr upgrades one node at a time behind a health gate. The design is in
 Both live in `cluster/apps/system/tuppr/templates/` and carry the same health gate and the same maintenance window
 (Sunday 07:00 for 4h, Europe/Warsaw). Only one upgrade runs at a time across the cluster; the two kinds never overlap.
 
+The behaviour described here that is not marked "to be confirmed" comes from reading tuppr 0.5.7's source and docs, not
+from a run in this cluster.
+
 **State until the first run:** both CRs are committed with `tuppr.home-operations.com/suspend: "true"`, so nothing
 starts. The first run has not happened yet. Anything below marked "to be confirmed on the first run" is expected
 behaviour taken from tuppr's source, not observed here.
@@ -37,8 +40,8 @@ behaviour taken from tuppr's source, not observed here.
   exactly the target version.
 - **Window:** the maintenance window is checked at the start and between batches, before the health gate, so a node may
   start up to about 1h after the window closes (the gate wait). A node whose upgrade already started always finishes.
-  If the window closes between nodes the run parks as `MaintenanceWindow` and resumes in the next window. Mixed
-  versions for up to a week are expected then (nv1 is last).
+  If the window closes between nodes the run parks as `MaintenanceWindow` and is expected to resume in the next window
+  (to be confirmed on the first run). Mixed versions for up to a week are expected then (nv1 is last).
 - **Silences:** tuppr holds an Alertmanager silence for `CephMonDown|CephOSDDown|KubeNodeUnreachable|TargetDown`
   (`maxDuration: 2h`, renewed as a short lease).
 
@@ -71,7 +74,7 @@ go for the first Talos run; remove it from `KubernetesUpgrade/kubernetes` after 
 `task talos:diff`. A later PR removes the annotation for good so that Renovate bumps run unattended.
 
 Temporary stop or resume without a PR, once the annotation is no longer in git (while git carries it, ArgoCD
-`selfHeal` puts it back; the live removal is only for testing):
+`selfHeal` is expected to put it back, to be confirmed on the first run; the live removal is only for testing):
 
 ```sh
 kubectl annotate talosupgrade cluster tuppr.home-operations.com/suspend="true"
@@ -88,13 +91,15 @@ kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%
 
 The value is any new string (the annotation is a trigger); to be confirmed on the first run.
 
-Emergency stop (the controller stops; the node being upgraded is not touched by this):
+Emergency stop (unverified what this does to a run in progress: a running upgrade Job or an already-cordoned node may
+be affected, and a cordoned node has to be uncordoned by hand):
 
 ```sh
 kubectl scale deployment tuppr -n tuppr --replicas=0
 ```
 
-ArgoCD `selfHeal` scales it back up; for a longer stop set the suspend annotations in git or disable the app's sync.
+ArgoCD `selfHeal` is expected to scale it back up (to be confirmed on the first run). If it does, `--replicas=0` is
+only a short stop; the durable stop is a PR that sets the suspend annotations (or disables the app).
 
 Watch a run: `kubectl get talosupgrade,kubernetesupgrade` (phase, current node), the tuppr controller logs, and the
 `TalosUpgrade` / tuppr dashboard in Grafana.
@@ -145,8 +150,9 @@ the document (the upgrade Job reaches it through the control plane's `apid`) is 
 ## When things go wrong
 
 - **`WaitingForImage`:** the installer image of some node is not served by the registry. Check the tag (for nv1 the
-  alias tag, see above). The run resumes by itself once the image exists; nothing was cordoned.
-- **`MaintenanceWindow`:** parked between nodes; it resumes at the next window. Remove the window from the CR only in
+  alias tag, see above). The run is expected to resume by itself once the image exists (to be confirmed on the first run); nothing was
+  cordoned.
+- **`MaintenanceWindow`:** parked between nodes; expected to resume at the next window (to be confirmed on the first run). Remove the window from the CR only in
   git.
 - **`Failed`:** terminal. Read the controller logs and the node state, fix the cause, then annotate with `reset` (or
   edit the spec).
