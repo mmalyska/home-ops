@@ -87,7 +87,11 @@ Apply config with reboot:
 task talos:apply:restart N=mc1
 ```
 
-Upgrade Talos on all nodes (a node is only considered done when it runs the expected version):
+Upgrades are normally rolled out by tuppr (`cluster/apps/system/tuppr`, runbook in `docs/src/k8s/tuppr.md`): merging a
+Talos or Kubernetes version bump starts a one-node-at-a-time run behind a health gate. **Do not `task talos:apply` while a
+`TalosUpgrade` is running**; `task talos:diff` differs from git until the run ends. `task talos:upgrade` and
+`task talos:upgrade:all` are the manual fallback (suspend the `TalosUpgrade` first). A node is only considered done when
+it runs the expected version:
 
 ```bash
 task talos:upgrade:all
