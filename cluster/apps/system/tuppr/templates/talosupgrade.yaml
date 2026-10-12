@@ -14,7 +14,6 @@ spec:
   policy:
     waitForVolumeDetach: true
     timeout: 30m
-    drainTimeout: 10m
   maintenance:
     windows:
       - start: "0 7 * * 0"
