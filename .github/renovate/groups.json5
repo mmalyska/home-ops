@@ -35,7 +35,8 @@
       ],
       "groupName": "kubernetes",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true
+      "separateMinorPatch": true,
+      "separateMultipleMinor": true
     },
     {
       "description": "Talos stack",
@@ -48,7 +49,21 @@
       ],
       "groupName": "talos",
       "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "separateMinorPatch": true
+      "separateMinorPatch": true,
+      "separateMultipleMinor": true
+    },
+    {
+      "description": "Talos and Kubernetes upgrade PRs must be reviewed and merged by a person: merging starts a rollout (tuppr). Scoped by file so the rest of the Talos and Kubernetes groups (alpine/k8s etc.) keep their automerge behaviour.",
+      "matchPackageNames": [
+        "siderolabs/talos",
+        "siderolabs/kubelet",
+        "ghcr.io/siderolabs/kubelet"
+      ],
+      "matchFileNames": [
+        ".taskfiles/talos/Taskfile.yaml",
+        "cluster/apps/system/tuppr/**"
+      ],
+      "automerge": false
     },
     {
       "description": "Helm",
