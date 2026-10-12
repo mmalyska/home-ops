@@ -18,8 +18,10 @@ Both live in `cluster/apps/system/tuppr/templates/` and carry the same health ga
 The behaviour described here that is not marked "to be confirmed" comes from reading tuppr 0.5.7's source and docs, not
 from a run in this cluster.
 
-**State until the first run:** both CRs are committed with `tuppr.home-operations.com/suspend: "true"`, so nothing
-starts. The first run has not happened yet. The chart's `PrometheusRule` is off for now (`values.yaml`): its
+**State:** `KubernetesUpgrade/kubernetes` is still committed with `tuppr.home-operations.com/suspend: "true"`, so it
+does not start. `TalosUpgrade/cluster` has been unsuspended (2026-10-12) as a no-op at the running version: every node
+already runs the CR's version, so the expected result is `Completed` with 0 nodes and no `HealthChecks` events (see
+"The first run" below). No real upgrade has happened yet. The chart's `PrometheusRule` is off for now (`values.yaml`): its
 `TupprUpgradeBlocked` alert (reason `Suspended`, for 30m, warning, routed to Discord) would fire for every suspended CR.
 It is re-enabled in the PR that unsuspends the `KubernetesUpgrade`; the ServiceMonitor and dashboards are on. Anything below marked "to be confirmed on the first run" is expected
 behaviour taken from tuppr's source, not observed here.

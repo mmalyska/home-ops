@@ -3,8 +3,6 @@ kind: TalosUpgrade
 metadata:
   name: cluster
   annotations:
-    # Remove this annotation (in a PR) to let the first run start. See docs/src/k8s/tuppr.md
-    tuppr.home-operations.com/suspend: "true"
     argocd.argoproj.io/sync-wave: "5"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
