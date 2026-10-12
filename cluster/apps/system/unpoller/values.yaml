@@ -1,6 +1,8 @@
 app-template:
   controllers:
     main:
+      annotations:
+        secret.reloader.stakater.com/reload: "unpoller-secret"
       strategy: Recreate
       containers:
         main:

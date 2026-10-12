@@ -1,5 +1,7 @@
 harbor:
   core:
+    podAnnotations:
+      secret.reloader.stakater.com/reload: "harbor-oidc-secret"
     extraEnvVars:
       - name: CONFIG_OVERWRITE_JSON
         valueFrom:

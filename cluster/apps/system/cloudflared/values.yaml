@@ -9,6 +9,8 @@ app-template:
             app.kubernetes.io/name: cloudflared
   controllers:
     main:
+      annotations:
+        secret.reloader.stakater.com/reload: "cloudflare-tunnel-secret"
       replicas: 2
       strategy: RollingUpdate
       containers:

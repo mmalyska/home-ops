@@ -1,4 +1,6 @@
 external-dns:
+  deploymentAnnotations:
+    secret.reloader.stakater.com/reload: "cloudflare-dns-secret"
   fullnameOverride: cloudflare-dns
   provider: cloudflare
   env:

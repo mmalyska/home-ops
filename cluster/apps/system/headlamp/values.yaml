@@ -1,4 +1,6 @@
 headlamp:
+  deploymentAnnotations:
+    secret.reloader.stakater.com/reload: "headlamp-oidc"
   replicaCount: 1
 
   config:

@@ -1,6 +1,8 @@
 ---
 coder:
   coder:
+    annotations:
+      secret.reloader.stakater.com/reload: "coder-secrets"
     service:
       type: ClusterIP
     resources:

@@ -67,6 +67,30 @@ Mark UUID lines with `#gitleaks:allow #KEY_NAME` to suppress false positives.
 MY_VALUE: "{{ `{{ .MY_KEY }}` }}"
 ```
 
+## Reloading pods when a Secret changes (Stakater Reloader)
+
+Reloader (`cluster/apps/system/reloader`) runs in opt-in mode. Any workload that
+consumes an ExternalSecret-generated Secret via `env`/`envFrom` or a file mount
+(apps read both only at startup) needs this annotation on the Deployment /
+StatefulSet:
+
+```yaml
+secret.reloader.stakater.com/reload: "my-app-secret"   # comma-separate for several
+```
+
+Where it goes depends on the chart:
+
+| Chart | Key |
+|-------|-----|
+| bjw-s `app-template` | `controllers.<name>.annotations` |
+| `external-dns`, `headlamp`, `oauth2-proxy`, `nextcloud`, `litellm-helm` | `deploymentAnnotations` |
+| `coder` | `coder.annotations` |
+| `harbor` | `core.podAnnotations` (pod template, no Deployment-level key) |
+| raw manifests / local charts | `metadata.annotations` on the Deployment |
+
+Not needed for CNPG `s3Credentials` / barman secrets (read by the operator) or
+for secrets inlined via `<secret:key>` tokens.
+
 ## HTTPRoute — Internal (AdGuard DNS, home network only)
 
 ```yaml

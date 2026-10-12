@@ -47,6 +47,8 @@ pgsql-cnpg:
         backupOwnerReference: self
 
 nextcloud:
+  deploymentAnnotations:
+    secret.reloader.stakater.com/reload: "nextcloud-admin-secret,nextcloud-redis-auth"
   image:
     flavor: fpm-alpine
   nextcloud:

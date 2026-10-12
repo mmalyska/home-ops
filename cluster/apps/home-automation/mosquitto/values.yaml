@@ -11,6 +11,8 @@ app-template:
       fsGroupChangePolicy: "OnRootMismatch"
   controllers:
     main:
+      annotations:
+        secret.reloader.stakater.com/reload: "mosquitto-secret"
       strategy: Recreate
       replicas: 1
       initContainers:

@@ -1,6 +1,8 @@
 app-template:
   controllers:
     bookorbit:
+      annotations:
+        secret.reloader.stakater.com/reload: "bookorbit-secrets"
       pod:
         securityContext:
           runAsUser: 1001
