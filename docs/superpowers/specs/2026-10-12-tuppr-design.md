@@ -1,6 +1,7 @@
 # tuppr (Talos and Kubernetes upgrade controller) — Design
 
-**Status:** approved in conversation 2026-10-12, spec awaiting review. Tracked in `.plans/TODO.md`.
+**Status:** implemented 2026-10-12 (plan `docs/superpowers/plans/2026-10-12-tuppr.md`); first run was a verified no-op,
+the first real upgrade through tuppr is pending. Tracked in `.plans/TODO.md`.
 
 ## Context
 
