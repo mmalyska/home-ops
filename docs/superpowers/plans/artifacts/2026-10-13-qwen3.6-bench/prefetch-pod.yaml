@@ -1,0 +1,42 @@
+# Throwaway: downloads one GGUF onto the llama-server-models PVC while
+# llama-server keeps serving (no GPU requested). RWO is fine: same node.
+# Substitute: __MODEL_FILE__ __MODEL_URL__ __MODEL_SHA256__ __MODEL_SIZE__
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qwen-prefetch
+  namespace: llm
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    accelerator: jetson-orin
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
+  containers:
+    - name: fetch
+      image: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -eu
+          DEST="/models/__MODEL_FILE__"
+          if [ -f "${DEST}.ok" ] && [ "$(stat -c %s "${DEST}")" = "__MODEL_SIZE__" ]; then
+            echo "already present"; exit 0
+          fi
+          wget -c -O "${DEST}.part" "__MODEL_URL__"
+          echo "__MODEL_SHA256__  ${DEST}.part" | sha256sum -c -
+          mv "${DEST}.part" "${DEST}"
+          echo "__MODEL_SHA256__" > "${DEST}.ok"
+          df -h /models
+      resources:
+        requests: { cpu: 100m, memory: 64Mi }
+        limits: { memory: 256Mi }
+      volumeMounts:
+        - { name: models, mountPath: /models }
+  volumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llama-server-models

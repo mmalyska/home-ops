@@ -1,0 +1,52 @@
+# Throwaway one-shot llama-bench on nv1's single GPU. llama-server MUST be at
+# replicaCount 0 (git) first. Substitute: __MODEL_FILE__
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qwen-bench
+  namespace: llm
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    accelerator: jetson-orin
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
+  containers:
+    - name: bench
+      image: ghcr.io/mmalyska/llama-cpp-jetson:v0.6.0@sha256:5bece83da3da246a3b76b377130d8748129df585c829cbd9e25a0a3f2ba2bad4
+      command: ["llama-bench"]
+      args:
+        [
+          "-m",
+          "/models/__MODEL_FILE__",
+          "-ngl",
+          "99",
+          "-fa",
+          "1",
+          "-ctk",
+          "q8_0",
+          "-ctv",
+          "q4_0",
+          "-ub",
+          "256",
+          "-p",
+          "512",
+          "-n",
+          "128",
+          "-r",
+          "3",
+          "-o",
+          "md",
+        ]
+      resources:
+        requests: { cpu: 500m, memory: 9Gi }
+        limits: { memory: 13Gi, nvidia.com/gpu: 1 }
+      volumeMounts:
+        - { name: models, mountPath: /models, readOnly: true }
+  volumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llama-server-models

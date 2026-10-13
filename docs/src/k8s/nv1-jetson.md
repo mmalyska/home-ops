@@ -72,3 +72,19 @@ nv1 has 15.6 GiB of unified memory. The system (Talos, kubelet, Cilium, DaemonSe
 - Before changing the model, quantization, context, slots or any of the flags above, re-run a sustained test with many different prompts and watch pod memory and node `MemAvailable` (`talosctl -n 192.168.48.5 read /proc/meminfo`).
 - Smaller quants of the same model save little (IQ2_XXS is 9.24 GiB vs 9.82 GiB for the running Q2_K_XL); Gemma 4 E4B frees about 5 GiB but scored much lower on agentic tasks.
 - **Hermes needs at least 64,000 tokens of context per slot for its main model** (`ctx / parallel >= 64000`, plus `model.context_length` set to the same value). With the running `-c 65536 -np 2` each slot has 32768, so Hermes' main model and compression stay on the cloud. Getting to 64K per slot means either one slot (`-np 1`, Hermes and Honcho then share it and evict each other's cached prompt) or `-c 131072 -np 2` (about +0.5 GiB KV on a node with about 1 GiB spare); either needs a new sustained memory test.
+
+## Qwen3.6-35B-A3B benchmark (2026-10-13)
+
+Plan: `docs/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image `llama-cpp-jetson` v0.6.0 (same digest as production), `llama-server` paused through git for about 25 minutes, throwaway pods on the `llama-server-models` PVC, production flags (`-c 131072 -np 2 -fa on -ctk q8_0 -ctv q4_0 -ub 256`, `--cache-ram 512 --ctx-checkpoints 2` for the Qwen arms).
+
+| Arm                                   | pp512 (tok/s) | tg128 (tok/s) | Result                                                        |
+| ------------------------------------- | ------------: | ------------: | ------------------------------------------------------------- |
+| Qwen3.6-35B-A3B UD-IQ2_XXS (10.0 GiB) |           183 |          15.9 | loads, 15.1 tok/s single stream in server mode, quality 19/20 |
+| Qwen3.6-35B-A3B UD-IQ2_M (10.7 GiB)   |           n/a |           n/a | fails to load: `cudaMalloc` OOM on the 10.4 GiB weight buffer |
+| LFM2.5-8B-A1B UD-Q6_K_XL (baseline)   |           632 |          26.6 | production model                                              |
+
+- **Verdict: does not fit.** With IQ2_XXS loaded and idle the pod sat at 10.7-11 GiB and node `MemAvailable` at **0.40-0.47 GB** (gate: 0.8 GB; LFM2.5 leaves 1.7-4 GB). The concurrent 45K-token load test was stopped after a minute instead of risking the node-wide OOM described above; no round completed.
+- The corruption rate (hybrid-state bug class, #29002) was **not measured**: the memory result made it moot. It is still unknown whether Qwen3.6's Gated-DeltaNet hybrid shares LFM2.5's bug.
+- Quality with thinking off: known answers 4/5 (missed reversing a word letter by letter), JSON 5/5, single tool calls 5/5, small-budget titles 5/5. With `enable_thinking=true` a 32-token title call returns empty content (finish `length`), so thinking stays off server-side as for Gemma 4.
+- `llama-bench` and the server both ran on the GPU with no CUDA 13.2 gibberish, so Unsloth's warning does not apply to our build.
+- Qwen3.6-35B-A3B at 2-bit is about the ceiling nv1 can load at all (IQ2_M is already out). A 3-bit file or `UD-Q2_K_XL` (11.45 GiB) cannot work. A usable Qwen3.6 or Qwen3.8-27B needs a 24 GB-class GPU.
