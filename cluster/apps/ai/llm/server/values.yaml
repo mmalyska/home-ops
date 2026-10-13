@@ -67,7 +67,7 @@ server:
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   ctx: 131072
   parallel: 2
-  storage: 20Gi
+  storage: 30Gi
   resources:
     requests:
       cpu: 500m
