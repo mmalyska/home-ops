@@ -39,3 +39,4 @@
 - [CoreDNS/Argo bootstrap deadlock](reference_coredns_argo_bootstrap_deadlock.md) — deleting coredns kills Argo's DNS; create the app before deleting
 - [Talos live config + apply health quirk](reference_talos_live_config_yq_spec.md) — yq needs two passes on .spec; task talos:apply health step fails on cp nodes after a good apply
 - [tuppr upgrades](reference_tuppr_upgrades.md) — os:admin credential in tuppr's Secret, pre-hooks suppress inter-batch checks, Failed terminal until reset, nv1 alias tag and run-wide PrePullFailed
+- [Qwen3.6 on nv1 benchmark](reference_qwen36_nv1_benchmark.md) — 35B-A3B at 2-bit loads but leaves 0.4 GB node headroom; IQ2_M fails to load; next step is hardware
