@@ -1,0 +1,48 @@
+# Throwaway llama-server arm for the reliability benchmark. Labelled
+# app=llama-server so the existing Service (and Hermes/Honcho) reach it with no
+# consumer change. llama-server MUST be at replicaCount 0 (git) first.
+# Substitute: __MODEL_FILE__ __ALIAS__ __CTX__ __NP__ __EXTRA_ARGS__
+# __ALIAS__ must equal the model name the consumers send (lfm2.5-8b-a1b today).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rel-server
+  namespace: llm
+  labels:
+    app: llama-server
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    accelerator: jetson-orin
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
+  containers:
+    - name: llama-server
+      image: ghcr.io/mmalyska/llama-cpp-jetson:v0.6.0@sha256:5bece83da3da246a3b76b377130d8748129df585c829cbd9e25a0a3f2ba2bad4
+      command: ["sh", "-c"]
+      args:
+        - >-
+          exec llama-server -m /models/__MODEL_FILE__ --alias __ALIAS__
+          -ngl 99 -fa on -ctk q8_0 -ctv q4_0 -c __CTX__ -np __NP__ --jinja -ub 256
+          --metrics --host 0.0.0.0 --port 8080 __EXTRA_ARGS__
+      ports:
+        - { name: http, containerPort: 8080 }
+      startupProbe:
+        httpGet: { path: /health, port: http }
+        periodSeconds: 10
+        failureThreshold: 60
+      readinessProbe:
+        httpGet: { path: /health, port: http }
+        periodSeconds: 10
+      resources:
+        requests: { cpu: 500m, memory: 9Gi }
+        limits: { memory: 13Gi, nvidia.com/gpu: 1 }
+      volumeMounts:
+        - { name: models, mountPath: /models, readOnly: true }
+  volumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: llama-server-models
