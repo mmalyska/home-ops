@@ -199,8 +199,12 @@ kubectl config set-context --current --namespace=default    # always put it back
 
 - In `argocd app diff`, `<` is the **live** object and `>` is **desired** (git). Image tag / chart-version lines
   with `<` old and `>` new = a pending upgrade.
-- A value that is `false`/empty in git but missing live is API-server defaulting (e.g. `preserveResourcesOnDeletion: false`),
-  not drift. Handle it with `ignoreDifferences`, not a sync.
+- A field that is in git but missing live is **not** assumed to be API-server defaulting. Compare a sibling object first
+  (`appset-core` carried `preserveResourcesOnDeletion: false` live; `appset-system` did not because it was simply never
+  re-applied). If siblings have the field, it is real drift: sync that one resource.
+- Do not "fix" such drift with `ignoreDifferences` + `RespectIgnoreDifferences=true`: ArgoCD then keeps the live value for
+  ignored paths on sync, so the sync can no longer write the field. Use `ignoreDifferences` only for fields a controller
+  genuinely mutates at runtime.
 - A live resource with no desired counterpart is an orphan that only exists because `prune` is off. Check it for
   `ClusterRoleBinding`/`aggregationRule` references, then prune only that resource:
   `argocd app sync <app> --core --prune --resource <group>:<Kind>:<name>`.
