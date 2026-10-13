@@ -1,5 +1,7 @@
 server:
-  replicaCount: 1
+  # TEMPORARY (2026-10-13): paused for the Gemma 4 reliability test on nv1's
+  # single GPU. The resume PR restores 1. Do not leave at 0.
+  replicaCount: 0
   image:
     # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
     # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
