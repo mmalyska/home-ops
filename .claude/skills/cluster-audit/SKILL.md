@@ -181,6 +181,41 @@ kubectl get pods -A --no-headers | grep -v Running | grep -v Completed
 
 > **Trap:** A namespace may have only database/cache pods (e.g. valkey, cnpg) while the app deployment is scaled to 0. Prometheus won't flag this — only kubectl will.
 
+### 9b. ArgoCD Drift (OutOfSync apps)
+
+```bash
+kubectl -n argocd get applications --no-headers | awk '$2!="Synced" || $3!="Healthy"'
+```
+
+Several apps (`argocd`, `rook-ceph-operator`, `rook-ceph-cluster`, `root-app`) run with `automated.enabled: false`,
+so a merged Renovate bump stays **pending until someone syncs it**. `OutOfSync` there usually means "upgrade
+waiting", not noise. Diff before deciding:
+
+```bash
+kubectl config set-context --current --namespace=argocd     # --core reads the namespace from kubeconfig
+argocd app diff <app> --core | grep -E "^=====|^[0-9,]+[acd][0-9,]+$|^[<>] "
+kubectl config set-context --current --namespace=default    # always put it back
+```
+
+- In `argocd app diff`, `<` is the **live** object and `>` is **desired** (git). Image tag / chart-version lines
+  with `<` old and `>` new = a pending upgrade.
+- A value that is `false`/empty in git but missing live is API-server defaulting (e.g. `preserveResourcesOnDeletion: false`),
+  not drift. Handle it with `ignoreDifferences`, not a sync.
+- A live resource with no desired counterpart is an orphan that only exists because `prune` is off. Check it for
+  `ClusterRoleBinding`/`aggregationRule` references, then prune only that resource:
+  `argocd app sync <app> --core --prune --resource <group>:<Kind>:<name>`.
+- If `status.sync.revision` is older than `origin/main` (checked with `git rev-parse origin/main`) the app is just
+  stale: annotate `argocd.argoproj.io/refresh=hard` and re-read. The same refresh clears "OutOfSync" that
+  persists after a sync when live CRDs already match.
+- Syncing is a cluster mutation: confirm with the user first, one app at a time.
+
+**Rook/Ceph upgrade order:** `rook-ceph-operator` first, then `rook-ceph-cluster`. The operator then restarts
+mgrs, CSI plugins, mons and **all OSDs one at a time**, taking about 10 minutes per wave. `HEALTH_WARN` with
+"1 osds down / pgs degraded / undersized" is expected during each OSD restart; wait for `Ready` + HEALTH_OK and
+169-of-169 PGs `active+clean`. A second wave of mon/OSD restarts follows the `requireMsgr2` flip. Volsync
+`FailedScheduling` events and a Grafana `FailedAttachVolume` during the roll are transient. Before flipping
+`requireMsgr2`, check `ceph tell mon.<id> sessions` for clients that connect with `v1`.
+
 ### 10. Top Consumers (for pod-level details)
 
 ```bash
@@ -275,5 +310,8 @@ Save to `docs/src/audits/YYYY-MM-DD.md` (use today's date). Structure:
 | CPU ratio missing for a namespace | Namespace has no CPU requests set — check with `kube_pod_container_resource_requests` |
 | PVC not appearing | Volume provisioner not exposing kubelet stats; check with `kubectl get pvc -A` instead |
 | hermes-agent CPU spikes | Check for PID collision in s6-supervise; compare to 7d ago value |
+| Loki shows hundreds of "connection refused" lines from `argocd` and `cnpg` in one 10-second window | A brief API-server blip: controllers fail together, then recover. Check that all matches fall in one burst before reporting a finding. |
+| One app logs thousands of connect errors to an old IP | A service moved into the cluster and a provider still points at the old address. Check the app's own config (stored on its PVC, not in git) before looking at the network. |
+| A PVC resize shows `FileSystemResizePending` right after sync | ceph-block expands online; wait about a minute before restarting the pod. |
 | App looks healthy in Prometheus | Deployment may be scaled to 0 — Prometheus has no data for absent pods. Always run step 9. |
 | App looks healthy in Prometheus AND Loki error count is low | Still check for permission/auth errors specific to one app's containers — metrics-exporter grant issues (e.g. CNPG `permission denied for database`) produce healthy pod status and recurring log errors with no Prometheus alert at all. |
