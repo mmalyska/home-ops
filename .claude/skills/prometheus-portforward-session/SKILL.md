@@ -43,6 +43,12 @@ Port 9090 **can be reused** immediately after `pkill` + 1s wait. No need to incr
 - `pkill` exits with code 144 (SIGTERM sent) — this is normal, not an error
 - Don't use `&&` after `pkill` — the non-zero exit will break the chain. Use separate Bash calls or `; true`
 - `sleep 1` after pkill is enough for the port to be released
+- **`pkill -f` can kill its own shell.** The pattern also matches the Bash tool's own command line, so
+  `pkill -f "port-forward.*prometheus"` inside a longer script terminates the script (exit 144) before the
+  commands after it run. Either run the `pkill` in its own Bash call, or use a bracket pattern that does not
+  match its own text: `pkill -f "[p]ort-forward.*prometheus"`
+- Start the forward with `> /dev/null 2>&1 &` then `disown`, so the call returns immediately and the process
+  survives the shell. Check readiness with `curl -s localhost:9090/-/ready` instead of a blind `sleep`
 
 ## What NOT to do
 
