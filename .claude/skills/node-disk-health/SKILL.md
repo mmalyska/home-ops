@@ -14,7 +14,7 @@ Each mc node (mc1/mc2/mc3) has **two drives with different visibility in Prometh
 | Node | IP | Device | Model | Protocol | Size | Role | Visible in `node_filesystem_*`? |
 |------|----|--------|-------|----------|------|------|--------------------------------|
 | mc1 | 192.168.48.2 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
-| mc1 | 192.168.48.2 | `sdb` ⚠️ | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-1 (raw block) | ❌ No |
+| mc1 | 192.168.48.2 | `sda` (was `sdb`) ⚠️ | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-1 (raw block) | ❌ No |
 | mc2 | 192.168.48.3 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
 | mc2 | 192.168.48.3 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-2 (raw block) | ❌ No |
 | mc3 | 192.168.48.4 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
@@ -22,7 +22,7 @@ Each mc node (mc1/mc2/mc3) has **two drives with different visibility in Prometh
 | (4th node) | 192.168.48.5 | `nvme0n1` | FORESEE XP1000F256G | NVMe | 236 GiB | OS + `/var` | ✅ Yes |
 | Jaskinia | 192.168.50.8 | `nvme0n1`, `nvme1n1` | — | NVMe | — | QNAP storage | ✅ SMART available |
 
-> **Note — mc1 Ceph drive is `sdb`, not `sda`** — After NVMe replacement (2026-06-14), the Crucial MX500 on mc1 was detected as `sdb` instead of `sda`. Ceph is unaffected (uses device by-id). `smartmon-exporter` covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0n1` on all mc nodes (fixed 2026-06-14), so all drives have SMART coverage.
+> **Note — mc1 Ceph drive name is not stable (`sda` or `sdb`)** — After the NVMe replacement (2026-06-14) the Crucial MX500 on mc1 was detected as `sdb`. After the 2026-10-09 reboot it is `sda` again, so the kernel name depends on probe order at boot. Ceph is unaffected (uses device by-id). `smartmon-exporter` covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0n1` on all mc nodes (since 2026-06-14), so SMART coverage holds either way. Keep `device=~"sda|sdb"` in queries and confirm with `node_disk_info` (match on serial `2147E5E7AB2E`) rather than assuming a name.
 
 **The trap:** `node_filesystem_size_bytes` only returns mounted filesystems. Ceph OSDs have no mountpoint — they are raw block devices. Always use `node_disk_io_time_seconds_total` to discover all block devices first, because device names (`sda` vs `sdb`) can shift after hardware replacement.
 
@@ -73,7 +73,7 @@ Capacity is tracked at the Ceph cluster level, not per-device. Use these for I/O
 
 ```bash
 # Busy % — flag if sustained >50%
-# mc2/mc3 use sda; mc1 uses sdb (shifted after NVMe replacement 2026-06-14)
+# mc2/mc3 use sda; mc1 is sda or sdb depending on boot (sdb 2026-06-14, sda since 2026-10-09)
 curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=rate(node_disk_io_time_seconds_total{device=~"sda|sdb",job="node-exporter",instance=~"192.168.48.*"}[5m]) * 100'
 
@@ -106,7 +106,7 @@ done
 The `smartmon-exporter` DaemonSet runs `smartctl -a` on drives and exposes `smartctl_device_*` metrics scraped by Prometheus. Configured devices on mc1/mc2/mc3: `/dev/sda`, `/dev/sdb`, `/dev/nvme0n1`. On nodes where a device doesn't exist, smartctl skips it gracefully.
 
 ```bash
-# SATA health (1=PASSED, 0=FAILED) — mc1 uses sdb, mc2/mc3 use sda
+# SATA health (1=PASSED, 0=FAILED) — mc1 is sda or sdb depending on boot, mc2/mc3 use sda
 curl -s 'http://localhost:9090/api/v1/query' \
   --data-urlencode 'query=smartctl_device_smart_status{device=~"sda|sdb"}' \
   | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {r[\"metric\"].get(\"node\",r[\"metric\"].get(\"instance\"))}  {r[\"metric\"][\"device\"]}  healthy={r[\"value\"][1]}') for r in d['data']['result']]"
@@ -175,7 +175,7 @@ Use `node_disk_info{device!~"rbd.*|loop.*|zram.*",job="node-exporter"}` to re-qu
 | Node | Device | Model | Serial | Protocol | Replaced |
 |------|--------|-------|--------|----------|---------|
 | mc1 (48.2) | nvme0n1 | ADATA SX8200PNP | 2Q022LANGSER | NVMe | 2026-06-14 |
-| mc1 (48.2) | **sdb** | Crucial CT500MX500SSD1 | 2147E5E7AB2E | SATA | (original) |
+| mc1 (48.2) | **sda** (sdb 2026-06-14 to 2026-10-09) | Crucial CT500MX500SSD1 | 2147E5E7AB2E | SATA | (original) |
 | mc2 (48.3) | nvme0n1 | ADATA SX8200PNP | 2Q0229AHA2JU | NVMe | 2026-06-14 |
 | mc2 (48.3) | sda | Crucial CT500MX500SSD1 | 2147E5E7B554 | SATA | (original) |
 | mc3 (48.4) | nvme0n1 | ADATA SX8200PNP | 2Q02291HEGRP | NVMe | 2026-06-14 |
