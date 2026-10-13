@@ -18,11 +18,19 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
+  ignoreDifferences:
+    # The API server drops the default value (false) from the live ApplicationSet, so
+    # a manifest that sets it explicitly shows as OutOfSync forever.
+    - group: argoproj.io
+      kind: ApplicationSet
+      jsonPointers:
+        - /spec/syncPolicy/preserveResourcesOnDeletion
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
       - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
     automated:
       enabled: false
       selfHeal: true
