@@ -22,7 +22,6 @@ app-template:
             SONARR__APP__INSTANCENAME: Sonarr
             SONARR__SERVER__PORT: "8989"
             SONARR__LOG__DBENABLED: "False"
-            SONARR__AUTH__METHOD: Forms
             SONARR__AUTH__REQUIRED: Enabled
           envFrom:
             - secretRef:

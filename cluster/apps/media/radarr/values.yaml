@@ -22,7 +22,6 @@ app-template:
             RADARR__APP__INSTANCENAME: Radarr
             RADARR__SERVER__PORT: "7878"
             RADARR__LOG__DBENABLED: "False"
-            RADARR__AUTH__METHOD: Forms
             RADARR__AUTH__REQUIRED: Enabled
           envFrom:
             - secretRef:

@@ -13,8 +13,9 @@ is its own ArgoCD app built on bjw-s `app-template`, with images from `ghcr.io/h
 | `sonarr` / `radarr` / `lidarr` | TV / movies / music                  | `<app>.<private-domain>`    |
 | `media-storage`                | the shared `/media` PV and PVC       | -                           |
 
-All routes are on `envoy-internal` only. Each app has forms login with authentication required; the first visit asks
-for an admin user, so create it right after the first deploy.
+All routes are on `envoy-internal` only. The \*arrs run with `AUTH__REQUIRED=Enabled` and no preset method, so the first
+visit shows the authentication setup: choose Forms and create the admin user right after the first deploy. SABnzbd has
+no such prompt and is open to the LAN until you set a username and password (General, Security), so do that first.
 
 ## Storage layout
 
@@ -41,11 +42,12 @@ download clients) is entered in the UIs and stored in the config PVCs.
 
 ## First-run setup order
 
-1. SABnzbd: add the news servers (primary at priority 0, backup on another backbone at a higher number), create
+1. SABnzbd: set a username and password (General, Security), add the news servers (primary at priority 0, backup on another backbone at a higher number), create
    categories `tv`, `movies`, `music` pointing at `usenet/complete/<category>`, set the incomplete dir to
    `/incomplete`, and set the free-space pause. Follow the TRaSH SABnzbd guide for the rest.
 2. Prowlarr: add the three indexers, then register Sonarr, Radarr and Lidarr as applications with full sync.
-3. Sonarr / Radarr / Lidarr: add SABnzbd as a download client with the matching category; root folders
+3. Sonarr / Radarr / Lidarr: add SABnzbd as a download client (host `sabnzbd`, port 8080; the short service name and the
+   `.media.svc.cluster.local` forms are in its host whitelist) with the matching category; root folders
    `/data/tv-series`, `/data/movies`, `/data/music`; Completed Download Handling on; "Use hardlinks instead of copy"
    on; naming per TRaSH.
 

@@ -17,7 +17,7 @@ app-template:
             pullPolicy: IfNotPresent
           env:
             TZ: CET
-            SABNZBD__HOST_WHITELIST_ENTRIES: sabnzbd.<secret:private-domain>
+            SABNZBD__HOST_WHITELIST_ENTRIES: sabnzbd.<secret:private-domain>,sabnzbd,sabnzbd.media,sabnzbd.media.svc,sabnzbd.media.svc.cluster,sabnzbd.media.svc.cluster.local
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

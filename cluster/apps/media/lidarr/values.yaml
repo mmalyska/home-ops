@@ -22,7 +22,6 @@ app-template:
             LIDARR__APP__INSTANCENAME: Lidarr
             LIDARR__SERVER__PORT: "8686"
             LIDARR__LOG__DBENABLED: "False"
-            LIDARR__AUTH__METHOD: Forms
             LIDARR__AUTH__REQUIRED: Enabled
           envFrom:
             - secretRef:

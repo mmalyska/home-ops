@@ -22,7 +22,6 @@ app-template:
             PROWLARR__APP__INSTANCENAME: Prowlarr
             PROWLARR__SERVER__PORT: "9696"
             PROWLARR__LOG__DBENABLED: "False"
-            PROWLARR__AUTH__METHOD: Forms
             PROWLARR__AUTH__REQUIRED: Enabled
           envFrom:
             - secretRef:
