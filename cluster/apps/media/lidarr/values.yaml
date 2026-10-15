@@ -1,0 +1,102 @@
+app-template:
+  controllers:
+    lidarr:
+      strategy: Recreate
+      annotations:
+        secret.reloader.stakater.com/reload: "lidarr-secrets"
+      pod:
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: true
+          fsGroup: 1001
+          fsGroupChangePolicy: OnRootMismatch
+      containers:
+        app:
+          image:
+            repository: ghcr.io/home-operations/lidarr
+            tag: 3.1.6.5078@sha256:b4c60ae24ff264bcdfd8d5562982d99105c17b82c28a6986498f6fb215b7f42e
+            pullPolicy: IfNotPresent
+          env:
+            TZ: CET
+            LIDARR__APP__INSTANCENAME: Lidarr
+            LIDARR__SERVER__PORT: "8686"
+            LIDARR__LOG__DBENABLED: "False"
+            LIDARR__AUTH__REQUIRED: Enabled
+          envFrom:
+            - secretRef:
+                name: lidarr-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+
+  service:
+    app:
+      ports:
+        http:
+          port: 8686
+
+  route:
+    app:
+      kind: HTTPRoute
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - lidarr.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: app
+              port: 8686
+
+  persistence:
+    config:
+      existingClaim: lidarr
+      advancedMounts:
+        lidarr:
+          app:
+            - path: /config
+    media:
+      existingClaim: media
+      advancedMounts:
+        lidarr:
+          app:
+            - path: /data
+    tmp:
+      type: emptyDir
+      advancedMounts:
+        lidarr:
+          app:
+            - path: /tmp
+
+volsync:
+  pvc:
+    capacity: 5Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
+    backup:
+      schedule: "30 */12 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 24
+        daily: 7
+        weekly: 4
+        monthly: 2
+    restore:
+      bootstrap: false
