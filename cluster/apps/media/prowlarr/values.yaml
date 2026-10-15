@@ -1,0 +1,97 @@
+app-template:
+  controllers:
+    prowlarr:
+      strategy: Recreate
+      annotations:
+        secret.reloader.stakater.com/reload: "prowlarr-secrets"
+      pod:
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: true
+          fsGroup: 1001
+          fsGroupChangePolicy: OnRootMismatch
+      containers:
+        app:
+          image:
+            repository: ghcr.io/home-operations/prowlarr
+            tag: 2.6.5.5623@sha256:6152751c3ea2e7751564f5952173d5e83eed0e09f3fabd2cb6bdb58690c39e2f
+            pullPolicy: IfNotPresent
+          env:
+            TZ: CET
+            PROWLARR__APP__INSTANCENAME: Prowlarr
+            PROWLARR__SERVER__PORT: "9696"
+            PROWLARR__LOG__DBENABLED: "False"
+            PROWLARR__AUTH__METHOD: Forms
+            PROWLARR__AUTH__REQUIRED: Enabled
+          envFrom:
+            - secretRef:
+                name: prowlarr-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+
+  service:
+    app:
+      ports:
+        http:
+          port: 9696
+
+  route:
+    app:
+      kind: HTTPRoute
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - prowlarr.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: app
+              port: 9696
+
+  persistence:
+    config:
+      existingClaim: prowlarr
+      advancedMounts:
+        prowlarr:
+          app:
+            - path: /config
+    tmp:
+      type: emptyDir
+      advancedMounts:
+        prowlarr:
+          app:
+            - path: /tmp
+
+volsync:
+  pvc:
+    capacity: 2Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
+    backup:
+      schedule: "15 */12 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 24
+        daily: 7
+        weekly: 4
+        monthly: 2
+    restore:
+      bootstrap: false
