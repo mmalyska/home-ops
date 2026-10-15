@@ -13,7 +13,7 @@ first starts a session, the rest `--resume` it, and three of the five require a
 Total turns = profiles x rounds x 5 (4 profiles x 5 rounds = 100).
 
 Env: OUT (/tmp/hermes-corruption), NS (hermes-agent),
-     TURN_TIMEOUT (900 s per turn; a timeout is a reported failed turn),
+     TURN_TIMEOUT (600 s per turn, enforced with `timeout -s KILL` in the pod),
      TOOLSETS (todo; local-only. NOT file/terminal: those route over SSH to a
      remote host in this cluster's Hermes config).
 A turn is CORRUPT when the final reply leaks reasoning markers, is empty, is
@@ -25,9 +25,11 @@ import json, os, re, statistics, subprocess, sys, threading, time
 NS = os.environ.get("NS", "hermes-agent")
 OUT = os.environ.get("OUT", "/tmp/hermes-corruption")
 TOOLSETS = os.environ.get("TOOLSETS", "todo")
-# One turn queues behind up to len(profiles)-1 others on a single slot; 900 s is far
-# above the ~170 s worst case seen, and a hit is reported, not fatal.
-TURN_TIMEOUT = int(os.environ.get("TURN_TIMEOUT", "900"))
+# One turn queues behind up to len(profiles)-1 others on a single slot (worst
+# case seen ~300 s). A hit is reported, not fatal, and the process is killed
+# INSIDE the pod: killing only the local kubectl exec leaves the remote hermes
+# alive, still holding its connection to llama-server (2026-10-15 incident).
+TURN_TIMEOUT = int(os.environ.get("TURN_TIMEOUT", "600"))
 
 # (prompt, must_call_tool)
 SCRIPTS = [
@@ -100,6 +102,8 @@ def classify(rc, stdout, must_tool):
             "session_id": (result or {}).get("session_id")
             or next((e.get("session_id") for e in ev if e.get("session_id")), None),
             "must_tool": must_tool}
+    if rc in (124, 137):
+        return "turn timeout (killed in pod after %ss)" % TURN_TIMEOUT, info
     if rc != 0:
         return "process exit %s" % rc, info
     if result is None:
@@ -119,6 +123,7 @@ def classify(rc, stdout, must_tool):
 
 def hermes(profile, prompt, session):
     cmd = ["kubectl", "-n", NS, "exec", "deploy/hermes-agent", "-c", "hermes-agent", "--",
+           "timeout", "-s", "KILL", str(TURN_TIMEOUT),
            "hermes", "-p", profile, "chat", "-Q", "--format", "stream-json", "--max-turns", "6"]
     if TOOLSETS:
         cmd += ["-t", TOOLSETS]
@@ -127,7 +132,7 @@ def hermes(profile, prompt, session):
     cmd += ["-q", prompt]
     t0 = time.time()
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=TURN_TIMEOUT)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=TURN_TIMEOUT + 60)
     except subprocess.TimeoutExpired:
         # Counted as a failed turn (rc 124), never an unhandled thread crash.
         return 124, "", time.time() - t0
@@ -197,6 +202,8 @@ def selftest():
         ("empty", 0, ev(init, {"type": "result", "session_id": "S1", "exit_code": 0, "text": " ★"}), False, "empty"),
         ("no result", 0, ev(init), False, "no result"),
         ("nonzero", 1, "", False, "process exit"),
+        ("killed by in-pod timeout", 137, "", False, "turn timeout"),
+        ("timeout exit 124", 124, "", False, "turn timeout"),
     ]
     failed = 0
     for name, rc, out, mt, expect in cases:
