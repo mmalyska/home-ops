@@ -34,7 +34,7 @@ URL: `https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-
 
 - **Never mutate cluster state without explicit user confirmation** (CLAUDE.md): every `kubectl apply/delete/annotate`, every merge and Argo refresh is preceded by asking.
 - The pause is **git-only** (`server.replicaCount: 0`, marked TEMPORARY); `kubectl scale` and `selfHeal` patches do not stick. Only one GPU pod at a time.
-- **Memory limits stay `13Gi` limit / `9Gi` request** (a limit above ~13.4 GiB gives no protection; node starves first). Memory gate: pod working set <= 12.5 GiB **and** node `MemAvailable` >= 0.8 GB at every sample. The Qwen3.6 run failed this at 0.4 GB, so it is the gate that bites.
+- **Memory limits stay `13Gi` limit / `9Gi` request** (a limit above ~13.4 GiB gives no protection; node starves first). Memory gate: pod working set <= 12.5 GiB **and** node `MemAvailable` >= 0.5 GB at every sample. The owner accepted the 0.6-0.7 GB steady state measured on Gemma 4 (2026-10-15), so the original 0.8 GB bar is waived; 0.5 GB stays as the abort floor (the Qwen3.6 run sat at 0.4 GB idle and was stopped).
 - Hermes needs `ctx / parallel >= 64000` per slot and `model.context_length` equal to the real per-slot size (65536 here). The profile seeders only add or overwrite keys: on any consumer move, set `provider`, `default`, `base_url`, `api_key` and `context_length` explicitly.
 - Image stays the pinned `llama-cpp-jetson:v0.6.0` digest; a newer build is a separate change.
 - Gemma thinks by default and its reasoning eats `max_tokens`: the server default is `--chat-template-kwargs '{"enable_thinking":false}'`. The chart always renders `--reasoning-budget`, so Gemma sets `reasoningBudget: -1` (unrestricted; `0` is broken on this build per the LFM2.5 spike).
@@ -53,13 +53,13 @@ URL: `https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-
 
 **Gate A (Phase A to Phase B), all must hold for the Gemma arm:**
 
-| Gate       | Pass                                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| Corruption | <= 1 corrupt in >= 100 real Hermes turns (95% upper bound about 5%), and strictly below arm B / C if those were run |
-| Fits       | pod <= 12.5 GiB and node `MemAvailable` >= 0.8 GB at every sample during the Hermes run and the 2 x ~45K-token load |
-| Speed      | single-stream generation >= 12 tok/s with the slot busy                                                             |
-| Latency    | Hermes p95 turn <= 2x arm C p95 if C was run, otherwise <= 180 s                                                    |
-| Quality    | `probe.py quality` >= 19/20 and `hermes chat -q "ping"` answers                                                     |
+| Gate       | Pass                                                                                                                                                |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Corruption | <= 1 corrupt in >= 100 real Hermes turns (95% upper bound about 5%), and strictly below arm B / C if those were run                                 |
+| Fits       | pod <= 12.5 GiB and node `MemAvailable` >= 0.5 GB at every sample (owner accepted 0.6-0.7 GB steady state on 2026-10-15; 0.5 GB is the abort floor) |
+| Speed      | single-stream generation >= 12 tok/s with the slot busy                                                                                             |
+| Latency    | Hermes p95 turn <= 2x arm C p95 if C was run, otherwise <= 180 s                                                                                    |
+| Quality    | `probe.py quality` >= 19/20 and `hermes chat -q "ping"` answers                                                                                     |
 
 **Ambiguous result (1 < corrupt <= 5 of 100):** run arm B and arm C in the same window for the contrast before deciding. **Fail (corrupt > 5, or fits fails):** stop, record, and keep LFM2.5 at `-np 1`/`--ctx-checkpoints 0` as the documented mitigation (a config-only PR).
 
@@ -71,7 +71,7 @@ URL: `https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-
 
 **Files:**
 
-- Create (already in this PR): `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/server-pod.yaml`, `hermes-corruption.sh`
+- Create (already in this PR): `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/server-pod.yaml`, `hermes-corruption.py` (multi-turn, tool-calling; replaces the retired single-turn `.sh`)
 - Reuse: `docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench/{prefetch-pod.yaml,probe.py,load.py}`
 
 **Interfaces:**
@@ -156,7 +156,7 @@ kubectl describe node nv1 | grep -A8 "Allocated resources" | grep nvidia   # nvi
 
 **Files:**
 
-- Reuse: `server-pod.yaml` (this plan), `probe.py`, `load.py` (Qwen bench artifacts), `hermes-corruption.sh`.
+- Reuse: `server-pod.yaml` (this plan), `probe.py`, `load.py` (Qwen bench artifacts), `hermes-corruption.py` (multi-turn, tool-calling; replaces the retired single-turn `.sh`).
 
 **Interfaces:**
 
@@ -210,8 +210,10 @@ Abort at once (kill `load.py` by PID from `ps`, not `pkill -f`) if `MemAvailable
 - [ ] **Step 4: Real Hermes traffic (the deciding measurement)**
 
 ```bash
-# 4 profiles x 25 rounds = 100 turns; use the profile names noted in Task 1.
-OUT=/tmp/hermes-gemma $A/hermes-corruption.sh 25 <p1> <p2> <p3> <p4> | tee /tmp/rel-gemma.log
+# 4 profiles x 5 rounds x 5-turn conversations = 100 turns (60% need a todo tool call);
+# profile names from Task 1. TOOLSETS defaults to todo: do NOT use file/terminal, which route
+# over SSH to a remote host in this cluster's Hermes config.
+OUT=/tmp/hermes-gemma python3 -I $A/hermes-corruption.py 5 <p1> <p2> <p3> <p4> | tee /tmp/rel-gemma.log
 kill "$(cat /tmp/rel-pf.pid)"; rm -f /tmp/rel-sampler.run
 sort -k2 -n /tmp/rel-mem.log | tail -3
 ```
@@ -332,7 +334,7 @@ kubectl -n hermes-agent exec deploy/hermes-agent -c hermes-agent -- grep -rn "lf
 
 Expected: nothing. Any hit: overwrite `provider`/`default`/`base_url`/`api_key`/`context_length` for that profile explicitly through `profileOverlays` and re-check; never edit the PVC by hand.
 
-- [ ] **Step 3: Production re-measurement.** Run `hermes-corruption.sh 25 <4 profiles>` against the live service (no pause needed) and `probe.py quality`; expect the Phase A numbers.
+- [ ] **Step 3: Production re-measurement.** Run `hermes-corruption.py 5 <4 profiles>` against the live service (no pause needed) and `probe.py quality`; expect the Phase A numbers.
 - [ ] **Step 4: Watch for 24 h:** `LlamaServerSlow` (< 8 tok/s), `LlamaServerOnCpu`, `llamacpp:requests_deferred`, node `MemAvailable`, and Hermes fallback-to-cloud rate.
 - [ ] **Rollback:** revert the swap PR; the LFM2.5 file stays on the PVC, so the previous config returns without a download. `ctx 131072 / parallel 2` is restored with it.
 
@@ -348,5 +350,5 @@ Expected: nothing. Any hit: overwrite `provider`/`default`/`base_url`/`api_key`/
 ## Self-review
 
 - **Coverage:** measure first behind a hard gate (Tasks 4-5), swap in one PR with consumer moves (6-7), verified rollout and rollback (8), and recorded results (9). Each gate row maps to a Task 4 step.
-- **Known gaps stated:** the original 29% harness was never committed; `hermes-corruption.sh` re-creates it and the plan re-measures in the same session rather than trusting the old number. n=100 gives a 95% upper bound of about 5% at one corrupt turn, which is why the gate is "<= 1 of 100" and the contrast arms exist for the ambiguous band.
+- **Known gaps stated:** the original 29% harness was never committed; `hermes-corruption.py` re-creates it (multi-turn, tool-calling) and the plan re-measures in the same session rather than trusting the old number. n=100 gives a 95% upper bound of about 5% at one corrupt turn, which is why the gate is "<= 1 of 100" and the contrast arms exist for the ambiguous band.
 - **Names consistent:** pods `rel-server`, `qwen-prefetch` (reused manifest); alias `lfm2.5-8b-a1b` during Phase A, `gemma-4-26b-a4b` after the swap; branches `chore/llm-pause-gemma-reliability`, `chore/llm-resume-after-gemma-test`, `feat/llm-server-gemma4-single-slot`.
