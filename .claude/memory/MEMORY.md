@@ -40,3 +40,4 @@
 - [Talos live config + apply health quirk](reference_talos_live_config_yq_spec.md) — yq needs two passes on .spec; task talos:apply health step fails on cp nodes after a good apply
 - [tuppr upgrades](reference_tuppr_upgrades.md) — os:admin credential in tuppr's Secret, pre-hooks suppress inter-batch checks, Failed terminal until reset, nv1 alias tag and run-wide PrePullFailed
 - [Qwen3.6 on nv1 benchmark](reference_qwen36_nv1_benchmark.md) — 35B-A3B at 2-bit loads but leaves 0.4 GB node headroom; IQ2_M fails to load; next step is hardware
+- [Gemma 4 single slot on nv1](reference_gemma4_single_slot_swap.md) — served model since 2026-10-15; 0/66 corrupt; -np 2 and bigger prompt cache do not fit; watch node MemAvailable not kubectl top

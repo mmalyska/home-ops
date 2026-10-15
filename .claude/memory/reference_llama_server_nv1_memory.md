@@ -14,3 +14,5 @@ nv1 (Orin NX, 15.6 GiB unified) runs llama-server with Gemma 4 26B-A4B Q2_K_XL. 
 
 **Why:** a prompt-cache diagnosis by the user found the root cause after I misread it as throttling; my first fix (12Gi limit) was itself wrong.
 **How to apply:** before changing llama-server memory flags, quantization, context or parallel slots, re-check pod working set and node `MemAvailable` (`talosctl -n 192.168.48.5 read /proc/meminfo`) under a sustained multi-prompt test, not just a single request. See [[reference_gateway_dns_architecture]] only for unrelated routing.
+
+**Update 2026-10-15:** the pod cgroup does not include GPU allocations on this unified-memory board, so `kubectl top` understates node pressure (a `-np 2` pod showed 10.9 GiB while node `MemAvailable` fell to 0.29 GB). Current config and the `-np 2` / cache findings: [[reference_gemma4_single_slot_swap]].

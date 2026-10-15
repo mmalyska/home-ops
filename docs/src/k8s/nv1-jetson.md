@@ -88,3 +88,33 @@ Plan: `docs/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image `llama-cpp
 - Quality with thinking off: known answers 4/5 (missed reversing a word letter by letter), JSON 5/5, single tool calls 5/5, small-budget titles 5/5. With `enable_thinking=true` a 32-token title call returns empty content (finish `length`), so thinking stays off server-side as for Gemma 4.
 - `llama-bench` and the server both ran on the GPU with no CUDA 13.2 gibberish, so Unsloth's warning does not apply to our build.
 - Qwen3.6-35B-A3B at 2-bit is about the ceiling nv1 can load at all (IQ2_M is already out). A 3-bit file or `UD-Q2_K_XL` (11.45 GiB) cannot work. A usable Qwen3.6 or Qwen3.8-27B needs a 24 GB-class GPU.
+
+## Gemma 4 26B-A4B at one slot (2026-10-15)
+
+`llama-server` serves `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 256 --ctx-checkpoints 2 --n-predict 2048` (alias `gemma-4-26b-a4b`), replacing LFM2.5-8B-A1B. Plan and gates: `docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md`; harness: `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/hermes-corruption.py`.
+
+**Why:** LFM2.5's hybrid recurrent state is corrupted by llama.cpp under multi-sequence serving (ggml-org/llama.cpp#29002, still open on 2026-10-15): 29.0% of real Hermes turns (n=100). Gemma 4 has no recurrent state.
+
+| Measurement                                      | Result                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Corrupt turns (multi-turn, tool-calling, 3 runs) | **0 of 66** (95% upper bound ~4.5%); 0 of 10 more on the live service with 2 concurrent sessions |
+| Required tool calls used                         | all (6 of 6 live; 8 of 8 in run 1)                                                               |
+| Quality probes (thinking off)                    | 19/20 (misses reversing a word letter by letter)                                                 |
+| Generation                                       | 17.8 tok/s in the test pod, 18.1 tok/s on the live Service (LFM2.5: ~25)                         |
+| Prefill                                          | ~205-225 tok/s (LFM2.5: ~630)                                                                    |
+| Node `MemAvailable` settled (256 MiB cache)      | 0.6-0.8 GB (LFM2.5: 1.7-3.8 GB); owner accepted this on 2026-10-15                               |
+
+### What costs what
+
+- **One slot serializes everything.** Two or more sessions are served one LLM call at a time. A turn alone takes ~11-39 s; with 2 sessions interleaved a no-tool turn took ~50 s, tool turns ~105-150 s, the first turn of a conversation 230-260 s; with 4 profiles 90-260 s. The slot's prefix reuse is lost as soon as sessions alternate, so it is worse than 2x.
+- **A full-toolset Hermes call is ~16K tokens**, about 80 s of cold prefill. `hermes chat -q ping` took 2m31s and its auxiliary title generation timed out (single slot busy with the main call).
+- **`-np 2` does not fit.** Two 64K slots need `-c 131072`: idle `MemAvailable` 0.55 GB (vs 1.38 GB fresh at `-np 1`), 0.29 GB within ~2 minutes of two concurrent sessions (watchdog abort), and `talosctl`/`kubectl exec` started timing out. Same config OOM-killed on 2026-09-28. The pod's own RSS (~10.9 GiB) looks fine because GPU allocations on this unified-memory board are not charged to the pod cgroup: watch node `MemAvailable`, not `kubectl top`.
+- **`--cache-ram 640` is not worth it** with several sessions: one saved prompt state is ~276 MiB, so 256 MiB rejects every entry ("exceeds cache size limit"), and 640 holds only two, which four interleaved sessions evict before reuse (same latency, `MemAvailable` dipped to 0.48 GB). It could help a two-session workload; untested.
+- **A runaway generation blocks the only slot** until the context fills (about an hour at 14 tok/s). `--n-predict 2048` bounds it: a request with no `max_tokens` stops at exactly 2048 with `finish_reason=length` (about 2 minutes). Hermes may retry on `length`.
+
+### Harness lessons
+
+- The todo tool's state does not persist across `--resume`d Hermes processes; a prompt that asks to "read the list back" sends the model into a reconcile spiral. Test prompts must not depend on tool state across turns.
+- `kubectl exec` killed locally leaves the remote `hermes` process alive, still holding its connection to llama-server: wrap the remote command in `timeout -s KILL`.
+- The `file` and `terminal` toolsets route over SSH to a remote host in this cluster's Hermes config; the harness uses the local-only `todo` toolset.
+- Qwen3.6-35B-A3B was ruled out earlier the same day (see the section above).
