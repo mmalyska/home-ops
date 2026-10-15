@@ -208,12 +208,16 @@ user confirmation at the time, per the repo's hard rules.
 - Add a memory note for the QNAP `/media` layout and the single-mount
   hardlink constraint once the cutover is done.
 
-## Open items for review
+## Resolved review items
 
-1. Env-var names for API key, auth and SABnzbd host whitelist are
-   unverified against the `ghcr.io/home-operations/*` images; confirm when
-   writing the values.
-2. `incomplete` PVC size and per-app config sizes are proposals.
-3. Memory limits are starting points.
-4. Whether Jellyfin should keep read-write access to the libraries.
-5. When to delete the old shares after the cutover.
+- Sizes: `incomplete` PVC 100Gi (re-check ceph free space at deploy time),
+  config PVCs as listed above.
+- Memory limits: starting values as listed above, revisit from observed usage.
+- Jellyfin keeps its current read-write mount of the libraries.
+- Old shares and exports are kept for two weeks after the verified cutover,
+  then deleted.
+
+## Still to verify during implementation
+
+- Env-var names for API key, auth and SABnzbd host whitelist against the
+  `ghcr.io/home-operations/*` images.
