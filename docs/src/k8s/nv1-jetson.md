@@ -91,25 +91,25 @@ Plan: `docs/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image `llama-cpp
 
 ## Gemma 4 26B-A4B at one slot (2026-10-15)
 
-`llama-server` serves `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 256 --ctx-checkpoints 2 --n-predict 2048` (alias `gemma-4-26b-a4b`), replacing LFM2.5-8B-A1B. Plan and gates: `docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md`; harness: `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/hermes-corruption.py`.
+`llama-server` serves `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 --n-predict 2048` (alias `gemma-4-26b-a4b`), replacing LFM2.5-8B-A1B. Plan and gates: `docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md`; harness: `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/hermes-corruption.py`.
 
 **Why:** LFM2.5's hybrid recurrent state is corrupted by llama.cpp under multi-sequence serving (ggml-org/llama.cpp#29002, still open on 2026-10-15): 29.0% of real Hermes turns (n=100). Gemma 4 has no recurrent state.
 
-| Measurement                                      | Result                                                                                           |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Corrupt turns (multi-turn, tool-calling, 3 runs) | **0 of 66** (95% upper bound ~4.5%); 0 of 10 more on the live service with 2 concurrent sessions |
-| Required tool calls used                         | all (6 of 6 live; 8 of 8 in run 1)                                                               |
-| Quality probes (thinking off)                    | 19/20 (misses reversing a word letter by letter)                                                 |
-| Generation                                       | 17.8 tok/s in the test pod, 18.1 tok/s on the live Service (LFM2.5: ~25)                         |
-| Prefill                                          | ~205-225 tok/s (LFM2.5: ~630)                                                                    |
-| Node `MemAvailable` settled (256 MiB cache)      | 0.6-0.8 GB (LFM2.5: 1.7-3.8 GB); owner accepted this on 2026-10-15                               |
+| Measurement                                      | Result                                                                                                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Corrupt turns (multi-turn, tool-calling, 3 runs) | **0 of 66** (95% upper bound ~4.5%); 0 of 10 more on the live service with 2 concurrent sessions                                           |
+| Required tool calls used                         | all (6 of 6 live; 8 of 8 in run 1)                                                                                                         |
+| Quality probes (thinking off)                    | 19/20 (misses reversing a word letter by letter)                                                                                           |
+| Generation                                       | 17.8 tok/s in the test pod, 18.1 tok/s on the live Service (LFM2.5: ~25)                                                                   |
+| Prefill                                          | ~205-225 tok/s (LFM2.5: ~630)                                                                                                              |
+| Node `MemAvailable`, 640 MiB cache (production)  | 0.86 GB steady, 0.54 GB transient low after a fresh start (256 MiB: 0.64-0.8 GB); LFM2.5 had 1.7-3.8 GB. Owner accepted this on 2026-10-15 |
 
 ### What costs what
 
-- **One slot serializes everything.** Two or more sessions are served one LLM call at a time. A turn alone takes ~11-39 s; with 2 sessions interleaved a no-tool turn took ~50 s, tool turns ~105-150 s, the first turn of a conversation 230-260 s; with 4 profiles 90-260 s. The slot's prefix reuse is lost as soon as sessions alternate, so it is worse than 2x.
+- **One slot serializes everything.** Sessions are served one LLM call at a time. With the 256 MiB cache a turn alone took ~11-39 s and with 2 sessions interleaved a no-tool turn took ~50 s, tool turns ~105-150 s, the first turn 230-260 s (prefix reuse is lost when sessions alternate). With the **640 MiB cache two sessions take 12-18 s for a no-tool turn, 22-42 s with tool calls and ~105-120 s for the first turn** (see the cache bullet). With four profiles interleaved it is 90-260 s either way.
 - **A full-toolset Hermes call is ~16K tokens**, about 80 s of cold prefill. `hermes chat -q ping` took 2m31s and its auxiliary title generation timed out (single slot busy with the main call).
 - **`-np 2` does not fit.** Two 64K slots need `-c 131072`: idle `MemAvailable` 0.55 GB (vs 1.38 GB fresh at `-np 1`), 0.29 GB within ~2 minutes of two concurrent sessions (watchdog abort), and `talosctl`/`kubectl exec` started timing out. Same config OOM-killed on 2026-09-28. The pod's own RSS (~10.9 GiB) looks fine because GPU allocations on this unified-memory board are not charged to the pod cgroup: watch node `MemAvailable`, not `kubectl top`.
-- **`--cache-ram 640` is not worth it** with several sessions: one saved prompt state is ~276 MiB, so 256 MiB rejects every entry ("exceeds cache size limit"), and 640 holds only two, which four interleaved sessions evict before reuse (same latency, `MemAvailable` dipped to 0.48 GB). It could help a two-session workload; untested.
+- **`--cache-ram 640` is what production runs (trial 2026-10-15).** One saved prompt state is ~276 MiB, so 256 MiB rejects every entry ("exceeds cache size limit") and sessions that alternate re-prefill every call. 640 MiB holds two states, which is exactly two interleaved sessions: no-tool turns fell from 48-51 s to 12-18 s, tool turns from 103-153 s to 22-42 s, first turns from 232-258 s to 103-119 s (2 profiles x 2 rounds, 20 turns, 0 real corruption, 12/12 tool calls). Cost: node `MemAvailable` 0.86 GB steady with a 0.54 GB transient low. **It does not help with 3 or more sessions**: a first test with four interleaved profiles showed no latency change (cyclic access over two entries always misses) and a 0.48 GB dip. Budget for 4 concurrent profiles is not met by any cache size the node can afford (~1.1 GB).
 - **A runaway generation blocks the only slot** until the context fills (about an hour at 14 tok/s). `--n-predict 2048` bounds it: a request with no `max_tokens` stops at exactly 2048 with `finish_reason=length` (about 2 minutes). Hermes may retry on `length`.
 
 ### Harness lessons
