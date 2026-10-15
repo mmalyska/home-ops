@@ -378,9 +378,18 @@ Parameter table (substitute into the templates below):
 
 Note: the Sonarr digests above were resolved on 2026-10-15 from the GHCR tag index. Sonarr `5.x` is still a prerelease upstream, so `4.0.20.3012` is the deliberate pin; the digests resolve a multi-arch index, so re-resolve rather than hand-edit if a tag moves.
 
-- [ ] **Step 1: Ask the user to create four Bitwarden secrets** (BLOCKING: UUIDs cannot be invented)
+- [x] **Step 1: Bitwarden secrets (done 2026-10-15)**
 
-Ask the user to create `SONARR_API_KEY`, `RADARR_API_KEY`, `LIDARR_API_KEY`, `PROWLARR_API_KEY` in Bitwarden Secrets Manager, each a fresh 32-hex value (`openssl rand -hex 16`), and send back the four UUIDs. Do not proceed to Step 4 until you have them. Never write the values anywhere.
+The four secrets exist in Bitwarden Secrets Manager (32-char values, never print them). UUIDs for the ExternalSecrets:
+
+| Key | UUID |
+|---|---|
+| `SONARR_API_KEY` | `de6c7bb0-ca55-47dd-9fbd-b4e401035bad` |
+| `RADARR_API_KEY` | `8b04c516-ab4b-446b-8721-b4e401036e8a` |
+| `LIDARR_API_KEY` | `9613910b-d3dd-4ae1-afd8-b4e401037fc6` |
+| `PROWLARR_API_KEY` | `06400109-7392-4b01-aa8c-b4e4010391b3` |
+
+When listing secrets with `bws`, extract only `key` and `id`; `bws secret list` prints values.
 
 - [ ] **Step 2: `app-config.yaml` and `Chart.yaml`** — same as Task 3 Steps 1-2 with `name: <app>`.
 
@@ -513,7 +522,7 @@ spec:
   data:
     - secretKey: <APP>__AUTH__APIKEY
       remoteRef:
-        key: "<uuid from Step 1>" #gitleaks:allow #<APP>_API_KEY
+        key: "<uuid from the Step 1 table>" #gitleaks:allow #<APP>_API_KEY
 ```
 
 - [ ] **Step 5: Render each app**
