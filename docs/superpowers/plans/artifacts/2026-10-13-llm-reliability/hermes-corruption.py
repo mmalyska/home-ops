@@ -13,6 +13,7 @@ first starts a session, the rest `--resume` it, and three of the five require a
 Total turns = profiles x rounds x 5 (4 profiles x 5 rounds = 100).
 
 Env: OUT (/tmp/hermes-corruption), NS (hermes-agent),
+     TURN_TIMEOUT (900 s per turn; a timeout is a reported failed turn),
      TOOLSETS (todo; local-only. NOT file/terminal: those route over SSH to a
      remote host in this cluster's Hermes config).
 A turn is CORRUPT when the final reply leaks reasoning markers, is empty, is
@@ -24,6 +25,9 @@ import json, os, re, statistics, subprocess, sys, threading, time
 NS = os.environ.get("NS", "hermes-agent")
 OUT = os.environ.get("OUT", "/tmp/hermes-corruption")
 TOOLSETS = os.environ.get("TOOLSETS", "todo")
+# One turn queues behind up to len(profiles)-1 others on a single slot; 900 s is far
+# above the ~170 s worst case seen, and a hit is reported, not fatal.
+TURN_TIMEOUT = int(os.environ.get("TURN_TIMEOUT", "900"))
 
 # (prompt, must_call_tool)
 SCRIPTS = [
@@ -122,7 +126,11 @@ def hermes(profile, prompt, session):
         cmd += ["--resume", session]
     cmd += ["-q", prompt]
     t0 = time.time()
-    p = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=TURN_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # Counted as a failed turn (rc 124), never an unhandled thread crash.
+        return 124, "", time.time() - t0
     return p.returncode, p.stdout, time.time() - t0
 
 
