@@ -17,11 +17,11 @@ hermes:
       memory: 3Gi
   config:
     # Hermes rejects any model below 64K context (agent_init._enforce_minimum_context).
-    # llama-server now runs -c 131072 -np 2 (65536 per slot, verified under a
-    # sustained memory test), so the main model can point at it again.
+    # llama-server runs -c 65536 -np 1: one slot of 65536 tokens, so the main
+    # model can point at it. Concurrent sessions are served one at a time.
     model:
       provider: custom
-      default: lfm2.5-8b-a1b
+      default: gemma-4-26b-a4b
       base_url: http://llama-server.llm.svc.cluster.local:8080/v1
       api_key: local
       context_length: 65536
@@ -62,14 +62,14 @@ hermes:
         model: "google/gemini-2.5-flash-lite"
       web_extract:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       # compression has a 64K floor too (auxiliary_client._task_minimum_context_length);
       # llama-server's 65536-per-slot context clears it.
       compression:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       skills_hub:
@@ -77,7 +77,7 @@ hermes:
         model: ""
       approval:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       mcp:
@@ -85,27 +85,27 @@ hermes:
         model: ""
       title_generation:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       triage_specifier:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       kanban_decomposer:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       profile_describer:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
       curator:
         provider: custom
-        model: lfm2.5-8b-a1b
+        model: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
 #    mcp_servers:
@@ -121,7 +121,7 @@ hermes:
     researcher: &localMainModel
       model:
         provider: custom
-        default: lfm2.5-8b-a1b
+        default: gemma-4-26b-a4b
         base_url: http://llama-server.llm.svc.cluster.local:8080/v1
         api_key: local
         context_length: 65536
