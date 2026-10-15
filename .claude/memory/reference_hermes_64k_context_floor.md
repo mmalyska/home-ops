@@ -11,3 +11,5 @@ llama-server on nv1 runs `-c 65536 -np 2` = 32768 per slot, so a local main mode
 
 **Why:** the final whole-branch review found it after all six profiles and the default were switched; 17 requests I counted as "Hermes" were actually honcho-api. No real Hermes turn had been run.
 **How to apply:** after any Hermes model/provider change, run `kubectl exec -n hermes-agent deploy/hermes-agent -c hermes-agent -- hermes chat -q "ping"` before calling it done. Seeders only add keys, so a rollback must overwrite `base_url`/`api_key`/`context_length` explicitly.
+
+**Update 2026-10-15:** llama-server now runs `-c 65536 -np 1` (one slot of 65536), so the floor is met and the main model and compression run locally on Gemma 4. See [[reference_gemma4_single_slot_swap]].
