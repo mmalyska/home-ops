@@ -48,7 +48,10 @@ server:
   # prompt state is ~276 MiB, so 256 skips caching (no hit anyway with several
   # sessions interleaving), while 640 held two entries, gave the same latency
   # and pushed MemAvailable down to 0.48 GB.
-  cacheRam: 256 # MiB of host-RAM prompt cache
+  # TRIAL (2026-10-15): 640 MiB holds two saved prompt states (~276 MiB each),
+  # the two-session case. Revert to 256 if latency does not improve or node
+  # MemAvailable stays under ~0.6 GB. See docs/src/k8s/nv1-jetson.md.
+  cacheRam: 640 # MiB of host-RAM prompt cache
   ctxCheckpoints: 2 # per slot; each ~81 MiB
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   storage: 30Gi
