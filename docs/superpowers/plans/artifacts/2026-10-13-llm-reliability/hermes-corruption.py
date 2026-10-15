@@ -32,26 +32,30 @@ TOOLSETS = os.environ.get("TOOLSETS", "todo")
 TURN_TIMEOUT = int(os.environ.get("TURN_TIMEOUT", "600"))
 
 # (prompt, must_call_tool)
+# Turn 4 must NOT ask to read the list back: the todo tool's state does not
+# persist across --resume'd Hermes processes (revision restarts at 1 with only
+# the new item), so that prompt sends the model into a reconcile spiral that
+# is a test-design artifact, not a serving fault (2026-10-15, two full runs).
 SCRIPTS = [
     [("Create a todo list with three items for upgrading a Kubernetes node: drain, upgrade, uncordon. Use the todo tool.", True),
      ("Mark the first item done using the todo tool, then tell me in one sentence what remains.", True),
      ("Explain in two sentences why draining must happen before the upgrade.", False),
-     ("Add a fourth item 'verify Ceph health' with the todo tool and read the whole list back to me.", True),
+     ("Add a fourth item 'verify Ceph health' with the todo tool and confirm in one sentence.", True),
      ("Summarise the whole plan so far in two sentences.", False)],
     [("Create a todo list with three items for restoring a CloudNativePG cluster from backup: stop writers, restore, verify. Use the todo tool.", True),
      ("Mark the first item done using the todo tool, then tell me in one sentence what remains.", True),
      ("Explain in two sentences why you verify before reopening writes.", False),
-     ("Add a fourth item 'rotate credentials' with the todo tool and read the whole list back to me.", True),
+     ("Add a fourth item 'rotate credentials' with the todo tool and confirm in one sentence.", True),
      ("Summarise the whole plan so far in two sentences.", False)],
     [("Create a todo list with three items for renewing a TLS certificate: check expiry, renew, reload. Use the todo tool.", True),
      ("Mark the first item done using the todo tool, then tell me in one sentence what remains.", True),
      ("Explain in two sentences why you check expiry first.", False),
-     ("Add a fourth item 'update monitoring' with the todo tool and read the whole list back to me.", True),
+     ("Add a fourth item 'update monitoring' with the todo tool and confirm in one sentence.", True),
      ("Summarise the whole plan so far in two sentences.", False)],
     [("Create a todo list with three items for debugging a CrashLoopBackOff pod: read logs, check events, fix config. Use the todo tool.", True),
      ("Mark the first item done using the todo tool, then tell me in one sentence what remains.", True),
      ("Explain in two sentences why events help beyond logs.", False),
-     ("Add a fourth item 'add a readiness probe' with the todo tool and read the whole list back to me.", True),
+     ("Add a fourth item 'add a readiness probe' with the todo tool and confirm in one sentence.", True),
      ("Summarise the whole plan so far in two sentences.", False)],
 ]
 
