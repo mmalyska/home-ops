@@ -23,7 +23,7 @@ cluster/
   bootstrap-application.yaml   # Root app-of-apps entry point
   projects/                    # ArgoCD AppProject definitions
   appsets/                     # ArgoCD ApplicationSets
-  apps/                        # Applications by category: core, system, default, games, home-automation
+  apps/                        # Applications by category: core, system, default, games, home-automation, media
 provision/
   talos/                       # templates/, nodes/, nodes.yaml, clusterconfig/
   terraform/cloudflare/        # Cloudflare DNS, tunnels, firewall rules
