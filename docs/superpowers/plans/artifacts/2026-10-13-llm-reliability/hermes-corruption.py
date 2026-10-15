@@ -62,6 +62,9 @@ SCRIPTS = [
 MARKERS = re.compile(r"</?think>|<\|channel\|>|<\|im_start\|>|<\|im_end\|>|<\|tool_call")
 SENTENCE_END = re.compile(r"[.!?]")
 WORD = re.compile(r"[A-Za-z]{3,}")
+# The persona often ends a sentence with an emoticon instead of a period, e.g.
+# "... before the certificate becomes invalid (\u25d5\u203f\u25d5\u273f) \u2605".
+EMOTICON_END = re.compile(r"\([^()\n]{0,14}[^\x00-\x7f][^()\n]{0,14}\)[\s\u2605\u2606\u2726\u2727\u2022\u266a~]*$")
 LIST_ITEM = re.compile(r"^\s*(?:[-*\u2022]|\d+[.)])\s+\S")
 
 
@@ -75,6 +78,8 @@ def looks_truncated(body):
     fence is a complete shape and is not flagged (known blind spot: a reply cut
     inside a list item).
     """
+    if EMOTICON_END.search(body):
+        return False
     last = body.rstrip().splitlines()[-1] if body.strip() else ""
     if LIST_ITEM.match(last) or last.strip().startswith("```"):
         return False
@@ -197,6 +202,8 @@ def selftest():
             "text": "You still need to renew the TLS certificate and reload the service! (\u25d5\u203f\u25d5) \u266a"}), False, None),
         ("ends in list item", 0, ev(init, {"type": "result", "session_id": "S1", "exit_code": 0,
             "text": "Plan:\n- [x] check expiry\n- [ ] update monitoring (tls-4)"}), False, None),
+        ("sentence ends in an emoticon", 0, ev(init, {"type": "result", "session_id": "S1", "exit_code": 0,
+            "text": "It also helps determine how much time is left before the certificate becomes invalid (\u25d5\u203f\u25d5\u273f) \u2605"}), False, None),
         ("cut after earlier sentence", 0, ev(init, {"type": "result", "session_id": "S1", "exit_code": 0,
             "text": "Drain first. Then upgrade the"}), False, "truncated"),
         ("leak", 0, ev(init, {"type": "result", "session_id": "S1", "exit_code": 0,

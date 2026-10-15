@@ -43,14 +43,14 @@ server:
   # at exactly 2048 with finish_reason=length.
   nPredict: 2048
   # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system). The
-  # pod settles at ~10.5-10.8 GiB and node MemAvailable at ~0.6-0.8 GB
-  # (accepted by the owner 2026-10-15). 256 MiB is deliberate: each saved
-  # prompt state is ~276 MiB, so 256 skips caching (no hit anyway with several
-  # sessions interleaving), while 640 held two entries, gave the same latency
-  # and pushed MemAvailable down to 0.48 GB.
-  # TRIAL (2026-10-15): 640 MiB holds two saved prompt states (~276 MiB each),
-  # the two-session case. Revert to 256 if latency does not improve or node
-  # MemAvailable stays under ~0.6 GB. See docs/src/k8s/nv1-jetson.md.
+  # pod itself sits at ~10.5-10.9 GiB, but GPU allocations are not charged to
+  # its cgroup: watch NODE MemAvailable (steady ~0.86 GB, transient low ~0.54 GB
+  # after a fresh start; accepted by the owner 2026-10-15), not `kubectl top`.
+  # One saved prompt state is ~276 MiB. 256 MiB rejects every entry, so
+  # sessions that alternate re-prefill ~16K tokens on every call. 640 MiB holds
+  # two states = two interleaved sessions: measured 3-4x faster turns (no-tool
+  # 48-51 s -> 12-18 s). It does NOT help 3+ sessions (cyclic eviction, no gain,
+  # 0.48 GB dip) and nothing the node can afford does. Do not raise it further.
   cacheRam: 640 # MiB of host-RAM prompt cache
   ctxCheckpoints: 2 # per slot; each ~81 MiB
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
