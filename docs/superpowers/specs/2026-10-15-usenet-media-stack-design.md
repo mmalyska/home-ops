@@ -24,6 +24,7 @@ ArgoCD ApplicationSet + `app-template` conventions.
 | App settings | Configured once in each UI. Recyclarr keeps TRaSH profiles/custom formats for Sonarr and Radarr in git |
 | Access | Internal only: HTTPRoute on `envoy-internal`, app forms login required, nothing on Cloudflare |
 | Identity | Run as 1001:1001, same as Jellyfin |
+| Images | `ghcr.io/home-operations/*`, pinned `tag@digest`, Renovate-managed |
 | Secrets | Indexer and news-provider credentials entered in the UIs (stored in app config on the volsync-backed PVC). *arr API keys pre-seeded from Bitwarden via ExternalSecrets. Nothing secret in git |
 | News providers | Primary plus backup/block account(s), ordered by server priority in SABnzbd |
 
@@ -209,10 +210,9 @@ user confirmation at the time, per the repo's hard rules.
 
 ## Open items for review
 
-1. Container images: assumed `ghcr.io/home-operations/*` (the images
-   onedr0p uses) pinned `tag@digest`, with Renovate. Alternative: LinuxServer.
-   Not yet verified for the env-var names used above (API key, auth,
-   SABnzbd host whitelist); confirm when writing the values.
+1. Env-var names for API key, auth and SABnzbd host whitelist are
+   unverified against the `ghcr.io/home-operations/*` images; confirm when
+   writing the values.
 2. `incomplete` PVC size and per-app config sizes are proposals.
 3. Memory limits are starting points.
 4. Whether Jellyfin should keep read-write access to the libraries.
