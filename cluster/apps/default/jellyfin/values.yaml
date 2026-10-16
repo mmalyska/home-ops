@@ -1,4 +1,5 @@
 jellyfin:
+  replicaCount: 0 # paused for the media share migration
   image:
     repository: docker.io/jellyfin/jellyfin
     tag: 10.11.11@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
