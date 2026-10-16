@@ -221,3 +221,19 @@ user confirmation at the time, per the repo's hard rules.
 
 - Env-var names for API key, auth and SABnzbd host whitelist against the
   `ghcr.io/home-operations/*` images.
+
+## As built (2026-10-16)
+
+Differences from the design above, found while rolling it out:
+
+- SABnzbd's `SABNZBD__HOST_WHITELIST_ENTRIES` lists the route host plus `sabnzbd`, `sabnzbd.media` and the `.svc*` forms,
+  so the \*arrs reach it by service name. The first run needs a SABnzbd username and password set before anything else.
+- The \*arrs keep `<APP>__AUTH__REQUIRED=Enabled` but no preset `AUTH__METHOD`; the first-run dialog picks Forms.
+- New apps from the ApplicationSet need no `root-app` sync, but ArgoCD can take minutes to re-read git; annotate the
+  ApplicationSet or Application for a refresh instead of waiting.
+- Recyclarr v8 has no `include: template:`. Templates are complete configs, so the ConfigMap copies the two TRaSH templates.
+- Jellyfin: the chart already owns a volume named `media`, so the new volume is `library`. Music Assistant also moved to
+  `/media` (`subPath: music`) so the old shares can be retired.
+- QNAP File Station cannot write to `/media` (owner uid 1001); the migration was a throwaway root pod.
+- Jellyfin only sees library changes after a scan (no inotify over NFS); add the Jellyfin Connect entry in Sonarr/Radarr.
+- Old Jellyfin PVs and PVCs were deleted on 2026-10-16; the old QNAP shares can go from 2026-10-30.
