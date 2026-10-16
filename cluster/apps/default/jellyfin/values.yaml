@@ -59,20 +59,20 @@ jellyfin:
       memory: 6000Mi
 
   volumes:
-    - name: media
+    - name: library
       persistentVolumeClaim:
         claimName: jellyfin-media
     - name: transcoding
       emptyDir: {}
 
   volumeMounts:
-    - name: media
+    - name: library
       mountPath: /data/tvshows
       subPath: tv-series
-    - name: media
+    - name: library
       mountPath: /data/movies
       subPath: movies
-    - name: media
+    - name: library
       mountPath: /data/music
       subPath: music
     - name: transcoding
