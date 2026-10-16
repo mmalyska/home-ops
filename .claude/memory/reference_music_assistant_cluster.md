@@ -5,7 +5,7 @@ metadata:
   type: reference
 ---
 
-Music Assistant (cluster/apps/home-automation/music-assistant) runs in the cluster since 2026-10-03 on Multus macvlan `net1` 192.168.48.62 (own LAN IP for mDNS/Cast/AirPlay and the 8097 stream server). Library = QNAP `/music` mounted by Kubernetes at `/media/music` (Local filesystem provider), not MA's in-container NFS provider (needs SYS_ADMIN).
+Music Assistant (cluster/apps/home-automation/music-assistant) runs in the cluster since 2026-10-03 on Multus macvlan `net1` 192.168.48.62 (own LAN IP for mDNS/Cast/AirPlay and the 8097 stream server). Library = QNAP `/media` share (`subPath: music`, since 2026-10-16, see [[reference_qnap_media_share_layout]]) mounted by Kubernetes at `/media/music` (Local filesystem provider), not MA's in-container NFS provider (needs SYS_ADMIN).
 
 **Why:** MA discovers/streams to players with mDNS and random ports; a pod IP is unreachable for players, and upstream documents host networking as mandatory.
 
