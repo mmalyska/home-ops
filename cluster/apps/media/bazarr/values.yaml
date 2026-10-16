@@ -1,0 +1,93 @@
+app-template:
+  controllers:
+    bazarr:
+      strategy: Recreate
+      pod:
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: true
+          fsGroup: 1001
+          fsGroupChangePolicy: OnRootMismatch
+      containers:
+        app:
+          image:
+            repository: ghcr.io/home-operations/bazarr
+            tag: 1.6.2@sha256:17dc1cff22e99694ffbfb06555526cb47a66b362b4d6c982f06b557f7caae2bb
+            pullPolicy: IfNotPresent
+          env:
+            TZ: CET
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+
+  service:
+    app:
+      ports:
+        http:
+          port: 6767
+
+  route:
+    app:
+      kind: HTTPRoute
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - bazarr.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: app
+              port: 6767
+
+  persistence:
+    config:
+      existingClaim: bazarr
+      advancedMounts:
+        bazarr:
+          app:
+            - path: /config
+    media:
+      existingClaim: media
+      advancedMounts:
+        bazarr:
+          app:
+            - path: /data
+    tmp:
+      type: emptyDir
+      advancedMounts:
+        bazarr:
+          app:
+            - path: /tmp
+
+volsync:
+  pvc:
+    capacity: 2Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
+    backup:
+      schedule: "35 */12 * * *"
+      pruneIntervalDays: 14
+      retain:
+        hourly: 24
+        daily: 7
+        weekly: 4
+        monthly: 2
+    restore:
+      bootstrap: false
