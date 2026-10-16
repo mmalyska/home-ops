@@ -11,6 +11,8 @@ is its own ArgoCD app built on bjw-s `app-template`, with images from `ghcr.io/h
 | `sabnzbd`                      | usenet downloader                    | `sabnzbd.<private-domain>`  |
 | `prowlarr`                     | indexer manager, syncs to the \*arrs | `prowlarr.<private-domain>` |
 | `sonarr` / `radarr` / `lidarr` | TV / movies / music                  | `<app>.<private-domain>`    |
+| `bazarr`                       | subtitles for Sonarr and Radarr      | `bazarr.<private-domain>`   |
+| `recyclarr`                    | daily CronJob, syncs TRaSH profiles  | -                           |
 | `media-storage`                | the shared `/media` PV and PVC       | -                           |
 
 All routes are on `envoy-internal` only. The \*arrs run with `AUTH__REQUIRED=Enabled` and no preset method, so the first
@@ -67,4 +69,28 @@ not work on this export and imports fall back to copy.
 - Pods stay `ContainerCreating` until the QNAP export exists and is reachable; there is no alert for that.
 - Removing an app needs the manual procedure in the repo memory (`reference_app_removal_procedure`); the appset never
   prunes Applications.
-- Not part of this stack yet: Bazarr, Recyclarr, metrics and alerts, and moving Jellyfin onto `/media`.
+- Not part of this stack yet: metrics and alerts, and moving Jellyfin onto `/media`.
+
+## Recyclarr
+
+A CronJob (`30 4 * * *`) runs `recyclarr sync` against Sonarr and Radarr and keeps the TRaSH quality definitions, the
+`WEB-1080p` profile (Sonarr) and the `HD Bluray + WEB` profile (Radarr) with their custom formats in place. Recyclarr
+v8 templates are complete configs, so the config in `cluster/apps/media/recyclarr/values.yaml` is a copy of those two
+templates (default custom format groups only). To change a profile or enable an optional group, edit that ConfigMap
+using the templates in the `recyclarr/config-templates` repository as the reference. Lidarr is not managed.
+
+After the first deploy, run a sync once and read the log:
+
+```sh
+kubectl -n media create job --from=cronjob/recyclarr recyclarr-manual
+kubectl -n media logs job/recyclarr-manual
+kubectl -n media delete job recyclarr-manual
+```
+
+Then pick the new profile on the series and movies (the default profile is not changed by Recyclarr).
+
+## Bazarr
+
+Bazarr mounts `/data` and writes subtitles next to the media. In its UI set a login (Settings, General, Security), add
+Sonarr (`sonarr`, port 8989) and Radarr (`radarr`, port 7878) with their API keys (Settings, Sonarr / Radarr), and add
+subtitle providers and languages.
