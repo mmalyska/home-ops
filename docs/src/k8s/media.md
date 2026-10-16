@@ -78,6 +78,9 @@ Jellyfin (namespace `jellyfin`) has its own PV/PVC `jellyfin-media` on the same 
 at `/data/music`. The `subPath` directories must exist and be owned by 1001 before the pod starts, otherwise kubelet
 creates them root-owned. The libraries inside Jellyfin did not need to change.
 
+Music Assistant (`home-automation`) mounts the same export read-only with `subPath: music` at `/media/music`. Nothing
+reads the old `tv-series`, `movies` and `music` QNAP shares any more, so they can be deleted after the grace period.
+
 ## Recyclarr
 
 A CronJob (`30 4 * * *`) runs `recyclarr sync` against Sonarr and Radarr and keeps the TRaSH quality definitions, the

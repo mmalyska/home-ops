@@ -55,9 +55,10 @@ app-template:
     library:
       type: nfs
       server: 192.168.50.8
-      path: /music
+      path: /media
       globalMounts:
         - path: /media/music
+          subPath: music
           readOnly: true
 
 volsync:
