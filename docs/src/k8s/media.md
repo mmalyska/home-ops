@@ -69,7 +69,14 @@ not work on this export and imports fall back to copy.
 - Pods stay `ContainerCreating` until the QNAP export exists and is reachable; there is no alert for that.
 - Removing an app needs the manual procedure in the repo memory (`reference_app_removal_procedure`); the appset never
   prunes Applications.
-- Not part of this stack yet: metrics and alerts, and moving Jellyfin onto `/media`.
+- Not part of this stack yet: metrics and alerts.
+
+## Jellyfin
+
+Jellyfin (namespace `jellyfin`) has its own PV/PVC `jellyfin-media` on the same `/media` export and mounts three
+`subPath`s at the same container paths as before: `tv-series` at `/data/tvshows`, `movies` at `/data/movies` and `music`
+at `/data/music`. The `subPath` directories must exist and be owned by 1001 before the pod starts, otherwise kubelet
+creates them root-owned. The libraries inside Jellyfin did not need to change.
 
 ## Recyclarr
 

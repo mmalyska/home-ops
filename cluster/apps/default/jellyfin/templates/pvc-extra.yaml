@@ -1,12 +1,12 @@
-{{- range .Values.nfsMounts }}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: jellyfin-{{ .name }}
+  name: jellyfin-media
 spec:
+  storageClassName: nfs-qnap
   claimRef:
-    name: jellyfin-{{ .name }}
+    name: jellyfin-media
     namespace: jellyfin
   capacity:
     storage: 50Gi
@@ -14,8 +14,8 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: {{ .nfsServer }}
-    path: {{ .nfsPath | quote }}
+    server: {{ .Values.nfsMedia.nfsServer }}
+    path: {{ .Values.nfsMedia.nfsPath | quote }}
   mountOptions:
     - nfsvers=4.1
     - tcp
@@ -27,14 +27,13 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jellyfin-{{ .name }}
+  name: jellyfin-media
   namespace: jellyfin
 spec:
-  volumeName: jellyfin-{{ .name }}
+  volumeName: jellyfin-media
   storageClassName: nfs-qnap
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: 50Gi
-{{- end }}
