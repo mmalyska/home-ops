@@ -1,5 +1,4 @@
 jellyfin:
-  replicaCount: 0 # paused for the media share migration
   image:
     repository: docker.io/jellyfin/jellyfin
     tag: 10.11.11@sha256:aefb67e6a7ff1debdd154a78a7bbb780fd0c873d8639210a7f6a2016ad2b35db
@@ -60,25 +59,22 @@ jellyfin:
       memory: 6000Mi
 
   volumes:
-    - name: tv-shows
+    - name: media
       persistentVolumeClaim:
-        claimName: jellyfin-tv-shows
-    - name: movies
-      persistentVolumeClaim:
-        claimName: jellyfin-movies
-    - name: music
-      persistentVolumeClaim:
-        claimName: jellyfin-music
+        claimName: jellyfin-media
     - name: transcoding
       emptyDir: {}
 
   volumeMounts:
-    - name: tv-shows
+    - name: media
       mountPath: /data/tvshows
-    - name: movies
+      subPath: tv-series
+    - name: media
       mountPath: /data/movies
-    - name: music
+      subPath: movies
+    - name: media
       mountPath: /data/music
+      subPath: music
     - name: transcoding
       mountPath: /transcoding
 
@@ -113,14 +109,7 @@ volsync:
     restore:
       bootstrap: true  # volsync creates and owns the PVC via dataSourceRef → ReplicationDestination
 
-# NFS PV+PVC pairs — processed by templates/pvc-extra.yaml
-nfsMounts:
-  - name: tv-shows
-    nfsPath: /tv-series
-    nfsServer: qnap.<secret:private-domain>
-  - name: movies
-    nfsPath: /movies
-    nfsServer: qnap.<secret:private-domain>
-  - name: music
-    nfsPath: /music
-    nfsServer: qnap.<secret:private-domain>
+# Shared QNAP media share (also mounted by the media namespace apps) — processed by templates/pvc-extra.yaml
+nfsMedia:
+  nfsPath: /media
+  nfsServer: qnap.<secret:private-domain>
