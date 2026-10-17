@@ -271,7 +271,7 @@ spec:
       # ── Step 1: fetch the JetPack r39 libs (once per version) ───────────
       initContainers:
         - name: restore-libs
-          image: ubuntu:22.04@sha256:30dfd7fe96f97c5f5ddf388ce8d098aa509644ad68fdef67244fb71b8169ffcb
+          image: ubuntu:22.04@sha256:88881eb36da489f9ff8746ece8048ca16cc94f80e8cd3ae7e8335d8822631591
           command: ["/bin/sh", "/scripts/restore-libs.sh"]
           securityContext:
             privileged: true
