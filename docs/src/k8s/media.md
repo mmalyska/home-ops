@@ -12,6 +12,7 @@ is its own ArgoCD app built on bjw-s `app-template`, with images from `ghcr.io/h
 | `prowlarr`                     | indexer manager, syncs to the \*arrs | `prowlarr.<private-domain>` |
 | `sonarr` / `radarr` / `lidarr` | TV / movies / music                  | `<app>.<private-domain>`    |
 | `bazarr`                       | subtitles for Sonarr and Radarr      | `bazarr.<private-domain>`   |
+| `lingarr`                      | subtitle translation for Bazarr      | `lingarr.<private-domain>`  |
 | `recyclarr`                    | daily CronJob, syncs TRaSH profiles  | -                           |
 | `media-storage`                | the shared `/media` PV and PVC       | -                           |
 
@@ -104,3 +105,15 @@ Then pick the new profile on the series and movies (the default profile is not c
 Bazarr mounts `/data` and writes subtitles next to the media. In its UI set a login (Settings, General, Security), add
 Sonarr (`sonarr`, port 8989) and Radarr (`radarr`, port 7878) with their API keys (Settings, Sonarr / Radarr), and add
 subtitle providers and languages.
+
+## Lingarr
+
+Lingarr translates subtitles for Bazarr. It uses the local model on nv1 (`llama-server` in namespace `llm`, alias
+`gemma-4-26b-a4b`) through the OpenAI-compatible `LOCAL_AI_ENDPOINT`, English to Polish, one job at a time because
+llama-server has a single slot. The settings are environment variables in `cluster/apps/media/lingarr/values.yaml`; its
+SQLite config lives on a 1Gi `ceph-block` PVC and is not backed up, since everything in it can be recreated.
+
+To use it from Bazarr, set Settings, Subtitles, Translating: translator `Lingarr` and URL
+`http://lingarr.media.svc.cluster.local:9876`. Bazarr waits up to 32 minutes per request. Translation runs on the same
+GPU slot as Hermes, so Hermes sessions wait while a batch runs. To change the model, edit `LOCAL_AI_MODEL` and the
+llama-server alias together. The first episode has not been compared against the Gemini translation yet.

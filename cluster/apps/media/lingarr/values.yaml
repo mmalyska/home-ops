@@ -1,0 +1,82 @@
+app-template:
+  controllers:
+    lingarr:
+      strategy: Recreate
+      pod:
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+          fsGroup: 1001
+          fsGroupChangePolicy: OnRootMismatch
+      containers:
+        app:
+          image:
+            repository: ghcr.io/lingarr-translate/lingarr
+            tag: 1.4.0@sha256:8f392cf1efe718e0fcbc735d6d82df0b0bf86594bf64998aad85e8f306263774
+            pullPolicy: IfNotPresent
+          env:
+            TZ: CET
+            ASPNETCORE_URLS: http://+:9876
+            DB_CONNECTION: sqlite
+            DB_HANGFIRE_SQLITE_PATH: /app/config/Hangfire.db
+            # llama-server on nv1 has one slot; more jobs would only queue there.
+            MAX_CONCURRENT_JOBS: "1"
+            SERVICE_TYPE: localai
+            LOCAL_AI_ENDPOINT: http://llama-server.llm.svc.cluster.local:8080/v1/chat/completions
+            LOCAL_AI_MODEL: gemma-4-26b-a4b
+            USE_BATCH_TRANSLATION: "true"
+            SOURCE_LANGUAGES: '[{"name":"English","code":"en"}]'
+            TARGET_LANGUAGES: '[{"name":"Polish","code":"pl"}]'
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+
+  service:
+    app:
+      ports:
+        http:
+          port: 9876
+
+  route:
+    app:
+      kind: HTTPRoute
+      annotations:
+        external-dns.alpha.kubernetes.io/controller: dns-controller
+      parentRefs:
+        - name: envoy-internal
+          namespace: envoy-gateway
+          sectionName: https
+      hostnames:
+        - lingarr.<secret:private-domain>
+      rules:
+        - backendRefs:
+            - identifier: app
+              port: 9876
+
+  persistence:
+    config:
+      type: persistentVolumeClaim
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      storageClass: ceph-block
+      advancedMounts:
+        lingarr:
+          app:
+            - path: /app/config
+    tmp:
+      type: emptyDir
+      advancedMounts:
+        lingarr:
+          app:
+            - path: /tmp
