@@ -37,11 +37,14 @@ server:
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1
   # Hard cap on tokens generated per request that does not set max_tokens
-  # (Hermes sends none). On one slot a single runaway generation blocks every
-  # session until it reaches the context limit (about an hour at 14 tok/s);
-  # at 2048 it costs ~2 minutes. Verified: a request with no max_tokens stops
-  # at exactly 2048 with finish_reason=length.
-  nPredict: 2048
+  # (Hermes and Lingarr send none). On one slot a single runaway generation
+  # blocks every session until it reaches the context limit (about an hour at
+  # 14 tok/s); at 16384 it costs ~19 minutes. It was 2048 (~2 minutes), verified
+  # to stop at exactly 2048 with finish_reason=length, until Lingarr: it sends a
+  # whole subtitle file as one batch, ~25 output tokens per cue, so 357 cues need
+  # ~9K tokens and a 2048 cap truncated the JSON on every retry. Keep the cap
+  # below Bazarr's 32 minute Lingarr timeout (~28K tokens).
+  nPredict: 16384
   # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system). The
   # pod itself sits at ~10.5-10.9 GiB, but GPU allocations are not charged to
   # its cgroup: watch NODE MemAvailable (steady ~0.86 GB, transient low ~0.54 GB
