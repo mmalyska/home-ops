@@ -3,7 +3,7 @@
 [tuppr](https://github.com/home-operations/tuppr) (`home-operations/tuppr`, app `cluster/apps/system/tuppr`, namespace
 `tuppr`) rolls out Talos and Kubernetes upgrades from git. Merging a Renovate PR that bumps the version is the approval:
 tuppr upgrades one node at a time behind a health gate. The design is in
-`docs/superpowers/specs/2026-10-12-tuppr-design.md`.
+`.plans/superpowers/specs/2026-10-12-tuppr-design.md`.
 
 ## What it runs
 

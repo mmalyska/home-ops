@@ -8,7 +8,7 @@
 
 **Tech Stack:** ArgoCD ApplicationSets, Helm (bjw-s `app-template` 5.2.1), Kustomize, External Secrets (Bitwarden), Cilium 1.20 (L2 LB, `cni.exclusive`), Multus (thick), CloudNativePG, RabbitMQ cluster-operator, external-dns (AdGuard webhook), Talos.
 
-**Spec:** `docs/superpowers/specs/2026-10-01-rpi-decommission-design.md`
+**Spec:** `.plans/superpowers/specs/2026-10-01-rpi-decommission-design.md`
 
 ## Global Constraints
 
@@ -173,7 +173,7 @@ cd /workspaces/home-ops-ha-migration && task lint:all
 git add charts/rabbitmq-cluster cluster/apps/home-automation/rabbitmq
 git commit -m "feat(rabbitmq): enable MQTT broker with LB IP, DNS name and zigbee2mqtt user"
 git push -u origin feat/mqtt-enable-rabbitmq
-gh pr create --base main --title "feat(rabbitmq): enable MQTT broker for HA stack migration" --body "Phase 0 of docs/superpowers/plans/2026-10-01-rpi-decommission.md"
+gh pr create --base main --title "feat(rabbitmq): enable MQTT broker for HA stack migration" --body "Phase 0 of .plans/superpowers/plans/2026-10-01-rpi-decommission.md"
 ```
 
 ### Task 0.2: Verify the broker from the RPi **[CONFIRM before ArgoCD sync, then USER]**
@@ -361,7 +361,7 @@ cd /workspaces/home-ops-ha-migration && task lint:all
 git add cluster/apps/home-automation/zigbee2mqtt
 git commit -m "feat(zigbee2mqtt): add standalone Zigbee2MQTT app (scaled to 0 pending data restore)"
 git push -u origin feat/zigbee2mqtt
-gh pr create --base main --title "feat(zigbee2mqtt): standalone Zigbee2MQTT in cluster" --body "Phase 1 of docs/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0."
+gh pr create --base main --title "feat(zigbee2mqtt): standalone Zigbee2MQTT in cluster" --body "Phase 1 of .plans/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0."
 ```
 
 Expected: a Deployment with `replicas: 0`, port 8080, the `z2m.` host, the `/app/data` mount and both env `secretRef`s appear.
@@ -948,7 +948,7 @@ cd /workspaces/home-ops-ha-migration && task lint:all
 git add cluster/apps/home-automation/music-assistant
 git commit -m "feat(music-assistant): add Music Assistant on VLAN 48 macvlan (scaled to 0)"
 git push -u origin feat/music-assistant
-gh pr create --base main --title "feat(music-assistant): Music Assistant on VLAN 48 macvlan" --body "Phase 1 of docs/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0 pending data restore."
+gh pr create --base main --title "feat(music-assistant): Music Assistant on VLAN 48 macvlan" --body "Phase 1 of .plans/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0 pending data restore."
 ```
 
 Expected: the annotation with `192.168.48.62/24`, `replicas: 0`, port 8095, the `ma.` host and the `/data` mount appear. Record the rendered Service name; if it is not `music-assistant`, correct the URLs in Tasks 3.2 and 4.1 and in the spec.

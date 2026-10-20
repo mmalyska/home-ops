@@ -8,7 +8,7 @@
 
 **Tech Stack:** ArgoCD ApplicationSets, Helm (bjw-s `app-template` 5.3.0, local `charts/volsync`), External Secrets (Bitwarden `ClusterSecretStore`), Gateway API HTTPRoute, NFS PV/PVC on QNAP, Reloader.
 
-**Spec:** `docs/superpowers/specs/2026-10-15-usenet-media-stack-design.md`
+**Spec:** `.plans/superpowers/specs/2026-10-15-usenet-media-stack-design.md`
 
 ## Global Constraints
 

@@ -76,16 +76,22 @@ For task command reference and CI/PR workflow, use the **dev-workflow skill**.
 
 ## Plans
 
-Project plans are tracked in `.plans/{plan-name}/` (committed to git):
+Project plans are tracked under `.plans/` (committed to git), in two forms:
 
-- `plan.md` — goal, context, key decisions, architecture, current status. Must have enough detail for a new session to continue without this conversation.
-- `tasks.md` — self-contained checkbox list. Each item must be executable without reading `plan.md`.
-- `.plans/list.md` — one-line entry per active plan.
-- `.archive/.plans/` — completed plans moved here verbatim; `.archive/.plans/list.md` is the completed index.
+- **Superpowers plans** (from `superpowers:brainstorming` / `superpowers:writing-plans`) are the default. The spec goes in `.plans/superpowers/specs/YYYY-MM-DD-<topic>-design.md`, the plan in `.plans/superpowers/plans/YYYY-MM-DD-<topic>.md`, and helper files in `.plans/superpowers/plans/artifacts/`.
+- **Plan folders** are `.plans/{plan-name}/`:
+  - `plan.md` — goal, context, key decisions, architecture, current status. Must have enough detail for a new session to continue without this conversation.
+  - `tasks.md` — self-contained checkbox list. Each item must be executable without reading `plan.md`.
+
+Shared files:
+
+- `.plans/list.md` — one-line entry per active plan of either form (plan, spec, description, start date).
+- `.archive/.plans/` — completed plan folders moved here verbatim; `.archive/.plans/list.md` is the completed index for both forms.
+- `.archive/docs/superpowers/{specs,plans,research}/` — finished or dropped superpowers specs, plans and artifacts, moved verbatim.
 - `.plans/TODO.md` — Claude's scratchpad for out-of-scope ideas worth doing later; never modified by the plan workflow.
 
-**When starting a plan**: create `.plans/{name}/plan.md` and `tasks.md`, add entry to `.plans/list.md`.  
-**When completing a plan**: move subfolder to `.archive/.plans/{name}/`, update both `list.md` files.
+**When starting a plan**: write the spec and plan under `.plans/superpowers/`, or create `.plans/{name}/plan.md` and `tasks.md`. Either way add an entry to `.plans/list.md`.  
+**When completing or dropping a plan**: move the plan folder to `.archive/.plans/{name}/`, or the superpowers spec, plan and artifacts to the matching folder under `.archive/docs/superpowers/`. Update every link to the moved files and both `list.md` files.
 
 ## Memory
 

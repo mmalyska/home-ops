@@ -44,4 +44,4 @@ write through symlink") — edit `/workspaces/home-ops/.claude/memory/MEMORY.md`
 directly.
 
 Related: [[project-plans-location-convention]] — the same instinct applied to
-plans, which live in `docs/superpowers/` rather than where CLAUDE.md documents.
+plans, which live in `.plans/superpowers/` while active.

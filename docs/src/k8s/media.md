@@ -2,7 +2,7 @@
 
 SABnzbd and the \*arr apps run in namespace `media` (ArgoCD category `cluster/apps/media/`, project `media`). Every app
 is its own ArgoCD app built on bjw-s `app-template`, with images from `ghcr.io/home-operations/*`. The design is in
-`docs/superpowers/specs/2026-10-15-usenet-media-stack-design.md`.
+`.plans/superpowers/specs/2026-10-15-usenet-media-stack-design.md`.
 
 ## Apps
 
