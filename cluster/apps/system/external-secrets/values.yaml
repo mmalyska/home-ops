@@ -17,7 +17,7 @@ external-secrets:
         cpu: 10m
         memory: 48Mi
       limits:
-        memory: 96Mi
+        memory: 192Mi
     serviceMonitor:
       enabled: true
   certController:

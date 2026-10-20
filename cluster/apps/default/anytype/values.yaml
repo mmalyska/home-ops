@@ -1,4 +1,6 @@
 anytype:
+  # any-sync daemons use 15-47Mi; the limit is also their memory request
+  daemonMemoryLimit: 256Mi
   mongodb:
     image:
       repository: mongo

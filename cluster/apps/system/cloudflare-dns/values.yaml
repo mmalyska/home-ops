@@ -7,7 +7,7 @@ external-dns:
       cpu: 10m
       memory: 48Mi
     limits:
-      memory: 128Mi
+      memory: 256Mi
   provider: cloudflare
   env:
     - name: &name CF_API_TOKEN

@@ -2,17 +2,17 @@ cilium:
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 384Mi
   envoy:
     resources:
       requests:
         cpu: 10m
-        memory: 32Mi
+        memory: 48Mi
   operator:
     resources:
       requests:
         cpu: 10m
-        memory: 64Mi
+        memory: 96Mi
   ipam:
     mode: kubernetes
   policyEnforcementMode: "default"
