@@ -52,7 +52,7 @@ rpc error: code = ResourceExhausted desc = trying to send message larger than ma
 
 This is especially easy to hit in this cluster because rook-ceph's `mgr`
 container emits huge (100s of KB) DEBUG-level lines (see
-`docs/superpowers/specs/2026-07-27-logging-design.md` / `fix/loki-max-line-size-ceph-mgr`
+`.archive/.plans/superpowers/specs/2026-07-27-logging-design.md` / `fix/loki-max-line-size-ceph-mgr`
 — `max_line_size` was raised to 1MB specifically because of these).
 
 **Step 1 — count matches per namespace/container, not raw lines:**

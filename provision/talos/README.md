@@ -180,8 +180,8 @@ To move such a node to a new Talos version, bump `TALOS_VERSION`, nothing else. 
 installer exists first**, that is, the alias tag `v<new talos>` was pushed by the fork. nv1's GPU kernel modules (`host1x`, `tegra_drm`, `nvgpu`, …) are ABI-bound to the exact
 kernel build in that image, and Talos loads them during the boot sequence before starting services, so a mismatched
 image can leave the node with networking up but `apid` never starting: reachable at the TCP level, unmanageable, and
-fixable only over the console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
-`docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
+fixable only over the console. See `.archive/.plans/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
+`.archive/.plans/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
 
 The disk selector is repeated in this file on purpose: `talosctl machineconfig patch` drops `provisioning.diskSelector.match`
 when a later patch merges into the document, so it must be in the last file applied for the node (see the header of the
@@ -304,8 +304,8 @@ Things to know for a real reinstall:
 
 `SecurityProfileConfig` with `workloadIsolation: true` runs CRI containerd, the kubelet and every pod in their own PID and
 mount namespace, anchored by the `sandboxd` service, instead of sharing the namespaces of `machined` (PID 1). It is rolled
-out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`, plan
-`docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: the setting is explicit for every node through
+out node by node (spec `.archive/.plans/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`, plan
+`.archive/.plans/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: the setting is explicit for every node through
 `patches/all/65-security-profile.yaml`, and isolation has been running on all four nodes since 2026-10-07 (mc3 and nv1
 first, then mc2 and mc1).
 

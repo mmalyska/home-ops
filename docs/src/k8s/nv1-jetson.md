@@ -75,7 +75,7 @@ nv1 has 15.6 GiB of unified memory. The system (Talos, kubelet, Cilium, DaemonSe
 
 ## Qwen3.6-35B-A3B benchmark (2026-10-13)
 
-Plan: `docs/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image `llama-cpp-jetson` v0.6.0 (same digest as production), `llama-server` paused through git for about 25 minutes, throwaway pods on the `llama-server-models` PVC, production flags (`-c 131072 -np 2 -fa on -ctk q8_0 -ctv q4_0 -ub 256`, `--cache-ram 512 --ctx-checkpoints 2` for the Qwen arms).
+Plan: `.archive/.plans/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image `llama-cpp-jetson` v0.6.0 (same digest as production), `llama-server` paused through git for about 25 minutes, throwaway pods on the `llama-server-models` PVC, production flags (`-c 131072 -np 2 -fa on -ctk q8_0 -ctv q4_0 -ub 256`, `--cache-ram 512 --ctx-checkpoints 2` for the Qwen arms).
 
 | Arm                                   | pp512 (tok/s) | tg128 (tok/s) | Result                                                        |
 | ------------------------------------- | ------------: | ------------: | ------------------------------------------------------------- |
@@ -91,7 +91,7 @@ Plan: `docs/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image `llama-cpp
 
 ## Gemma 4 26B-A4B at one slot (2026-10-15)
 
-`llama-server` serves `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 --n-predict 2048` (alias `gemma-4-26b-a4b`), replacing LFM2.5-8B-A1B. Plan and gates: `docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md`; harness: `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/hermes-corruption.py`.
+`llama-server` serves `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 --n-predict 2048` (alias `gemma-4-26b-a4b`), replacing LFM2.5-8B-A1B. Plan and gates: `.archive/.plans/superpowers/plans/2026-10-13-llm-reliability-gemma4.md`; harness: `.archive/.plans/superpowers/plans/artifacts/2026-10-13-llm-reliability/hermes-corruption.py`.
 
 **Why:** LFM2.5's hybrid recurrent state is corrupted by llama.cpp under multi-sequence serving (ggml-org/llama.cpp#29002, still open on 2026-10-15): 29.0% of real Hermes turns (n=100). Gemma 4 has no recurrent state.
 

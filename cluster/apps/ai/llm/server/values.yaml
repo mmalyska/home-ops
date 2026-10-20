@@ -25,7 +25,7 @@ server:
   # recurrent state corrupts multi-turn output (llama.cpp#29002, still open;
   # measured 29.0% under real Hermes traffic). Gemma 4 has no recurrent state:
   # 0 corrupt turns of 66 multi-turn tool-calling turns on 2026-10-15
-  # (95% upper bound ~4.5%). See docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md.
+  # (95% upper bound ~4.5%). See .archive/.plans/superpowers/plans/2026-10-13-llm-reliability-gemma4.md.
   # Consequence: requests from concurrent sessions are served one at a time.
   ctx: 65536
   parallel: 1
