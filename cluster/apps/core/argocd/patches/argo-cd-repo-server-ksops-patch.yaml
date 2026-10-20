@@ -30,7 +30,7 @@ spec:
               memory: 512Mi
             requests:
               cpu: 10m
-              memory: 16Mi
+              memory: 48Mi
           volumeMounts:
             - mountPath: /var/run/argocd
               name: var-files
@@ -56,7 +56,7 @@ spec:
               memory: 512Mi
             requests:
               cpu: 10m
-              memory: 16Mi
+              memory: 48Mi
           env:
             - name: HELM_CACHE_HOME
               value: /helm-working-dir

@@ -3,6 +3,12 @@ oauth2-proxy:
   deploymentAnnotations:
     secret.reloader.stakater.com/reload: "oauth-secret"
   revisionHistoryLimit: 3
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
   extraArgs:
     exclude-logging-path: "/ping"
   config:

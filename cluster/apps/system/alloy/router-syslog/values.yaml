@@ -1,5 +1,11 @@
 alloy:
   alloy:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
     configMap:
       content: |
         loki.source.syslog "router" {
@@ -31,3 +37,10 @@ alloy:
     type: LoadBalancer
     annotations:
       lbipam.cilium.io/ips: "192.168.48.24"
+  configReloader:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        memory: 32Mi
