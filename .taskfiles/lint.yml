@@ -5,7 +5,7 @@ tasks:
   all:
     - task: markdown
     - task: yaml
-    - task: format
+    - task: prettier:check
 
   markdown:
     desc: Lint Markdown
