@@ -56,7 +56,7 @@ patches:
               - name: argocd-applicationset-controller
                 resources:
                   requests:
-                    cpu: 10m
+                    cpu: 25m
                     memory: 64Mi
                   limits:
                     memory: 128Mi
@@ -76,9 +76,9 @@ patches:
                 resources:
                   requests:
                     cpu: 10m
-                    memory: 48Mi
+                    memory: 64Mi
                   limits:
-                    memory: 96Mi
+                    memory: 128Mi
   - target:
       kind: Deployment
       name: argocd-server
@@ -132,7 +132,7 @@ patches:
               - name: argocd-repo-server
                 resources:
                   requests:
-                    cpu: 25m
+                    cpu: 200m
                     memory: 128Mi
                   limits:
                     memory: 512Mi
