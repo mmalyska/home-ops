@@ -1,7 +1,7 @@
 # Usenet media stack (*arr + SABnzbd) design
 
 Date: 2026-10-15
-Status: draft, awaiting review
+Status: implemented, completed 2026-10-20 (plan `.archive/.plans/superpowers/plans/2026-10-15-usenet-media-stack.md`)
 
 ## Goal
 

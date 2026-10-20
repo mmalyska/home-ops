@@ -16,5 +16,5 @@ The usenet stack (namespace `media`, see docs/src/k8s/media.md) uses one QNAP NF
 - New media consumers mount `/media` with a `subPath`; never re-split into separate shares.
 - subPath directories must pre-exist owned by 1001, or kubelet creates them root-owned.
 - QNAP File Station cannot write to `/media` as an ordinary user (owner is uid 1001). Move or copy data with a throwaway root pod that mounts the shares, then chown 1001:1001. Do not use busybox `cp -n` on a directory that already exists, it silently copies nothing.
-- The old shares `/tv-series`, `/movies`, `/music` have been unused by the cluster since 2026-10-16; earliest deletion 2026-10-30.
+- The old shares `/tv-series`, `/movies`, `/music` are deleted (unused by the cluster since 2026-10-16, deleted by 2026-10-20); `/media` is the only copy of the libraries.
 - Jellyfin does not see NFS changes made by other clients (no inotify): add the Jellyfin Connect entry in Sonarr/Radarr or run a library scan.
