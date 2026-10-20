@@ -21,6 +21,7 @@ Use this skill when adding a new application, creating HTTPRoutes, writing Exter
 4. Add `values.yaml` with customizations
 5. If secrets needed: create `templates/credentials-externalsecret.yaml` for K8s Secret data fields, or add `SECRET_PROVIDER: cluster-secrets` plugin block for `<secret:key>` tokens in non-injectable fields
 6. Add any extra manifests in `templates/`
+6a. Set CPU/memory requests and a memory limit on every container (no CPU limit); sizing rules and where each app type takes them are in `docs/src/k8s/resource-sizing.md`. Without them the `ContainerMissingMemoryLimit` alert fires after 24h
 7. Commit — ArgoCD ApplicationSet will auto-discover the new app
 
 ## Secrets — Step-by-Step
