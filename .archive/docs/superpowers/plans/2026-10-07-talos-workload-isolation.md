@@ -10,7 +10,7 @@
 
 **Tech Stack:** Talos 1.14.2 config documents, bash, yq, `talosctl`, kubectl, the shell tests under `provision/talos/tests/`, Prometheus instant queries.
 
-**Spec:** `docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`
 
 ## Global Constraints
 
@@ -120,7 +120,7 @@ Expected: `FAIL mc3 has exactly one SecurityProfileConfig with workloadIsolation
 
 ```yaml
 # What:   Workload isolation on mc3: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1)
-# Why:    Pilot of the cluster-wide rollout, see docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md.
+# Why:    Pilot of the cluster-wide rollout, see .archive/docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md.
 #         sandboxd reads the setting only when it starts, so the node needs a reboot after the apply. Phase 2 moves this
 #         document to patches/all/65-security-profile.yaml and deletes this file
 # Nodes:  mc3
@@ -149,8 +149,8 @@ Insert before the line `## Checks` in `provision/talos/README.md`:
 
 `SecurityProfileConfig` with `workloadIsolation: true` runs CRI containerd, the kubelet and every pod in their own PID and
 mount namespace, anchored by the `sandboxd` service, instead of sharing the namespaces of `machined` (PID 1). It is rolled
-out node by node (spec `docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`, plan
-`docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: pilot on mc3 only
+out node by node (spec `.archive/docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md`, plan
+`.archive/docs/superpowers/plans/2026-10-07-talos-workload-isolation.md`). Current state: pilot on mc3 only
 (`patches/node/mc3/65-security-profile.yaml`); the other nodes have no document, so isolation is off there.
 
 - **A reboot is needed.** `sandboxd` reads the setting only when it starts, so apply, cordon, drain, reboot, uncordon, in
@@ -716,7 +716,7 @@ git rm node/mc3/65-security-profile.yaml node/nv1/65-security-profile.yaml
 cat > all/65-security-profile.yaml <<'YAML'
 # What:   Workload isolation: CRI, the kubelet and all pods run in the sandboxd PID and mount namespace, apart from machined (PID 1)
 # Why:    Separates the container plane from machined and its file descriptors, see
-#         docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md. The v1.14 contract base turns the setting
+#         .archive/docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md. The v1.14 contract base turns the setting
 #         on by itself, so it is explicit here for every node. sandboxd reads it only when it starts, so a node needs a
 #         reboot after the apply
 # Nodes:  all nodes
@@ -807,7 +807,7 @@ Expected: all four pass; `task talos:diff` shows no differences on any node. Rep
 
 - Modify: `.plans/TODO.md`
 - Modify: `.claude/memory/reference_talos_workload_isolation.md`, `.claude/memory/MEMORY.md`
-- Modify: `docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md` (status line)
+- Modify: `.archive/docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md` (status line)
 
 - [ ] **Step 1: Branch and update the tracking**
 

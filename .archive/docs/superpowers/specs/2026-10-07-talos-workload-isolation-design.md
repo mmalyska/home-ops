@@ -95,7 +95,7 @@ One patch file per layer, named `65-security-profile.yaml` (after `61-kubeprism.
 
 ```yaml
 # What:   Workload isolation: CRI, the kubelet and all pods run in the sandboxd namespace, apart from machined
-# Why:    Separates the container plane from machined (PID 1) and its file descriptors; see docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md
+# Why:    Separates the container plane from machined (PID 1) and its file descriptors; see .archive/docs/superpowers/specs/2026-10-07-talos-workload-isolation-design.md
 # Nodes:  all nodes        (mc3 / nv1 in the node layer)
 # Apply:  reboot (sandboxd reads the setting only when it starts)
 apiVersion: v1alpha1

@@ -8,7 +8,7 @@
 
 **Tech Stack:** llama.cpp `llama-server` (image `ghcr.io/nvidia-ai-iot/llama_cpp:b8708-r36.4-tegra-aarch64-cu126-22.04`), Helm charts in `cluster/apps/ai/llm/server` and `cluster/apps/ai/hermes-agent`, Honcho env-var model config, ArgoCD ApplicationSet `appset-ai`.
 
-**Spec:** `docs/superpowers/specs/2026-09-25-local-first-llm-design.md` (architecture is unchanged and still binding). This plan also argues from measurements recorded in `.superpowers/sdd/2026-09-25-local-first-llm/progress.md` (rulings R9–R12: the nv1 memory incident, the 12Gi-limit mistake, the Hermes 64K-context floor, and the 2026-09-28 LFM2.5 spike results) and from a throwaway spike run directly on nv1 on 2026-09-28 (not committed; results below).
+**Spec:** `.archive/docs/superpowers/specs/2026-09-25-local-first-llm-design.md` (architecture is unchanged and still binding). This plan also argues from measurements recorded in `.superpowers/sdd/2026-09-25-local-first-llm/progress.md` (rulings R9–R12: the nv1 memory incident, the 12Gi-limit mistake, the Hermes 64K-context floor, and the 2026-09-28 LFM2.5 spike results) and from a throwaway spike run directly on nv1 on 2026-09-28 (not committed; results below).
 
 ## Context: why this plan exists
 
@@ -152,7 +152,7 @@ git add cluster/apps/ai/llm/server
 git commit -m "feat(llm): swap the served model to LFM2.5-8B-A1B"
 git push -u origin feat/llm-server-lfm2.5
 gh pr create --base main --label area/cluster --label enhancement --title "feat(llm): swap the served model to LFM2.5-8B-A1B" \
-  --body "Supersedes #5346 (do not merge that one — it only restores Gemma). Replaces Gemma 4 26B-A4B with LFM2.5-8B-A1B (UD-Q6_K_XL, 7.21 GiB) based on the 2026-09-28 spike: smaller footprint (8.5-8.9 vs 10.2-12.2 GiB), faster (26.7 vs 15-16 tok/s), survived the concurrency test that OOM-killed Gemma, same 15/15 quality score. Sets replicaCount back to 1. Adds --reasoning-budget 0 since this model cannot disable chain-of-thought the way Gemma could (verification of that flag is Task 2 of docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md, done before this is safe to merge)."
+  --body "Supersedes #5346 (do not merge that one — it only restores Gemma). Replaces Gemma 4 26B-A4B with LFM2.5-8B-A1B (UD-Q6_K_XL, 7.21 GiB) based on the 2026-09-28 spike: smaller footprint (8.5-8.9 vs 10.2-12.2 GiB), faster (26.7 vs 15-16 tok/s), survived the concurrency test that OOM-killed Gemma, same 15/15 quality score. Sets replicaCount back to 1. Adds --reasoning-budget 0 since this model cannot disable chain-of-thought the way Gemma could (verification of that flag is Task 2 of .archive/docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md, done before this is safe to merge)."
 ```
 
 **Do not merge this PR until Task 2 has verified `--reasoning-budget 0` actually suppresses the chain-of-thought overhead.** Leave it open/draft until then.
@@ -387,7 +387,7 @@ git add cluster/apps/ai/hermes-agent
 git commit -m "feat(hermes): point the main model, compression and local aux tasks at LFM2.5-8B-A1B"
 git push -u origin feat/hermes-lfm2.5
 gh pr create --base main --label area/cluster --label enhancement --title "feat(hermes): point Hermes at LFM2.5-8B-A1B" \
-  --body "After Tasks 1-3 of docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md passed. Forward-overwrites provider/base_url/api_key/context_length everywhere so no stale gemma-4-26b-a4b config survives on the PVC."
+  --body "After Tasks 1-3 of .archive/docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md passed. Forward-overwrites provider/base_url/api_key/context_length everywhere so no stale gemma-4-26b-a4b config survives on the PVC."
 ```
 
 - [ ] **Step 5: After merge (CONFIRM refresh), verify with real chat turns**

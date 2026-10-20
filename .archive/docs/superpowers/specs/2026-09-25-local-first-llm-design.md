@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-25  
 **Status:** Draft — pending review  
-**Implementation plan:** `docs/superpowers/plans/2026-09-25-local-first-llm.md`  
+**Implementation plan:** `.archive/docs/superpowers/plans/2026-09-25-local-first-llm.md`  
 
 ## Problem
 

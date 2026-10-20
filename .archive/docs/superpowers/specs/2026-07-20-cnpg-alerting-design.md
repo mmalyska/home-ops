@@ -127,7 +127,7 @@ a plain `stringData` block), kube-prometheus-stack's `alertmanager.config`
 gets marshalled into **base64-encoded** `data.alertmanager.yaml` inside a
 chart-managed Secret. The `argocd-secret-replacer` CMP plugin does literal
 text substitution on the rendered manifest stream (confirmed via
-`docs/superpowers/plans/2026-07-08-dragonfly-operator.md`'s prior encounter
+`.archive/docs/superpowers/plans/2026-07-08-dragonfly-operator.md`'s prior encounter
 with the same plugin missing a `urlquery`-mangled token) — a token trapped
 inside base64 can never match. The corrected design below avoids the problem
 entirely by keeping the webhook URL out of `alertmanager.config` altogether.

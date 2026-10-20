@@ -4,7 +4,7 @@
 
 **Goal:** Deploy self-hosted Nextcloud (file sync/management) + OnlyOffice Document Server (Community, document editing) on the home-ops cluster, replacing OneDrive, then migrate ~600GB of family data off US-hosted cloud storage one family member at a time.
 
-**Architecture:** Nextcloud (official Helm chart, `fpm-alpine`) with a small Ceph-backed PVC for app state and a QNAP-NFS-backed PVC (native `persistence.nextcloudData`) for the 600GB+ user data directory. Postgres via the local `pgsql-cnpg` chart. OnlyOffice Document Server (Community) as a small local Helm chart, internal-only, connected via Nextcloud's ONLYOFFICE connector app over ClusterIP with a shared JWT secret. Auth via Keycloak SSO (`user_oidc` app). Exposed externally via `envoy-external` + Cloudflare tunnel. Design doc: `docs/superpowers/specs/2026-07-02-nextcloud-onedrive-replacement-design.md`.
+**Architecture:** Nextcloud (official Helm chart, `fpm-alpine`) with a small Ceph-backed PVC for app state and a QNAP-NFS-backed PVC (native `persistence.nextcloudData`) for the 600GB+ user data directory. Postgres via the local `pgsql-cnpg` chart. OnlyOffice Document Server (Community) as a small local Helm chart, internal-only, connected via Nextcloud's ONLYOFFICE connector app over ClusterIP with a shared JWT secret. Auth via Keycloak SSO (`user_oidc` app). Exposed externally via `envoy-external` + Cloudflare tunnel. Design doc: `.archive/docs/superpowers/specs/2026-07-02-nextcloud-onedrive-replacement-design.md`.
 
 **Tech Stack:** Helm (OCI + local charts), ArgoCD ApplicationSet (`appSubfolder` pattern), CloudNativePG (`pgsql-cnpg`), External Secrets Operator (Bitwarden `ClusterSecretStore`), NFS (QNAP), Envoy Gateway (Gateway API), Volsync, Keycloak OIDC.
 
@@ -817,7 +817,7 @@ gh pr create --title "feat(nextcloud): self-hosted Nextcloud + OnlyOffice (OneDr
 ## Summary
 - Nextcloud + OnlyOffice Document Server (Community), split storage (Ceph app-state + QNAP NFS user data)
 - Keycloak SSO, Cloudflare-tunneled external access, CNPG Postgres with S3 backup, Volsync for app state
-- Design: docs/superpowers/specs/2026-07-02-nextcloud-onedrive-replacement-design.md
+- Design: .archive/docs/superpowers/specs/2026-07-02-nextcloud-onedrive-replacement-design.md
 
 ## Test plan
 - [ ] `helm template` renders clean for both `app` and `onlyoffice` subfolders
@@ -946,7 +946,7 @@ Family members migrated (edit this checklist as you go, commit after each):
 - [ ] `<family-member-4>`
 
 ```bash
-git add docs/superpowers/plans/2026-07-02-nextcloud-onedrive-replacement.md
+git add .archive/docs/superpowers/plans/2026-07-02-nextcloud-onedrive-replacement.md
 git commit -m "docs(nextcloud): mark <family-member> migration complete"
 ```
 

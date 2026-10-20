@@ -8,7 +8,7 @@
 
 **Tech Stack:** `ghcr.io/mmalyska/llama-cpp-jetson:v0.6.0` (pinned digest, JetPack 7 / CUDA 13), `unsloth/gemma-4-26B-A4B-it-GGUF`, Helm chart `cluster/apps/ai/llm/server`, Hermes (`cluster/apps/ai/hermes-agent`), Honcho (`cluster/apps/ai/honcho`), kubectl/talosctl, Python 3 stdlib.
 
-**Spec:** none; the decision record is the 2026-10-13 design discussion. Context: `.plans/TODO.md` (#29002 tracking, 29.0% real-traffic measurement, `-np 1` + `--ctx-checkpoints 0` = 5.0%), `docs/src/k8s/nv1-jetson.md` (memory budget, Qwen3.6 result), `docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md` (the swap this reverses), `.claude/memory/reference_nv1_gpu_test_pause.md` (pause procedure).
+**Spec:** none; the decision record is the 2026-10-13 design discussion. Context: `.plans/TODO.md` (#29002 tracking, 29.0% real-traffic measurement, `-np 1` + `--ctx-checkpoints 0` = 5.0%), `docs/src/k8s/nv1-jetson.md` (memory budget, Qwen3.6 result), `.archive/docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md` (the swap this reverses), `.claude/memory/reference_nv1_gpu_test_pause.md` (pause procedure).
 
 ## Why this model and this shape
 
@@ -17,7 +17,7 @@
 | llama.cpp#29002 (hybrid co-batching corrupts recurrent state) is **open, no fix PR**; #28007 / #29918 / #25004 are open; by merge date v0.6.0 (upstream 2026-10-05) holds #27530 and #29856 and only #26004 is newer; none of them is the bug (build contents not verified) | checked 2026-10-13                                           |
 | LFM2.5: 29.0% corrupt (n=100, real Hermes traffic, `-np 2`, 4 checkpoints); 5.0% (n=180) at `-np 1`, `--ctx-checkpoints 0`                                                                                                                                                  | `.plans/TODO.md`                                             |
 | Qwen3.5/3.6 are the same hybrid class and do not fit nv1 anyway                                                                                                                                                                                                             | `docs/src/k8s/nv1-jetson.md`                                 |
-| Gemma 4 26B-A4B Q2_K_XL: 9.82 GiB, ~15 tok/s, 15/15 aux probes, 5/5 clean parallel tool calls, was production until 2026-09-30                                                                                                                                              | `docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md` |
+| Gemma 4 26B-A4B Q2_K_XL: 9.82 GiB, ~15 tok/s, 15/15 aux probes, 5/5 clean parallel tool calls, was production until 2026-09-30                                                                                                                                              | `.archive/docs/superpowers/plans/2026-09-28-llm-model-swap-lfm2.5.md` |
 | Its only failure was memory: OOM-killed at `anon-rss 13.78 GB` at `-c 131072 -np 2` under 3 concurrent `hermes chat` calls; steady 11.8-12.2 GiB with 1.3 GiB node headroom at `-c 65536 -np 2`                                                                             | same + `nv1-jetson.md`                                       |
 
 `-c 65536 -np 1` keeps the KV buffer at the size that was stable (about 620 MiB, half of the 131072 figure that OOM'd) and gives the single slot 65536 tokens, which clears Hermes' 64,000 floor.
@@ -71,8 +71,8 @@ URL: `https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-
 
 **Files:**
 
-- Create (already in this PR): `docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/server-pod.yaml`, `hermes-corruption.py` (multi-turn, tool-calling; replaces the retired single-turn `.sh`)
-- Reuse: `docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench/{prefetch-pod.yaml,probe.py,load.py}`
+- Create (already in this PR): `.archive/docs/superpowers/plans/artifacts/2026-10-13-llm-reliability/server-pod.yaml`, `hermes-corruption.py` (multi-turn, tool-calling; replaces the retired single-turn `.sh`)
+- Reuse: `.archive/docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench/{prefetch-pod.yaml,probe.py,load.py}`
 
 **Interfaces:**
 
@@ -92,7 +92,7 @@ Expected: 1/1, PVC Bound 30Gi, a list of profile names (note them for Task 4).
 - [ ] **Step 2: Ask the user, then prefetch the Gemma file**
 
 ```bash
-W=docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench
+W=.archive/docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench
 sed -e 's|__MODEL_FILE__|gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf|g' \
     -e 's|__MODEL_URL__|https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf|' \
     -e 's|__MODEL_SHA256__|2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658|g' \
@@ -136,7 +136,7 @@ git add cluster/apps/ai/llm/server/values.yaml
 git commit -m "chore(llm): pause llama-server for the Gemma 4 reliability test on nv1"
 git push -u origin chore/llm-pause-gemma-reliability
 gh pr create --title "chore(llm): pause llama-server for the Gemma 4 reliability test on nv1" \
-  --body "Temporary: replicaCount 0 so a throwaway pod can use nv1's single GPU; a resume PR follows. Plan: docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md"
+  --body "Temporary: replicaCount 0 so a throwaway pod can use nv1's single GPU; a resume PR follows. Plan: .archive/docs/superpowers/plans/2026-10-13-llm-reliability-gemma4.md"
 ```
 
 - [ ] **Step 3: Resume branch** (after the pause PR is on `main`): create `chore/llm-resume-after-gemma-test`, `git revert --no-edit <pause-merge-sha>`, amend the message to `chore(llm): resume llama-server after the Gemma 4 reliability test`, push, `gh pr create --draft`.
@@ -166,7 +166,7 @@ kubectl describe node nv1 | grep -A8 "Allocated resources" | grep nvidia   # nvi
 - [ ] **Step 1: Start the arm with the production flag set for Gemma**
 
 ```bash
-A=docs/superpowers/plans/artifacts/2026-10-13-llm-reliability
+A=.archive/docs/superpowers/plans/artifacts/2026-10-13-llm-reliability
 sed -e 's|__MODEL_FILE__|gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf|' \
     -e 's|__ALIAS__|lfm2.5-8b-a1b|' -e 's|__CTX__|65536|' -e 's|__NP__|1|' \
     -e "s|__EXTRA_ARGS__|--chat-template-kwargs '{\"enable_thinking\":false}' --cache-ram 256 --ctx-checkpoints 2|" \
@@ -184,7 +184,7 @@ TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig talos
 ```bash
 kubectl -n llm port-forward pod/rel-server 8080:8080 >/tmp/rel-pf.log 2>&1 &
 echo $! > /tmp/rel-pf.pid; sleep 4
-W=docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench
+W=.archive/docs/superpowers/plans/artifacts/2026-10-13-qwen3.6-bench
 BASE=http://127.0.0.1:8080/v1 python3 -I $W/probe.py quality | tail -25
 ```
 

@@ -39,7 +39,7 @@ All 6 tasks implemented and reviewed (task-level reviews + a final whole-branch 
 - Never commit secret values — gitleaks pre-commit hook blocks it. Bitwarden `remoteRef.key` UUIDs are not secret values themselves and are tagged `#gitleaks:allow` per existing convention.
 - Anytype's `redis-stack`/RedisBloom instance is explicitly out of scope — do not touch `charts/anytype/` or `cluster/apps/default/anytype/`.
 - Creating new Bitwarden Secrets Manager entries (for harbor/gitea, which don't have existing redis passwords) is a mutating action on a shared external system — confirm with the user before creating them, per this repo's standing rule on hard-to-reverse/shared-system actions.
-- Verified facts baking this plan (see `docs/superpowers/specs/2026-07-08-dragonfly-operator-design.md` for full research trail):
+- Verified facts baking this plan (see `.archive/docs/superpowers/specs/2026-07-08-dragonfly-operator-design.md` for full research trail):
   - Dragonfly Operator Helm chart: `oci://ghcr.io/dragonflydb/dragonfly-operator/helm`, chart name `dragonfly-operator`, version string is literally `v1.6.1` (with the `v` prefix — confirmed from the chart's own `Chart.yaml`). CRDs are installed by the chart itself (`crds.install: true` default) — no separate CRD-install step needed.
   - `Dragonfly` CR fields used here: `spec.replicas` (int), `spec.resources` (`corev1.ResourceRequirements`), `spec.authentication.passwordFromSecret.{name,key}` (`corev1.SecretKeySelector`), `spec.args` ([]string).
   - The operator creates a Service named exactly after the `Dragonfly` object's `metadata.name` (confirmed from `internal/resources/resources.go`: `serviceName := df.Name` unless `spec.serviceSpec.name` overrides it), listening on port `6379` (confirmed from `internal/resources/const.go`: `DragonflyPort = 6379`). So a CR named `<name>-dragonfly` produces a Service at `<name>-dragonfly.<namespace>.svc.cluster.local:6379`.
@@ -325,7 +325,7 @@ gh pr create --title "feat: migrate oauth2-proxy sessions to Dragonfly" --body "
 - Replaces oauth2-proxy's bundled redis-ha (sentinel, quorum 1 — not real HA anyway) with a Dragonfly instance via the new operator
 - Reuses the existing `oauth-secret`/`redis-password` Bitwarden-backed secret, no new secrets needed
 
-See `docs/superpowers/specs/2026-07-08-dragonfly-operator-design.md` for full design context.
+See `.archive/docs/superpowers/specs/2026-07-08-dragonfly-operator-design.md` for full design context.
 
 ## Test plan
 - [x] `helm template` renders clean (done locally, see commits)
@@ -463,7 +463,7 @@ gh pr create --title "feat: migrate Nextcloud redis to Dragonfly" --body "$(cat 
 - Replaces Nextcloud's bundled Bitnami redis subchart with a Dragonfly instance via the operator
 - Reuses the existing `nextcloud-redis-auth`/`redis-password` Bitwarden-backed secret, no new secrets needed
 
-See `docs/superpowers/specs/2026-07-08-dragonfly-operator-design.md` for full design context.
+See `.archive/docs/superpowers/specs/2026-07-08-dragonfly-operator-design.md` for full design context.
 
 ## Test plan
 - [x] `helm template` renders clean, confirmed REDIS_HOST/REDIS_HOST_PORT/REDIS_HOST_PASSWORD wiring (done locally, see commits)
@@ -804,4 +804,4 @@ No stop-gate here — gitea isn't live either. This is the final task in this pl
 ## Post-plan follow-up (not part of this plan's scope)
 
 - When Harbor or Gitea are next re-enabled, re-verify their Dragonfly wiring live (pod health, actual connectivity, a functional smoke test) before considering the migration complete for that app — Tasks 5/6 only verified via `helm template`.
-- Once all four apps are confirmed stable on Dragonfly, this is a good moment to check whether `charts/dragonfly`'s default `resources` block (128Mi/256Mi, 50m/250m cpu) needs per-app tuning — start conservative and adjust based on observed usage, same lesson learned the hard way in the RabbitMQ migration (see `docs/superpowers/plans/2026-07-06-rabbitmq-operator.md`, Deviation 3).
+- Once all four apps are confirmed stable on Dragonfly, this is a good moment to check whether `charts/dragonfly`'s default `resources` block (128Mi/256Mi, 50m/250m cpu) needs per-app tuning — start conservative and adjust based on observed usage, same lesson learned the hard way in the RabbitMQ migration (see `.archive/docs/superpowers/plans/2026-07-06-rabbitmq-operator.md`, Deviation 3).

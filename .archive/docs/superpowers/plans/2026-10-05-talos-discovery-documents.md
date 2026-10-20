@@ -8,7 +8,7 @@
 
 **Tech Stack:** Talos 1.14.2 patches (strategic merge), bash, yq, `envsubst`, the shell tests under `provision/talos/tests/`.
 
-**Spec:** `docs/superpowers/specs/2026-10-05-talos-discovery-documents-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-10-05-talos-discovery-documents-design.md`
 
 ## Global Constraints
 
@@ -224,7 +224,7 @@ git commit -m "feat(talos): move discovery identity and service to config docume
 - Modify (generated): `docs/src/talos/config-map.md`
 - Modify: `provision/talos/README.md` (the `## Secrets` section)
 - Modify: `.plans/TODO.md` (the Tier 3 bullet and the Next-step line)
-- Modify: `docs/superpowers/specs/2026-10-05-talos-config-layout-design.md` (the tier 3 non-goal at "Migrating the PKI, secret and discovery fields")
+- Modify: `.archive/docs/superpowers/specs/2026-10-05-talos-config-layout-design.md` (the tier 3 non-goal at "Migrating the PKI, secret and discovery fields")
 
 **Interfaces:**
 - Consumes: the three patch files from Task 2 (the config map is generated from their headers).
@@ -258,7 +258,7 @@ In the "Next in the migration entry below" line near the top of the file, keep i
 
 - [ ] **Step 4: Update the layout spec non-goal**
 
-In `docs/superpowers/specs/2026-10-05-talos-config-layout-design.md`, replace:
+In `.archive/docs/superpowers/specs/2026-10-05-talos-config-layout-design.md`, replace:
 
 ```markdown
 - Migrating the PKI, secret and discovery fields (tier 3 in
@@ -272,7 +272,7 @@ Run: `task talos:check && task lint:all`
 Expected: all pass.
 
 ```bash
-git add docs/src/talos/config-map.md provision/talos/README.md .plans/TODO.md docs/superpowers/specs/2026-10-05-talos-config-layout-design.md
+git add docs/src/talos/config-map.md provision/talos/README.md .plans/TODO.md .archive/docs/superpowers/specs/2026-10-05-talos-config-layout-design.md
 git commit -m "docs(talos): document the discovery documents and regenerate the config map"
 ```
 
@@ -280,7 +280,7 @@ git commit -m "docs(talos): document the discovery documents and regenerate the 
 
 ```bash
 git push -u origin chore/talos-discovery-documents
-gh pr create --title "feat(talos): move discovery identity and service to config documents" --body "Implements docs/superpowers/specs/2026-10-05-talos-discovery-documents-design.md. Repo change only; the live rollout (task talos:diff, hash comparison, node-by-node apply) is a separate gated step in the plan."
+gh pr create --title "feat(talos): move discovery identity and service to config documents" --body "Implements .archive/docs/superpowers/specs/2026-10-05-talos-discovery-documents-design.md. Repo change only; the live rollout (task talos:diff, hash comparison, node-by-node apply) is a separate gated step in the plan."
 ```
 
 ---

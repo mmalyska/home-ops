@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Design source of truth: `docs/superpowers/specs/2026-07-20-cnpg-alerting-design.md` — read it if anything here is ambiguous.
+- Design source of truth: `.archive/docs/superpowers/specs/2026-07-20-cnpg-alerting-design.md` — read it if anything here is ambiguous.
 - Metric names (`cnpg_pg_stat_archiver_seconds_since_last_archival`, `cnpg_collector_last_failed_backup_timestamp`, `cnpg_collector_last_available_backup_timestamp`) were confirmed live against the cluster's Prometheus — do not substitute different metric names without re-verifying against `curl http://localhost:9090/api/v1/label/__name__/values` (see `prometheus-portforward-session` skill for the port-forward lifecycle across Bash calls).
 - `PrometheusRule` files in this repo use Helm raw-string escaping for Go template syntax, e.g. `{{`{{ $labels.namespace }}`}}` — because they live under `templates/` and are themselves passed through Helm rendering. Copy this pattern exactly; unescaped `{{ }}` will break the Helm render.
 - `alertmanager.config.receivers[].discord_configs[].webhook_url` must **never** be set directly with a `<secret:...>` token — use `webhook_url_file` + `alertmanagerSpec.secrets` as designed. See design doc section 2 for why.
@@ -290,8 +290,8 @@ gh pr create --title "feat(prometheus-stack): CNPG archiving/backup alerts + Dis
 - Configure Alertmanager to route `critical`/`warning` alerts to a Discord webhook, with `@here` on critical
 - Webhook URL delivered via ExternalSecret + `webhook_url_file`, not a `<secret:...>` token (confirmed the token-substitution path is broken for this specific chart's Secret shape — see design doc)
 
-Design: `docs/superpowers/specs/2026-07-20-cnpg-alerting-design.md`
-Plan: `docs/superpowers/plans/2026-07-20-cnpg-alerting.md`
+Design: `.archive/docs/superpowers/specs/2026-07-20-cnpg-alerting-design.md`
+Plan: `.archive/docs/superpowers/plans/2026-07-20-cnpg-alerting.md`
 
 ## Test plan
 - [x] `helm template` verified for all three new/changed files

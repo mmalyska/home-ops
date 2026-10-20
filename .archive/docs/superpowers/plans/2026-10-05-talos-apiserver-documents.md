@@ -8,7 +8,7 @@
 
 **Tech Stack:** Talos v1.14.2, `talosctl`, the layered patch pipeline in `provision/talos/`, yq (mikefarah v4), go-task.
 
-**Spec:** `docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md`
 
 ## Global Constraints
 
@@ -148,7 +148,7 @@ task talos:config-map
 task talos:check                                              # Expected: check-patches: ok, config-map: up to date, 0 failed
 ```
 
-In `.plans/TODO.md`, in the Tier 2 bullet, change the `cluster.apiServer` sentence to start with: "Stage 1 done: PodSecurity admission and audit policy as `KubeAdmissionControlConfig` and `KubeAuditPolicyConfig` (apiServer stage 2 follows, see `docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md`)."
+In `.plans/TODO.md`, in the Tier 2 bullet, change the `cluster.apiServer` sentence to start with: "Stage 1 done: PodSecurity admission and audit policy as `KubeAdmissionControlConfig` and `KubeAuditPolicyConfig` (apiServer stage 2 follows, see `.archive/docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md`)."
 
 - [ ] **Step 5: Commit, push, open PR 1**
 
@@ -157,7 +157,7 @@ git add -A
 git commit -m "feat(talos): admission control and audit policy as config documents"
 git push -u origin HEAD
 gh pr create --title "feat(talos): migrate apiServer admission control and audit policy to documents" --body "$(cat <<BODY
-Stage 1 of docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md: the PodSecurity admission config and the audit policy become KubeAdmissionControlConfig and KubeAuditPolicyConfig documents with the same content; the kube-system exemption the generated base used to carry is written into the document. The generated legacy admissionControl and auditPolicy keys are deleted. Image, extraArgs and certSANs stay legacy until stage 2.
+Stage 1 of .archive/docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md: the PodSecurity admission config and the audit policy become KubeAdmissionControlConfig and KubeAuditPolicyConfig documents with the same content; the kube-system exemption the generated base used to carry is written into the document. The generated legacy admissionControl and auditPolicy keys are deleted. Image, extraArgs and certSANs stay legacy until stage 2.
 
 task talos:diff -- mc1 (live vs repo):
 
@@ -359,7 +359,7 @@ In `provision/talos/tests/test_render.sh`:
 
 - [ ] **Step 4: Docs and skill**
 
-- `docs/src/k8s/oidc/Readme.md`: add a first paragraph under the title: "The Kubernetes API server OIDC is **not configured** (since the apiServer migration, see `docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md`): kubectl uses the Talos-generated kubeconfig. The steps below are the old manifest-based setup; to bring OIDC back, add a `jwt` entry to `provision/talos/patches/controlplane/24-apiserver-authentication.yaml` (issuer url, audiences, claim mappings) instead of API server flags."
+- `docs/src/k8s/oidc/Readme.md`: add a first paragraph under the title: "The Kubernetes API server OIDC is **not configured** (since the apiServer migration, see `.archive/docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md`): kubectl uses the Talos-generated kubeconfig. The steps below are the old manifest-based setup; to bring OIDC back, add a `jwt` entry to `provision/talos/patches/controlplane/24-apiserver-authentication.yaml` (issuer url, audiences, claim mappings) instead of API server flags."
 - `.claude/skills/cluster-reference/SKILL.md`: replace the bullet "OIDC on kube-apiserver pointing to Keycloak" with: "kube-apiserver: no OIDC (kubectl uses the Talos-generated kubeconfig); authentication, authorizers (node, rbac), admission and audit are config documents in provision/talos/patches/controlplane/ (files 20 to 26)".
 - `.plans/TODO.md`: in the Tier 2 bullet, replace the whole apiServer sentence by: "Done: `cluster.apiServer` -> `KubeAPIServerConfig`, `KubeAuthenticationConfig`, `KubeAuthorizerConfig` (node, rbac), `KubeAdmissionControlConfig`, `KubeAuditPolicyConfig`; the API server OIDC was dropped (re-add as a `jwt` entry)."
 
@@ -391,7 +391,7 @@ git add -A
 git commit -m "feat(talos): kube-apiserver, authentication and authorizers as config documents, drop the API server OIDC"
 git push -u origin HEAD
 gh pr create --title "feat(talos): migrate the kube-apiserver core to config documents" --body "$(cat <<BODY
-Stage 2 of docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md: KubeAPIServerConfig (pinned image, certExtraSANs), KubeAuthenticationConfig (Talos default content written out), KubeAuthorizerConfig node then rbac; the legacy cluster.apiServer block is deleted. The API server OIDC is dropped (not in use; kubectl uses the Talos-generated kubeconfig): the oidc-* arguments, the two Keycloak template variables and the test that used them are removed.
+Stage 2 of .archive/docs/superpowers/specs/2026-10-05-talos-apiserver-documents-design.md: KubeAPIServerConfig (pinned image, certExtraSANs), KubeAuthenticationConfig (Talos default content written out), KubeAuthorizerConfig node then rbac; the legacy cluster.apiServer block is deleted. The API server OIDC is dropped (not in use; kubectl uses the Talos-generated kubeconfig): the oidc-* arguments, the two Keycloak template variables and the test that used them are removed.
 
 Do not apply before stage 1 is live and verified. Apply mc1 alone first, with the live comparisons of Task 4 of the plan (authorization order, certificate SANs, anonymous access); recovery is talosctl apply-config, not the kubectl-dependent task.
 

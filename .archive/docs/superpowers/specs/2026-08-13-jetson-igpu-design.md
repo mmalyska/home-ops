@@ -564,7 +564,7 @@ Both phases executed and all eight gate checks passed. Summary:
 | 7   | CUDA smoke test    | pass — JetPack6 backend, no error 801/999, non-privileged pod |
 | 8   | ollama tok/s       | **2.75x** eval rate, **12.36x** prompt eval rate — see below  |
 
-Full CPU/GPU figures: `docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`.
+Full CPU/GPU figures: `.archive/docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`.
 `qwen3.5:9b`, `--think=false`, same prompt both runs: CPU eval rate 3.21
 tok/s → GPU eval rate 8.84 tok/s (2.75x, clears the required >=2x).
 

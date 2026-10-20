@@ -8,7 +8,7 @@
 
 **Tech Stack:** Talos v1.14.2, `talosctl`, the layered patch pipeline in `provision/talos/`, yq (mikefarah v4), go-task, bash tests under `provision/talos/tests/`.
 
-**Spec:** `docs/superpowers/specs/2026-10-05-talos-install-document-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-10-05-talos-install-document-design.md`
 
 ## Global Constraints
 
@@ -435,7 +435,7 @@ git commit -m "docs(talos): describe the install document, its traps and the unt
 ```bash
 git push -u origin HEAD
 gh pr create --title "feat(talos): migrate machine.install to UnattendedInstallConfig" --body "$(cat <<BODY
-Implements docs/superpowers/specs/2026-10-05-talos-install-document-design.md. machine.install becomes an UnattendedInstallConfig document (installer image per role and node, CEL disk selector, explicit wipe: false); the readers of the install image (expected-version.sh, the upgrade task) read the new document, their fixtures were changed first and failed for the right reason; the render test guards the selector, wipe and nv1's custom image. The disk selector is repeated in the last patch per node because talosctl machineconfig patch drops it on a later merge.
+Implements .archive/docs/superpowers/specs/2026-10-05-talos-install-document-design.md. machine.install becomes an UnattendedInstallConfig document (installer image per role and node, CEL disk selector, explicit wipe: false); the readers of the install image (expected-version.sh, the upgrade task) read the new document, their fixtures were changed first and failed for the right reason; the render test guards the selector, wipe and nv1's custom image. The disk selector is repeated in the last patch per node because talosctl machineconfig patch drops it on a later merge.
 
 task talos:diff (live vs repo, mc1 and nv1):
 

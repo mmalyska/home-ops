@@ -14,7 +14,7 @@
 
 These are human actions, not code tasks. Complete them before starting Task 1.
 
-- [ ] In the Discord Developer Portal, create a bot application and collect the bot token (see spec: `docs/superpowers/specs/2026-05-26-hermes-agent-discord-design.md` — "How to Create and Configure the Discord Bot").
+- [ ] In the Discord Developer Portal, create a bot application and collect the bot token (see spec: `.archive/docs/superpowers/specs/2026-05-26-hermes-agent-discord-design.md` — "How to Create and Configure the Discord Bot").
 - [ ] Enable **Server Members Intent** and **Message Content Intent** in the Bot tab.
 - [ ] Collect the comma-separated Discord user IDs for `DISCORD_ALLOWED_USERS`.
 - [ ] Create two secrets in Bitwarden Secrets Manager and note their UUIDs:
@@ -121,7 +121,7 @@ These are human actions, not code tasks. Complete them before starting Task 1.
   git push -u origin HEAD
   gh pr create \
     --title "feat(hermes-agent): add Discord integration" \
-    --body "Adds DISCORD_BOT_TOKEN and DISCORD_ALLOWED_USERS to the hermes-agent ExternalSecret and deployment env vars. No new containers required — Discord runs in-process. Spec: docs/superpowers/specs/2026-05-26-hermes-agent-discord-design.md"
+    --body "Adds DISCORD_BOT_TOKEN and DISCORD_ALLOWED_USERS to the hermes-agent ExternalSecret and deployment env vars. No new containers required — Discord runs in-process. Spec: .archive/docs/superpowers/specs/2026-05-26-hermes-agent-discord-design.md"
   ```
 
 - [ ] **Step 2: After merge, verify in ArgoCD**

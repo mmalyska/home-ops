@@ -67,7 +67,7 @@ cluster/apps/ai/                  # New category directory
 
 ## Design Doc
 
-`docs/superpowers/specs/2026-06-01-ai-project-design.md`
+`.archive/docs/superpowers/specs/2026-06-01-ai-project-design.md`
 
 ## Current Status
 

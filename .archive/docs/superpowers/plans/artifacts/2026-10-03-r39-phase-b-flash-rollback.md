@@ -1,6 +1,6 @@
 # Phase B: r39 flash and rollback checklist for nv1
 
-Date: 2026-10-03. Plan: `docs/superpowers/archive/2026-10-01-talos-jetson-r39-port.md`. Nothing in this file has been run on hardware. Steps marked **verify** rest on reading Seeed's and NVIDIA's scripts, not on a test.
+Date: 2026-10-03. Plan: `.archive/docs/superpowers/plans/2026-10-01-talos-jetson-r39-port.md`. Nothing in this file has been run on hardware. Steps marked **verify** rest on reading Seeed's and NVIDIA's scripts, not on a test.
 
 ## What B1 to B3 found
 

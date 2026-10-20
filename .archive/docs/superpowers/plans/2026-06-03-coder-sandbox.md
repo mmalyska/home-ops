@@ -8,7 +8,7 @@
 
 **Tech Stack:** Coder Helm chart (`helm.coder.com/v2`), Terraform workspace template (kubernetes + coder providers), pgsql-cnpg local chart, VolSync (Restic), Cilium LB-IPAM, Envoy Gateway HTTPRoute, Bitwarden ExternalSecrets, Harbor private registry, Docker (image builds).
 
-**Spec:** `docs/superpowers/specs/2026-06-03-coder-sandbox-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-06-03-coder-sandbox-design.md`
 
 ---
 

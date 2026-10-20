@@ -8,7 +8,7 @@
 
 **Tech Stack:** ArgoCD ApplicationSet + Helm charts (raw templates), llama.cpp (`llama-server`), NVIDIA `llama_cpp` Jetson image (CUDA 12.6), faster-whisper via Speaches, Kustomize (nvidia app), Prometheus Operator CRDs, Talos/`talosctl`, Hermes Agent, Honcho.
 
-**Spec:** `docs/superpowers/specs/2026-09-25-local-first-llm-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-09-25-local-first-llm-design.md`
 
 ## Global Constraints
 
@@ -274,7 +274,7 @@ pod. A sidecar now restarts the plugin when kubelet.sock is re-created."
 git push -u origin feat/nvidia-device-plugin-watchdog
 gh pr create --base main --label area/cluster --label enhancement \
   --title "feat(nvidia): restart the Jetson device plugin after kubelet restarts" \
-  --body "Adds a watchdog sidecar (shareProcessNamespace) that SIGTERMs /jetson-device-plugin when kubelet.sock is re-created, so the GPU re-registers automatically. Script is tested by watchdog.test.sh (6 cases + negative control). Spec: docs/superpowers/specs/2026-09-25-local-first-llm-design.md"
+  --body "Adds a watchdog sidecar (shareProcessNamespace) that SIGTERMs /jetson-device-plugin when kubelet.sock is re-created, so the GPU re-registers automatically. Script is tested by watchdog.test.sh (6 cases + negative control). Spec: .archive/docs/superpowers/specs/2026-09-25-local-first-llm-design.md"
 ```
 
 - [ ] **Step 12: After merge, verify live (CONFIRM — restarts the kubelet on nv1)**

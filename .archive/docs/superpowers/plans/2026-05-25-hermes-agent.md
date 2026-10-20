@@ -15,7 +15,7 @@ dependencies.
 **Tech Stack:** Kubernetes, Helm (local chart), ArgoCD ApplicationSet, ExternalSecrets Operator
 (Bitwarden), Envoy Gateway HTTPRoute, `nousresearch/hermes-agent:main`, `bbernhard/signal-cli-rest-api:0.99`
 
-**Spec:** `docs/superpowers/specs/2026-05-25-hermes-agent-design.md`
+**Spec:** `.archive/docs/superpowers/specs/2026-05-25-hermes-agent-design.md`
 
 ---
 

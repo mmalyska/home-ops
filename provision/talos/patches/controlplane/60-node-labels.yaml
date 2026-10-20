@@ -1,5 +1,5 @@
 # What:   Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them
-# Why:    Scheduling label from the Daytona installation (docs/superpowers/archive/2026-06-02-daytona-installation.md).
+# Why:    Scheduling label from the Daytona installation (.archive/docs/superpowers/plans/2026-06-02-daytona-installation.md).
 #         There are no dedicated workers besides nv1 (a GPU node), so the control planes must accept ordinary pods.
 #         This document replaces cluster.allowSchedulingOnMasters: true: Talos refuses that legacy field next to
 #         KubeNodeConfig, and a control plane is only tainted NoSchedule when the taint is listed in `taints`.

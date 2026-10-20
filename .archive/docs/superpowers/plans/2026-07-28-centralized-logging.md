@@ -12,7 +12,7 @@
 
 - All new resources live in the existing `monitoring` namespace — do not create a new namespace (`CreateNamespace=true` is already a global ArgoCD syncOption; `monitoring`'s pod-security labels are already set by `prometheus-stack`'s `app-config.yaml`).
 - Loki retention: `720h` (30 days), enforced by the in-process compactor against a single `ceph-block` PVC, `50Gi`.
-- No Loki ruler/alerting, no new Grafana dashboards, no S3 backend, no router-side automation — all explicit non-goals in the design spec (`docs/superpowers/specs/2026-07-27-logging-design.md`).
+- No Loki ruler/alerting, no new Grafana dashboards, no S3 backend, no router-side automation — all explicit non-goals in the design spec (`.archive/docs/superpowers/specs/2026-07-27-logging-design.md`).
 - Every chart/values change must be verified with a local `helm dependency update` + `helm template` render before committing (per `CLAUDE.md` verification rule) — commands and expected output are given in each task below; all were already dry-run validated while writing this plan.
 - Branch: work continues on the existing `feat/centralized-logging` branch (already pushed, draft PR #4698 open). Do not open a new branch.
 - Never run `kubectl apply`, `argocd app sync`, or otherwise mutate the live cluster without explicit user confirmation — this plan's tasks stop at "committed to the branch"; live verification (Task 6) happens only after the user confirms the PR should be merged/synced.
@@ -436,7 +436,7 @@ Insert immediately after the `kube-prometheus-stack` row (line 36 as of this wri
 
 - [ ] **Step 2: Remove the completed backlog item from `.plans/TODO.md`**
 
-Delete the entire `## Infrastructure — Logging` section (the heading and its bullet), since it's now implemented via `docs/superpowers/specs/2026-07-27-logging-design.md` and this plan.
+Delete the entire `## Infrastructure — Logging` section (the heading and its bullet), since it's now implemented via `.archive/docs/superpowers/specs/2026-07-27-logging-design.md` and this plan.
 
 - [ ] **Step 3: Commit**
 

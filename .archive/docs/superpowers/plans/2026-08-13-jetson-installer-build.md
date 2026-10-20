@@ -19,7 +19,7 @@
 
 **Tech Stack:** GitHub Actions (`ubuntu-24.04-arm`), ghcr.io, Talos Linux v1.13.x, `talosctl`, `gh` CLI, Renovate.
 
-**Design spec:** `docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`
+**Design spec:** `.archive/docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`
 
 ## Global Constraints
 
@@ -469,7 +469,7 @@ kubectl -n ollama exec deploy/ollama -- \
   ollama run qwen3.5:9b --verbose "Write a haiku about storage." 2>&1 | tail -8
 ```
 
-Pass: `eval rate` within ~10% of the **GPU** figure in `docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md` — that file holds both the CPU baseline and the Phase 1 GPU result, so compare against the GPU one, not the CPU one. A drop toward the CPU figure means the CUDA backend is not engaging; check `JETSON_JETPACK` reached the container before concluding the build is bad.
+Pass: `eval rate` within ~10% of the **GPU** figure in `.archive/docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md` — that file holds both the CPU baseline and the Phase 1 GPU result, so compare against the GPU one, not the CPU one. A drop toward the CPU figure means the CUDA backend is not engaging; check `JETSON_JETPACK` reached the container before concluding the build is bad.
 
 - [ ] **Step 6: Confirm the version guard behaves**
 
@@ -482,7 +482,7 @@ Pass: reports nv1 already at its version and skips. If it wants to upgrade, the 
 
 - [ ] **Step 7: Record the outcome**
 
-Append an Outcome section to `docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`: which gates passed, the measured `eval rate`, and the image tag now in use. Commit and push.
+Append an Outcome section to `.archive/docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`: which gates passed, the measured `eval rate`, and the image tag now in use. Commit and push.
 
 ---
 

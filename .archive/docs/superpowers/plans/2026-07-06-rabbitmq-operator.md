@@ -45,7 +45,7 @@ Live-verified post-fix: RabbitMQ Cluster Operator pod healthy, `home-assistant-m
 - Never push to `main` directly — already on branch `feat/rabbitmq-operator`. **(Deviation: Tasks 4 and 5 used their own branches off `main` instead — see Status above.)**
 - Render every manifest/values change before committing: `helm template` for Helm-based apps, `kubectl kustomize` for Kustomize-based apps, then `task lint:all`.
 - Never commit secret values — gitleaks pre-commit hook blocks it. Bitwarden `remoteRef.key` UUIDs are not secret values themselves and are tagged `#gitleaks:allow` per existing convention in this repo.
-- OnlyOffice is explicitly out of scope (Community Edition structurally cannot use an external broker — see `docs/superpowers/specs/2026-07-06-rabbitmq-operator-design.md`). Do not touch `cluster/apps/default/nextcloud/onlyoffice/`.
+- OnlyOffice is explicitly out of scope (Community Edition structurally cannot use an external broker — see `.archive/docs/superpowers/specs/2026-07-06-rabbitmq-operator-design.md`). Do not touch `cluster/apps/default/nextcloud/onlyoffice/`.
 - The Messaging Topology Operator is **not** deployed. No `Queue`/`Exchange`/`Binding`/`User`/`Vhost` CRDs anywhere in this plan — per-app user/queue provisioning is definitions-import via `ExternalSecret`, same pattern as VerneMQ today.
 - **Deviation from the design doc, discovered during this planning pass:** the design doc said "PodMonitor". The upstream RabbitMQ Cluster Operator's own monitoring guide (for versions >v1.6.0, which v2.22.1 is) recommends a `ServiceMonitor` targeting the Service's `prometheus` port, not a `PodMonitor`. This plan uses `ServiceMonitor` and names the chart field `monitoring.enableServiceMonitor` accordingly.
 
@@ -421,7 +421,7 @@ gh pr create --title "feat: add RabbitMQ operator + Home Assistant MQTT migratio
 - Adds reusable `charts/rabbitmq-cluster/` chart mirroring `charts/pgsql-cnpg/`
 - Adds `home-assistant/rabbitmq` app with MQTT plugin, ready as a VerneMQ replacement (not yet cut over)
 
-See `docs/superpowers/specs/2026-07-06-rabbitmq-operator-design.md` for full design context.
+See `.archive/docs/superpowers/specs/2026-07-06-rabbitmq-operator-design.md` for full design context.
 
 ## Test plan
 - [x] `helm template` / `kubectl kustomize` render clean (done locally, see commits)

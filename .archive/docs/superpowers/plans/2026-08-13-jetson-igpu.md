@@ -8,7 +8,7 @@
 
 **Tech Stack:** Talos Linux v1.13.x, Kubernetes v1.35.6, ArgoCD ApplicationSets, Helm + Kustomize, Rook-Ceph v1.20.3 with ceph-csi-operator, `task` automation, `talosctl`.
 
-**Design spec:** `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md`
+**Design spec:** `.archive/docs/superpowers/specs/2026-08-13-jetson-igpu-design.md`
 
 ## Global Constraints
 
@@ -205,7 +205,7 @@ leave a pod unschedulable. Narrowed back to one taint after the rename."
 cd /workspaces/home-ops
 git push -u origin feat/nv1-reconcile
 gh pr create --title "feat(nv1): reconcile taints, tolerations and stale config" \
-  --body "Phase 0 of the Jetson iGPU work. See docs/superpowers/specs/2026-08-13-jetson-igpu-design.md.
+  --body "Phase 0 of the Jetson iGPU work. See .archive/docs/superpowers/specs/2026-08-13-jetson-igpu-design.md.
 
 Widens tolerations so workloads that must reach nv1 tolerate both the current nv taint and the incoming nvidia.com/gpu taint."
 ```
@@ -524,7 +524,7 @@ Without this, "23 tok/s" has nothing to compare against. The Orin's 8 A78AE core
 
 **Files:**
 
-- Create: `docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`
+- Create: `.archive/docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`
 
 **Interfaces:**
 
@@ -566,7 +566,7 @@ Record the `eval rate` line (tokens/s) for each.
 
 - [ ] **Step 3: Write the baseline artifact**
 
-Create `docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md` containing, for each model: model name, `eval rate` tok/s, `prompt eval rate` tok/s, and the date. State plainly that these are CPU-only figures on nv1.
+Create `.archive/docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md` containing, for each model: model name, `eval rate` tok/s, `prompt eval rate` tok/s, and the date. State plainly that these are CPU-only figures on nv1.
 
 - [ ] **Step 4: ⚠ CONFIRM — tear down**
 
@@ -579,7 +579,7 @@ kubectl -n default delete pod ollama-cpu-baseline
 ```bash
 cd /workspaces/home-ops
 git checkout -b feat/jetson-gpu
-git add docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md
+git add .archive/docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md
 git commit -m "docs(jetson): record nv1 CPU inference baseline"
 ```
 
@@ -1210,7 +1210,7 @@ Pass: pod `Running` on nv1; PVC `Bound` on `ceph-block` (this is what Phase 0 Ta
 kubectl -n ollama exec deploy/ollama -- ollama run qwen3.5:9b --verbose "Write a haiku about storage." 2>&1 | tail -8
 ```
 
-Compare the `eval rate` against `docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`.
+Compare the `eval rate` against `.archive/docs/superpowers/plans/artifacts/2026-08-13-nv1-cpu-baseline.md`.
 
 - **>= 2x baseline** → pass. Phase 1 succeeds; Phase 2 is worth designing.
 - **1x–2x** → **no-go for Phase 2.** Record the numbers and ask the user whether to keep or revert the Phase 1 state; it is independently revertible.
@@ -1226,7 +1226,7 @@ Append the GPU figures to the baseline artifact alongside the CPU numbers, with 
 
 **Files:**
 
-- Modify: `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md`
+- Modify: `.archive/docs/superpowers/specs/2026-08-13-jetson-igpu-design.md`
 - Modify: `provision/talos/README.md`
 
 - [ ] **Step 1: Record outcomes in the spec**
@@ -1241,7 +1241,7 @@ In `provision/talos/README.md`, under "Adding a new node", document the optional
 
 ```bash
 cd /workspaces/home-ops
-npx --yes prettier --write docs/superpowers/specs/2026-08-13-jetson-igpu-design.md provision/talos/README.md
+npx --yes prettier --write .archive/docs/superpowers/specs/2026-08-13-jetson-igpu-design.md provision/talos/README.md
 git add -A && git commit -m "docs(jetson): record Phase 1 outcome and per-node talosVersion"
 git push
 ```

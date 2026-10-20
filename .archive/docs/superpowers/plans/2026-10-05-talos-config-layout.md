@@ -10,7 +10,7 @@
 
 **Tech Stack:** bash 4+, `talosctl` v1.14.2 client, `yq` (mikefarah v4), `jq`, `envsubst`, go-task, GitHub Actions.
 
-**Spec:** `docs/superpowers/specs/2026-10-05-talos-config-layout-design.md` (PR #5474; this plan is stacked on that PR until it merges).
+**Spec:** `.archive/docs/superpowers/specs/2026-10-05-talos-config-layout-design.md` (PR #5474; this plan is stacked on that PR until it merges).
 
 ## Status of this plan
 
@@ -1092,7 +1092,7 @@ machine:
 
 ```yaml
 # What:   Label daytona-sandbox-c=true on the control-plane nodes
-# Why:    Scheduling label from the Daytona installation (docs/superpowers/archive/2026-06-02-daytona-installation.md)
+# Why:    Scheduling label from the Daytona installation (.archive/docs/superpowers/plans/2026-06-02-daytona-installation.md)
 # Nodes:  control plane
 # Apply:  live
 machine:
@@ -1741,7 +1741,7 @@ The saved outputs are masked, so they are safe to paste.
 ```bash
 git push -u origin HEAD
 gh pr create --title "feat(talos): layered patch pipeline beside the old one, with a parity gate" --body "$(cat <<BODY
-Phase 1a of docs/superpowers/specs/2026-10-05-talos-config-layout-design.md: the new render pipeline (gen config base plus layered, self-describing patch files) built beside the old one.
+Phase 1a of .archive/docs/superpowers/specs/2026-10-05-talos-config-layout-design.md: the new render pipeline (gen config base plus layered, self-describing patch files) built beside the old one.
 
 Parity, old pipeline vs the new layers:
 
@@ -2006,8 +2006,8 @@ To move such a node to a new Talos version, bump the tag in that file, nothing e
 installer exists first.** nv1's GPU kernel modules (`host1x`, `tegra_drm`, `nvgpu`, …) are ABI-bound to the exact
 kernel build in that image, and Talos loads them during the boot sequence before starting services, so a mismatched
 image can leave the node with networking up but `apid` never starting: reachable at the TCP level, unmanageable, and
-fixable only over the console. See `docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
-`docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
+fixable only over the console. See `.archive/docs/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
+`.archive/docs/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
 
 #### nv1 boots the wrong UKI after an upgrade (Jetson UEFI)
 
@@ -2945,7 +2945,7 @@ git add .github/workflows/talos-config.yaml .taskfiles/talos/Taskfile.yaml provi
 git commit -m "feat(talos): offline check task and CI workflow for the patch conventions and the config map"
 git push -u origin HEAD
 gh pr create --title "feat(talos): explain, config map, diff and CI checks for the patch layout" --body "$(cat <<BODY
-Phase 1b of docs/superpowers/specs/2026-10-05-talos-config-layout-design.md.
+Phase 1b of .archive/docs/superpowers/specs/2026-10-05-talos-config-layout-design.md.
 
 - task talos:explain: what is configured per node, from the patch headers
 - task talos:config-map: generated docs/src/talos/config-map.md (CI fails when stale)

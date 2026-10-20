@@ -10,7 +10,7 @@
 
 **Tech Stack:** Helm (harbor/harbor v1.19.1, daytona/daytona v0.0.25, pgsql-cnpg v1.3.2), ArgoCD, CNPG, Ceph (`ceph-block` StorageClass), Cilium L2 LB-IPAM, Envoy Gateway, Keycloak, Bitwarden ESO.
 
-**Design spec:** `docs/superpowers/specs/2026-06-02-daytona-installation-design.md`
+**Design spec:** `.archive/docs/superpowers/specs/2026-06-02-daytona-installation-design.md`
 
 ---
 
