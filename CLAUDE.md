@@ -87,11 +87,11 @@ Shared files:
 
 - `.plans/list.md` — one-line entry per active plan of either form (plan, spec, description, start date).
 - `.archive/.plans/` — completed plan folders moved here verbatim; `.archive/.plans/list.md` is the completed index for both forms.
-- `.archive/docs/superpowers/{specs,plans,research}/` — finished or dropped superpowers specs, plans and artifacts, moved verbatim.
+- `.archive/.plans/superpowers/{specs,plans,research}/` — finished or dropped superpowers specs, plans and artifacts, moved verbatim.
 - `.plans/TODO.md` — Claude's scratchpad for out-of-scope ideas worth doing later; never modified by the plan workflow.
 
 **When starting a plan**: write the spec and plan under `.plans/superpowers/`, or create `.plans/{name}/plan.md` and `tasks.md`. Either way add an entry to `.plans/list.md`.  
-**When completing or dropping a plan**: move the plan folder to `.archive/.plans/{name}/`, or the superpowers spec, plan and artifacts to the matching folder under `.archive/docs/superpowers/`. Update every link to the moved files and both `list.md` files.
+**When completing or dropping a plan**: move the plan folder to `.archive/.plans/{name}/`, or the superpowers spec, plan and artifacts to the matching folder under `.archive/.plans/superpowers/`. Update every link to the moved files and both `list.md` files.
 
 ## Memory
 

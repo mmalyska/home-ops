@@ -1345,6 +1345,6 @@ and add `--listen-address` / `$(POD_IP)` to the args (Kubernetes expands `$(POD_
 
 - [ ] **Step 4: Remove `hass-proxy`** following the repo's removal procedure (memory: `reference_app_removal_procedure.md` — deleting the directory never auto-prunes): delete `cluster/apps/default/hass-proxy/`, then **[CONFIRM]** `kubectl delete application hass-proxy -n argocd`, and check for PVCs (none expected).
 
-- [ ] **Step 5: Final PR** with the docs/memory/cleanup changes; mark the plan complete by moving this plan to `.archive/docs/superpowers/plans/` if that is the repo's convention for finished work.
+- [ ] **Step 5: Final PR** with the docs/memory/cleanup changes; mark the plan complete by moving this plan to `.archive/.plans/superpowers/plans/` if that is the repo's convention for finished work.
 
 - [ ] **Step 6: [USER] Retire the RPi** (reuse or recycle). Done.
