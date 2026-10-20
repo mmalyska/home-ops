@@ -33,3 +33,4 @@
 | [talos-workload-isolation](superpowers/plans/2026-10-07-talos-workload-isolation.md) | Talos Workload Isolation | 2026-10-07 |
 | [llm-reliability-gemma4](superpowers/plans/2026-10-13-llm-reliability-gemma4.md) | Reliable Local LLM: Gemma 4 26B-A4B at One Slot | 2026-10-13 |
 | [qwen3.6-benchmark](superpowers/plans/2026-10-13-qwen3.6-benchmark.md) | Qwen3.6-35B-A3B Benchmark on nv1 | 2026-10-13 |
+| [rpi-decommission](superpowers/plans/2026-10-01-rpi-decommission.md) | Move Home Assistant, AdGuard, MQTT, Z2M, Matter and Music Assistant off the RPi into the cluster and retire it | 2026-10-20 |

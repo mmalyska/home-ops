@@ -2,13 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Status: done 2026-10-20.** Every phase is complete and the RPi is retired. The Phase 0-3 step checkboxes were not ticked as the work went; the phase and task headings carry the real state. Instead of Step 3b's `$(POD_IP)`, the Matter server binds with `--listen-address eth0`.
+
 **Goal:** Run Home Assistant, AdGuard Home (DNS + ad-blocking), MQTT, Zigbee2MQTT, the Matter server and Music Assistant in the cluster so the Raspberry Pi (`192.168.50.9`, HAOS) can be powered off.
 
 **Architecture:** Five phases, one PR each, each leaving the RPi functional until Phase 4. MQTT (existing RabbitMQ app), Z2M, the Matter server and Music Assistant (the last two on Multus macvlan interfaces on VLAN 48, no `hostNetwork`) move first and are each proven against the RPi's still-running HA; then two AdGuard Home instances replace the RPi's AdGuard; then HA itself is restored into the cluster with a fresh Postgres recorder; then the production hostname is cut over. At that point every addon has already been running and tested in the cluster.
 
 **Tech Stack:** ArgoCD ApplicationSets, Helm (bjw-s `app-template` 5.2.1), Kustomize, External Secrets (Bitwarden), Cilium 1.20 (L2 LB, `cni.exclusive`), Multus (thick), CloudNativePG, RabbitMQ cluster-operator, external-dns (AdGuard webhook), Talos.
 
-**Spec:** `.plans/superpowers/specs/2026-10-01-rpi-decommission-design.md`
+**Spec:** `.archive/.plans/superpowers/specs/2026-10-01-rpi-decommission-design.md`
 
 ## Global Constraints
 
@@ -173,7 +175,7 @@ cd /workspaces/home-ops-ha-migration && task lint:all
 git add charts/rabbitmq-cluster cluster/apps/home-automation/rabbitmq
 git commit -m "feat(rabbitmq): enable MQTT broker with LB IP, DNS name and zigbee2mqtt user"
 git push -u origin feat/mqtt-enable-rabbitmq
-gh pr create --base main --title "feat(rabbitmq): enable MQTT broker for HA stack migration" --body "Phase 0 of .plans/superpowers/plans/2026-10-01-rpi-decommission.md"
+gh pr create --base main --title "feat(rabbitmq): enable MQTT broker for HA stack migration" --body "Phase 0 of .archive/.plans/superpowers/plans/2026-10-01-rpi-decommission.md"
 ```
 
 ### Task 0.2: Verify the broker from the RPi **[CONFIRM before ArgoCD sync, then USER]**
@@ -361,7 +363,7 @@ cd /workspaces/home-ops-ha-migration && task lint:all
 git add cluster/apps/home-automation/zigbee2mqtt
 git commit -m "feat(zigbee2mqtt): add standalone Zigbee2MQTT app (scaled to 0 pending data restore)"
 git push -u origin feat/zigbee2mqtt
-gh pr create --base main --title "feat(zigbee2mqtt): standalone Zigbee2MQTT in cluster" --body "Phase 1 of .plans/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0."
+gh pr create --base main --title "feat(zigbee2mqtt): standalone Zigbee2MQTT in cluster" --body "Phase 1 of .archive/.plans/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0."
 ```
 
 Expected: a Deployment with `replicas: 0`, port 8080, the `z2m.` host, the `/app/data` mount and both env `secretRef`s appear.
@@ -948,7 +950,7 @@ cd /workspaces/home-ops-ha-migration && task lint:all
 git add cluster/apps/home-automation/music-assistant
 git commit -m "feat(music-assistant): add Music Assistant on VLAN 48 macvlan (scaled to 0)"
 git push -u origin feat/music-assistant
-gh pr create --base main --title "feat(music-assistant): Music Assistant on VLAN 48 macvlan" --body "Phase 1 of .plans/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0 pending data restore."
+gh pr create --base main --title "feat(music-assistant): Music Assistant on VLAN 48 macvlan" --body "Phase 1 of .archive/.plans/superpowers/plans/2026-10-01-rpi-decommission.md. Starts scaled to 0 pending data restore."
 ```
 
 Expected: the annotation with `192.168.48.62/24`, `replicas: 0`, port 8095, the `ma.` host and the `/data` mount appear. Record the rendered Service name; if it is not `music-assistant`, correct the URLs in Tasks 3.2 and 4.1 and in the spec.
@@ -1312,13 +1314,13 @@ Branch: `chore/rpi-decommission`
 - Modify: `.claude/memory/reference_home_network_hardware.md`, `reference_matter_thread_cross_vlan.md`, `reference_gateway_dns_architecture.md`
 - Delete (after the retention window): `cluster/apps/default/hass-proxy/`
 
-- [~] **Step 1: [USER] Retention window** _(in progress)_
+- [x] **Step 1: [USER] Retention window** _(done: ended 2026-10-17, nothing used the RPi)_
 
 Status 2026-10-04: the RPi is powered off (so its AdGuard cannot be queried). The five former RPi DNS clients that had not yet shown up on the cluster AdGuard (VLAN 10: Mistek, Pan-Telefonik, an iPhone and two unnamed devices) were checked in UniFi by the user: off or idle, all fine. The UPS NUT server was moved to the QNAP and the nodes repointed first, and HA now has the NUT integration pointing at the QNAP. Remaining after the window ends (2026-10-17): retire the RPi, then the closing steps below.
 
 Keep the RPi powered off with its SD card/backup for **14 days** (user-confirmed). During the window nothing should have used it: re-check AdGuard queries by client and the `hass.<domain>` access logs for the old path.
 
-- [ ] **Step 2: Docs and memory**
+- [x] **Step 2: Docs and memory** _(done 2026-10-20)_
 
 - `network.md`: remove the RPi from the topology diagram and IP table; add AdGuard `.24`/`.25`, MQTT `.26`, macvlan `.60`/`.61`/`.62`; document the DNS flow and the macvlan/Multus design.
 - `hardware.md`: mark the RPi decommissioned.
@@ -1329,7 +1331,7 @@ Keep the RPi powered off with its SD card/backup for **14 days** (user-confirmed
 
 Add a VolSync `ReplicationSource` (follow the repo's existing VolSync pattern, `grep -rn ReplicationSource cluster/apps | head`) for the HA config PVC, Z2M data PVC, Matter PVC and Music Assistant PVC; verify one backup completes (`kubectl get replicationsource -A`).
 
-- [ ] **Step 3b: Restrict the Matter WebSocket to the cluster network**
+- [x] **Step 3b: Restrict the Matter WebSocket to the cluster network** _(done, with `--listen-address eth0`)_
 
 After Phase 4 the RPi's HA no longer needs the `net1` address. The matter.js server's WebSocket is unauthenticated and binds to all interfaces by default. In `cluster/apps/home-automation/matter-server/values.yaml` add the pod IP to the container env and bind to it so only cluster traffic (HA via the Service) reaches it:
 
@@ -1343,8 +1345,8 @@ After Phase 4 the RPi's HA no longer needs the `net1` address. The matter.js ser
 
 and add `--listen-address` / `$(POD_IP)` to the args (Kubernetes expands `$(POD_IP)` in `args`). Keep `--primary-interface net1` (Matter/mDNS still uses `net1`). Verify HA still reaches the server (`ws://matter-server.ha-matter-server.svc.cluster.local:5580/ws`) and that `nc -vz 192.168.48.61 5580` from another LAN host now fails. Commit via PR.
 
-- [ ] **Step 4: Remove `hass-proxy`** following the repo's removal procedure (memory: `reference_app_removal_procedure.md` — deleting the directory never auto-prunes): delete `cluster/apps/default/hass-proxy/`, then **[CONFIRM]** `kubectl delete application hass-proxy -n argocd`, and check for PVCs (none expected).
+- [x] **Step 4: Remove `hass-proxy`** _(done: directory deleted, Application and PVCs gone)_ following the repo's removal procedure (memory: `reference_app_removal_procedure.md` — deleting the directory never auto-prunes): delete `cluster/apps/default/hass-proxy/`, then **[CONFIRM]** `kubectl delete application hass-proxy -n argocd`, and check for PVCs (none expected).
 
-- [ ] **Step 5: Final PR** with the docs/memory/cleanup changes; mark the plan complete by moving this plan to `.archive/.plans/superpowers/plans/` if that is the repo's convention for finished work.
+- [x] **Step 5: Final PR** _(done 2026-10-20, plan archived)_ with the docs/memory/cleanup changes; mark the plan complete by moving this plan to `.archive/.plans/superpowers/plans/` if that is the repo's convention for finished work.
 
-- [ ] **Step 6: [USER] Retire the RPi** (reuse or recycle). Done.
+- [x] **Step 6: [USER] Retire the RPi** (reuse or recycle). Done.

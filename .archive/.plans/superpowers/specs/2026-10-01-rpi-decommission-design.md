@@ -1,7 +1,7 @@
 # RPi Decommission — Home Assistant Stack In-Cluster Design
 
 **Date:** 2026-10-01
-**Status:** Draft — awaiting review
+**Status:** Implemented — completed 2026-10-20 (plan `.archive/.plans/superpowers/plans/2026-10-01-rpi-decommission.md`)
 
 ## Goal
 
