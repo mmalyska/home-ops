@@ -1,4 +1,10 @@
 nfs-subdir-external-provisioner:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 24Mi
+    limits:
+      memory: 64Mi
   nfs:
     server: qnap.<secret:private-domain>
     path: /nfs

@@ -4,6 +4,12 @@ pgsql-cnpg:
   instances: 2
   storage:
     size: 5Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
   monitoring:
     enablePodMonitor: true
   retentionPolicy: "10d"
