@@ -71,10 +71,10 @@ app-template:
                   key: uri
           resources:
             requests:
-              cpu: 10m
-              memory: 100Mi
+              cpu: 50m
+              memory: 512Mi
             limits:
-              memory: 750Mi
+              memory: 1Gi
     addons:
       containers:
         codeserver:
@@ -89,6 +89,12 @@ app-template:
             - "/config/.vscode"
             - --extensions-dir
             - "/config/.vscode"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
   service:
     main:
       controller: main

@@ -63,6 +63,26 @@ kube-prometheus-stack:
           regex: apiserver_watch_events_sizes_bucket
   grafana:
     revisionHistoryLimit: 3
+    resources:
+      requests:
+        cpu: 25m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+    initChownData:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
+    downloadDashboards:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
     grafana.ini:
       security:
         allow_embedding: true
@@ -232,6 +252,12 @@ kube-prometheus-stack:
         url: http://loki.monitoring.svc.cluster.local:3100
         isDefault: false
     sidecar:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 96Mi
+        limits:
+          memory: 256Mi
       datasources:
         # Runs the datasources sidecar as a native Kubernetes sidecar
         # (restartPolicy: Always on an initContainer, K8s 1.29+) so the
@@ -285,6 +311,12 @@ kube-prometheus-stack:
       # so there's no multi-tenant isolation being given up by this.
       alertmanagerConfigMatcherStrategy:
         type: None
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 128Mi
       storage:
         volumeClaimTemplate:
           spec:
@@ -294,8 +326,27 @@ kube-prometheus-stack:
                 storage: 25Gi
   prometheusOperator:
     revisionHistoryLimit: 3
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 192Mi
+    prometheusConfigReloader:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 24Mi
+        limits:
+          memory: 64Mi
   kube-state-metrics:
     revisionHistoryLimit: 3
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
   prometheus:
     prometheusSpec:
       # 60s rather than the 30s default. Every sample written lands on the
@@ -351,3 +402,9 @@ kube-prometheus-stack:
       - --collector.nvme
       # drm: Intel GPU frequency/engine metrics on mc nodes; nv1 has no DRM card, collector is a no-op there
       - --collector.drm
+    resources:
+      requests:
+        cpu: 10m
+        memory: 24Mi
+      limits:
+        memory: 64Mi

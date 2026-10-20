@@ -1,5 +1,12 @@
 reloader:
   reloader:
     logFormat: json
+    deployment:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 128Mi
     serviceMonitor:
       enabled: true

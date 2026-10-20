@@ -3,6 +3,13 @@ headlamp:
     secret.reloader.stakater.com/reload: "headlamp-oidc"
   replicaCount: 1
 
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
   config:
     inCluster: true
     inClusterContextName: "home"

@@ -17,3 +17,60 @@ patches:
       - op: add
         path: /spec/revisionHistoryLimit
         value: 3
+  - target:
+      kind: Deployment
+      name: cert-manager
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: cert-manager
+      spec:
+        template:
+          spec:
+            containers:
+              - name: cert-manager-controller
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 48Mi
+                  limits:
+                    memory: 128Mi
+  - target:
+      kind: Deployment
+      name: cert-manager-cainjector
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: cert-manager-cainjector
+      spec:
+        template:
+          spec:
+            containers:
+              - name: cert-manager-cainjector
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 128Mi
+                  limits:
+                    memory: 256Mi
+  - target:
+      kind: Deployment
+      name: cert-manager-webhook
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: cert-manager-webhook
+      spec:
+        template:
+          spec:
+            containers:
+              - name: cert-manager-webhook
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 32Mi
+                  limits:
+                    memory: 96Mi
