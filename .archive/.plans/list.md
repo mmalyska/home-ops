@@ -34,3 +34,4 @@
 | [llm-reliability-gemma4](superpowers/plans/2026-10-13-llm-reliability-gemma4.md) | Reliable Local LLM: Gemma 4 26B-A4B at One Slot | 2026-10-13 |
 | [qwen3.6-benchmark](superpowers/plans/2026-10-13-qwen3.6-benchmark.md) | Qwen3.6-35B-A3B Benchmark on nv1 | 2026-10-13 |
 | [rpi-decommission](superpowers/plans/2026-10-01-rpi-decommission.md) | Move Home Assistant, AdGuard, MQTT, Z2M, Matter and Music Assistant off the RPi into the cluster and retire it | 2026-10-20 |
+| [usenet-media-stack](superpowers/plans/2026-10-15-usenet-media-stack.md) | Usenet media stack (SABnzbd, Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Recyclarr) on one shared QNAP /media share, Jellyfin moved onto it | 2026-10-20 |

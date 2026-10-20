@@ -2,13 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Status: done 2026-10-20.** All three PRs are merged and the stack is live (SABnzbd, Sonarr, Radarr, Lidarr, Prowlarr, Bazarr, Recyclarr; Jellyfin on the shared `/media` share). The step checkboxes were not ticked as the work went. The old QNAP shares `/tv-series`, `/movies` and `/music` have been deleted.
+
 **Goal:** Deploy SABnzbd, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr and Recyclarr in a new `media` ArgoCD category, writing to one QNAP `/media` share, and move Jellyfin onto that share without changing its library paths.
 
 **Architecture:** A new `media` AppProject + ApplicationSet discovers `cluster/apps/media/*/app-config.yaml`. Every component is its own bjw-s `app-template` app in namespace `media`; all mount one shared NFS PVC (`media`, from the `media-storage` app) at `/data` so downloads and libraries sit on one filesystem. Config lives on per-app ceph-block PVCs backed up by the local `volsync` chart.
 
 **Tech Stack:** ArgoCD ApplicationSets, Helm (bjw-s `app-template` 5.3.0, local `charts/volsync`), External Secrets (Bitwarden `ClusterSecretStore`), Gateway API HTTPRoute, NFS PV/PVC on QNAP, Reloader.
 
-**Spec:** `.plans/superpowers/specs/2026-10-15-usenet-media-stack-design.md`
+**Spec:** `.archive/.plans/superpowers/specs/2026-10-15-usenet-media-stack-design.md`
 
 ## Global Constraints
 
@@ -58,7 +60,7 @@ Create each branch with `git worktree add .worktrees/<branch> -b <branch> origin
 **Interfaces:**
 - Produces: ArgoCD project `media`; ApplicationSet that turns each `cluster/apps/media/<app>/app-config.yaml` into an Application in project `media`.
 
-- [ ] **Step 1: Generate the files from the games category**
+- [x] **Step 1: Generate the files from the games category**
 
 ```bash
 cp cluster/appsets/appset-games.yaml cluster/appsets/appset-media.yaml
@@ -67,21 +69,21 @@ sed -i 's/appset-games/appset-media/; s#cluster/apps/games/#cluster/apps/media/#
 sed -i 's/^  name: games$/  name: media/; s/Main games project/Media acquisition project/' cluster/projects/media.yaml
 ```
 
-- [ ] **Step 2: Verify the only differences from the games files are the intended ones**
+- [x] **Step 2: Verify the only differences from the games files are the intended ones**
 
 Run: `diff cluster/appsets/appset-games.yaml cluster/appsets/appset-media.yaml; diff cluster/projects/games.yaml cluster/projects/media.yaml`
 Expected: appset differs on 3 lines (name, generator path, project); project differs on 2 lines (name, description). No `games` left in the media files: `grep -n games cluster/appsets/appset-media.yaml cluster/projects/media.yaml` prints nothing.
 
-- [ ] **Step 3: Add `media` to the CLAUDE.md category list**
+- [x] **Step 3: Add `media` to the CLAUDE.md category list**
 
 Change `# Applications by category: core, system, default, games, home-automation` to `# Applications by category: core, system, default, games, home-automation, media`.
 
-- [ ] **Step 4: Lint**
+- [x] **Step 4: Lint**
 
 Run: `task lint:yaml`
 Expected: no errors for the two new files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cluster/appsets/appset-media.yaml cluster/projects/media.yaml CLAUDE.md
@@ -100,7 +102,7 @@ git commit -m "feat(media): add media ArgoCD category"
 **Interfaces:**
 - Produces: PVC `media` in namespace `media` (RWX, 50Gi nominal), bound to PV `media`. Consumed by Tasks 3-6, 8, 9 as `existingClaim: media`.
 
-- [ ] **Step 1: Write `app-config.yaml`**
+- [x] **Step 1: Write `app-config.yaml`**
 
 ```yaml
 - enabled: "true"
@@ -115,7 +117,7 @@ git commit -m "feat(media): add media ArgoCD category"
         value: cluster-secrets
 ```
 
-- [ ] **Step 2: Write `kustomization.yaml`**
+- [x] **Step 2: Write `kustomization.yaml`**
 
 ```yaml
 ---
@@ -125,7 +127,7 @@ resources:
   - media.yaml
 ```
 
-- [ ] **Step 3: Write `media.yaml`**
+- [x] **Step 3: Write `media.yaml`**
 
 ```yaml
 ---
@@ -169,12 +171,12 @@ spec:
       storage: 50Gi
 ```
 
-- [ ] **Step 4: Render and lint**
+- [x] **Step 4: Render and lint**
 
 Run: `kubectl kustomize cluster/apps/media/media-storage && task lint:yaml`
 Expected: one PV and one PVC rendered, no lint errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add cluster/apps/media/media-storage
@@ -192,9 +194,9 @@ git commit -m "feat(media): add shared media NFS volume"
 - Consumes: PVC `media` (Task 2); volsync chart `file://../../../../charts/volsync/`.
 - Produces: Service `sabnzbd` port 8080 in `media`; route `sabnzbd.<secret:private-domain>`; download root `/data/usenet/complete/{tv,movies,music}`; incomplete `/incomplete`.
 
-- [ ] **Step 1: `app-config.yaml`** — identical to Task 2 Step 1.
+- [x] **Step 1: `app-config.yaml`** — identical to Task 2 Step 1.
 
-- [ ] **Step 2: `Chart.yaml`**
+- [x] **Step 2: `Chart.yaml`**
 
 ```yaml
 ---
@@ -211,7 +213,7 @@ dependencies:
     repository: file://../../../../charts/volsync/
 ```
 
-- [ ] **Step 3: `values.yaml`**
+- [x] **Step 3: `values.yaml`**
 
 ```yaml
 app-template:
@@ -316,7 +318,7 @@ volsync:
       bootstrap: false
 ```
 
-- [ ] **Step 4: Add the `incomplete` PVC** in `templates/incomplete-pvc.yaml`
+- [x] **Step 4: Add the `incomplete` PVC** in `templates/incomplete-pvc.yaml`
 
 ```yaml
 ---
@@ -335,7 +337,7 @@ spec:
 
 Before committing, check ceph free space with `kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph df` (read-only). If less than ~300Gi free, stop and ask the user to confirm the size.
 
-- [ ] **Step 5: Render**
+- [x] **Step 5: Render**
 
 Run:
 ```bash
@@ -343,12 +345,12 @@ cd cluster/apps/media/sabnzbd && helm dependency build && helm template sabnzbd 
 ```
 Expected: Deployment, Service, HTTPRoute, PVCs (`sabnzbd`, `sabnzbd-incomplete`), replication resources from volsync; image line shows the pinned digest. `Chart.lock` and `charts/` are git-ignored; do not add them.
 
-- [ ] **Step 6: Verify env var name in the image** (the whitelist variable is unverified)
+- [x] **Step 6: Verify env var name in the image** (the whitelist variable is unverified)
 
 Run (read-only, after deploy in Task 7): `kubectl -n media exec deploy/sabnzbd -- grep -i host_whitelist /config/sabnzbd.ini`
 Expected: the route hostname appears. If empty, the variable name is wrong; fix per the image's README and re-render.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add cluster/apps/media/sabnzbd
@@ -391,9 +393,9 @@ The four secrets exist in Bitwarden Secrets Manager (32-char values, never print
 
 When listing secrets with `bws`, extract only `key` and `id`; `bws secret list` prints values.
 
-- [ ] **Step 2: `app-config.yaml` and `Chart.yaml`** — same as Task 3 Steps 1-2 with `name: <app>`.
+- [x] **Step 2: `app-config.yaml` and `Chart.yaml`** — same as Task 3 Steps 1-2 with `name: <app>`.
 
-- [ ] **Step 3: `values.yaml` template** (omit the `media` persistence block for Prowlarr)
+- [x] **Step 3: `values.yaml` template** (omit the `media` persistence block for Prowlarr)
 
 ```yaml
 app-template:
@@ -503,7 +505,7 @@ volsync:
 
 Stagger `<minute>`: sonarr `20`, radarr `25`, lidarr `30`, prowlarr `15` (sabnzbd `10`).
 
-- [ ] **Step 4: `templates/externalsecret.yaml`** (use the UUID the user supplied)
+- [x] **Step 4: `templates/externalsecret.yaml`** (use the UUID the user supplied)
 
 ```yaml
 ---
@@ -525,17 +527,17 @@ spec:
         key: "<uuid from the Step 1 table>" #gitleaks:allow #<APP>_API_KEY
 ```
 
-- [ ] **Step 5: Render each app**
+- [x] **Step 5: Render each app**
 
 Run per app: `cd cluster/apps/media/<app> && helm dependency build && helm template <app> . -f values.yaml | grep -E "^kind:|image:|claimName|port:" | sort | uniq -c`
 Expected: Deployment (strategy Recreate), Service, HTTPRoute, ExternalSecret, volsync resources; no unrendered `<...>` placeholders: `helm template ... | grep -n '<app>\|<APP>\|<port>'` prints nothing.
 
-- [ ] **Step 6: Verify env var names against the running config** (after deploy, Task 7; read-only)
+- [x] **Step 6: Verify env var names against the running config** (after deploy, Task 7; read-only)
 
 Run: `kubectl -n media exec deploy/<app> -- cat /config/config.xml`
 Expected: `<AuthenticationMethod>Forms</AuthenticationMethod>`, `<AuthenticationRequired>Enabled</AuthenticationRequired>`, `<ApiKey>` present, `<Port>` equals the table port. If a value is missing the variable name differs for that image; fix in `values.yaml`.
 
-- [ ] **Step 7: Commit once per app**
+- [x] **Step 7: Commit once per app**
 
 ```bash
 git add cluster/apps/media/<app>
@@ -548,12 +550,12 @@ git commit -m "feat(media): add <App>"
 
 **Files:** none new.
 
-- [ ] **Step 1: Full lint**
+- [x] **Step 1: Full lint**
 
 Run: `task lint:all`
 Expected: pass. Fix findings in the owning task's files and amend that app's commit.
 
-- [ ] **Step 2: Push and open PR**
+- [x] **Step 2: Push and open PR**
 
 ```bash
 git push -u origin feat/media-stack-core
@@ -568,14 +570,14 @@ PR body must list the QNAP prerequisites from Task 6.
 
 **Files:** none.
 
-- [ ] **Step 1: Ask the user to do these on the QNAP and confirm each**
+- [x] **Step 1: Ask the user to do these on the QNAP and confirm each**
 
 1. Create shared folder `media` on the same volume as `tv-series`, `movies`, `music`. Do **not** enable Windows ACLs on it.
 2. NFS export of `/media` allowed for `192.168.48.2`-`192.168.48.5`, read/write, squash settings that preserve UID 1001 (no "squash all users" to a different ID).
 3. Create folders `usenet/complete/tv`, `usenet/complete/movies`, `usenet/complete/music`, `tv-series`, `movies`, `music` and set owner `1001:1001`.
 4. Do not move existing media yet.
 
-- [ ] **Step 2: Read-only check from the cluster once the user confirms** (needs user confirmation to run in-cluster)
+- [x] **Step 2: Read-only check from the cluster once the user confirms** (needs user confirmation to run in-cluster)
 
 Run: `kubectl -n media get pv media pvc media` after PR A syncs.
 Expected: PV `media` and PVC `media` `Bound`.
@@ -586,20 +588,20 @@ Expected: PV `media` and PVC `media` `Bound`.
 
 **Files:** none.
 
-- [ ] **Step 1: Confirm with the user, then write a test file and hardlink it from the SABnzbd pod**
+- [x] **Step 1: Confirm with the user, then write a test file and hardlink it from the SABnzbd pod**
 
 ```bash
 kubectl -n media exec deploy/sabnzbd -- sh -c 'echo test > /data/usenet/complete/.hl-src && ln /data/usenet/complete/.hl-src /data/tv-series/.hl-dst && stat -c "%i %h %n" /data/usenet/complete/.hl-src /data/tv-series/.hl-dst'
 ```
 Expected: both lines show the **same inode** and link count `2`. `ln: Operation not permitted` or different inodes means hardlinks do not work: stop and report to the user (spec fallback: copy+delete).
 
-- [ ] **Step 2: Clean up**
+- [x] **Step 2: Clean up**
 
 ```bash
 kubectl -n media exec deploy/sabnzbd -- rm -f /data/usenet/complete/.hl-src /data/tv-series/.hl-dst
 ```
 
-- [ ] **Step 3: Verify SABnzbd hostname whitelist and *arr auth (Review Focus 2 and 4)**
+- [x] **Step 3: Verify SABnzbd hostname whitelist and *arr auth (Review Focus 2 and 4)**
 
 Open `https://sabnzbd.<private-domain>` from the LAN: UI loads, no hostname-verification error. Open each *arr: the first screen is the "create admin user" form, not the dashboard. Ask the user to create the users now.
 
@@ -611,14 +613,14 @@ Open `https://sabnzbd.<private-domain>` from the LAN: UI loads, no hostname-veri
 - Create: `docs/src/k8s/media.md`
 - Modify: the mkdocs nav (find it with `find . -maxdepth 2 -name mkdocs.yml -not -path "./.git*"`)
 
-- [ ] **Step 1: Write `docs/src/k8s/media.md`** with sections: layout of `/media`, app roles and hostnames (`<app>.<private-domain>`), how paths map (`/data/...` identical in every pod), SABnzbd categories (`tv`, `movies`, `music` -> `/data/usenet/complete/<category>`), incomplete dir, the hardlink test command from Task 7, API keys live in Bitwarden (`SONARR_API_KEY` etc.) with the ExternalSecret path, and the first-run setup order: SABnzbd servers (primary priority 0, backup higher number) -> Prowlarr indexers -> register Sonarr/Radarr/Lidarr in Prowlarr -> add SABnzbd as download client in each *arr -> root folders `/data/tv-series`, `/data/movies`, `/data/music` -> enable hardlinks -> follow TRaSH naming. Never write the private domain literally; use `<private-domain>`.
+- [x] **Step 1: Write `docs/src/k8s/media.md`** with sections: layout of `/media`, app roles and hostnames (`<app>.<private-domain>`), how paths map (`/data/...` identical in every pod), SABnzbd categories (`tv`, `movies`, `music` -> `/data/usenet/complete/<category>`), incomplete dir, the hardlink test command from Task 7, API keys live in Bitwarden (`SONARR_API_KEY` etc.) with the ExternalSecret path, and the first-run setup order: SABnzbd servers (primary priority 0, backup higher number) -> Prowlarr indexers -> register Sonarr/Radarr/Lidarr in Prowlarr -> add SABnzbd as download client in each *arr -> root folders `/data/tv-series`, `/data/movies`, `/data/music` -> enable hardlinks -> follow TRaSH naming. Never write the private domain literally; use `<private-domain>`.
 
-- [ ] **Step 2: Add the page to the nav, lint**
+- [x] **Step 2: Add the page to the nav, lint**
 
 Run: `task lint:markdown && task lint:prettier:check`
 Expected: pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/src/k8s/media.md mkdocs.yml
@@ -636,14 +638,14 @@ git commit -m "docs(media): document the usenet stack layout and setup"
 - Consumes: PVC `media`; Sonarr/Radarr service DNS `sonarr.media.svc.cluster.local:8989`, `radarr.media.svc.cluster.local:7878`.
 - Produces: Service `bazarr` port 6767, route `bazarr.<secret:private-domain>`.
 
-- [ ] **Step 1: Files** — `app-config.yaml` and `Chart.yaml` as in Task 3 with name `bazarr`. `values.yaml` is the Task 4 Step 3 template with: no `envFrom`, no `<APP>__*` env except `TZ: CET`; image `ghcr.io/home-operations/bazarr` tag `1.6.2@sha256:17dc1cff22e99694ffbfb06555526cb47a66b362b4d6c982f06b557f7caae2bb`; port `6767`; config PVC `2Gi`; memory limit `512Mi`; volsync schedule `"35 */12 * * *"`; no ExternalSecret and no Reloader annotation.
+- [x] **Step 1: Files** — `app-config.yaml` and `Chart.yaml` as in Task 3 with name `bazarr`. `values.yaml` is the Task 4 Step 3 template with: no `envFrom`, no `<APP>__*` env except `TZ: CET`; image `ghcr.io/home-operations/bazarr` tag `1.6.2@sha256:17dc1cff22e99694ffbfb06555526cb47a66b362b4d6c982f06b557f7caae2bb`; port `6767`; config PVC `2Gi`; memory limit `512Mi`; volsync schedule `"35 */12 * * *"`; no ExternalSecret and no Reloader annotation.
 
-- [ ] **Step 2: Render**
+- [x] **Step 2: Render**
 
 Run: `cd cluster/apps/media/bazarr && helm dependency build && helm template bazarr . -f values.yaml | grep -E "^kind:|image:|port:" | sort | uniq -c`
 Expected: Deployment, Service, HTTPRoute, volsync resources; `port: 6767`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add cluster/apps/media/bazarr
@@ -662,16 +664,16 @@ git commit -m "feat(media): add Bazarr"
 - Consumes: Sonarr/Radarr service DNS; Bitwarden secrets `SONARR_API_KEY`, `RADARR_API_KEY` (same UUIDs as Task 4).
 - Produces: a daily CronJob syncing TRaSH quality profiles and custom formats.
 
-- [ ] **Step 1: List valid TRaSH template IDs before writing config**
+- [x] **Step 1: List valid TRaSH template IDs before writing config**
 
 Run: `docker run --rm ghcr.io/recyclarr/recyclarr:8.8.0 config list templates --sonarr; docker run --rm ghcr.io/recyclarr/recyclarr:8.8.0 config list templates --radarr`
 Expected: template names printed. Use the entries for WEB-1080p (Sonarr) and HD Bluray + WEB (Radarr) plus the matching quality-definition templates. If Docker is unavailable, ask the user which profile they want and use the IDs from the Recyclarr config-templates repository.
 
-- [ ] **Step 2: `app-config.yaml`, `Chart.yaml`** as Task 3 with `name: recyclarr`, app-template dependency only (no volsync: state is a cache).
+- [x] **Step 2: `app-config.yaml`, `Chart.yaml`** as Task 3 with `name: recyclarr`, app-template dependency only (no volsync: state is a cache).
 
-- [ ] **Step 3: `templates/externalsecret.yaml`** — Task 4 Step 4 shape with `name: recyclarr-secrets` and two data entries: `SONARR_API_KEY` and `RADARR_API_KEY`, each with the same UUID used in Task 4 and `#gitleaks:allow #SONARR_API_KEY` / `#RADARR_API_KEY`.
+- [x] **Step 3: `templates/externalsecret.yaml`** — Task 4 Step 4 shape with `name: recyclarr-secrets` and two data entries: `SONARR_API_KEY` and `RADARR_API_KEY`, each with the same UUID used in Task 4 and `#gitleaks:allow #SONARR_API_KEY` / `#RADARR_API_KEY`.
 
-- [ ] **Step 4: `values.yaml`**
+- [x] **Step 4: `values.yaml`**
 
 ```yaml
 app-template:
@@ -758,12 +760,12 @@ app-template:
 
 Replace the three `<...from Step 1>` entries per app with the exact template IDs printed in Step 1 before committing; a render that still contains `<` in `recyclarr.yml` is a failure.
 
-- [ ] **Step 5: Render and lint**
+- [x] **Step 5: Render and lint**
 
 Run: `cd cluster/apps/media/recyclarr && helm dependency build && helm template recyclarr . -f values.yaml | grep -nE "kind: CronJob|schedule|template:|<" `
 Expected: a `CronJob`, schedule `30 4 * * *`, template lines with real IDs, no stray `<`.
 
-- [ ] **Step 6: After deploy, trigger once and read the log (Review Focus 5; needs user confirmation)**
+- [x] **Step 6: After deploy, trigger once and read the log (Review Focus 5; needs user confirmation)**
 
 ```bash
 kubectl -n media create job --from=cronjob/recyclarr recyclarr-manual
@@ -771,7 +773,7 @@ kubectl -n media logs job/recyclarr-manual
 ```
 Expected: sync completes with created/updated profiles. With an unreachable *arr the Job fails with a connection error and nothing else is affected. Delete the manual job afterwards.
 
-- [ ] **Step 7: Commit, push, open PR B**
+- [x] **Step 7: Commit, push, open PR B**
 
 ```bash
 git add cluster/apps/media/recyclarr
@@ -792,15 +794,15 @@ gh pr create --base main --title "feat(media): add Bazarr and Recyclarr" --body 
 - Consumes: QNAP export `/media` with `tv-series`, `movies`, `music` populated by the user.
 - Produces: PV/PVC `jellyfin-media` in namespace `jellyfin`; container paths `/data/tvshows`, `/data/movies`, `/data/music` unchanged.
 
-- [ ] **Step 1: Pre-flight with the user (BLOCKING)**
+- [x] **Step 1: Pre-flight with the user (BLOCKING)**
 
 Confirm: (a) PR A and B are merged and stable, (b) Task 7 hardlink gate passed, (c) the user has a maintenance window. Ask the user to stop Jellyfin via git (see Step 2) before moving content, then move the contents of the old `tv-series`, `movies`, `music` shares into `/media/tv-series`, `/media/movies`, `/media/music` and confirm ownership is `1001:1001` and the three directories exist and are non-empty (Review Focus 3: a missing subPath directory would be created root-owned by kubelet).
 
-- [ ] **Step 2: Pause Jellyfin through git** (selfHeal reverts a plain scale-down)
+- [x] **Step 2: Pause Jellyfin through git** (selfHeal reverts a plain scale-down)
 
 In `cluster/apps/default/jellyfin/values.yaml` set `jellyfin.replicaCount: 0`, commit `chore(jellyfin): pause for media share migration`, PR, merge. Confirm Argo shows 0 replicas before the user moves data.
 
-- [ ] **Step 3: Replace `pvc-extra.yaml`** with a single PV/PVC
+- [x] **Step 3: Replace `pvc-extra.yaml`** with a single PV/PVC
 
 ```yaml
 ---
@@ -844,7 +846,7 @@ spec:
       storage: 50Gi
 ```
 
-- [ ] **Step 4: Edit `values.yaml`**
+- [x] **Step 4: Edit `values.yaml`**
 
 Replace the `nfsMounts:` list with:
 
@@ -884,12 +886,12 @@ and the mounts with:
 
 Set `jellyfin.replicaCount` back to its previous value (remove the pause line).
 
-- [ ] **Step 5: Render**
+- [x] **Step 5: Render**
 
 Run: `cd cluster/apps/default/jellyfin && helm dependency build && helm template jellyfin . -f values.yaml | grep -nE "subPath|claimName|path: /media|kind: PersistentVolume"`
 Expected: one PV `jellyfin-media`, three `subPath` mounts, container paths unchanged, no references to `jellyfin-tv-shows`, `jellyfin-movies`, `jellyfin-music`.
 
-- [ ] **Step 6: Commit, push, open PR C**
+- [x] **Step 6: Commit, push, open PR C**
 
 ```bash
 git add cluster/apps/default/jellyfin
@@ -898,7 +900,7 @@ git push -u origin feat/jellyfin-media-share
 gh pr create --base main --title "feat(jellyfin): mount libraries from the shared media share" --body "Swaps the three library NFS volumes for one /media volume with subPath mounts at the same container paths. Old PVs/PVCs are deleted manually afterwards; old shares stay for two weeks."
 ```
 
-- [ ] **Step 7: Verify after merge (needs user confirmation for each cluster action)**
+- [x] **Step 7: Verify after merge (needs user confirmation for each cluster action)**
 
 1. `kubectl -n jellyfin get pod,pvc` — pod Running, PVC `jellyfin-media` Bound.
 2. In Jellyfin: libraries still list items, a movie plays, watch history intact, a library scan completes without re-importing everything.
