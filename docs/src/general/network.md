@@ -15,7 +15,6 @@ flowchart TB
 
     subgraph GAR[Garage rack]
         SW[USW-Pro-Max-16-PoE\ncore switch]
-        RPi[Raspberry Pi 4B\nstopped 2026-10-04\nretained until 2026-10-17\n192.168.50.9]
         AP1[U7 Pro - salon]
         AP2[U7 Pro - upper floor]
     end
@@ -35,7 +34,6 @@ flowchart TB
     ISP --> ONT
     ONT -->|WAN| UCG
     UCG -->|2.5 GbE| SW
-    SW --> RPi
     SW --> AP1
     SW --> AP2
     SW -->|2.5 GbE trunk\nnative 10, tagged 48 + 50| ToR
@@ -56,7 +54,7 @@ UCG-Max on every VLAN.
 | Trusted | *untagged* | `192.168.10.0/24` | `.1` | PCs, phones, consoles, TVs |
 | IoT | 40 | `192.168.40.0/24` | `.1` | Smart home + cameras |
 | Cluster | 48 | `192.168.48.0/24` | **`.254`** | Talos nodes |
-| Servers | 50 | `192.168.50.0/24` | `.1` | QNAP, RPi |
+| Servers | 50 | `192.168.50.0/24` | `.1` | QNAP |
 | Guest | 60 | `192.168.60.0/24` | `.1` | Guest WiFi |
 
 > **VLAN 48's gateway is `.254`, not `.1`.** `192.168.48.1` is the Talos
@@ -198,7 +196,7 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.69` | Reserved for temporary test pods that verify a macvlan attachment |
 | `192.168.48.254` | UCG-Max, VLAN 48 gateway |
 | `192.168.50.8` | QNAP NAS (also the UPS NUT server, see below) |
-| `192.168.50.9` | RPi (HAOS), stopped. Home Assistant, AdGuard Home, MQTT, Zigbee2MQTT, Matter and Music Assistant all moved to the cluster (2026-10-02 to 2026-10-04); kept powered off until 2026-10-17 |
+| `192.168.50.9` | Free. Was the RPi (HAOS), decommissioned and retired after the 2026-10-17 retention window. Home Assistant, AdGuard Home, MQTT, Zigbee2MQTT, Matter and Music Assistant all moved to the cluster (2026-10-02 to 2026-10-04) |
 | `192.168.50.239` | SLZB-MR4U (Zigbee coordinator socket `:7638` and Thread border router) |
 
 ### Check before assigning an address
@@ -223,7 +221,7 @@ Also grep the repo (`grep -rn "192.168.48.XX" cluster provision docs`) for stati
 
 The MQTT broker is Eclipse Mosquitto (`home-automation/mosquitto`, namespace `ha-mosquitto`). It is exposed on `192.168.48.26:1883` (`mqtt.PRIVATE_DOMAIN`) for LAN clients; in-cluster clients use `mosquitto.ha-mosquitto.svc.cluster.local:1883`. Users (Home Assistant, Zigbee2MQTT) come from Bitwarden and the password file is generated at pod start; messages are persisted on a PVC. It replaced RabbitMQ's MQTT plugin because RabbitMQ never sends retained messages to wildcard subscriptions, so Home Assistant lost all MQTT-discovered entities (Zigbee2MQTT devices) after every restart.
 
-Zigbee2MQTT (`home-automation/zigbee2mqtt`, namespace `ha-zigbee2mqtt`) talks to the SLZB-MR4U Zigbee coordinator over TCP (`tcp://192.168.50.239:7638`, `zstack` adapter). Its data (`configuration.yaml`, `database.db`, coordinator backup) lives on a Ceph PVC; the Zigbee network key is part of that data and is never committed. The frontend is at `z2m.PRIVATE_DOMAIN` on `envoy-internal`. Only one Zigbee2MQTT may own the coordinator: the RPi's addon is stopped and must stay stopped.
+Zigbee2MQTT (`home-automation/zigbee2mqtt`, namespace `ha-zigbee2mqtt`) talks to the SLZB-MR4U Zigbee coordinator over TCP (`tcp://192.168.50.239:7638`, `zstack` adapter). Its data (`configuration.yaml`, `database.db`, coordinator backup) lives on a Ceph PVC; the Zigbee network key is part of that data and is never committed. The frontend is at `z2m.PRIVATE_DOMAIN` on `envoy-internal`. Only one Zigbee2MQTT may own the coordinator: the RPi's old addon is gone with the RPi.
 
 ## Pods with their own VLAN 48 address (Multus macvlan)
 
