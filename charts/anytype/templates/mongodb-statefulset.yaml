@@ -67,6 +67,12 @@ spec:
                 - "db.adminCommand('ping')"
             initialDelaySeconds: 30
             periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
           volumeMounts:
             - name: data
               mountPath: /data/db

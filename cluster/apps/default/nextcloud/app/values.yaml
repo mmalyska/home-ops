@@ -126,8 +126,20 @@ nextcloud:
       enabled: true
       secretName: nextcloud-redis-auth
       passwordKey: redis-password
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
   nginx:
     enabled: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        memory: 64Mi
   persistence:
     enabled: true
     accessMode: ReadWriteOnce
@@ -139,6 +151,13 @@ nextcloud:
   cronjob:
     enabled: true
     type: sidecar
+    sidecar:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 128Mi
   httpRoute:
     enabled: true
     annotations:

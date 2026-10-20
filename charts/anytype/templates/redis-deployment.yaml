@@ -36,6 +36,12 @@ spec:
             - /opt/redis-stack/lib/redisbloom.so
           ports:
             - containerPort: {{ .Values.redis.port }}
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
           readinessProbe:
             exec:
               command:

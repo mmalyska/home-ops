@@ -2,6 +2,12 @@ external-dns:
   deploymentAnnotations:
     secret.reloader.stakater.com/reload: "cloudflare-dns-secret"
   fullnameOverride: cloudflare-dns
+  resources:
+    requests:
+      cpu: 10m
+      memory: 48Mi
+    limits:
+      memory: 128Mi
   provider: cloudflare
   env:
     - name: &name CF_API_TOKEN
