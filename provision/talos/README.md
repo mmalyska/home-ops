@@ -319,6 +319,23 @@ first, then mc2 and mc1).
   and the kubelet (`NSpid` in `/proc/<pid>/status` has two values inside the sandbox), the live config, the Talos
   services, node readiness, Ceph and etcd. A config that says `true` without a reboot fails it.
 
+## Log shipping to Loki
+
+Every node sends two streams over TCP to the Alloy receiver `cluster/apps/system/alloy/talos-logs`
+(Cilium LB IP `192.168.48.32`, namespace `monitoring`), which writes them to Loki:
+
+| Stream                                                  | Patch                        | Port                                   | Loki labels                                        |
+| ------------------------------------------------------- | ---------------------------- | -------------------------------------- | -------------------------------------------------- |
+| Service logs (machined, kubelet, containerd, etcd, ...) | `node/<name>/50-log-service` | 5170, `extraTags: {node: <name>}`      | `source=talos-service`, `node`, `service`, `level` |
+| Kernel log (kmsg)                                       | `node/<name>/51-log-kernel`  | 5171 mc1, 5172 mc2, 5173 mc3, 5174 nv1 | `source=talos-kernel`, `node`                      |
+
+The kernel stream uses one port per node because `KmsgLogConfig` has no extra tags before Talos v1.15 and the receiver
+cannot tell the senders apart otherwise. The patches are per node for the same reason (the node name is not a template
+variable). Query with `{source=~"talos-.*", node="nv1"}`.
+
+Talos buffers and retries, so a node keeps its logs while the receiver pod is down, but a node that reboots while the
+receiver is unreachable loses what it had not sent. Applying the patches is live; the receiver app must be synced first.
+
 ## Checks
 
 `task talos:check` runs, without secrets or a cluster, the patch convention check (`scripts/check-patches.sh`), the
