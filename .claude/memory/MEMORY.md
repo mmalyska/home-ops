@@ -42,3 +42,4 @@
 - [Qwen3.6 on nv1 benchmark](reference_qwen36_nv1_benchmark.md) — 35B-A3B at 2-bit loads but leaves 0.4 GB node headroom; IQ2_M fails to load; next step is hardware
 - [Gemma 4 single slot on nv1](reference_gemma4_single_slot_swap.md) — served model since 2026-10-15; 0/66 corrupt; -np 2 and bigger prompt cache do not fit; watch node MemAvailable not kubectl top
 - [QNAP /media share layout](reference_qnap_media_share_layout.md) — one share mounted as /data by all media pods; hardlinks need a single mount; File Station cannot write, use a root pod; old shares retire 2026-10-30
+- [Talos log shipping to Loki](reference_talos_log_shipping.md) — UDP via Alloy loki.source.syslog raw (TCP stalls minutes after a receiver pod restart); Alloy/ArgoCD gotchas hit building it
