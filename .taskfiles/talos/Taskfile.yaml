@@ -307,6 +307,7 @@ tasks:
     internal: true
     desc: Wait for services in cluster to be healthy
     cmds:
-      - kubectl wait --timeout=5m --for=condition=Complete jobs --all --all-namespaces
+      # Waits only for Jobs that are running; a failed Job (BackoffLimitExceeded) can never become Complete and would burn the timeout
+      - "{{.TALOS_DIR}}/scripts/wait-jobs.sh"
       - kubectl -n rook-ceph wait --for jsonpath='{.status.ceph.health}'='HEALTH_OK' --timeout {{ .TIMEOUT | default "30s" }} cephcluster rook-ceph
       - kubectl wait --for=condition=Ready --timeout {{ .TIMEOUT | default "30s" }} clusters.postgresql.cnpg.io --all --all-namespaces
