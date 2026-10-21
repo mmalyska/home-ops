@@ -1,7 +1,8 @@
 # tuppr (Talos and Kubernetes upgrade controller) — Design
 
-**Status:** implemented 2026-10-12 (plan `.plans/superpowers/plans/2026-10-12-tuppr.md`); first run was a verified no-op,
-the first real upgrade through tuppr is pending. Tracked in `.plans/TODO.md`.
+**Status:** implemented and completed 2026-10-21 (plan `.archive/.plans/superpowers/plans/2026-10-12-tuppr.md`). The first run
+2026-10-12 was a verified no-op, the first real Kubernetes upgrade went through tuppr the same day, and the first real
+Talos upgrade (v1.14.2 to v1.14.4, all four nodes) ran on 2026-10-21; see `docs/src/k8s/tuppr.md`.
 
 ## Context
 

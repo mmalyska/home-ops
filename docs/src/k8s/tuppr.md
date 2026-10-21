@@ -3,7 +3,7 @@
 [tuppr](https://github.com/home-operations/tuppr) (`home-operations/tuppr`, app `cluster/apps/system/tuppr`, namespace
 `tuppr`) rolls out Talos and Kubernetes upgrades from git. Merging a Renovate PR that bumps the version is the approval:
 tuppr upgrades one node at a time behind a health gate. The design is in
-`.plans/superpowers/specs/2026-10-12-tuppr-design.md`.
+`.archive/.plans/superpowers/specs/2026-10-12-tuppr-design.md`.
 
 ## What it runs
 
@@ -20,9 +20,10 @@ from a run in this cluster.
 
 **State:** both CRs are unsuspended in git. `TalosUpgrade/cluster` was unsuspended on 2026-10-12 and ran as a no-op at
 the running version (see "The first run" below). `KubernetesUpgrade/kubernetes` ran the first real upgrade on
-2026-10-12, Kubernetes 1.35.9 to 1.36.5 (see "The first real upgrade" below). Still not exercised: the installer
-pre-pull, the drain, the node reboot and the nv1 image swap; they come with the first Talos bump (a Kubernetes upgrade
-reboots nothing). The chart's `PrometheusRule` is on again (`values.yaml`);
+2026-10-12, Kubernetes 1.35.9 to 1.36.5 (see "The first real upgrade" below). The first real Talos upgrade, v1.14.2 to
+v1.14.4 on all four nodes, ran on 2026-10-21 (see "The first real Talos upgrade" below); it covered the installer
+pre-pull, the drain, the node reboots and the nv1 image swap. The Talos health gate itself was not tested with a
+blocking Job (the Kubernetes run tested it). The chart's `PrometheusRule` is on again (`values.yaml`);
 `TupprUpgradeBlocked` (reason `Waiting.*` or `Suspended`, for 30m, warning, routed to Discord) fires if a CR is
 suspended again, which is intended. Anything below marked "to be confirmed on the first run" is expected behaviour taken
 from tuppr's source, not observed here.
@@ -219,6 +220,39 @@ talos:diff` showed that one line on mc1 to mc3. `controlplane/32-kube-proxy-disa
 - **During the rollout:** do not `task talos:apply` any node: the rendered configs already pin the target images.
   `task talos:diff` shows drift until the run completes.
 
+## The first real Talos upgrade
+
+**Observed 2026-10-21, Talos v1.14.2 to v1.14.4** (kernel 6.18.54 to 6.18.57) on mc1, mc2, mc3 and nv1, started by merging
+the Renovate PR plus a one-off window (removed again). Times are UTC.
+
+- **Start:** ArgoCD synced the new spec at 10:54. A changed spec resets the run (`Spec changed, resetting upgrade
+  process`), then `Pending` / `PrePulling`.
+- **Pre-pull:** the nodes pull one after the other. The three control planes took 2m44s, 14s and 11s. nv1's 592 MB
+  `custom-installer-jp7` installer stalled at about 440 of 540 MiB on three attempts ("no pull progress after 1m30s ...
+  registry may be failing requests") while nv1 had about 125 MB `MemAvailable` with `llama-server` running; it passed on
+  a later attempt without any change. The run-wide pre-pull held mc1 to mc3 for about 40 minutes in total. A pull in
+  progress shows no pod: it is a Talos `ImageService/Pull` call (the node's `machined` log prints it when it ends), and
+  `status.prePulledNodes` stays empty until the batch is done.
+- **Order and timing:** the node hosting the controller first (mc1; the controller restarted when it rebooted and carried
+  on), then mc2, mc3, nv1. Each control plane took about 5 to 7 minutes from cordon to Ready; all came back on the new
+  version without help. Ceph showed `HEALTH_WARN` (one OSD down, Rook's maintenance flags) after each reboot and the gate
+  waited for `HEALTH_OK` between nodes.
+- **Drain:** with `waitForVolumeDetach` the drain finished within a minute or two and tuppr then waited its 2 minutes
+  best-effort for CSI detach ("Volumes did not detach before timeout, proceeding with upgrade") on every node and carried
+  on. No PDB stalled a drain.
+- **nv1 booted the old image.** The upgrade Job succeeded in 3 minutes and the node rebooted, but came back on v1.14.2
+  and kernel 6.18.54. The cause is the Jetson UEFI dropping the installer's write of `LoaderEntryDefault` (it still
+  named `Talos-v1.14.2~4.efi`), see "nv1 and the alias tag" and `provision/talos/README.md`. tuppr then waited for the
+  version; at about 12:02 it marked the run `Failed` (`node nv1 version mismatch: current=v1.14.2, target=v1.14.4`) and
+  left nv1 cordoned, so `llama-server` stayed `Pending`. Fix, done at 12:13 to 12:18: renamed the stale UKI from a
+  privileged pod, rebooted nv1 once (it came back on v1.14.4, kernel 6.18.57, `LoaderEntrySelected`
+  `talos-v1.14.4.efi`, GPU 1, CDI on), uncordoned nv1, annotated the `TalosUpgrade` with `reset` (it went straight to
+  `Completed`, "Successfully upgraded 4 nodes"), then deleted the renamed `.bak` UKI.
+- **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
+  minutes, longer than the node's own reboot because of the stale boot entry.
+- **Still manual for nv1:** the stale-UKI rename after each nv1 upgrade (the README fix); there is no automatic fix.
+  `Failed` is terminal, so plan for the `reset` and the uncordon in the same session.
+
 ## When things go wrong
 
 - **`Pending` / `PrePullFailed`, or `WaitingForImage`:** the installer image of a node is not served by the registry
@@ -233,7 +267,14 @@ talos:diff` showed that one line on mc1 to mc3. `controlplane/32-kube-proxy-disa
   first, do not force the drain; `kubectl uncordon <node>` restores evicted Ceph pods and Ceph recovers on its own
   (see `cluster-reference`). tuppr uncordons itself after a failed drain and retries after 1 minute.
 - **nv1 reports the old version after the upgrade:** the Jetson UEFI booted a stale UKI. Do not re-run the upgrade; use
-  the fix in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade").
+  the fix in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade"). Seen on 2026-10-21: the run goes
+  `Failed` with `node nv1 version mismatch`, nv1 stays cordoned and `llama-server` stays `Pending`. After the fix:
+  `kubectl uncordon nv1`, then `kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%s)"
+  --overwrite`; the run completes with nothing left to do.
+- **nv1 pre-pull stalls at about 80% ("no pull progress after 1m30s"):** nv1 runs with very little free memory while
+  `llama-server` is up, so a 590 MB image pull can crawl. tuppr retries by itself (a 1 to 5 minute backoff) and it passed
+  on the 2026-10-21 run; if it keeps failing, pausing `llama-server` through git frees memory (see the memory note
+  `reference_nv1_gpu_test_pause`).
 - **Do not `task talos:apply` while a `TalosUpgrade` is running:** tuppr changes the live install image during the run
   and `task talos:diff` differs from git until it ends. After a run `task talos:diff` must be clean.
 
