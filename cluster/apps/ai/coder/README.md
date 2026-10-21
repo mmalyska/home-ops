@@ -10,9 +10,8 @@ Coder URL: `https://coder.<private-domain>`
 ```
 Coder (Helm, coder namespace)
  ├── PostgreSQL (CNPG)
- ├── workspace-template/ (Terraform)
- │    └── per-workspace: Deployment + PVC + LB Service + ExternalSecret + ReplicationSource
- └── hermes-agent profiles → SSH terminal backend → workspace IPs
+ └── workspace-template/ (Terraform)
+      └── per-workspace: Deployment + PVC + LB Service + ExternalSecret + ReplicationSource
 ```
 
 **Provisioner**: the `coder` ServiceAccount runs Terraform inside the cluster.
@@ -22,13 +21,11 @@ It needs RBAC for every resource type it manages — see `templates/rbac-service
 
 ## Workspaces
 
-| Workspace | Profile in Hermes | Image | SSH IP | Use case |
-|-----------|------------------|-------|--------|----------|
-| devops | `devops` | `sandbox-devops:rolling` | 192.168.48.51 | Infrastructure, K8s, GitOps, Terraform, Ansible |
-| dotnet | `dotnet-dev` | `sandbox-dotnet:rolling` | 192.168.48.52 | .NET / C# development |
-| node | `node-dev` | `sandbox-node:rolling` | 192.168.48.53 | Node.js / TypeScript development |
-| mobile | `mobile-dev` | `sandbox-node:rolling` | 192.168.48.54 | Mobile / React Native development |
-| researcher | `researcher` | `sandbox-python:rolling` | 192.168.48.55 | Python, data science, AI research |
+| Workspace | Image | SSH IP | Use case |
+|-----------|-------|--------|----------|
+| devops | `sandbox-devops:rolling` | 192.168.48.51 | Infrastructure, K8s, GitOps, Terraform, Ansible |
+
+The dotnet, node, mobile and researcher workspaces (192.168.48.52-55) were removed on 2026-10-21; create them again with the command below if needed.
 
 **Resource limits per workspace**: 500m–1000m CPU, 1–2 Gi RAM, 20 Gi home PVC (ceph-block, RWO).
 
@@ -114,54 +111,6 @@ coder --url https://coder.<private-domain> create <name> \
 ```
 
 Pick an unused IP from the `coder-pool` range: **192.168.48.51–70**.
-
-After creating, add the corresponding Hermes profile SSH config:
-```bash
-kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
-  python3 /tmp/configure_hermes_ssh.py   # re-run after updating the script with the new profile
-```
-
----
-
-## Hermes Agent SSH Integration
-
-Each Hermes profile's `terminal.backend` is set to `ssh` so the AI agent executes commands directly in the workspace over SSH.
-
-Config per profile (`/opt/data/profiles/<name>/config.yaml`):
-```yaml
-terminal:
-  backend: ssh
-  ssh_host: 192.168.48.5X
-  ssh_user: coder
-  ssh_port: 22
-  ssh_key: /opt/data/profiles/<name>/.ssh/id_sandbox
-```
-
-Private keys are seeded from `SANDBOX_*_SSH_KEY` env vars (loaded from Bitwarden via `ExternalSecret` in `values.yaml`) and written to `/opt/data/profiles/<name>/.ssh/id_sandbox` on the PVC — they survive pod restarts.
-
-If a key needs to be re-seeded (e.g. after PVC recreation):
-```bash
-kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
-  python3 -c "
-import os
-profiles = {
-  'devops':     ('192.168.48.51', 'SANDBOX_DEVOPS_SSH_KEY'),
-  'dotnet-dev': ('192.168.48.52', 'SANDBOX_DOTNET_DEV_SSH_KEY'),
-  'node-dev':   ('192.168.48.53', 'SANDBOX_NODE_DEV_SSH_KEY'),
-  'mobile-dev': ('192.168.48.54', 'SANDBOX_MOBILE_DEV_SSH_KEY'),
-  'researcher': ('192.168.48.55', 'SANDBOX_RESEARCHER_SSH_KEY'),
-}
-for name, (ip, env) in profiles.items():
-    key = os.environ.get(env, '').strip()
-    if not key: continue
-    ssh_dir = f'/opt/data/profiles/{name}/.ssh'
-    os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
-    path = f'{ssh_dir}/id_sandbox'
-    open(path, 'w').write(key + '\n')
-    os.chmod(path, 0o600)
-    print(f'seeded {name}')
-"
-```
 
 ---
 

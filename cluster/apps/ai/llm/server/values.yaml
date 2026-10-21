@@ -17,9 +17,8 @@ server:
     sha256: 2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658
     size: "10546934240"
     alias: gemma-4-26b-a4b
-  # One slot of 65536 tokens. Hermes hard-refuses a model with less than
-  # 64,000 tokens of context (agent_init._enforce_minimum_context), so each slot
-  # needs >= 64000; ctx / parallel = 65536 here. Why one slot and not two:
+  # One slot of 65536 tokens (the Hermes agent, archived under .archive/cluster/ai,
+  # refused a model with less than 64,000 tokens of context per slot). Why one slot and not two:
   # 2 x 64K needs -c 131072, the config that OOM-killed Gemma at 13.78 GB under
   # concurrent turns on 2026-09-28. Why Gemma at all: LFM2.5's hybrid
   # recurrent state corrupts multi-turn output (llama.cpp#29002, still open;
@@ -30,14 +29,14 @@ server:
   ctx: 65536
   parallel: 1
   # Gemma 4 thinks by default and the reasoning consumes max_tokens, so
-  # small-budget calls (titles, Honcho deriver) return empty content. Default
+  # small-budget calls return empty content. Default
   # it off; a request can turn it back on with chat_template_kwargs.enable_thinking=true.
   chatTemplateKwargs: '{"enable_thinking":false}'
   # The chart always renders --reasoning-budget; -1 is "unrestricted". (0 breaks
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1
   # Hard cap on tokens generated per request that does not set max_tokens
-  # (Hermes and Lingarr send none). On one slot a single runaway generation
+  # (Lingarr sends none). On one slot a single runaway generation
   # blocks every session until it reaches the context limit (about an hour at
   # 14 tok/s); at 16384 it costs ~19 minutes. It was 2048 (~2 minutes), verified
   # to stop at exactly 2048 with finish_reason=length, until Lingarr: it sends a
