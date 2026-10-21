@@ -1,4 +1,4 @@
-# What:   Ship the kernel log (kmsg) to the Alloy receiver in the cluster, TCP port 5174
+# What:   Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5174 (pilot, the other nodes still use TCP)
 # Why:    Boot and shutdown messages (including the ones from the failed nv1 boots) survive the reboot. KmsgLogConfig has no
 #         extraTags in Talos v1.14, so each node uses its own port and the receiver sets the node label from it
 #         (cluster/apps/system/alloy/talos-logs)
@@ -7,4 +7,4 @@
 apiVersion: v1alpha1
 kind: KmsgLogConfig
 name: loki
-url: tcp://192.168.48.32:5174/
+url: udp://192.168.48.32:5174/

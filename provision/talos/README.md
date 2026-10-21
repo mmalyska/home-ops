@@ -336,6 +336,15 @@ variable). Query with `{source=~"talos-.*", node="nv1"}`.
 Talos buffers and retries, so a node keeps its logs while the receiver pod is down, but a node that reboots while the
 receiver is unreachable loses what it had not sent. Applying the patches is live; the receiver app must be synced first.
 
+### UDP pilot on nv1
+
+Over TCP, replacing the receiver pod leaves each node's connection hung in CLOSE_WAIT toward the old pod for about 6
+minutes, and the queued lines are lost on reconnect (nv1 lost about 3 minutes). Alloy has no `udplog` receiver, but
+`loki.source.syslog` with `protocol = "udp"` and `syslog_format = "raw"` (experimental) takes each datagram as one line
+without parsing it. The receiver listens on both TCP and UDP on the same ports; nv1 sends over UDP while mc1-mc3 stay on
+TCP until the pilot is verified (labels, no truncation, resumes within seconds after the receiver pod is deleted).
+The price of UDP: nothing is buffered while the receiver is down, and a line larger than one datagram is dropped.
+
 ## Checks
 
 `task talos:check` runs, without secrets or a cluster, the patch convention check (`scripts/check-patches.sh`), the

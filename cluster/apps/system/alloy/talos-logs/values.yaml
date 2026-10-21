@@ -1,6 +1,6 @@
 alloy:
   alloy:
-    # otelcol.receiver.tcplog is experimental in Alloy
+    # otelcol.receiver.tcplog and the raw syslog format are experimental in Alloy
     stabilityLevel: experimental
     resources:
       requests:
@@ -241,6 +241,88 @@ alloy:
           forward_to = [loki.write.loki.receiver]
         }
 
+        // UDP pilot: the same streams over UDP with the syslog receiver in raw mode (no syslog parsing), so a receiver restart
+        // does not leave the nodes' connections stuck. The raw line is the Talos JSON itself, no OTLP body envelope.
+        loki.source.syslog "service_udp" {
+          listener {
+            address       = "0.0.0.0:5170"
+            protocol      = "udp"
+            syslog_format = "raw"
+            labels        = { source = "talos-service" }
+          }
+          forward_to = [loki.process.service_udp.receiver]
+        }
+
+        loki.process "service_udp" {
+          stage.json {
+            expressions = {
+              node       = "node",
+              service    = "\"talos-service\"",
+              level      = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
+          }
+          stage.labels {
+            values = {
+              node    = "",
+              service = "",
+              level   = "",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        loki.source.syslog "kmsg_udp" {
+          listener {
+            address       = "0.0.0.0:5171"
+            protocol      = "udp"
+            syslog_format = "raw"
+            labels        = { source = "talos-kernel", node = "mc1" }
+          }
+          listener {
+            address       = "0.0.0.0:5172"
+            protocol      = "udp"
+            syslog_format = "raw"
+            labels        = { source = "talos-kernel", node = "mc2" }
+          }
+          listener {
+            address       = "0.0.0.0:5173"
+            protocol      = "udp"
+            syslog_format = "raw"
+            labels        = { source = "talos-kernel", node = "mc3" }
+          }
+          listener {
+            address       = "0.0.0.0:5174"
+            protocol      = "udp"
+            syslog_format = "raw"
+            labels        = { source = "talos-kernel", node = "nv1" }
+          }
+          forward_to = [loki.process.kmsg_udp.receiver]
+        }
+
+        loki.process "kmsg_udp" {
+          stage.json {
+            expressions = {
+              level      = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
+          }
+          stage.labels {
+            values = {
+              level = "",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
         loki.write "loki" {
           endpoint {
             url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
@@ -267,6 +349,26 @@ alloy:
         port: 5174
         targetPort: 5174
         protocol: TCP
+      - name: service-udp
+        port: 5170
+        targetPort: 5170
+        protocol: UDP
+      - name: mc1-udp
+        port: 5171
+        targetPort: 5171
+        protocol: UDP
+      - name: mc2-udp
+        port: 5172
+        targetPort: 5172
+        protocol: UDP
+      - name: mc3-udp
+        port: 5173
+        targetPort: 5173
+        protocol: UDP
+      - name: nv1-udp
+        port: 5174
+        targetPort: 5174
+        protocol: UDP
   controller:
     type: deployment
     replicas: 1
