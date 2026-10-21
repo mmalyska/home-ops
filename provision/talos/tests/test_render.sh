@@ -57,6 +57,17 @@ assert_eq "v1.14.2" "$("$SCRIPTS/expected-version.sh" "$TMP/nv1.yaml")" "nv1's e
 assert_eq "1|none|false" "$(yq 'select(.kind == "KubeAPIServerCAConfig") | (.acceptedCAs | length | tostring) + "|" + (.issuingCA // "none" | tostring)' "$TMP/nv1.yaml")|$(yq 'select(.machine != null) | .cluster | has("ca")' "$TMP/nv1.yaml")" "a worker has the accepted CA only and no legacy cluster.ca"
 assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: KubeEtcdEncryptionConfig" "a worker has no etcd encryption document"
 
+echo "-- network documents (control planes get link and VIP documents, nv1 keeps its static interface)"
+for n in mc1 mc2 mc3; do
+  assert_ok "$n renders" render "$n"
+  ip="192.168.48.$(yq '.nodes[] | select(.name == "'"$n"'") | .ip' "$SCRIPTS/../nodes.yaml" | cut -d. -f4)"
+  assert_eq "$ip/24|1500|192.168.48.254" "$(yq 'select(.kind == "LinkConfig" and .name == "eth0") | .addresses[0].address + "|" + (.mtu | tostring) + "|" + .routes[0].gateway' "$TMP/$n.yaml")" "$n has its static address, MTU and default route as a LinkConfig"
+  assert_eq "eth0" "$(yq 'select(.kind == "Layer2VIPConfig" and .name == "192.168.48.1") | .link' "$TMP/$n.yaml")" "$n announces the control-plane VIP on eth0"
+  assert_eq "null" "$(yq 'select(.machine != null) | .machine.network' "$TMP/$n.yaml")" "$n has no legacy machine.network (Talos refuses it next to the new documents)"
+done
+assert_eq "false" "$(yq 'select(.machine != null) | .machine.network.interfaces[0].dhcp | tostring' "$TMP/nv1.yaml")" "nv1 keeps dhcp false (DHCP flapped its IP once and dropped the GPU)"
+assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: Layer2VIPConfig" "a worker has no control-plane VIP"
+
 echo "-- failure modes"
 assert_fails "an unset variable used by a .tpl patch fails the render" env -u TALHELPER_UPSMONHOST "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml"
 assert_fails "an unset cluster secret fails the render" env -u TALHELPER_CLUSTERSECRET "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml"
