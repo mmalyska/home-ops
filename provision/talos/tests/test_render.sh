@@ -86,6 +86,7 @@ assert_fails "an unset variable used by a .tpl patch fails the render" env -u TA
 assert_fails "an unset cluster secret fails the render" env -u TALHELPER_CLUSTERSECRET "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml"
 assert_fails "an empty cluster id fails the render" env TALHELPER_CLUSTERNAME= "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml"
 assert_fails "an unset etcd encryption secret fails the render" env -u TALHELPER_AESCBCENCYPTIONKEY "$SCRIPTS/render.sh" mc1 "$TMP/unset4.yaml"
+assert_fails "a whitespace-only etcd encryption secret fails the render" env TALHELPER_AESCBCENCYPTIONKEY=$'  \t\n ' "$SCRIPTS/render.sh" mc1 "$TMP/blank.yaml"
 assert_fails "an empty etcd encryption secret fails the render" env TALHELPER_AESCBCENCYPTIONKEY= "$SCRIPTS/render.sh" mc1 "$TMP/empty2.yaml"
 mkdir -p "$TMP/tmpdir"
 TMPDIR="$TMP/tmpdir" "$SCRIPTS/render.sh" mc1 "$TMP/clean.yaml" >/dev/null 2>&1

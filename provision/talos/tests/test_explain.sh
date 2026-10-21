@@ -71,6 +71,10 @@ assert_contains "$(ex nv1)" "10-taint.yaml" "a worker lists the worker layer"
 assert_not_contains "$(ex nv1)" "10-rings.yaml" "a worker does not list control-plane files"
 assert_contains "$(ex)" "== nv1" "without arguments every node is shown"
 assert_fails "an unknown node fails" ex nope
+assert_contains "$out" "KubeServiceAccountConfig" "a control plane lists the generated PKI documents it gets from the base"
+assert_not_contains "$(ex nv1)" "KubeServiceAccountConfig" "a worker gets only the API server CA document"
+assert_contains "$(ex nv1)" "KubeAPIServerCAConfig" "a worker lists its generated CA document"
+assert_contains "$out" "not a patch file" "the generated documents are marked as not coming from a patch"
 
 echo "-- an unreadable patch is an error, not an empty column"
 printf 'machine: [unclosed\n' >> "$TMP/p/worker/10-taint.yaml"

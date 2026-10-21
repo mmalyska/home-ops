@@ -42,7 +42,7 @@ while IFS= read -r f; do
   case "$f" in
     *.tpl)
       while IFS= read -r v; do
-        [ -n "${!v:-}" ] || die "${f#"$PATCHES_DIR"/} needs \$$v, which is not set"
+        [ -n "$(printf '%s' "${!v:-}" | tr -d '[:space:]')" ] || die "${f#"$PATCHES_DIR"/} needs \$$v, which is not set or is only whitespace"
       done < <(grep -o '\${[A-Za-z0-9_]*}' "$f" | tr -d '${}' | sort -u)
       p="$work/patch-$i.yaml"; envsubst "$TPL_VARS" < "$f" > "$p" ;;
     *) p="$f" ;;

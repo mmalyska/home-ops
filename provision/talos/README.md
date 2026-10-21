@@ -404,5 +404,5 @@ base, built from the secrets bundle; they are not patch files. `KubeEtcdEncrypti
 `patches/controlplane/94-etcd-encryption-delete.yaml` removes the generated document and
 `patches/controlplane/95-etcd-encryption.yaml.tpl` writes it out (key name `key2`, `secretbox` then `identity`, the secret from
 `TALHELPER_AESCBCENCYPTIONKEY`) because the key name is part of every stored ciphertext and must never follow a generated default.
-`task talos:pki-parity -- <node>` compares the PKI values a node runs with the rendered ones by hash and prints no values; run it
+`task talos:pki-parity -- <node>` compares the PKI values a node runs with the rendered ones by hash (every trusted CA certificate included) and prints no values; run it
 after anything that touches the secrets bundle or the contract.
