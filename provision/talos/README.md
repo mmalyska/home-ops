@@ -195,13 +195,16 @@ After an upgrade nv1 reboots into the old version
 The `LoaderEntryDefault` EFI variable names the old UKI, sd-boot honours it while that file exists, and the node boots
 the old version.
 
-**Cause (revised 2026-10-21, not proven):** the firmware is probably not dropping the installer's write. EFI variable
-creations and overwrites (including `LoaderConfigTimeout` right before a graceful reboot) persisted in tests on nv1, and
-the installer log showed a normal install; the default after the failed boot was `Talos-v1.14.2~4.efi` with a capital T,
-the real file name that Talos's `sdboot.Revert()` writes. The likely story is that the new image's first boot fails
-(maybe the kexec path) and Talos rolls back to the previous entry. The next nv1 upgrade should test this with tuppr
-`rebootMode: powercycle` and the Talos logs in Loki (see "Log shipping to Loki"); this section is the symptom workaround
-until then. `talosctl
+**Cause (found 2026-10-21):** it is not the firmware. In the default reboot mode Talos prepares a kexec into the new
+kernel, and on nv1 that fails (`kexec_file(Image): Could not find any suitable kernel location!`, then `failed to load
+kernel for kexec: ... cannot assign requested address`). A failed `kexecPrepare` fails the reboot sequence, `machined`
+then reverts the boot entry to the previous UKI (`revertBootloader`) and reboots through the firmware, which boots the
+old image. Reproduced on a same-version upgrade of nv1 with the Talos logs in Loki: default reboot mode booted the old
+UKI (`~1`) although `~2` was installed; `--reboot-mode powercycle` logged `kexec skipped as reboot with power cycle was
+requested` and booted the new one. EFI variable writes persisted in every test, and the installer log showed a normal
+install. **Fix:** `policy.rebootMode: powercycle` in the `TalosUpgrade` (git), so tuppr never uses kexec; for a manual
+`talosctl upgrade` add `--reboot-mode powercycle`. The rename workaround below is only needed after an upgrade done
+without it. `talosctl
 upgrade` and `talosctl health` both still succeed. `task talos:upgrade` now
 fails with `ERROR: nv1 runs vX, expected vY` when this happens (the expected version is the alias tag,
 `TALOS_VERSION`; the same applies when tuppr does the upgrade: it patches the image to the alias tag). **Do not re-run

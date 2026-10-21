@@ -12,6 +12,11 @@ spec:
   policy:
     waitForVolumeDetach: true
     timeout: 30m
+    # Reboot through the firmware, never kexec. On nv1 (Jetson) kexec_file_load fails ("Could not find any suitable
+    # kernel location"), Talos treats that as a failed reboot, reverts the boot entry to the previous UKI and the node
+    # comes back on the old version. Applies to all nodes of this CR (mc1 to mc3 pay a firmware POST per reboot).
+    # See docs/src/k8s/tuppr.md, "nv1 and kexec".
+    rebootMode: powercycle
   maintenance:
     windows:
       - start: "0 7 * * 0"
