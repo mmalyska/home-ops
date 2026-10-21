@@ -65,14 +65,14 @@
       "Bash(sops -d *)",
       "Bash(sops --decrypt *)",
       "Bash(helm get values*)",
-      "Bash(talosctl reset*)",
-      "Bash(talosctl shutdown*)",
-      "Bash(terraform destroy*)",
-      "Bash(git push --force*)",
-      "Bash(git push -f *)"
+      "Bash(terraform destroy*)"
     ],
     "ask": [
-      "Bash(talosctl reboot*)"
+      "Bash(talosctl reboot*)",
+      "Bash(talosctl shutdown*)",
+      "Bash(talosctl reset*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)"
     ]
   },
   "model": "sonnet",
