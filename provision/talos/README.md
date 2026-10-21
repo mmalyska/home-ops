@@ -321,7 +321,7 @@ first, then mc2 and mc1).
 
 ## Log shipping to Loki
 
-Every node sends two streams over TCP to the Alloy receiver `cluster/apps/system/alloy/talos-logs`
+Every node sends two streams over UDP to the Alloy receiver `cluster/apps/system/alloy/talos-logs`
 (Cilium LB IP `192.168.48.32`, namespace `monitoring`), which writes them to Loki:
 
 | Stream                                                  | Patch                        | Port                                   | Loki labels                                        |
@@ -333,8 +333,11 @@ The kernel stream uses one port per node because `KmsgLogConfig` has no extra ta
 cannot tell the senders apart otherwise. The patches are per node for the same reason (the node name is not a template
 variable). Query with `{source=~"talos-.*", node="nv1"}`.
 
-Talos buffers and retries, so a node keeps its logs while the receiver pod is down, but a node that reboots while the
-receiver is unreachable loses what it had not sent. Applying the patches is live; the receiver app must be synced first.
+It is UDP on purpose. Over TCP, Cilium keeps a connection pinned to the receiver pod that served it, so when that pod was
+replaced the node's connection hung in CLOSE_WAIT for about 6 minutes and the queued lines (about 3 minutes of nv1 logs)
+were lost on reconnect. UDP has no connection to go stale, so a receiver restart costs only the datagrams sent while no
+pod is listening (seconds). The price: nothing is buffered or retried while the receiver is down, and a line larger than
+one datagram is dropped. Applying the patches is live; sync the receiver app first.
 
 ## Checks
 
