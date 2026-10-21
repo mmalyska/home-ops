@@ -4,7 +4,6 @@
 # Apply:  live (a wrong address or route can make the node unreachable)
 machine:
   network:
-    hostname: mc1
     interfaces:
       - interface: eth0
         addresses:
