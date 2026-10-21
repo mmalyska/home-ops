@@ -247,7 +247,12 @@ the Renovate PR plus a one-off window (removed again). Times are UTC.
   left nv1 cordoned, so `llama-server` stayed `Pending`. Fix, done at 12:13 to 12:18: renamed the stale UKI from a
   privileged pod, rebooted nv1 once (it came back on v1.14.4, kernel 6.18.57, `LoaderEntrySelected`
   `talos-v1.14.4.efi`, GPU 1, CDI on), uncordoned nv1, annotated the `TalosUpgrade` with `reset` (it went straight to
-  `Completed`, "Successfully upgraded 4 nodes"), then deleted the renamed `.bak` UKI.
+  `Completed`, "Successfully upgraded 4 nodes"), then deleted the renamed `.bak` UKI. The reset run did not redo nv1's
+  post-upgrade step, so `task talos:diff` still showed one line on nv1: the live `UnattendedInstallConfig`
+  `installer.image` was `custom-installer-jp7:v1.14.2` against `v1.14.4` in git. A dry run (`talosctl apply-config
+  --dry-run -m auto`) showed that line only and "without a reboot"; `task talos:apply N=nv1` (or the same
+  `talosctl apply-config ... -m auto` on the rendered `home-nv1.yaml`) cleared it, and `task talos:diff` was then clean on
+  all four nodes. `task talos:generate` needs the local `talosctl` at the target version first (`task talos:install`).
 - **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
   minutes, longer than the node's own reboot because of the stale boot entry.
 - **Still manual for nv1:** the stale-UKI rename after each nv1 upgrade (the README fix); there is no automatic fix.
