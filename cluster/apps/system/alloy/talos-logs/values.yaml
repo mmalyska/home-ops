@@ -242,10 +242,11 @@ alloy:
         }
 
         // UDP pilot: the same streams over UDP with the syslog receiver in raw mode (no syslog parsing), so a receiver restart
-        // does not leave the nodes' connections stuck. The raw line is the Talos JSON itself, no OTLP body envelope.
+        // does not leave the nodes' connections stuck. The UDP ports differ from the TCP ones because a Service or container
+        // port list cannot repeat a port number (client-side apply merges them by number). The raw line is the Talos JSON itself, no OTLP body envelope.
         loki.source.syslog "service_udp" {
           listener {
-            address       = "0.0.0.0:5170"
+            address       = "0.0.0.0:5180"
             protocol      = "udp"
             syslog_format = "raw"
             labels        = { source = "talos-service" }
@@ -278,25 +279,25 @@ alloy:
 
         loki.source.syslog "kmsg_udp" {
           listener {
-            address       = "0.0.0.0:5171"
+            address       = "0.0.0.0:5181"
             protocol      = "udp"
             syslog_format = "raw"
             labels        = { source = "talos-kernel", node = "mc1" }
           }
           listener {
-            address       = "0.0.0.0:5172"
+            address       = "0.0.0.0:5182"
             protocol      = "udp"
             syslog_format = "raw"
             labels        = { source = "talos-kernel", node = "mc2" }
           }
           listener {
-            address       = "0.0.0.0:5173"
+            address       = "0.0.0.0:5183"
             protocol      = "udp"
             syslog_format = "raw"
             labels        = { source = "talos-kernel", node = "mc3" }
           }
           listener {
-            address       = "0.0.0.0:5174"
+            address       = "0.0.0.0:5184"
             protocol      = "udp"
             syslog_format = "raw"
             labels        = { source = "talos-kernel", node = "nv1" }
@@ -350,24 +351,24 @@ alloy:
         targetPort: 5174
         protocol: TCP
       - name: service-udp
-        port: 5170
-        targetPort: 5170
+        port: 5180
+        targetPort: 5180
         protocol: UDP
       - name: mc1-udp
-        port: 5171
-        targetPort: 5171
+        port: 5181
+        targetPort: 5181
         protocol: UDP
       - name: mc2-udp
-        port: 5172
-        targetPort: 5172
+        port: 5182
+        targetPort: 5182
         protocol: UDP
       - name: mc3-udp
-        port: 5173
-        targetPort: 5173
+        port: 5183
+        targetPort: 5183
         protocol: UDP
       - name: nv1-udp
-        port: 5174
-        targetPort: 5174
+        port: 5184
+        targetPort: 5184
         protocol: UDP
   controller:
     type: deployment
