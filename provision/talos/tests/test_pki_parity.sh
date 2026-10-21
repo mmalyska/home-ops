@@ -24,7 +24,7 @@ run() { RENDERED_DIR="$TMP/rendered" LIVE_DIR="$TMP/live" "$SCRIPTS/pki-parity.s
 echo "-- legacy fields on the node, documents in the repo"
 assert_ok "a control plane with the same values passes" run mc1
 out="$(run mc1)"
-assert_eq "8" "$(echo "$out" | grep -c ' ok$')" "all eight control plane fields compare equal (key name and provider list included)"
+assert_eq "9" "$(echo "$out" | grep -c ' ok$')" "all nine control plane fields compare equal (all CA certificates, key name and provider list included)"
 assert_eq "mc1: aescbc absent" "$(echo "$out" | grep absent)" "only the aescbc field is absent on a control plane, as expected"
 assert_ok "a worker with the same values passes" run nv1
 out="$(run nv1)"
@@ -34,13 +34,20 @@ assert_contains "$out" "nv1: ca_key absent" "a worker has no CA key on either si
 echo "-- documents on the node too (after the rollout)"
 cp "$TMP/rendered/home-mc1.yaml" "$TMP/live/mc1.yaml"
 assert_ok "documents against documents pass" run mc1
-assert_eq "8" "$(run mc1 | grep -c ' ok$')" "documents against documents compare all eight fields, not vacuously"
+assert_eq "9" "$(run mc1 | grep -c ' ok$')" "documents against documents compare all nine fields, not vacuously"
 
 echo "-- a difference is found"
 cp "$TMP/live/mc1.yaml" "$TMP/keep.yaml"
 yq -i '(select(.kind == "KubeAPIServerCAConfig") | .issuingCA.cert) |= sub("A", "B")' "$TMP/live/mc1.yaml"
 assert_fails "a changed CA certificate fails" run mc1
 assert_contains "$(run mc1 2>&1 || true)" "mc1: ca_crt DIFFERS" "the changed field is named"
+cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
+yq -i '(select(.kind == "KubeAPIServerCAConfig") | .acceptedCAs) += ["an extra accepted CA"]' "$TMP/live/mc1.yaml"
+assert_contains "$(run mc1 2>&1 || true)" "mc1: ca_certs DIFFERS" "an extra accepted CA on the node is a difference"
+assert_contains "$(run mc1 2>&1 || true)" "mc1: ca_crt ok" "the single-certificate field alone does not see it (why ca_certs exists)"
+cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
+yq -i '(select(.machine != null) | .cluster.acceptedCAs) = [{"crt": "YW4gZXh0cmEgQ0E="}]' "$TMP/live/mc1.yaml"
+assert_contains "$(run mc1 2>&1 || true)" "mc1: ca_certs DIFFERS" "an extra legacy cluster.acceptedCAs entry on the node is a difference"
 cp "$TMP/keep.yaml" "$TMP/live/mc1.yaml"
 yq -i 'select(.kind != "KubeAggregatorCAConfig")' "$TMP/live/mc1.yaml"
 assert_contains "$(run mc1 2>&1 || true)" "mc1: aggregator_crt DIFFERS" "a missing document is a difference"

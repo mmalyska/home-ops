@@ -4,8 +4,10 @@
 # cluster.ca/aggregatorCA/serviceAccount/secretboxEncryptionSecret fields or the PKI documents). Each value is
 # decoded, whitespace-normalized and compared by hash; the output is only "<node>: <field> ok|DIFFERS|MISSING|absent",
 # never a value. "absent" (no value on either side) is only accepted where it is expected: the aescbc field on a control
-# plane, and every field but ca_crt on a worker; anywhere else it is MISSING. The etcd encryption key name and provider
-# list are compared too (a legacy secretboxEncryptionSecret means key2 with secretbox then identity, as Talos runs it).
+# plane, and every field but ca_crt and ca_certs on a worker; anywhere else it is MISSING. ca_certs hashes every CA
+# certificate the node trusts (the issuing one and all accepted ones, de-duplicated and sorted), so an extra or changed
+# entry in either form is a difference, which ca_crt (one certificate) cannot show. The etcd encryption key name and
+# provider list are compared too (a legacy secretboxEncryptionSecret means key2 with secretbox then identity, as Talos runs it).
 # Exit 1 on any DIFFERS or MISSING, or on a missing or empty config. Needs the same environment as render.sh and a reachable cluster.
 #
 # Test/offline overrides, as in diff-live.sh: RENDERED_DIR (pre-rendered home-<node>.yaml, skips render.sh) and
@@ -34,6 +36,7 @@ field_hash() {
 # pki_values <config>: "field hash" lines
 pki_values() {
   echo "ca_crt $(field_hash "$1" '.cluster.ca.crt' KubeAPIServerCAConfig '(.issuingCA.cert // .acceptedCAs[0])' b64)"
+  echo "ca_certs $(field_hash "$1" '([.cluster.ca.crt, .cluster.acceptedCAs[]?.crt] | map(select(. != null) | @base64d) | unique | join(""))' KubeAPIServerCAConfig '([.issuingCA.cert, .acceptedCAs[]?] | map(select(. != null)) | unique | join(""))' plain)"
   echo "ca_key $(field_hash "$1" '.cluster.ca.key' KubeAPIServerCAConfig '.issuingCA.key' b64)"
   echo "aggregator_crt $(field_hash "$1" '.cluster.aggregatorCA.crt' KubeAggregatorCAConfig '.issuingCA.cert' b64)"
   echo "aggregator_key $(field_hash "$1" '.cluster.aggregatorCA.key' KubeAggregatorCAConfig '.issuingCA.key' b64)"
@@ -49,6 +52,7 @@ may_be_absent() {
   case "$1:$2" in
     controlplane:aescbc) return 0 ;;
     worker:ca_crt) return 1 ;;
+    worker:ca_certs) return 1 ;;
     worker:*) return 0 ;;
     *) return 1 ;;
   esac
