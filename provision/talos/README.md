@@ -81,6 +81,19 @@ Apply config to a node (no reboot; most changes are live, see the `Apply:` line 
 task talos:apply N=mc1
 ```
 
+Network changes (address, route, MTU, VIP) need a try apply first. `task talos:apply` hardcodes `-m auto`, so run the try step with
+`talosctl` directly. The config is applied temporarily and rolls back on its own after the timeout, so a wrong address cannot lock you
+out of a node without a console:
+
+```bash
+export TALOSCONFIG=$PWD/provision/talos/clusterconfig/talosconfig
+talosctl apply-config -n <node-ip> -f provision/talos/clusterconfig/home-<node>.yaml -m try --timeout 90s
+# within the 90 s: addresses, routes, hostname and the VIP match the old state, `talosctl -n <node-ip> get operatorspecs` shows no DHCP operator
+task talos:apply N=<node>    # persist it (the rollback timer would otherwise revert it)
+```
+
+Persist it before the timeout runs out, one node at a time, and wait for the gate between nodes.
+
 Apply config with reboot:
 
 ```bash
@@ -144,7 +157,7 @@ Examples:
 ## Adding a new node
 
 1. Add the node to `nodes.yaml` (name, ip, type: `controlplane` or `worker`).
-2. Create `patches/node/<name>/08-hostname.yaml` (`HostnameConfig`), `10-link.yaml` (`LinkConfig`: address, route, MTU) and, on a control plane, `11-vip.yaml` (`Layer2VIPConfig`). A node that cannot be reached when the address is wrong (nv1) keeps the legacy `10-network.yaml` until it can be done with console access.
+2. Create `patches/node/<name>/08-hostname.yaml` (`HostnameConfig`), `10-link.yaml` (`LinkConfig`: address, route, MTU) and, on a control plane, `11-vip.yaml` (`Layer2VIPConfig`). Leave out any `DHCPv4Config`: with no document the link runs no DHCP.
 3. Add a per-node install image only if the node needs its own installer (see below). A per-node `UnattendedInstallConfig` patch must repeat `provisioning.diskSelector.match` (a node with another disk needs its own selector); see "Install settings and reinstalling a node".
 4. `scripts/check-patches.sh`, then `task talos:generate`.
 

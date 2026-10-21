@@ -57,6 +57,7 @@ nv1 runs the JetPack 7 build of the custom installer (`ghcr.io/mmalyska/custom-i
 
 nv1 had a leftover platform network config in the Talos META partition (key `0x0a`) with `operators: [dhcp4 enP8p1s0]`. It leased `192.168.48.210` beside the static `192.168.48.5`; lease churn flapped `.5`, and Talos restarted the kubelet. Machine-config `dhcp: false` does **not** remove a platform-layer operator.
 
+- Since the network migration (2026-10-21) the machine config has no `dhcp: false` any more: nv1's `LinkConfig` (`patches/node/nv1/10-link.yaml`) has no `DHCPv4Config`, and no document means no DHCP. The platform-layer operator below is still the one thing that can bring it back.
 - Check: `talosctl -n 192.168.48.5 get operatorspecs` must be empty and `get addresses` must show only `192.168.48.5/24` on `enP8p1s0`.
 - Fix: `talosctl -n 192.168.48.5 meta delete 0x0a` (no reboot needed).
 - After a reinstall or reflash, re-check this: the key is not in git.

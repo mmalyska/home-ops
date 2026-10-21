@@ -114,3 +114,8 @@ task talos:apply:restart N=mc1   # apply + reboot
 The `Apply:` line of the file you changed tells you whether a reboot is needed. Applying never restarts etcd and
 `talosctl service etcd restart` is refused, so etcd setting changes only take effect after a node reboot.
 `talosctl reboot` is blocked for Claude by the permission settings: ask the user to run it.
+
+**Network changes (LinkConfig, Layer2VIPConfig, HostnameConfig address side) go through a try apply first.** `task talos:apply` hardcodes
+`-m auto`, so `task talos:apply -- --mode=try` does nothing; run `talosctl apply-config -n <ip> -f provision/talos/clusterconfig/home-<node>.yaml -m try --timeout 90s`
+(the config reverts by itself), compare addresses, routes, hostname and `get operatorspecs` with the state before, then persist with
+`task talos:apply N=<node>` inside the timeout. The auto-mode classifier blocks the persistent apply for Claude ("Production Deploy"): the user runs it with `!`.

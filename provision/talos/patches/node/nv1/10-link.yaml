@@ -1,0 +1,15 @@
+# What:   nv1 enP8p1s0: static address 192.168.48.5/24, default route via the UCG-Max 192.168.48.254, MTU 1500, DHCP off
+# Why:    DHCP is disabled on VLAN 48, so every node address is static. Replaces the legacy machine.network.interfaces entry.
+#         DHCP stays off because there is no DHCPv4Config for this link (the old dhcp: false line is gone with the legacy
+#         entry): an extra lease (192.168.48.210) once flapped .5, restarted the kubelet and dropped the GPU device-plugin
+#         registration (nvidia.com/gpu: 0). After any change to this file `talosctl -n 192.168.48.5 get operatorspecs` must be empty
+# Nodes:  nv1
+# Apply:  live (a wrong address or route can make the node unreachable and there is no console: apply with talosctl apply-config -m try first)
+apiVersion: v1alpha1
+kind: LinkConfig
+name: enP8p1s0
+mtu: 1500
+addresses:
+  - address: 192.168.48.5/24
+routes:
+  - gateway: 192.168.48.254
