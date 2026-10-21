@@ -23,23 +23,37 @@ alloy:
         }
 
         loki.process "service" {
+          // otelcol.exporter.loki wraps the line as {"body": "<line>"}: unwrap it, then read the Talos fields
           stage.json {
             expressions = {
-              node    = "node",
-              service = "\"talos-service\"",
-              level   = "\"talos-level\"",
+              body = "body",
             }
+          }
+          stage.output {
+            source = "body"
+          }
+          stage.json {
+            expressions = {
+              node = "node"
+              service = "\"talos-service\""
+              level = "\"talos-level\""
+              talos_time = "\"talos-time\""
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
           }
           stage.labels {
             values = {
-              node    = "",
-              service = "",
-              level   = "",
+              node = ""
+              service = ""
+              level = ""
             }
           }
           stage.static_labels {
             values = {
-              source = "talos-service",
+              source = "talos-service"
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -59,10 +73,34 @@ alloy:
         }
 
         loki.process "kmsg_mc1" {
+          // otelcol.exporter.loki wraps the line as {"body": "<line>"}: unwrap it, then read the Talos fields
+          stage.json {
+            expressions = {
+              body = "body",
+            }
+          }
+          stage.output {
+            source = "body"
+          }
+          stage.json {
+            expressions = {
+              level = "\"talos-level\""
+              talos_time = "\"talos-time\""
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
+          }
+          stage.labels {
+            values = {
+              level = ""
+            }
+          }
           stage.static_labels {
             values = {
-              source = "talos-kernel",
-              node   = "mc1",
+              source = "talos-kernel"
+              node = "mc1"
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -80,10 +118,34 @@ alloy:
         }
 
         loki.process "kmsg_mc2" {
+          // otelcol.exporter.loki wraps the line as {"body": "<line>"}: unwrap it, then read the Talos fields
+          stage.json {
+            expressions = {
+              body = "body",
+            }
+          }
+          stage.output {
+            source = "body"
+          }
+          stage.json {
+            expressions = {
+              level = "\"talos-level\""
+              talos_time = "\"talos-time\""
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
+          }
+          stage.labels {
+            values = {
+              level = ""
+            }
+          }
           stage.static_labels {
             values = {
-              source = "talos-kernel",
-              node   = "mc2",
+              source = "talos-kernel"
+              node = "mc2"
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -101,10 +163,34 @@ alloy:
         }
 
         loki.process "kmsg_mc3" {
+          // otelcol.exporter.loki wraps the line as {"body": "<line>"}: unwrap it, then read the Talos fields
+          stage.json {
+            expressions = {
+              body = "body",
+            }
+          }
+          stage.output {
+            source = "body"
+          }
+          stage.json {
+            expressions = {
+              level = "\"talos-level\""
+              talos_time = "\"talos-time\""
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
+          }
+          stage.labels {
+            values = {
+              level = ""
+            }
+          }
           stage.static_labels {
             values = {
-              source = "talos-kernel",
-              node   = "mc3",
+              source = "talos-kernel"
+              node = "mc3"
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -122,10 +208,34 @@ alloy:
         }
 
         loki.process "kmsg_nv1" {
+          // otelcol.exporter.loki wraps the line as {"body": "<line>"}: unwrap it, then read the Talos fields
+          stage.json {
+            expressions = {
+              body = "body",
+            }
+          }
+          stage.output {
+            source = "body"
+          }
+          stage.json {
+            expressions = {
+              level = "\"talos-level\""
+              talos_time = "\"talos-time\""
+            }
+          }
+          stage.timestamp {
+            source = "talos_time"
+            format = "RFC3339Nano"
+          }
+          stage.labels {
+            values = {
+              level = ""
+            }
+          }
           stage.static_labels {
             values = {
-              source = "talos-kernel",
-              node   = "nv1",
+              source = "talos-kernel"
+              node = "nv1"
             }
           }
           forward_to = [loki.write.loki.receiver]
