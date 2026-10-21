@@ -34,10 +34,10 @@ alloy:
           }
           stage.json {
             expressions = {
-              node = "node"
-              service = "\"talos-service\""
-              level = "\"talos-level\""
-              talos_time = "\"talos-time\""
+              node = "node",
+              service = "\"talos-service\"",
+              level = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
             }
           }
           stage.timestamp {
@@ -46,14 +46,14 @@ alloy:
           }
           stage.labels {
             values = {
-              node = ""
-              service = ""
-              level = ""
+              node = "",
+              service = "",
+              level = "",
             }
           }
           stage.static_labels {
             values = {
-              source = "talos-service"
+              source = "talos-service",
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -84,8 +84,8 @@ alloy:
           }
           stage.json {
             expressions = {
-              level = "\"talos-level\""
-              talos_time = "\"talos-time\""
+              level = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
             }
           }
           stage.timestamp {
@@ -94,13 +94,13 @@ alloy:
           }
           stage.labels {
             values = {
-              level = ""
+              level = "",
             }
           }
           stage.static_labels {
             values = {
-              source = "talos-kernel"
-              node = "mc1"
+              source = "talos-kernel",
+              node = "mc1",
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -129,8 +129,8 @@ alloy:
           }
           stage.json {
             expressions = {
-              level = "\"talos-level\""
-              talos_time = "\"talos-time\""
+              level = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
             }
           }
           stage.timestamp {
@@ -139,13 +139,13 @@ alloy:
           }
           stage.labels {
             values = {
-              level = ""
+              level = "",
             }
           }
           stage.static_labels {
             values = {
-              source = "talos-kernel"
-              node = "mc2"
+              source = "talos-kernel",
+              node = "mc2",
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -174,8 +174,8 @@ alloy:
           }
           stage.json {
             expressions = {
-              level = "\"talos-level\""
-              talos_time = "\"talos-time\""
+              level = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
             }
           }
           stage.timestamp {
@@ -184,13 +184,13 @@ alloy:
           }
           stage.labels {
             values = {
-              level = ""
+              level = "",
             }
           }
           stage.static_labels {
             values = {
-              source = "talos-kernel"
-              node = "mc3"
+              source = "talos-kernel",
+              node = "mc3",
             }
           }
           forward_to = [loki.write.loki.receiver]
@@ -219,8 +219,8 @@ alloy:
           }
           stage.json {
             expressions = {
-              level = "\"talos-level\""
-              talos_time = "\"talos-time\""
+              level = "\"talos-level\"",
+              talos_time = "\"talos-time\"",
             }
           }
           stage.timestamp {
@@ -229,13 +229,13 @@ alloy:
           }
           stage.labels {
             values = {
-              level = ""
+              level = "",
             }
           }
           stage.static_labels {
             values = {
-              source = "talos-kernel"
-              node = "nv1"
+              source = "talos-kernel",
+              node = "nv1",
             }
           }
           forward_to = [loki.write.loki.receiver]
