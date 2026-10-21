@@ -1,0 +1,13 @@
+# What:   mc3 eth0: static address 192.168.48.4/24, default route via the UCG-Max 192.168.48.254, MTU 1500
+# Why:    DHCP is disabled on VLAN 48, so every node address is static. Replaces the legacy machine.network.interfaces entry
+#         (the control-plane VIP moved to 11-vip.yaml). A wrong address or route can make the node unreachable
+# Nodes:  mc3
+# Apply:  live (apply with --mode=try first: it rolls back on its own if the node stops answering)
+apiVersion: v1alpha1
+kind: LinkConfig
+name: eth0
+mtu: 1500
+addresses:
+  - address: 192.168.48.4/24
+routes:
+  - gateway: 192.168.48.254

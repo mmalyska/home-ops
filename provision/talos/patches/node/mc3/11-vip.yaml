@@ -1,0 +1,9 @@
+# What:   Control-plane VIP 192.168.48.1 on eth0 (gratuitous ARP from one node at a time)
+# Why:    The shared Kubernetes API and Talos endpoint address for the three control planes (cluster endpoint, kubeconfig).
+#         Replaces the vip field of the legacy machine.network.interfaces entry
+# Nodes:  mc3
+# Apply:  live
+apiVersion: v1alpha1
+kind: Layer2VIPConfig
+name: 192.168.48.1
+link: eth0

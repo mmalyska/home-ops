@@ -1,4 +1,4 @@
-# What:   nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off
+# What:   nv1 identity on the network: static address on enP8p1s0, default route, DHCP off
 # Why:    Talos runs DHCP on every linked interface and a static address does not turn it off; see the comment below
 # Nodes:  nv1
 # Apply:  live (a wrong address or route can make the node unreachable; nv1 has no easy console)

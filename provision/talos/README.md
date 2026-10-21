@@ -144,7 +144,7 @@ Examples:
 ## Adding a new node
 
 1. Add the node to `nodes.yaml` (name, ip, type: `controlplane` or `worker`).
-2. Create `patches/node/<name>/10-network.yaml` with hostname, interface, address, route (and the VIP on a control plane).
+2. Create `patches/node/<name>/08-hostname.yaml` (`HostnameConfig`), `10-link.yaml` (`LinkConfig`: address, route, MTU) and, on a control plane, `11-vip.yaml` (`Layer2VIPConfig`). A node that cannot be reached when the address is wrong (nv1) keeps the legacy `10-network.yaml` until it can be done with console access.
 3. Add a per-node install image only if the node needs its own installer (see below). A per-node `UnattendedInstallConfig` patch must repeat `provisioning.diskSelector.match` (a node with another disk needs its own selector); see "Install settings and reinstalling a node".
 4. `scripts/check-patches.sh`, then `task talos:generate`.
 
