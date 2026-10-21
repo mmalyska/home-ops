@@ -25,7 +25,6 @@ For provisioning the following tools are used:
 - [Cilium](https://cilium.io/) - CNI (container network interface), kube-proxy replacement, L2 load balancer announcements
 - [ArgoCD](https://argo-cd.readthedocs.io/) - GitOps tool for deploying manifests from the `cluster` directory
 - [rook.io](https://rook.io/) - ceph storage for k8s
-- [nfs](https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/) - used for cold storage on QNAP
 - [Envoy Gateway](https://gateway.envoyproxy.io/) - Kubernetes Gateway API implementation with two gateways:
   - **envoy-external** (192.168.48.20) - internet-facing via Cloudflare Tunnel
   - **envoy-internal** (192.168.48.21) - internal network only

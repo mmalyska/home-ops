@@ -30,7 +30,7 @@ In this repo I'm focusing on:
 | [external-dns (cloudflare)](https://github.com/kubernetes-sigs/external-dns) | Publishes external routes/endpoints to Cloudflare DNS |
 | [external-dns (adguard)](https://github.com/kubernetes-sigs/external-dns) | Publishes internal routes/endpoints to AdGuard Home DNS |
 | [Rook-Ceph](https://rook.io) | Distributed block and file storage |
-| [NFS subdir provisioner](https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/) | Cold storage on QNAP NAS |
+| NFS (static PVs) | Cold storage on QNAP NAS: media, ebooks, Nextcloud data |
 | [Keycloak](https://www.keycloak.org) | Identity provider (OIDC) |
 | [External Secrets Operator](https://external-secrets.io) | Secret sync from Bitwarden Secrets Manager |
 | [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts) | Prometheus + Grafana monitoring |
