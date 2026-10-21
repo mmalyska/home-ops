@@ -202,9 +202,11 @@ then reverts the boot entry to the previous UKI (`revertBootloader`) and reboots
 old image. Reproduced on a same-version upgrade of nv1 with the Talos logs in Loki: default reboot mode booted the old
 UKI (`~1`) although `~2` was installed; `--reboot-mode powercycle` logged `kexec skipped as reboot with power cycle was
 requested` and booted the new one. EFI variable writes persisted in every test, and the installer log showed a normal
-install. **Fix:** `policy.rebootMode: powercycle` in the `TalosUpgrade` (git), so tuppr never uses kexec; for a manual
-`talosctl upgrade` add `--reboot-mode powercycle`. The rename workaround below is only needed after an upgrade done
-without it. `talosctl
+install. **Fix:** `kernel.kexec_load_disabled: "1"` on nv1 (`patches/node/nv1/42-sysctl-kexec.yaml`): Talos then logs
+`kexec support is disabled via sysctl` and reboots through the firmware into the new entry (verified with a default-mode
+upgrade); `policy.rebootMode: powercycle` or `talosctl upgrade --reboot-mode powercycle` also skips kexec. Upstream:
+[siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692). The rename workaround below is only needed
+after an upgrade done without the sysctl. `talosctl
 upgrade` and `talosctl health` both still succeed. `task talos:upgrade` now
 fails with `ERROR: nv1 runs vX, expected vY` when this happens (the expected version is the alias tag,
 `TALOS_VERSION`; the same applies when tuppr does the upgrade: it patches the image to the alias tag). **Do not re-run

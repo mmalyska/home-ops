@@ -1,0 +1,11 @@
+# What:   Disable kexec (kernel.kexec_load_disabled=1)
+# Why:    On nv1 the kexec load after an upgrade fails ("kexec_file(Image): Could not find any suitable kernel location!"). Talos fails
+#         the reboot sequence and reverts the boot entry, so nv1 comes back on the old version. With kexec disabled Talos logs
+#         "kexec support is disabled via sysctl" and reboots through the firmware into the new entry. Node-only, so mc1 to mc3
+#         keep kexec (siderolabs/talos#14692, #13769). Cannot be set back to 0 without a reboot
+# Nodes:  nv1
+# Apply:  live
+apiVersion: v1alpha1
+kind: SysctlConfig
+params:
+  kernel.kexec_load_disabled: "1"
