@@ -1,0 +1,8 @@
+# What:   Static hostname nv1
+# Why:    Replaces the legacy machine.network.hostname; Talos refuses that field next to a HostnameConfig document.
+#         all/05-hostname-config-delete.yaml removes the generated "auto: stable" document first, so this one is the only one
+# Nodes:  nv1
+# Apply:  live
+apiVersion: v1alpha1
+kind: HostnameConfig
+hostname: nv1

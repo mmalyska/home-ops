@@ -4,7 +4,6 @@
 # Apply:  live (a wrong address or route can make the node unreachable; nv1 has no easy console)
 machine:
   network:
-    hostname: nv1
     interfaces:
       - interface: enP8p1s0
         # Talos runs DHCP on every linked interface by default; a static address

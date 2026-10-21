@@ -61,6 +61,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
 | `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
+| `provision/talos/patches/node/mc1/08-hostname.yaml` | Static hostname mc1 | live | HostnameConfig | shares HostnameConfig with provision/talos/patches/all/05-hostname-config-delete.yaml |
 | `provision/talos/patches/node/mc1/10-network.yaml` | mc1 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 | `provision/talos/patches/node/mc1/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
 | `provision/talos/patches/node/mc1/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5181 | live | KmsgLogConfig/loki |  |
@@ -119,6 +120,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
 | `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
+| `provision/talos/patches/node/mc2/08-hostname.yaml` | Static hostname mc2 | live | HostnameConfig | shares HostnameConfig with provision/talos/patches/all/05-hostname-config-delete.yaml |
 | `provision/talos/patches/node/mc2/10-network.yaml` | mc2 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 | `provision/talos/patches/node/mc2/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
 | `provision/talos/patches/node/mc2/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5182 | live | KmsgLogConfig/loki |  |
@@ -177,6 +179,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/90-ethernet-rings.yaml` | NIC ring buffers rx/tx 4096 on eth0 | live | EthernetConfig/eth0 |  |
 | `provision/talos/patches/controlplane/95-etcd-encryption.yaml.tpl` | Kubernetes secrets encryption at rest in etcd: one secretbox key, with the identity provider as fallback | live | KubeEtcdEncryptionConfig |  |
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
+| `provision/talos/patches/node/mc3/08-hostname.yaml` | Static hostname mc3 | live | HostnameConfig | shares HostnameConfig with provision/talos/patches/all/05-hostname-config-delete.yaml |
 | `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 | `provision/talos/patches/node/mc3/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
 | `provision/talos/patches/node/mc3/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5183 | live | KmsgLogConfig/loki |  |
@@ -216,6 +219,7 @@ worker, 192.168.48.5
 | `provision/talos/patches/worker/20-sysctls.yaml` | BPF JIT hardening | live | SysctlConfig |  |
 | `provision/talos/patches/worker/30-node-taints.yaml` | Taint workers nvidia.com/gpu=present:NoSchedule | live (changing an existing taint needs a manual kubectl taint: NodeRestriction blocks the kubelet from updating it) | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/worker/96-pki-legacy-delete.yaml` | Remove the cluster.ca field that talosctl gen config adds | live | cluster.ca |  |
+| `provision/talos/patches/node/nv1/08-hostname.yaml` | Static hostname nv1 | live | HostnameConfig | shares HostnameConfig with provision/talos/patches/all/05-hostname-config-delete.yaml |
 | `provision/talos/patches/node/nv1/10-network.yaml` | nv1 identity on the network: hostname, static address on enP8p1s0, default route, DHCP off | live (a wrong address or route can make the node unreachable; nv1 has no easy console) | machine.network |  |
 | `provision/talos/patches/node/nv1/20-install-image.yaml.tpl` | Custom installer image (OE4T nvgpu kernel modules for the Jetson Orin NX); install disk /dev/nvme0n1 | install-only | UnattendedInstallConfig | shares UnattendedInstallConfig with provision/talos/patches/worker/05-install-image.yaml.tpl |
 | `provision/talos/patches/node/nv1/28-kmod-ivc-ext.yaml` | Kernel module ivc_ext | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/ivc_ext |  |

@@ -1,5 +1,5 @@
 # What:   Remove the HostnameConfig document that talosctl gen config adds
-# Why:    Hostnames are set statically per node (node/<name>/10-network.yaml); the generated
+# Why:    Hostnames are set statically per node (node/<name>/08-hostname.yaml); the generated
 #         "auto: stable" document would conflict with them
 # Nodes:  all nodes
 # Apply:  live
