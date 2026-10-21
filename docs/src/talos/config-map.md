@@ -63,7 +63,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc1/10-network.yaml` | mc1 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 | `provision/talos/patches/node/mc1/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
-| `provision/talos/patches/node/mc1/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5171 | live | KmsgLogConfig/loki |  |
+| `provision/talos/patches/node/mc1/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, TCP port 5171 | live | KmsgLogConfig/loki |  |
 
 ## mc2
 
@@ -121,7 +121,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc2/10-network.yaml` | mc2 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 | `provision/talos/patches/node/mc2/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
-| `provision/talos/patches/node/mc2/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5172 | live | KmsgLogConfig/loki |  |
+| `provision/talos/patches/node/mc2/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, TCP port 5172 | live | KmsgLogConfig/loki |  |
 
 ## mc3
 
@@ -179,7 +179,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/96-pki-legacy-delete.yaml` | Remove the cluster.ca, aggregatorCA, serviceAccount and secretboxEncryptionSecret fields that talosctl gen config adds | live | cluster.ca cluster.aggregatorCA cluster.serviceAccount cluster.secretboxEncryptionSecret |  |
 | `provision/talos/patches/node/mc3/10-network.yaml` | mc3 identity on the network: hostname, static address, default route and the control-plane VIP 192.168.48.1 | live (a wrong address or route can make the node unreachable) | machine.network |  |
 | `provision/talos/patches/node/mc3/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
-| `provision/talos/patches/node/mc3/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5173 | live | KmsgLogConfig/loki |  |
+| `provision/talos/patches/node/mc3/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, TCP port 5173 | live | KmsgLogConfig/loki |  |
 
 ## nv1
 
@@ -231,4 +231,4 @@ worker, 192.168.48.5
 | `provision/talos/patches/node/nv1/38-kmod-governor-pod-scaling.yaml` | Kernel module governor_pod_scaling | reboot (modules and their parameters are only loaded at boot) | KernelModuleConfig/governor_pod_scaling |  |
 | `provision/talos/patches/node/nv1/40-node-labels.yaml` | Labels accelerator=jetson-orin and nvidia.com/gpu.type=igpu | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/worker/30-node-taints.yaml |
 | `provision/talos/patches/node/nv1/50-log-service.yaml` | Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster | live | machine.logging |  |
-| `provision/talos/patches/node/nv1/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, UDP port 5174 | live | KmsgLogConfig/loki |  |
+| `provision/talos/patches/node/nv1/51-log-kernel.yaml` | Ship the kernel log (kmsg) to the Alloy receiver in the cluster, TCP port 5174 | live | KmsgLogConfig/loki |  |

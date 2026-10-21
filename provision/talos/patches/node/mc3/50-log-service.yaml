@@ -7,7 +7,7 @@
 machine:
   logging:
     destinations:
-      - endpoint: udp://192.168.48.32:5170/
+      - endpoint: tcp://192.168.48.32:5170/
         format: json_lines
         extraTags:
           node: mc3
