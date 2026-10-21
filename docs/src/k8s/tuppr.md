@@ -256,8 +256,31 @@ process`), then `Pending` / `PrePulling`.
   all four nodes. `task talos:generate` needs the local `talosctl` at the target version first (`task talos:install`).
 - **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
   minutes, longer than the node's own reboot because of the stale boot entry.
-- **Still manual for nv1:** the stale-UKI rename after each nv1 upgrade (the README fix); there is no automatic fix.
+- **nv1 and kexec:** see "nv1 and kexec" below. The `TalosUpgrade` now sets `policy.rebootMode: powercycle`, which avoids the stale-UKI problem; the rename is only a fallback.
   `Failed` is terminal, so plan for the `reset` and the uncordon in the same session.
+
+## nv1 and kexec
+
+By default Talos reboots after an upgrade through kexec. On nv1 (Jetson Orin) the kexec load fails, and Talos answers a
+failed `kexecPrepare` by reverting the boot entry to the previous UKI, so nv1 comes back on the old version while the
+upgrade reports success (the 2026-10-21 incident). The revert is read from Talos's source (`revertBootloader` in
+`machined`) and from the result; no log line announces it, while the failed kexec and the old UKI booting are observed. The `TalosUpgrade` therefore sets `policy.rebootMode: powercycle`
+(`cluster/apps/system/tuppr/templates/talosupgrade.yaml`), which makes Talos skip kexec and reboot through the firmware.
+It applies to every node of the CR, so mc1 to mc3 also take the firmware path (slower by one POST).
+
+Evidence, 2026-10-21, two same-version upgrades of nv1 with `talosctl upgrade --image .../custom-installer-jp7:v1.14.4`
+and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs a second v1.14.4 UKI named
+`Talos-v1.14.4~N.efi` (identical checksum), which makes the boot visible without a version change:
+
+| Run                        | Log                                                                                                                           | Booted                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `--reboot-mode powercycle` | `kexec skipped as reboot with power cycle was requested`                                                                      | the new UKI (`~1`), about 3 minutes in total        |
+| default (kexec)            | `kexec_file(Image): Could not find any suitable kernel location!`, `reboot failed: error running phase 13 in reboot sequence` | the previous UKI (`~1`) although `~2` was installed |
+
+EFI variable writes persisted in separate tests, so the earlier theory that the Jetson firmware drops the installer's
+write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is not known;
+the upstream angle (a failed kexec should fall back to a normal reboot instead of triggering the revert) is tracked in
+`.plans/TODO.md`.
 
 ## When things go wrong
 
@@ -272,7 +295,7 @@ process`), then `Pending` / `PrePulling`.
 - **A node never converges (drain stalls):** a CNPG primary's PDB usually means an unhealthy replica. Fix the replica
   first, do not force the drain; `kubectl uncordon <node>` restores evicted Ceph pods and Ceph recovers on its own
   (see `cluster-reference`). tuppr uncordons itself after a failed drain and retries after 1 minute.
-- **nv1 reports the old version after the upgrade:** nv1 booted a stale UKI (cause under investigation, see the README section). Do not re-run the upgrade; use
+- **nv1 reports the old version after the upgrade:** nv1 booted the previous UKI because kexec failed and Talos reverted the boot entry (see "nv1 and kexec"). This should not happen with `rebootMode: powercycle`. Do not re-run the upgrade; use
   the fix in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade"). Seen on 2026-10-21: the run goes
   `Failed` with `node nv1 version mismatch`, nv1 stays cordoned and `llama-server` stays `Pending`. After the fix:
   `kubectl uncordon nv1`, then `kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%s)"
