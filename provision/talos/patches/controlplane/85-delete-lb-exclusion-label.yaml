@@ -1,9 +1,14 @@
-# What:   Remove the node.kubernetes.io/exclude-from-external-load-balancers label that talosctl gen config adds to control planes
-# Why:    Keeps parity with the configuration the nodes already run (they never had the label). Delete this file to adopt
-#         the Talos default, after checking LoadBalancer behaviour
+# What:   Remove from KubeNodeConfig the node.kubernetes.io/exclude-from-external-load-balancers label and the control-plane NoSchedule taint that talosctl gen config adds to control planes
+# Why:    Keeps parity with the configuration the nodes already run: they never had the label, and workloads are scheduled on the
+#         control planes (this replaces allowSchedulingOnControlPlanes). Delete the label key to adopt the Talos default after
+#         checking LoadBalancer behaviour; keep the taint key deleted while workloads run on the control planes
 # Nodes:  control plane
 # Apply:  live
-machine:
-  nodeLabels:
-    node.kubernetes.io/exclude-from-external-load-balancers:
-      $patch: delete
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  node.kubernetes.io/exclude-from-external-load-balancers:
+    $patch: delete
+taints:
+  node-role.kubernetes.io/control-plane:
+    $patch: delete

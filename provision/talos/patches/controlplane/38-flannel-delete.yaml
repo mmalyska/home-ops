@@ -1,0 +1,8 @@
+# What:   Remove the KubeFlannelCNIConfig document that talosctl gen config adds
+# Why:    The CNI is Cilium (cluster/apps/core/cilium), installed by ArgoCD, with kube-proxy replacement. Without this the
+#         base would configure Flannel next to it
+# Nodes:  control plane
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete

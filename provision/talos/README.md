@@ -10,7 +10,7 @@ Bitwarden (bws, loaded by .envrc) ──▶ TALHELPER_* environment variables
         │
         ├─ secrets.yaml.tpl ──envsubst──▶ secrets bundle (temp file, deleted afterwards)
         │                                        │
-        │                  talosctl gen config (pinned contract) ──▶ base config for the node's role
+        │                  talosctl gen config (contract pinned in lib.sh) ──▶ base config for the node's role
         │                                                                  │
         └─ patches/all/*  ─▶  patches/<role>/*  ─▶  patches/node/<name>/*   (talosctl machineconfig patch, in this order)
                                                                            │
@@ -63,9 +63,12 @@ clusterconfig/             gitignored output of task talos:generate
 - **Variables only in `*.yaml.tpl` files**, and only the ones listed in `TPL_VARS` in `scripts/lib.sh`.
   `envsubst` never touches a plain `.yaml` file, and a `.tpl` file that needs an unset variable fails the render.
   The file name therefore tells you which patches carry secrets or environment values.
-- **Config contract pin.** `scripts/lib.sh` pins `talosctl gen config` to `TALOS_CONTRACT` (now `v1.13`). The 1.14
-  contract generates a fully multi-document base that cannot be combined with the legacy fields still used here,
-  so the pin moves only when the deprecated fields have been migrated (see `.plans/TODO.md`).
+- **Config contract pin.** `scripts/lib.sh` pins `talosctl gen config` to `TALOS_CONTRACT` (now `v1.14`, bumped 2026-10-21; it
+  matches the Talos version the nodes run). The base it generates is fully multi-document, so a patch must delete what the base adds
+  and the cluster does not run: the Flannel document (`controlplane/38`), the control-plane label and taint of `KubeNodeConfig`
+  (`controlplane/85`), the generated etcd encryption document (`controlplane/94`, then `95` adds the one the cluster runs) and the
+  `default` discovery service document (`all/89`). After a future bump, render with the new contract before and after and compare
+  with `scripts/normalize.sh`: the two must be identical, otherwise the base added something that needs a patch.
 
 ## Usage
 
@@ -338,8 +341,8 @@ first, then mc2 and mc1).
 
 - **A reboot is needed.** `sandboxd` reads the setting only when it starts, so apply, cordon, drain, reboot, uncordon, in
   both directions. Rollback is the same with `workloadIsolation: false`.
-- **The v1.14 contract bump would turn it on.** `talosctl gen config` emits the document with `true` only for the v1.14
-  contract. The repo carries the setting explicitly for every node, so the bump changes nothing (a render test guards it).
+- **The v1.14 contract base carries it with `true`** (the v1.13 base did not). The repo still sets it explicitly for every node
+  in `patches/all/65-security-profile.yaml`, so a future base cannot flip it (a render test guards it).
 - **nv1 was enabled early** (2026-10-07, the owner's decision, before the spec's soak gate): v1.14.2 has the fix for
   siderolabs/talos#14374 (CRI restart-loops on boot with isolation), and the GPU stack was verified after the reboot.
 - **Check a node:** `scripts/isolation-check.sh <node> [on|off]` is read-only. It checks the PID namespace of containerd
@@ -396,12 +399,10 @@ is committed; the rendered files in `clusterconfig/` contain secrets and stay gi
 fields that `talosctl gen config` adds, because Talos refuses them next to the documents. `task talos:diff` masks both
 document keys, so it cannot show a changed value; compare by hash (see the discovery spec and plan) if you ever change them.
 
-The PKI documents (`KubeAPIServerCAConfig`, `KubeAggregatorCAConfig`, `KubeServiceAccountConfig`) are not patch files:
-`scripts/pki-documents.sh` prints them from a second `talosctl gen config` (`PKI_CONTRACT`, v1.14) of the same secrets
-bundle and `render.sh` appends them as the last patch, because the pinned `TALOS_CONTRACT` (v1.13) still generates the
-legacy `cluster.ca`, `aggregatorCA`, `serviceAccount` and `secretboxEncryptionSecret` fields, which
-`patches/*/96-pki-legacy-delete.yaml` remove. `KubeEtcdEncryptionConfig` is the exception: `patches/controlplane/95-etcd-encryption.yaml.tpl`
-writes it out (key name `key2`, `secretbox` then `identity`, the secret from `TALHELPER_AESCBCENCYPTIONKEY`) because the key
-name is part of every stored ciphertext and must never follow a generated default. `task talos:pki-parity -- <node>`
-compares the PKI values a node runs with the rendered ones by hash and prints no values. When `TALOS_CONTRACT` reaches
-v1.14, remove `pki-documents.sh`, `PKI_CONTRACT` and the `96-pki-legacy-delete.yaml` patches together.
+The PKI documents (`KubeAPIServerCAConfig`, `KubeAggregatorCAConfig`, `KubeServiceAccountConfig`) come from the `talosctl gen config`
+base, built from the secrets bundle; they are not patch files. `KubeEtcdEncryptionConfig` is the exception:
+`patches/controlplane/94-etcd-encryption-delete.yaml` removes the generated document and
+`patches/controlplane/95-etcd-encryption.yaml.tpl` writes it out (key name `key2`, `secretbox` then `identity`, the secret from
+`TALHELPER_AESCBCENCYPTIONKEY`) because the key name is part of every stored ciphertext and must never follow a generated default.
+`task talos:pki-parity -- <node>` compares the PKI values a node runs with the rendered ones by hash and prints no values; run it
+after anything that touches the secrets bundle or the contract.

@@ -1,12 +1,7 @@
-# What:   Disk quota support; drops the generated legacy kubePrism and hostDNS fields
-# Why:    XFS project quotas. The gen config base adds machine.features.kubePrism and hostDNS, which Talos refuses next
-#         to their new documents (61-kubeprism.yaml, 20-resolver.yaml)
+# What:   Disk quota support
+# Why:    XFS project quotas. machine.features.diskQuotaSupport has no replacement document (the topf v1.14 mapping keeps it in v1alpha1)
 # Nodes:  all nodes
 # Apply:  live
 machine:
   features:
     diskQuotaSupport: true
-    kubePrism:
-      $patch: delete
-    hostDNS:
-      $patch: delete

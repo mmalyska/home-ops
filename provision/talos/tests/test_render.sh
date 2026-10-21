@@ -70,13 +70,23 @@ assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: DHCPv4Config" "nv1 has no DH
 assert_eq "null" "$(yq 'select(.machine != null) | .machine.network' "$TMP/nv1.yaml")" "nv1 has no legacy machine.network (Talos refuses it next to the new documents)"
 assert_not_contains "$(cat "$TMP/nv1.yaml")" "kind: Layer2VIPConfig" "a worker has no control-plane VIP"
 
+echo "-- what the v1.14 base generates and we do not run"
+for n in mc1 mc2 mc3; do
+  assert_not_contains "$(cat "$TMP/$n.yaml")" "kind: KubeFlannelCNIConfig" "$n has no Flannel document (the CNI is Cilium)"
+  assert_eq "" "$(yq 'select(.kind == "KubeNodeConfig") | (.taints // {}) | keys | .[]' "$TMP/$n.yaml" | grep -v '^---')" "$n has no node taints (workloads run on the control planes)"
+  assert_eq "false" "$(yq 'select(.kind == "KubeNodeConfig") | (.labels // {}) | has("node.kubernetes.io/exclude-from-external-load-balancers")' "$TMP/$n.yaml" | grep -v '^---')" "$n has no load balancer exclusion label"
+  assert_eq "1|kube-system" "$(yq 'select(.kind == "KubeAdmissionControlConfig") | .kind' "$TMP/$n.yaml" | grep -vc '^---')|$(yq 'select(.kind == "KubeAdmissionControlConfig") | .configuration.exemptions.namespaces | join(",")' "$TMP/$n.yaml")" "$n has one PodSecurity document exempting kube-system once"
+done
+for n in mc1 mc2 mc3 nv1; do
+  assert_eq "primary" "$(yq 'select(.kind == "DiscoveryServiceConfig") | .name' "$TMP/$n.yaml" | grep -v '^---')" "$n has exactly one DiscoveryServiceConfig, named primary"
+done
+
 echo "-- failure modes"
 assert_fails "an unset variable used by a .tpl patch fails the render" env -u TALHELPER_UPSMONHOST "$SCRIPTS/render.sh" mc1 "$TMP/unset.yaml"
 assert_fails "an unset cluster secret fails the render" env -u TALHELPER_CLUSTERSECRET "$SCRIPTS/render.sh" mc1 "$TMP/unset3.yaml"
 assert_fails "an empty cluster id fails the render" env TALHELPER_CLUSTERNAME= "$SCRIPTS/render.sh" mc1 "$TMP/empty.yaml"
 assert_fails "an unset etcd encryption secret fails the render" env -u TALHELPER_AESCBCENCYPTIONKEY "$SCRIPTS/render.sh" mc1 "$TMP/unset4.yaml"
 assert_fails "an empty etcd encryption secret fails the render" env TALHELPER_AESCBCENCYPTIONKEY= "$SCRIPTS/render.sh" mc1 "$TMP/empty2.yaml"
-assert_fails "a failing PKI document generation fails the render" env PKI_CONTRACT=v1.13 "$SCRIPTS/render.sh" mc1 "$TMP/nopki.yaml"
 mkdir -p "$TMP/tmpdir"
 TMPDIR="$TMP/tmpdir" "$SCRIPTS/render.sh" mc1 "$TMP/clean.yaml" >/dev/null 2>&1
 assert_eq "" "$(ls -A "$TMP/tmpdir")" "no temporary directory (with the secrets bundle) is left behind"
@@ -162,8 +172,8 @@ for n in mc1 mc2 mc3 nv1; do
   assert_ok "$n output is a valid metal config" talosctl validate --config "$TMP/$n.yaml" --mode metal
 done
 
-echo "-- workload isolation survives the v1.14 contract bump"
-# The v1.14 base already carries the document with true. The layer files for each node, applied over that base in
+echo "-- workload isolation stays explicit on the contract base"
+# The v1.14 base carries the document with true. The layer files for each node, applied over that base in
 # merge order, must still give true on every node.
 gen14="$TMP/gen14"
 talosctl gen config isolation-guard https://192.0.2.1:6443 --talos-version v1.14 -o "$gen14" >/dev/null 2>&1

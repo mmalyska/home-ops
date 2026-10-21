@@ -1,0 +1,8 @@
+# What:   Remove the KubeEtcdEncryptionConfig document that talosctl gen config adds
+# Why:    Provider lists append when documents merge, so the generated provider would end up next to ours. 95-etcd-encryption.yaml.tpl
+#         then adds the document the cluster already runs (secretbox key2, identity fallback) as the only one
+# Nodes:  control plane
+# Apply:  live
+apiVersion: v1alpha1
+kind: KubeEtcdEncryptionConfig
+$patch: delete

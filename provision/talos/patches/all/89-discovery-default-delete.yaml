@@ -1,0 +1,9 @@
+# What:   Remove the DiscoveryServiceConfig named default that talosctl gen config adds
+# Why:    90-discovery-service.yaml writes the document the cluster already runs (named primary, same endpoint). Without this
+#         the node would have two discovery service documents
+# Nodes:  all nodes
+# Apply:  live
+apiVersion: v1alpha1
+kind: DiscoveryServiceConfig
+name: default
+$patch: delete
