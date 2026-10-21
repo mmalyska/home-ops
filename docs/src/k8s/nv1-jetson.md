@@ -71,7 +71,7 @@ nv1 has 15.6 GiB of unified memory. The system (Talos, kubelet, Cilium, DaemonSe
 - Gemma 4 thinks by default and reasoning consumes `max_tokens`, so small-budget calls return empty content. The server defaults to thinking off (`--chat-template-kwargs`); a request can opt in with `chat_template_kwargs.enable_thinking=true`.
 - Before changing the model, quantization, context, slots or any of the flags above, re-run a sustained test with many different prompts and watch pod memory and node `MemAvailable` (`talosctl -n 192.168.48.5 read /proc/meminfo`).
 - Smaller quants of the same model save little (IQ2_XXS is 9.24 GiB vs 9.82 GiB for the running Q2_K_XL); Gemma 4 E4B frees about 5 GiB but scored much lower on agentic tasks.
-- **Hermes needs at least 64,000 tokens of context per slot for its main model** (`ctx / parallel >= 64000`, plus `model.context_length` set to the same value). With the running `-c 65536 -np 2` each slot has 32768, so Hermes' main model and compression stay on the cloud. Getting to 64K per slot means either one slot (`-np 1`, Hermes and Honcho then share it and evict each other's cached prompt) or `-c 131072 -np 2` (about +0.5 GiB KV on a node with about 1 GiB spare); either needs a new sustained memory test.
+- **Hermes needed at least 64,000 tokens of context per slot** (`ctx / parallel >= 64000`). It was archived on 2026-10-21 (restore notes in `.archive/cluster/ai/README.md`); keep `-c 65536 -np 1` if it comes back.
 
 ## Qwen3.6-35B-A3B benchmark (2026-10-13)
 
@@ -90,6 +90,8 @@ Plan: `.archive/.plans/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image
 - Qwen3.6-35B-A3B at 2-bit is about the ceiling nv1 can load at all (IQ2_M is already out). A 3-bit file or `UD-Q2_K_XL` (11.45 GiB) cannot work. A usable Qwen3.6 or Qwen3.8-27B needs a 24 GB-class GPU.
 
 ## Gemma 4 26B-A4B at one slot (2026-10-15)
+
+> Hermes and Honcho were archived on 2026-10-21 (`.archive/cluster/ai/README.md`); Lingarr is the only consumer of this server now. The Hermes figures below are kept as history and as the baseline for a restore.
 
 `llama-server` serves `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 --n-predict 2048` (alias `gemma-4-26b-a4b`), replacing LFM2.5-8B-A1B. Plan and gates: `.archive/.plans/superpowers/plans/2026-10-13-llm-reliability-gemma4.md`; harness: `.archive/.plans/superpowers/plans/artifacts/2026-10-13-llm-reliability/hermes-corruption.py`.
 

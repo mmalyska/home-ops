@@ -114,8 +114,8 @@ llama-server has a single slot. The settings are environment variables in `clust
 SQLite config lives on a 1Gi `ceph-block` PVC and is not backed up, since everything in it can be recreated.
 
 To use it from Bazarr, set Settings, Subtitles, Translating: translator `Lingarr` and URL
-`http://lingarr.media.svc.cluster.local:9876`. Bazarr waits up to 32 minutes per request. Translation runs on the same
-GPU slot as Hermes, so Hermes sessions wait while a batch runs. To change the model, edit `LOCAL_AI_MODEL` and the
+`http://lingarr.media.svc.cluster.local:9876`. Bazarr waits up to 32 minutes per request. Translation runs on the single
+llama-server slot, so one batch at a time. To change the model, edit `LOCAL_AI_MODEL` and the
 llama-server alias together. Lingarr has no batch size setting and sends a whole subtitle file as one request, about 25
 output tokens per cue, so llama-server's `--n-predict` (`server.nPredict`, see `nv1-jetson.md`) must cover a full
 episode: 2048 truncated the JSON and every retry failed. The first episode has not been compared against the Gemini

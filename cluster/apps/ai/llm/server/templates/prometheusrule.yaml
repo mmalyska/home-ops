@@ -18,9 +18,8 @@ spec:
           annotations:
             summary: llama-server has no available replica
             description: >-
-              Honcho falls back to its cloud models and Hermes' local auxiliary
-              tasks fall back to the main (cloud) model while this is down. Check GPU registration (NodeGpuUnavailable), the model PVC
-              and the pod logs.
+              Lingarr subtitle translation fails while this is down. Check GPU
+              registration (NodeGpuUnavailable), the model PVC and the pod logs.
         # llamacpp:predicted_tokens_seconds is an average since pod start that
         # keeps its value while idle and drops with concurrent slots, so it
         # false-fires on a healthy GPU. CPU use separates the cases: about
