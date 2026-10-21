@@ -1,5 +1,7 @@
 server:
-  replicaCount: 1
+  # TEMPORARY: paused so nv1 has memory to pull the Talos v1.14.4 installer for the tuppr upgrade. Revert to 1 right
+  # after the upgrade.
+  replicaCount: 0
   image:
     # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
     # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
