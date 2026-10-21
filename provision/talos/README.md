@@ -189,10 +189,19 @@ file).
 
 #### nv1 boots the wrong UKI after an upgrade (Jetson UEFI)
 
-The Jetson UEFI does not persist the sd-boot default entry the installer sets
-(upstream `BUGS.md`, [Bug 25](https://github.com/schwankner/talos-jetson-orin/blob/main/BUGS.md#bug-25--same-version-talosctl-upgrade-never-boots-the-new-uki-on-jetson-uefi-reports-success-anyway)).
-The persisted `LoaderEntryDefault` keeps naming an old UKI, sd-boot honours it
-while that file exists, and the node reboots into the old version. `talosctl
+After an upgrade nv1 reboots into the old version
+(upstream `BUGS.md`, [Bug 25](https://github.com/schwankner/talos-jetson-orin/blob/main/BUGS.md#bug-25--same-version-talosctl-upgrade-never-boots-the-new-uki-on-jetson-uefi-reports-success-anyway),
+[issue 69](https://github.com/schwankner/talos-jetson-orin/issues/69)).
+The `LoaderEntryDefault` EFI variable names the old UKI, sd-boot honours it while that file exists, and the node boots
+the old version.
+
+**Cause (revised 2026-10-21, not proven):** the firmware is probably not dropping the installer's write. EFI variable
+creations and overwrites (including `LoaderConfigTimeout` right before a graceful reboot) persisted in tests on nv1, and
+the installer log showed a normal install; the default after the failed boot was `Talos-v1.14.2~4.efi` with a capital T,
+the real file name that Talos's `sdboot.Revert()` writes. The likely story is that the new image's first boot fails
+(maybe the kexec path) and Talos rolls back to the previous entry. The next nv1 upgrade should test this with tuppr
+`rebootMode: powercycle` and the Talos logs in Loki (see "Log shipping to Loki"); this section is the symptom workaround
+until then. `talosctl
 upgrade` and `talosctl health` both still succeed. `task talos:upgrade` now
 fails with `ERROR: nv1 runs vX, expected vY` when this happens (the expected version is the alias tag,
 `TALOS_VERSION`; the same applies when tuppr does the upgrade: it patches the image to the alias tag). **Do not re-run

@@ -226,7 +226,7 @@ talos:diff` showed that one line on mc1 to mc3. `controlplane/32-kube-proxy-disa
 the Renovate PR plus a one-off window (removed again). Times are UTC.
 
 - **Start:** ArgoCD synced the new spec at 10:54. A changed spec resets the run (`Spec changed, resetting upgrade
-  process`), then `Pending` / `PrePulling`.
+process`), then `Pending` / `PrePulling`.
 - **Pre-pull:** the nodes pull one after the other. The three control planes took 2m44s, 14s and 11s. nv1's 592 MB
   `custom-installer-jp7` installer stalled at about 440 of 540 MiB on three attempts ("no pull progress after 1m30s ...
   registry may be failing requests") while nv1 had about 125 MB `MemAvailable` with `llama-server` running; it passed on
@@ -241,8 +241,9 @@ the Renovate PR plus a one-off window (removed again). Times are UTC.
   best-effort for CSI detach ("Volumes did not detach before timeout, proceeding with upgrade") on every node and carried
   on. No PDB stalled a drain.
 - **nv1 booted the old image.** The upgrade Job succeeded in 3 minutes and the node rebooted, but came back on v1.14.2
-  and kernel 6.18.54. The cause is the Jetson UEFI dropping the installer's write of `LoaderEntryDefault` (it still
-  named `Talos-v1.14.2~4.efi`), see "nv1 and the alias tag" and `provision/talos/README.md`. tuppr then waited for the
+  and kernel 6.18.54. The default entry still named `Talos-v1.14.2~4.efi`. The first guess, the Jetson UEFI dropping the installer's
+  write of `LoaderEntryDefault`, did not survive testing (EFI writes persist; more likely Talos reverted after a failed
+  first boot of the new image), see "nv1 and the alias tag" and `provision/talos/README.md`. tuppr then waited for the
   version; at about 12:02 it marked the run `Failed` (`node nv1 version mismatch: current=v1.14.2, target=v1.14.4`) and
   left nv1 cordoned, so `llama-server` stayed `Pending`. Fix, done at 12:13 to 12:18: renamed the stale UKI from a
   privileged pod, rebooted nv1 once (it came back on v1.14.4, kernel 6.18.57, `LoaderEntrySelected`
@@ -250,7 +251,7 @@ the Renovate PR plus a one-off window (removed again). Times are UTC.
   `Completed`, "Successfully upgraded 4 nodes"), then deleted the renamed `.bak` UKI. The reset run did not redo nv1's
   post-upgrade step, so `task talos:diff` still showed one line on nv1: the live `UnattendedInstallConfig`
   `installer.image` was `custom-installer-jp7:v1.14.2` against `v1.14.4` in git. A dry run (`talosctl apply-config
-  --dry-run -m auto`) showed that line only and "without a reboot"; `task talos:apply N=nv1` (or the same
+--dry-run -m auto`) showed that line only and "without a reboot"; `task talos:apply N=nv1` (or the same
   `talosctl apply-config ... -m auto` on the rendered `home-nv1.yaml`) cleared it, and `task talos:diff` was then clean on
   all four nodes. `task talos:generate` needs the local `talosctl` at the target version first (`task talos:install`).
 - **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
@@ -271,11 +272,11 @@ the Renovate PR plus a one-off window (removed again). Times are UTC.
 - **A node never converges (drain stalls):** a CNPG primary's PDB usually means an unhealthy replica. Fix the replica
   first, do not force the drain; `kubectl uncordon <node>` restores evicted Ceph pods and Ceph recovers on its own
   (see `cluster-reference`). tuppr uncordons itself after a failed drain and retries after 1 minute.
-- **nv1 reports the old version after the upgrade:** the Jetson UEFI booted a stale UKI. Do not re-run the upgrade; use
+- **nv1 reports the old version after the upgrade:** nv1 booted a stale UKI (cause under investigation, see the README section). Do not re-run the upgrade; use
   the fix in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade"). Seen on 2026-10-21: the run goes
   `Failed` with `node nv1 version mismatch`, nv1 stays cordoned and `llama-server` stays `Pending`. After the fix:
   `kubectl uncordon nv1`, then `kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%s)"
-  --overwrite`; the run completes with nothing left to do.
+--overwrite`; the run completes with nothing left to do.
 - **nv1 pre-pull stalls at about 80% ("no pull progress after 1m30s"):** nv1 runs with very little free memory while
   `llama-server` is up, so a 590 MB image pull can crawl. tuppr retries by itself (a 1 to 5 minute backoff) and it passed
   on the 2026-10-21 run; if it keeps failing, pausing `llama-server` through git frees memory (see the memory note
