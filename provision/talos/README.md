@@ -321,29 +321,29 @@ first, then mc2 and mc1).
 
 ## Log shipping to Loki
 
-Every node sends two streams over TCP to the Alloy receiver `cluster/apps/system/alloy/talos-logs`
+Every node sends two streams over UDP to the Alloy receiver `cluster/apps/system/alloy/talos-logs`
 (Cilium LB IP `192.168.48.32`, namespace `monitoring`), which writes them to Loki:
 
-| Stream                                                  | Patch                        | Port                                   | Loki labels                                        |
+| Stream                                                  | Patch                        | UDP port                               | Loki labels                                        |
 | ------------------------------------------------------- | ---------------------------- | -------------------------------------- | -------------------------------------------------- |
-| Service logs (machined, kubelet, containerd, etcd, ...) | `node/<name>/50-log-service` | 5170, `extraTags: {node: <name>}`      | `source=talos-service`, `node`, `service`, `level` |
-| Kernel log (kmsg)                                       | `node/<name>/51-log-kernel`  | 5171 mc1, 5172 mc2, 5173 mc3, 5174 nv1 | `source=talos-kernel`, `node`                      |
+| Service logs (machined, kubelet, containerd, etcd, ...) | `node/<name>/50-log-service` | 5180, `extraTags: {node: <name>}`      | `source=talos-service`, `node`, `service`, `level` |
+| Kernel log (kmsg)                                       | `node/<name>/51-log-kernel`  | 5181 mc1, 5182 mc2, 5183 mc3, 5184 nv1 | `source=talos-kernel`, `node`, `level`             |
 
 The kernel stream uses one port per node because `KmsgLogConfig` has no extra tags before Talos v1.15 and the receiver
 cannot tell the senders apart otherwise. The patches are per node for the same reason (the node name is not a template
-variable). Query with `{source=~"talos-.*", node="nv1"}`.
+variable). Query with `{source=~"talos-.*", node="nv1"}`. The receiver is `loki.source.syslog` with
+`syslog_format = "raw"` (experimental): each datagram is one JSON line, taken as is, and the entry time comes from
+`talos-time`. Alloy has no `udplog` receiver.
 
-Talos buffers and retries, so a node keeps its logs while the receiver pod is down, but a node that reboots while the
-receiver is unreachable loses what it had not sent. Applying the patches is live; the receiver app must be synced first.
+Why UDP and not TCP: a TCP connection stays pinned to the receiver pod that accepted it. When that pod was replaced, nodes
+hung in CLOSE_WAIT toward the old pod for minutes (nv1 about 6, mc1 and mc2 still silent after 1.5) and the queued lines
+were lost on reconnect, which would happen on every tuppr rollout that moves the pod. With UDP, nv1 lost about 10 seconds
+when the pod was deleted and resumed by itself. The price: nothing is buffered or retried while no receiver pod is
+listening, and a line larger than one datagram is dropped. A Service port list cannot repeat a port number, which is why
+the ports are 518x and not the TCP 517x of the first version.
 
-### UDP pilot on nv1
-
-Over TCP, replacing the receiver pod leaves each node's connection hung in CLOSE_WAIT toward the old pod for about 6
-minutes, and the queued lines are lost on reconnect (nv1 lost about 3 minutes). Alloy has no `udplog` receiver, but
-`loki.source.syslog` with `protocol = "udp"` and `syslog_format = "raw"` (experimental) takes each datagram as one line
-without parsing it. The receiver listens on TCP 5170-5174 and UDP 5180-5184 (a Service cannot list one port number twice); nv1 sends over UDP while mc1-mc3 stay on
-TCP until the pilot is verified (labels, no truncation, resumes within seconds after the receiver pod is deleted).
-The price of UDP: nothing is buffered while the receiver is down, and a line larger than one datagram is dropped.
+Applying the patches is live (no reboot). Check the receiver after a change with `{source=~"talos-.*"}` in Loki: all four
+nodes should show service lines every few seconds.
 
 ## Checks
 
