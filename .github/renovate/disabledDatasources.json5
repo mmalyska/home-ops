@@ -8,12 +8,6 @@
       "enabled": false
     },
     {
-      "description": "Disable default manager for gitea (custom regex manager handles tag+digest fields separately)",
-      "matchManagers": ["helm-values"],
-      "matchPackageNames": ["gitea/gitea", "docker.gitea.com/gitea"],
-      "enabled": false
-    },
-    {
       "description": "Disable default manager for prometheus node-exporter (custom regex manager handles tag+distroless+digest fields separately)",
       "matchManagers": ["helm-values"],
       "matchPackageNames": ["ghcr.io/prometheus/node-exporter"],

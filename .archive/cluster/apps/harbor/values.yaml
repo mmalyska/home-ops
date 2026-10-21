@@ -1,54 +1,99 @@
 harbor:
-  expose:
-    tls:
-      certSource: secret
-      secret:
-        secretName: "harbor-domain"
-        notarySecretName: "notary-domain"
-    ingress:
-      annotations: {
-        traefik.ingress.kubernetes.io/router.entrypoints: websecure,
-        traefik.ingress.kubernetes.io/router.tls: "true"
-      }
-      harbor:
-        annotations: {
-          traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "harbor.<secret:private-domain>",
-          kubernetes.io/ingress.class: traefik-internal
-        }
-      notary:
-        annotations: {
-          traefik.ingress.kubernetes.io/ingressEndpoint.hostname: "notary.<secret:private-domain>",
-          kubernetes.io/ingress.class: traefik-internal
-        }
-      hosts:
-        core: harbor.<secret:private-domain>
-        notary: notary.<secret:private-domain>
+  core:
+    podAnnotations:
+      secret.reloader.stakater.com/reload: "harbor-oidc-secret"
+    extraEnvVars:
+      - name: CONFIG_OVERWRITE_JSON
+        valueFrom:
+          secretKeyRef:
+            name: harbor-oidc-secret
+            key: CONFIG_OVERWRITE_JSON
 
+  expose:
+    type: clusterIP
+    tls:
+      enabled: false
   externalURL: https://harbor.<secret:private-domain>
 
-#  internalTLS:
-#    enabled: true
+  # Admin password from cluster-secrets (substituted before Helm renders)
+  harborAdminPassword: <secret:harbor-admin-password>
+
   persistence:
+    enabled: true
     persistentVolumeClaim:
       registry:
-        size: 50Gi
-        storageClass: nfs
-      chartmuseum:
-        size: 10Gi
-        storageClass: nfs
+        storageClass: ceph-block
+        size: 200Gi
       jobservice:
-        size: 2Gi
-        storageClass: ceph-block
+        jobLog:
+          storageClass: ceph-block
+          size: 5Gi
       database:
-        size: 2Gi
         storageClass: ceph-block
+        size: 2Gi
       redis:
-        size: 2Gi
         storageClass: ceph-block
+        size: 2Gi
       trivy:
-        size: 2Gi
         storageClass: ceph-block
-  metrics:
-    enabled: true
-    serviceMonitor:
-      enabled: true
+        size: 5Gi
+
+  database:
+    type: external
+    external:
+      host: harbordb-cnpg-rw
+      port: "5432"
+      username: app
+      coreDatabase: app
+      existingSecret: harbordb-cnpg-app
+      sslmode: require
+
+  # No password: Harbor's chart routes any external.password/existingSecret
+  # through Helm's `urlquery` + `lookup` (templates/_helpers.tpl
+  # harbor.redis.cred/pwdfromsecret) - `lookup` returns empty under this
+  # repo's CMP plugin (a plain `helm template`, no live cluster API access;
+  # see cluster/apps/core/argocd/resources/sops-replacer-plugin.yaml), and
+  # urlquery mangles a `<secret:key>` token before the secret-replacer ever
+  # sees it. Harbor's redis is a ClusterIP-only cache with no data worth
+  # protecting, so this instance runs without auth instead of fighting that.
+  redis:
+    type: external
+    external:
+      addr: "harbor-dragonfly:6379"
+
+  trivy:
+    enabled: false
+
+  notary:
+    server:
+      enabled: false
+    signer:
+      enabled: false
+
+pgsql-cnpg:
+  name: harbordb
+  instances: 2
+  storage:
+    size: 5Gi
+  monitoring:
+    enablePodMonitor: true
+  retentionPolicy: "10d"
+  objectStore:
+    destinationPath: "s3://k8s-at-home-backup/cnpg/harbor"
+    endpointURL: <secret:s3_endpoint>
+    s3Credentials:
+      accessKeyId:
+        name: harbor-s3-secret
+        key: S3_ACCESS_KEY_ID
+      secretAccessKey:
+        name: harbor-s3-secret
+        key: S3_ACCESS_SECRET_KEY
+  scheduledBackups:
+    - name: harbordb-cnpg-backup
+      spec:
+        immediate: true
+        schedule: "5 0 0 * * *"
+        backupOwnerReference: self
+
+dragonfly:
+  name: harbor
