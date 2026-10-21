@@ -1,6 +1,6 @@
 ---
 name: reference-talos-workload-isolation
-description: "Talos 1.14 SecurityProfileConfig workloadIsolation (sandboxd) is on for all four nodes since 2026-10-07; the v1.14 contract bump turns it on by default, switching needs a node reboot"
+description: "Talos 1.14 SecurityProfileConfig workloadIsolation (sandboxd) is on for all four nodes since 2026-10-07; the v1.14 contract base (pinned since 2026-10-21) carries it on, the repo sets it explicitly; switching needs a node reboot"
 metadata:
   type: reference
 ---
@@ -11,9 +11,9 @@ v1.14.2 source); details and the test plan are in the SecurityProfileConfig bull
 
 **Why it matters:**
 - As of 2026-10-07 the repo carries the document for every node in `patches/all/65-security-profile.yaml` and isolation is running on all four nodes (rollout order mc3, nv1, mc2, mc1). A missing document means off and upgrades change nothing.
-- `talosctl gen config` emits it with `workloadIsolation: true` only for the v1.14 contract. We pin `TALOS_CONTRACT`
-  v1.13 (`provision/talos/scripts/lib.sh`), so **bumping the contract would enable isolation on the next apply and reboot
-  unless a patch sets it explicitly first**.
+- `talosctl gen config` emits it with `workloadIsolation: true` only for the v1.14 contract. `TALOS_CONTRACT` moved to v1.14
+  on 2026-10-21 (`provision/talos/scripts/lib.sh`); the explicit setting in `patches/all/65-security-profile.yaml` made that a
+  no-op, and a render test keeps a future base from flipping it.
 - The setting is read when the service starts: enabling or disabling needs a node reboot, not a live apply.
 - v1.14.0 had a boot bug (CRI restart loop, siderolabs/talos#14374); fixed in v1.14.2, which the nodes run.
 

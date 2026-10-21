@@ -5,14 +5,9 @@ TALOS_DIR="${TALOS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PATCHES_DIR="${PATCHES_DIR:-$TALOS_DIR/patches}"
 NODES_FILE="${NODES_FILE:-$TALOS_DIR/nodes.yaml}"
 
-# Talos config contract that `talosctl gen config` is pinned to. It must match what the live nodes
-# run: the 1.14 contract generates a fully multi-document base that cannot be mixed with the
-# legacy fields still used here. Bump it deliberately, see README.md.
-TALOS_CONTRACT="${TALOS_CONTRACT:-v1.13}"
-# Contract of the second render that supplies the PKI documents (CA, aggregator CA, service account key).
-# Remove it, scripts/pki-documents.sh and the 96-pki-legacy-delete.yaml patches together when TALOS_CONTRACT
-# reaches v1.14 (the base then carries those documents itself).
-PKI_CONTRACT="${PKI_CONTRACT:-v1.14}"
+# Talos config contract that `talosctl gen config` is pinned to. It should match what the live nodes run: the
+# base it generates changes with the contract (the v1.14 base is fully multi-document). Bump it deliberately, see README.md.
+TALOS_CONTRACT="${TALOS_CONTRACT:-v1.14}"
 CLUSTER_NAME="${CLUSTER_NAME:-home}"
 
 # The only variables envsubst may replace, and only inside *.yaml.tpl patches.
