@@ -9,3 +9,5 @@ llama-server (llm-embeddings) lowercases text for `nomic-embed-text`; Ollama 0.2
 
 **Why:** a raw cosine gate against Ollama looked like a failure; the real cause was Ollama's missing lowercasing.
 **How to apply:** when comparing embeddings across engines, compare on lowercased input first; do not re-embed stored vectors just because a cross-engine check on mixed-case text falls below 0.999.
+
+**Archived 2026-10-21:** `llm-embeddings` now lives in `.archive/cluster/ai/llm-embeddings`; this only matters if Honcho is restored.

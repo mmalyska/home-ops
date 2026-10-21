@@ -13,3 +13,5 @@ llama-server on nv1 runs `-c 65536 -np 2` = 32768 per slot, so a local main mode
 **How to apply:** after any Hermes model/provider change, run `kubectl exec -n hermes-agent deploy/hermes-agent -c hermes-agent -- hermes chat -q "ping"` before calling it done. Seeders only add keys, so a rollback must overwrite `base_url`/`api_key`/`context_length` explicitly.
 
 **Update 2026-10-15:** llama-server now runs `-c 65536 -np 1` (one slot of 65536), so the floor is met and the main model and compression run locally on Gemma 4. See [[reference_gemma4_single_slot_swap]].
+
+**Archived 2026-10-21:** the Hermes stack (hermes-agent, honcho, llm-embeddings, llm-stt) moved to `.archive/cluster/ai/` because only a Claude subscription was available and API pricing was too high; restore steps are in `.archive/cluster/ai/README.md`. No data was kept. The checks above only matter if it is restored.

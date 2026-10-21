@@ -32,7 +32,7 @@
 - [nv1 GPU test needs llama-server paused](reference_nv1_gpu_test_pause.md) — one GPU; pause via git replicaCount 0 (selfHeal reverts a scale), 30-40 min, critical alert after 10
 - [nv1 META DHCP key](reference_nv1_meta_dhcp.md) — Talos META 0x0a DHCP operator flapped IP, restarted kubelet, GPU dropped to 0
 - [Uncased BERT embeddings](reference_uncased_bert_embeddings.md) — llama-server lowercases nomic-embed-text, Ollama does not; no re-embed needed
-- [Hermes 64K context floor](reference_hermes_64k_context_floor.md) — Hermes rejects models <64K context; llama-server slots are 32K so main model + compression stay cloud
+- [Hermes 64K context floor](reference_hermes_64k_context_floor.md) — Hermes stack archived 2026-10-21 (restore: .archive/cluster/ai/README.md); it rejects models <64K context per slot
 - [Matter/Thread cross-VLAN setup](reference_matter_thread_cross_vlan.md) — prod HA/OTBR not in repo; static route + firewall + mDNS needed for phone commissioning
 - [Music Assistant in the cluster](reference_music_assistant_cluster.md) — VLAN 48 macvlan .62; base_url vs bind_port gotchas; NFS library via k8s volume; edit provider settings in the UI, never settings.json while running
 - [Check live IPs before assigning one](feedback_check_live_ips_before_assigning.md) — list live LB IPs + pools first; update the network.md table in the same PR

@@ -189,7 +189,7 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.29` | WoW, shared (auth and world server) |
 | `192.168.48.30` | anytype any-sync services, shared |
 | `192.168.48.31` | AdGuard Home replica (DNS, live; IPv6 `fd80:c04a:5687:48::31`) |
-| `192.168.48.51`–`.55` | Coder workspace SSH services (devops, dotnet, node, mobile, researcher) |
+| `192.168.48.51` | Coder workspace SSH service (devops); `.52`–`.55` free since 2026-10-21 |
 | `192.168.48.60` | Reserved: Home Assistant (macvlan `net1`) |
 | `192.168.48.61` | Matter server (macvlan `net1`, live) |
 | `192.168.48.62` | Music Assistant (macvlan `net1`, live) |
