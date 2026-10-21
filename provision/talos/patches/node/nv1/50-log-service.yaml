@@ -1,0 +1,13 @@
+# What:   Ship Talos service logs (machined, kubelet, containerd, etcd, ...) as JSON lines to the Alloy receiver in the cluster
+# Why:    The journal is lost on reboot and was needed to debug the nv1 boot-entry problem. The receiver is the Cilium LB IP
+#         192.168.48.32 (cluster/apps/system/alloy/talos-logs), so it is reachable while Kubernetes is down on this node as
+#         long as another node runs the pod. extraTags carries the node name because the receiver cannot tell nodes apart
+# Nodes:  nv1
+# Apply:  live
+machine:
+  logging:
+    destinations:
+      - endpoint: tcp://192.168.48.32:5170/
+        format: json_lines
+        extraTags:
+          node: nv1

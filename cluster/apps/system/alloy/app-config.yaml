@@ -14,3 +14,11 @@
     enabled: true
     selfHeal: true
     prune: false
+- enabled: "true"
+  appSubfolder: talos-logs
+  namespace: monitoring
+  syncWave: "1"
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

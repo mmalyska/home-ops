@@ -1,0 +1,174 @@
+alloy:
+  alloy:
+    # otelcol.receiver.tcplog is experimental in Alloy
+    stabilityLevel: experimental
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    configMap:
+      content: |
+        // Talos service logs (machine.logging, json_lines): one TCP port for all nodes, the node name is the extraTags field
+        otelcol.receiver.tcplog "service" {
+          listen_address = "0.0.0.0:5170"
+          output {
+            logs = [otelcol.exporter.loki.service.input]
+          }
+        }
+
+        otelcol.exporter.loki "service" {
+          forward_to = [loki.process.service.receiver]
+        }
+
+        loki.process "service" {
+          stage.json {
+            expressions = {
+              node    = "node",
+              service = "\"talos-service\"",
+              level   = "\"talos-level\"",
+            }
+          }
+          stage.labels {
+            values = {
+              node    = "",
+              service = "",
+              level   = "",
+            }
+          }
+          stage.static_labels {
+            values = {
+              source = "talos-service",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        // Talos kernel log (KmsgLogConfig has no extra tags in v1.14): one TCP port per node
+
+        otelcol.receiver.tcplog "kmsg_mc1" {
+          listen_address = "0.0.0.0:5171"
+          output {
+            logs = [otelcol.exporter.loki.kmsg_mc1.input]
+          }
+        }
+
+        otelcol.exporter.loki "kmsg_mc1" {
+          forward_to = [loki.process.kmsg_mc1.receiver]
+        }
+
+        loki.process "kmsg_mc1" {
+          stage.static_labels {
+            values = {
+              source = "talos-kernel",
+              node   = "mc1",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        otelcol.receiver.tcplog "kmsg_mc2" {
+          listen_address = "0.0.0.0:5172"
+          output {
+            logs = [otelcol.exporter.loki.kmsg_mc2.input]
+          }
+        }
+
+        otelcol.exporter.loki "kmsg_mc2" {
+          forward_to = [loki.process.kmsg_mc2.receiver]
+        }
+
+        loki.process "kmsg_mc2" {
+          stage.static_labels {
+            values = {
+              source = "talos-kernel",
+              node   = "mc2",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        otelcol.receiver.tcplog "kmsg_mc3" {
+          listen_address = "0.0.0.0:5173"
+          output {
+            logs = [otelcol.exporter.loki.kmsg_mc3.input]
+          }
+        }
+
+        otelcol.exporter.loki "kmsg_mc3" {
+          forward_to = [loki.process.kmsg_mc3.receiver]
+        }
+
+        loki.process "kmsg_mc3" {
+          stage.static_labels {
+            values = {
+              source = "talos-kernel",
+              node   = "mc3",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        otelcol.receiver.tcplog "kmsg_nv1" {
+          listen_address = "0.0.0.0:5174"
+          output {
+            logs = [otelcol.exporter.loki.kmsg_nv1.input]
+          }
+        }
+
+        otelcol.exporter.loki "kmsg_nv1" {
+          forward_to = [loki.process.kmsg_nv1.receiver]
+        }
+
+        loki.process "kmsg_nv1" {
+          stage.static_labels {
+            values = {
+              source = "talos-kernel",
+              node   = "nv1",
+            }
+          }
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        loki.write "loki" {
+          endpoint {
+            url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+          }
+        }
+    extraPorts:
+      - name: service
+        port: 5170
+        targetPort: 5170
+        protocol: TCP
+      - name: mc1
+        port: 5171
+        targetPort: 5171
+        protocol: TCP
+      - name: mc2
+        port: 5172
+        targetPort: 5172
+        protocol: TCP
+      - name: mc3
+        port: 5173
+        targetPort: 5173
+        protocol: TCP
+      - name: nv1
+        port: 5174
+        targetPort: 5174
+        protocol: TCP
+  controller:
+    type: deployment
+    replicas: 1
+  service:
+    enabled: true
+    type: LoadBalancer
+    annotations:
+      lbipam.cilium.io/ips: "192.168.48.32"
+  configReloader:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        memory: 32Mi
