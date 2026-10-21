@@ -1,7 +1,7 @@
 # Archived AI stack (Hermes, Honcho, embeddings, speech-to-text)
 
 Archived 2026-10-21. The stack was not in use: Hermes needs paid API access and only a Claude subscription was available.
-Plan: `.plans/superpowers/plans/2026-10-21-remove-hermes-stack.md` (moves to `.archive/.plans/` once done).
+Plan: `.archive/.plans/superpowers/plans/2026-10-21-remove-hermes-stack.md`.
 
 | Directory | What it was |
 |-----------|-------------|
