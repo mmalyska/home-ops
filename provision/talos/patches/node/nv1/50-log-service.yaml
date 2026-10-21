@@ -8,7 +8,7 @@
 machine:
   logging:
     destinations:
-      - endpoint: udp://192.168.48.32:5170/
+      - endpoint: udp://192.168.48.32:5180/
         format: json_lines
         extraTags:
           node: nv1

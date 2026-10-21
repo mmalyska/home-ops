@@ -341,7 +341,7 @@ receiver is unreachable loses what it had not sent. Applying the patches is live
 Over TCP, replacing the receiver pod leaves each node's connection hung in CLOSE_WAIT toward the old pod for about 6
 minutes, and the queued lines are lost on reconnect (nv1 lost about 3 minutes). Alloy has no `udplog` receiver, but
 `loki.source.syslog` with `protocol = "udp"` and `syslog_format = "raw"` (experimental) takes each datagram as one line
-without parsing it. The receiver listens on both TCP and UDP on the same ports; nv1 sends over UDP while mc1-mc3 stay on
+without parsing it. The receiver listens on TCP 5170-5174 and UDP 5180-5184 (a Service cannot list one port number twice); nv1 sends over UDP while mc1-mc3 stay on
 TCP until the pilot is verified (labels, no truncation, resumes within seconds after the receiver pod is deleted).
 The price of UDP: nothing is buffered while the receiver is down, and a line larger than one datagram is dropped.
 
