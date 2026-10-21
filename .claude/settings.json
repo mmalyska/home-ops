@@ -65,10 +65,12 @@
       "Bash(sops -d *)",
       "Bash(sops --decrypt *)",
       "Bash(helm get values*)",
-      "Bash(talosctl reset*)",
+      "Bash(terraform destroy*)"
+    ],
+    "ask": [
       "Bash(talosctl reboot*)",
       "Bash(talosctl shutdown*)",
-      "Bash(terraform destroy*)",
+      "Bash(talosctl reset*)",
       "Bash(git push --force*)",
       "Bash(git push -f *)"
     ]
