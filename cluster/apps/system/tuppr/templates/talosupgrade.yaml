@@ -17,11 +17,6 @@ spec:
       - start: "0 7 * * 0"
         duration: 4h
         timezone: Europe/Warsaw
-      # One-off window (2026-10-21 12:00 to 16:00) so the v1.14.4 bump runs today instead of next Sunday.
-      # Yearly cron on a fixed date; remove this entry after the run.
-      - start: "0 12 21 10 *"
-        duration: 4h
-        timezone: Europe/Warsaw
   silences:
     - matchers:
         - name: alertname
