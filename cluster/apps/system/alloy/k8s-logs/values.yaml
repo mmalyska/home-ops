@@ -48,7 +48,24 @@ alloy:
 
         loki.source.kubernetes "pod_logs" {
           targets    = discovery.relabel.pod_logs.output
+          forward_to = [loki.process.drop_noise.receiver]
+        }
+
+        // The Ceph mons log every admin-socket and mgr command at the audit
+        // channel's DEBUG level (mon_status from the pod probes, mgr stat,
+        // osd blocklist ls, fs dump): about 4,000 lines per mon in 10 minutes,
+        // over half of the mon stream and 1.1 million lines a day. INFO
+        // audit entries (config changes, auth) are kept.
+        loki.process "drop_noise" {
           forward_to = [loki.write.loki.receiver]
+
+          stage.match {
+            selector = "{namespace=\"rook-ceph\", container=\"mon\"}"
+
+            stage.drop {
+              expression = "(^audit .* audit \\[DBG\\]|log_channel\\(audit\\) log \\[DBG\\])"
+            }
+          }
         }
 
         loki.write "loki" {

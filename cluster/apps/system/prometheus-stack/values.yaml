@@ -61,6 +61,16 @@ kube-prometheus-stack:
         - sourceLabels: [__name__]
           action: drop
           regex: apiserver_watch_events_sizes_bucket
+  kubelet:
+    serviceMonitor:
+      # prober_probe_duration_seconds_bucket (3,324 series, 1.5% of all) comes
+      # from /metrics/probes and no rule or dashboard uses it. The probes list
+      # is empty in the chart, so this restates no defaults. The cAdvisor list
+      # is deliberately left alone: setting it replaces the chart's drops.
+      probesMetricRelabelings:
+        - sourceLabels: [__name__]
+          action: drop
+          regex: prober_probe_duration_seconds_bucket
   grafana:
     revisionHistoryLimit: 3
     resources:
