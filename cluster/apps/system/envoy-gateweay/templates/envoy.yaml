@@ -37,6 +37,11 @@ spec:
   shutdown:
     drainTimeout: 180s
   telemetry:
+    # Envoy Gateway logs every request as JSON to stdout unless told not to:
+    # 226 MB a day in Loki (2026-10-22) and nothing reads it. Metrics are
+    # unaffected. Set to false to get access logs back when debugging a route.
+    accessLog:
+      disable: true
     metrics:
       prometheus:
         compression:
