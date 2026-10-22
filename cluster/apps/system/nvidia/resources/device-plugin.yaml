@@ -72,7 +72,7 @@ spec:
         # any kubelet restart leaves the node at nvidia.com/gpu: 0. This sidecar
         # restarts the plugin whenever the kubelet re-creates kubelet.sock.
         - name: kubelet-watchdog
-          image: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+          image: alpine:3@sha256:71e9b7bae160ba167fa17414401b94cbcdaf3c32feeab9298bd794a2a0614c35
           command: ["sh", "/scripts/watchdog.sh"]
           resources:
             requests:
