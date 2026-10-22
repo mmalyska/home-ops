@@ -121,7 +121,7 @@ controllers:
       adminer:
         image:
           repository: adminer
-          tag: latest@sha256:eb3a6f381409ea3da5157b69537dad391fe705623a74f468957384dfe579e02a
+          tag: latest@sha256:4e3a6514c26c625de2020c549d1eb24ddd2515f18311aa4bf32c823713c2f6fe
         resources:
           requests:
             cpu: 50m
