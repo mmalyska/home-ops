@@ -357,15 +357,18 @@ kube-prometheus-stack:
       # 60s resolution is ample for this cluster; raise it back if a
       # short-lived spike ever needs to be caught.
       scrapeInterval: 60s
-      retention: 10d
-      retentionSize: 20GiB
+      # 30d keeps the SMART wear history long enough to compare week on week
+      # (about 0.83 GB a day, so about 25 GB for 30d). retentionSize stays
+      # below the PVC so the cap, not a full disk, ends retention.
+      retention: 30d
+      retentionSize: 30GiB
       storageSpec:
         volumeClaimTemplate:
           spec:
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 25Gi
+                storage: 40Gi
       resources:
         requests:
           memory: 2500Mi
