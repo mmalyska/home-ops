@@ -9,8 +9,8 @@ metadata:
 spec:
   groups:
     # Sizing aids, not alerts: p95 over the last 7 days next to what each
-    # container requests and is limited to. Prometheus keeps 10d of data
-    # (retention in values.yaml), so 7d is the longest window that is complete.
+    # container requests and is limited to. Prometheus keeps 30d of data
+    # (retention in values.yaml), so the 7d window below is always complete.
     # Read them in Grafana Explore; ratios far below 1 against the request mean
     # the request is too high, ratios above 1 mean it is too low.
     - name: resource.sizing
