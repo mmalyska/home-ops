@@ -6,6 +6,11 @@ rook-ceph-cluster:
   configOverride: |
     [mon]
     mon_data_avail_warn = 10
+    # Skip the forced full-store compaction after every paxos trim; RocksDB
+    # still compacts on its own. Each mon sits on a control plane's NVMe, and
+    # a test on one mon (2026-10-22, 4 hours) wrote 20-25% less than the two
+    # mons left on the default, with no store growth. The saving is small.
+    mon_compact_on_trim = false
     [osd]
     # Async TRIM/discard lets the SSD firmware reclaim freed blocks
     # proactively instead of only on overwrite, reducing internal write
