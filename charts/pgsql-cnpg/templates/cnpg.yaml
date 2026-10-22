@@ -23,17 +23,15 @@ spec:
   {{- end }}
   postgresql:
     parameters:
-      # "ddl, write" rather than "all, -misc". "all" audited every statement
-      # including every SELECT, on every cluster using this chart. Those audit
-      # lines go to stdout -> Alloy -> Loki, and Loki's own storage is a Ceph
-      # RBD volume — so verbose auditing was amplifying writes onto the same
-      # wearing MX500 drives twice over. DDL and write statements are the ones
-      # with forensic value; reads were volume without much benefit here.
-      # Override per app if a specific database genuinely needs read auditing.
-      pgaudit.log: "ddl, write"
-      pgaudit.log_catalog: "off"
-      pgaudit.log_parameter: "on"
-      pgaudit.log_relation: "on"
+      # pgaudit is off: nothing reads the records, and they were 270 MB a day
+      # in Loki (coder, home-assistant, bookorbit, nextcloud) on top of the
+      # Ceph writes that cost (the stdout -> Alloy -> Loki path ends on a Ceph
+      # RBD volume). "none" rather than removing the pgaudit.* parameters:
+      # CNPG loads the library while a pgaudit.* parameter is set, so this
+      # stays a reload (no restart) and the library stays loaded for any
+      # database that already has the extension created.
+      # Override per app (postgresql.parameters) to audit one database again.
+      pgaudit.log: "none"
       {{- with .Values.postgresql }}
       {{- with .parameters }}
       {{- toYaml . | nindent 6 }}
