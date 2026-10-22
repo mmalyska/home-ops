@@ -66,6 +66,19 @@ alloy:
               expression = "(^audit .* audit \\[DBG\\]|log_channel\\(audit\\) log \\[DBG\\])"
             }
           }
+
+          // anytype's MongoDB logs five lines per connection (accepted, client
+          // metadata, not authenticating, first command, ended) and the pod's
+          // mongosh probes open about 50 connections a minute, all from
+          // 127.0.0.1: about 2,200 of every 2,400 lines, 141 MB a day.
+          // Message ids: 22943, 22944, 51800, 10483900, 6788700.
+          stage.match {
+            selector = "{namespace=\"anytype\", container=\"mongo\"}"
+
+            stage.drop {
+              expression = "\"id\":(22943|22944|51800|10483900|6788700),"
+            }
+          }
         }
 
         loki.write "loki" {
