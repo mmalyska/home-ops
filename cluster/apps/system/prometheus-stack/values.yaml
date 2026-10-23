@@ -8,6 +8,11 @@ kube-prometheus-stack:
       NodeMemoryHighUtilization: true
   kubeControllerManager:
     enabled: true
+    serviceMonitor:
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          action: drop
+          regex: kubernetes_feature_enabled
   kubeEtcd:
     enabled: true
     # etcd is a Talos host service, not a pod, so the chart's component=etcd selector matches nothing.
@@ -21,6 +26,11 @@ kube-prometheus-stack:
     enabled: false
   kubeScheduler:
     enabled: true
+    serviceMonitor:
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          action: drop
+          regex: kubernetes_feature_enabled
   kubeApiServer:
     serviceMonitor:
       # job="apiserver" alone accounted for 129,633 of 275,451 active series
@@ -67,8 +77,28 @@ kube-prometheus-stack:
         - sourceLabels: [__name__]
           action: drop
           regex: (apiserver|etcd)_request_duration_seconds_bucket
+        # The SLO rules select only le 1, 5, 30 and +Inf of the SLI histogram;
+        # 0.05, 10 and 60 are 3.8k series that only feed the recorded p99.
+        - sourceLabels: [__name__, le]
+          action: drop
+          regex: apiserver_request_sli_duration_seconds_bucket;(0\.05|10|60)(\.0)?
+        # Feature-gate flags (about 730 series per component), used by no rule
+        # or dashboard.
+        - sourceLabels: [__name__]
+          action: drop
+          regex: kubernetes_feature_enabled
   kubelet:
     serviceMonitor:
+      metricRelabelings:
+        # First rule is the chart's own default, restated verbatim: setting
+        # metricRelabelings replaces the default list, which would re-admit
+        # the noisy buckets of the kubelet storage histograms.
+        - action: drop
+          sourceLabels: [__name__, le]
+          regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
+        - sourceLabels: [__name__]
+          action: drop
+          regex: kubernetes_feature_enabled
       # The chart scrapes cAdvisor every 10s by default (cAdvisorInterval, to
       # match the kubelet's housekeeping interval), which was 2,572 of 6,145
       # samples/s (42%). 60s matches the global scrapeInterval below. Checked
@@ -398,8 +428,10 @@ kube-prometheus-stack:
         # The asusrouter job (192.168.50.1:9101) was removed with the house
         # move — the RT-AX58U is retired and a UCG-Max replaced it. UniFi
         # metrics now come from the unpoller app via its ServiceMonitor.
+        # No scrape_interval: the global 60s applies. It was 10s, but the only
+        # consumers are NVMe wear/temperature and disk SMART gauges (alert
+        # thresholds, no short rate windows).
         - job_name: "qnap"
-          scrape_interval: 10s
           static_configs:
             - targets: ["192.168.50.8:9094"]
   prometheus-node-exporter:
