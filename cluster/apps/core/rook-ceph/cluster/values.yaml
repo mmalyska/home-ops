@@ -28,6 +28,11 @@ rook-ceph-cluster:
     mds_cache_memory_limit = 1073741824
   monitoring:
     enabled: true
+    # Scrape interval of the mgr and ceph-exporter ServiceMonitors (Rook's
+    # default is 10s, 278 of 3,342 samples/s). The Ceph alerts are gauges with
+    # for >= 30s and no rate window under 5m, so 60s only delays detection by
+    # up to a minute.
+    interval: 60s
     createPrometheusRules: true
     rulesNamespaceOverride: monitoring
     prometheusRuleOverrides:
