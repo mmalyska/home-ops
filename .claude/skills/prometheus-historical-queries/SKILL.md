@@ -56,4 +56,7 @@ Prefer this over range functions when the metric has resets or sparse coverage.
 - An instant `?time=` sample can land exactly in a scrape gap (a short hole existed on 2026-10-09 for every node) and return
   nothing for some series. If a node is missing, retry at a few hours either side or use `query_range` (`step=3600`) before
   concluding there is no history.
+- cAdvisor `container_*` counters (`container_fs_writes_bytes_total`, `container_network_*`) also have a pod-level series with
+  `container=""` that equals the sum of the containers. Select `container!=""` or one `container="..."` for per-workload
+  rates, or the result is exactly 2x (seen 2026-10-23: Prometheus 0.17 against the real 0.086 MB/s).
 - Per-node deltas over days: `query_range` of `max by (node, device) (metric)` and subtract the first value from the last.
