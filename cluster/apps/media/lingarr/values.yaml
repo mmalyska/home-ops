@@ -15,7 +15,7 @@ app-template:
         app:
           image:
             repository: ghcr.io/lingarr-translate/lingarr
-            tag: 1.4.0@sha256:8f392cf1efe718e0fcbc735d6d82df0b0bf86594bf64998aad85e8f306263774
+            tag: 1.4.1@sha256:38592c3f6156d519a131aeeda3245f0a7765e7c541b801a7b527b7d731efdfce
             pullPolicy: IfNotPresent
           env:
             TZ: CET
