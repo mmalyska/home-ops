@@ -25,6 +25,13 @@ loki:
     compactor:
       retention_enabled: true
       delete_request_store: filesystem
+    ingester:
+      wal:
+        # The default (5m) rewrites every unflushed in-memory chunk to a new checkpoint each cycle. Measured
+        # 2026-10-23 over 45 h: checkpoints were 5.3 GB of the 8.1 GB Loki wrote (WAL 2.6, chunks 0.2) for 2.5 GB
+        # of input, and the size follows the stream count (about 265, with pod churn), not the ingest rate. 30m
+        # cuts that about 6x; the cost is a longer WAL replay after a crash, nothing is lost.
+        checkpoint_duration: 30m
   deploymentMode: SingleBinary
   singleBinary:
     replicas: 1
@@ -86,3 +93,17 @@ loki:
         memory: 96Mi
       limits:
         memory: 192Mi
+  monitoring:
+    serviceMonitor:
+      enabled: true
+      # The chart default (15s) is for its recording rules, which are off; 60s matches the rest of the cluster.
+      interval: 60s
+      # Loki exports about 4,500 series lines, mostly histogram buckets; keep what the write-amplification
+      # check needs (ingester WAL/checkpoint/chunk counters, distributor input, compactor, tsdb) and no buckets.
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: loki_(ingester|distributor_(bytes|lines)_received|chunk_store|compactor|boltdb_shipper_(compact|retention)|tsdb)_.*
+          action: keep
+        - sourceLabels: [__name__]
+          regex: .*_bucket
+          action: drop
