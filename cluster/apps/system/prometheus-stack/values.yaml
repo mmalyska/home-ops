@@ -29,12 +29,15 @@ kube-prometheus-stack:
       # into wear on the MX500 OSD drives.
       #
       # Dropped below are buckets no bundled rule or dashboard consumes,
-      # ~42k series between them. Deliberately NOT dropped, despite being the
-      # largest of all: apiserver_request_duration_seconds_bucket,
-      # apiserver_request_sli_duration_seconds_bucket and
-      # etcd_request_duration_seconds_bucket — the kube-apiserver SLO and
-      # etcd alert rules are built on them, and dropping them would silently
-      # break alerting rather than just saving space.
+      # ~42k series between them, plus (2026-10-23) the buckets of
+      # apiserver_request_duration_seconds and etcd_request_duration_seconds,
+      # another 39.5k series (659 samples/s). Checked against the 376 loaded
+      # rules and the 30 dashboard ConfigMaps: only the kube-apiserver SLO
+      # rules use a request histogram, and only
+      # apiserver_request_sli_duration_seconds_bucket (le 1, 5, 30 and +Inf),
+      # which is deliberately NOT dropped. The _sum and _count series of the
+      # dropped two stay. Re-check the rules before adding a custom alert on
+      # them, and on chart upgrades.
       metricRelabelings:
         # First rule is the chart's own default, restated verbatim. Setting
         # metricRelabelings replaces the default list rather than appending to
@@ -61,6 +64,17 @@ kube-prometheus-stack:
         - sourceLabels: [__name__]
           action: drop
           regex: apiserver_watch_events_sizes_bucket
+        - sourceLabels: [__name__]
+          action: drop
+          regex: (apiserver|etcd)_request_duration_seconds_bucket
+  kubelet:
+    serviceMonitor:
+      # The chart scrapes cAdvisor every 10s by default (cAdvisorInterval, to
+      # match the kubelet's housekeeping interval), which was 2,572 of 6,145
+      # samples/s (42%). 60s matches the global scrapeInterval below. Checked
+      # 2026-10-23: no loaded rule or dashboard uses container_* with a window
+      # of 2m or less. Ignored if kubelet.serviceMonitor.interval is set.
+      cAdvisorInterval: 60s
   grafana:
     revisionHistoryLimit: 3
     resources:
