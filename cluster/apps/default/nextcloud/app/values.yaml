@@ -184,7 +184,8 @@ nextcloud:
       gpu.intel.com/i915: 1
     limits:
       cpu: "4"
-      memory: 3Gi
+      # One HDR transcode peaks at ~2.3 GiB (measured), so two at once need this.
+      memory: 4Gi
       gpu.intel.com/i915: 1
   nginx:
     enabled: true
@@ -250,3 +251,9 @@ occJobs:
   - name: connector-check
     schedule: "*/15 * * * *"
     command: ["onlyoffice:documentserver", "--check"]
+  # Pre-generate the thumbnails for new uploads (previewgenerator app), so the
+  # first view of a photo grid does not render them on demand in php-fpm. The
+  # app is installed with occ, see docs/src/k8s/nextcloud.md.
+  - name: preview-pre-generate
+    schedule: "*/10 * * * *"
+    command: ["preview:pre-generate"]
