@@ -25,12 +25,16 @@ instanceSidecarConfiguration:
       value: when_required
 # Default archive_timeout — CNPG's own built-in default is 5min, which forces
 # a full WAL segment to S3 every 5 minutes regardless of actual write
-# activity. 30min cuts that churn substantially while still being backed by
-# 2-instance streaming replication for primary durability. Override per app
-# if a specific cluster needs a tighter RPO.
+# activity. Each switch also costs about 17 MB of real writes on every
+# instance (measured 2026-10-25 on the primary and the replica, ~93% of an
+# idle cluster's writes), so at 30min the four active clusters were spending
+# ~0.09 MB/s on the Ceph OSD SSDs just on switching. 2h keeps 12 segments a
+# day instead of 48. The S3 archive can lag by up to 2h; the 2-instance
+# streaming replica still covers losing a node. Override per app if a
+# specific cluster needs a tighter RPO.
 postgresql:
   parameters:
-    archive_timeout: "30min"
+    archive_timeout: "2h"
     # WAL compression, off by default in PostgreSQL. Every WAL byte is
     # written to a Ceph RBD volume and replicated 3x onto consumer-grade
     # MX500 SSDs that are already at 62-70% rated life. Full-page writes

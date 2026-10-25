@@ -103,6 +103,13 @@ but it means "not that used" apps can still be the biggest backup consumers,
 and raising the timeout or enabling WAL compression are the levers, not
 investigating for a leak.
 
+`archive_timeout` also drives **local disk wear**: on 2026-10-25 every instance
+(primary and replica) wrote a ~17 MB burst at each switch, ~93% of an idle
+cluster's container writes. Spot it by summing `container_fs_writes_bytes_total`
+over `device` (cAdvisor has one series per device, so reading the first series
+can show zero) and looking for bursts on the switch cadence. Clusters with no
+WAL activity (bookorbit, onlyoffice) switch nothing and write nothing.
+
 ### 6. Actual S3 usage per app (ground truth)
 
 No pod in this cluster ships `aws`/`mc` by default, and reading the
