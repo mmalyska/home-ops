@@ -1,0 +1,81 @@
+name: Nextcloud image
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    paths:
+      - "images/nextcloud/**"
+      - ".github/workflows/nextcloud-image-publish.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "images/nextcloud/**"
+      - ".github/workflows/nextcloud-image-publish.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mmalyska/nextcloud
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # The published tag is the tag of the base image, e.g. 35.0.2-fpm-alpine.
+      - name: Read base tag from the Dockerfile
+        id: base
+        run: |
+          tag=$(sed -n 's#^FROM docker.io/library/nextcloud:\(.*\)$#\1#p' images/nextcloud/Dockerfile)
+          test -n "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build image for the smoke test
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: images/nextcloud
+          platforms: linux/amd64
+          load: true
+          tags: nextcloud-smoke:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Fails the build if any binary the cluster relies on is missing.
+      - name: Smoke test
+        run: |
+          docker run --rm --entrypoint sh nextcloud-smoke:test -c '
+            ffmpeg -version | head -1 &&
+            ffprobe -version | head -1 &&
+            exiftool -ver &&
+            php -m | grep -i imagick'
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: images/nextcloud
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.base.outputs.tag }}
+          cache-from: type=gha
