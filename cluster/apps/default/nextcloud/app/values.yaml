@@ -185,3 +185,14 @@ dragonfly:
   authentication:
     existingSecret: nextcloud-redis-auth
     existingSecretKey: redis-password
+
+# Scheduled `occ` commands, run as CronJobs that `kubectl exec` into the
+# Nextcloud pod (see templates/occ-cronjobs.yaml). Each entry becomes the
+# CronJob `nextcloud-occ-<name>`.
+occJobs:
+  # The ONLYOFFICE connector stores `settings_error` after one failed check and
+  # then switches the editor off (xlsx downloads instead of opening). Its own
+  # cron check never clears it, so re-run the check to self-heal.
+  - name: connector-check
+    schedule: "*/15 * * * *"
+    command: ["onlyoffice:documentserver", "--check"]
