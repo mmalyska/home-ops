@@ -76,8 +76,8 @@ The deployment from July already covers files and editing. This design closes th
 
 ### Phase 2 — Custom Nextcloud image (ffmpeg, exiftool)
 
-- New `images/nextcloud/Dockerfile`: `FROM docker.io/library/nextcloud:<ver>-fpm-alpine`, `apk add --no-cache ffmpeg exiftool` (plus `perl` if exiftool needs it). This is the route upstream documents ("build your own image on top of it").
-- New GitHub Actions workflow modelled on `.github/workflows/devcontainer-publish.yaml`, publishing `ghcr.io/mmalyska/nextcloud` (amd64 only, my call).
+- New `apps/nextcloud/Dockerfile` in `mmalyska/containers` (custom images are built there, not in home-ops): `FROM docker.io/library/nextcloud:<ver>-fpm-alpine`, `apk add --no-cache ffmpeg exiftool` (plus `perl` if exiftool needs it). This is the route upstream documents ("build your own image on top of it").
+- The containers repo's release workflow publishes `ghcr.io/mmalyska/nextcloud:<version>` (amd64 only, my call); home-ops pins it by digest. Delivered in containers#742 and home-ops#5908.
 - Renovate: track the base tag in the Dockerfile; the live image tag in `values.yaml` follows the published image. **Ordering matters:** a base bump must build and publish before the deploy value moves.
 - Set `preview_ffmpeg_path`/`preview_ffprobe_path` if needed; enable `OC\Preview\Movie`.
 - **Unverified upstream:** whether Memories' exiftool works on Alpine/musl. The spike decides it. Fallback: switch the image base to the Debian `fpm` flavor (changes the `www-data` uid from 82 to 33, which affects data-volume ownership and needs a deliberate migration).

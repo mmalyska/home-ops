@@ -4,9 +4,9 @@
 
 **Goal:** Make the existing Nextcloud the single family app for files and photos: working HEIC and video previews, a fast photo timeline with albums, a self-healing office editor (Euro-Office), and a written onboarding runbook.
 
-**Architecture:** Everything stays chart-based under ArgoCD (`cluster/apps/default/nextcloud/{app,onlyoffice}`). A small custom image adds `ffmpeg` and `exiftool` on top of the official `fpm-alpine` image. Imperative Nextcloud state (app installs, admin settings) is captured in a `docs/` runbook. Each task below is its own branch and PR.
+**Architecture:** Everything stays chart-based under ArgoCD (`cluster/apps/default/nextcloud/{app,onlyoffice}`). A small custom image, built in `mmalyska/containers`, adds `ffmpeg` and `exiftool` on top of the official `fpm-alpine` image. Imperative Nextcloud state (app installs, admin settings) is captured in a `docs/` runbook. Each task below is its own branch and PR.
 
-**Tech Stack:** Nextcloud 35.0.2 (chart `nextcloud` 9.4.1), Helm, ArgoCD, GitHub Actions + GHCR, Renovate, CNPG Postgres, Memories 10.x, Euro-Office Document Server 9.3.x.
+**Tech Stack:** Nextcloud 35.0.2 (chart `nextcloud` 9.4.1), Helm, ArgoCD, GHCR (images built in mmalyska/containers), Renovate, CNPG Postgres, Memories 10.x, Euro-Office Document Server 9.3.x.
 
 **Spec:** `.plans/superpowers/specs/2026-10-25-nextcloud-family-media-design.md`
 
@@ -64,22 +64,19 @@ Run (from `cluster/apps/default/nextcloud/app`): `helm template nextcloud . -f v
 - [ ] **Step 4: Commit, push, open PR** (`feat(nextcloud): scheduled occ jobs and connector health check`).
 - [ ] **Step 5 (after confirmed merge): live test.** With confirmation set a bad flag: `occ config:app:set onlyoffice settings_error --value=test`, wait one schedule, expect `occ config:app:get onlyoffice settings_error` to print nothing. Also check the Role exposes only exec on pods in `nextcloud`.
 
-### Task 3: Custom Nextcloud image (two PRs, in order)
+### Task 3: Custom Nextcloud image (built in `mmalyska/containers`) - DONE
 
-**Files:**
-- Create (PR A): `images/nextcloud/Dockerfile`, `.github/workflows/nextcloud-image-publish.yaml`
-- Modify (PR B): `cluster/apps/default/nextcloud/app/values.yaml` (`nextcloud.image.registry/repository/tag`), `.github/renovate/customManagers.json5`
+Ruling (user): custom images are built in https://github.com/mmalyska/containers, not in home-ops. The home-ops build (#5907) was closed.
+
+**Delivered:**
+- `mmalyska/containers#742`: `apps/nextcloud` (Dockerfile, metadata, Goss tests, `ci/latest.sh` pinned to the 35.x line via `MAJOR`). Tags are `<version>` and `rolling` (no `-fpm-alpine` suffix); amd64 only.
+- `home-ops#5908`: `nextcloud.image` set to `ghcr.io/mmalyska/nextcloud:35.0.2@sha256:...` (the chart drops its flavor suffix when `tag` is set). Renovate tracks the `registry/repository/tag` block natively, so no custom regex manager was needed.
+- Verified live: ffmpeg 8.1.3, exiftool 13.55, `occ status` healthy, connector check OK.
 
 **Interfaces:**
-- Produces: image `ghcr.io/mmalyska/nextcloud:35.0.2-fpm-alpine` (tag = base tag). Tasks 4 and 5 need `ffmpeg`, `ffprobe`, `exiftool` on `PATH`.
+- Produces: image `ghcr.io/mmalyska/nextcloud:<version>`; `ffmpeg`, `ffprobe`, `exiftool` on `PATH` for Tasks 4 and 5.
 
-- [ ] **Step 1 (PR A): Dockerfile** `FROM docker.io/library/nextcloud:35.0.2-fpm-alpine` then `RUN apk add --no-cache ffmpeg exiftool`. Renovate's built-in Dockerfile manager tracks the `FROM` line.
-- [ ] **Step 2: Workflow** modelled on `.github/workflows/devcontainer-publish.yaml` (same pinned actions): trigger on `images/nextcloud/**` (PR build-only, push to main publishes), `linux/amd64` only, derive the tag from the `FROM` line with `sed`, push `ghcr.io/mmalyska/nextcloud:<tag>`.
-- [ ] **Step 3: Smoke-test step that fails the build:** run the built image with `sh -c 'ffmpeg -version && ffprobe -version && exiftool -ver && php -m | grep -i imagick'`; the PR build must be green.
-- [ ] **Step 4: Commit, push, open PR A** (`feat(images): nextcloud image with ffmpeg and exiftool`). After confirmed merge, confirm the package exists and is public like the other `ghcr.io/mmalyska` images (`gh api /user/packages/container/nextcloud` or an anonymous pull).
-- [ ] **Step 5 (PR B): switch values.** Set `nextcloud.image.registry: ghcr.io`, `repository: mmalyska/nextcloud`, `tag: 35.0.2` with a `# renovate: datasource=docker depName=ghcr.io/mmalyska/nextcloud` comment, keeping `flavor: fpm-alpine`. Add a matching regex manager to `.github/renovate/customManagers.json5` for that file. Validate: `npx --yes renovate-config-validator` and `helm template ... | grep "image:.*nextcloud"` shows `ghcr.io/mmalyska/nextcloud:35.0.2-fpm-alpine`.
-- [ ] **Step 6: Commit, push, open PR B** (`feat(nextcloud): run the custom image`). After confirmed merge: pod Ready, `kubectl exec ... -c nextcloud -- exiftool -ver` prints a version, `occ status` healthy, 0 restarts.
-- [ ] **Step 7 (fallback, only if Memories later fails on musl):** switch the Dockerfile base to the Debian `fpm` flavor in a new PR; plan a deliberate `www-data` uid change (82 to 33) for the NFS data ownership.
+- [ ] **Step 7 (fallback, only if Memories later fails on musl):** switch the containers `Dockerfile` base to the Debian `fpm` flavor in a new PR there; plan a deliberate `www-data` uid change (82 to 33) for the NFS data ownership.
 
 ### Task 4: Video thumbnails
 
