@@ -82,6 +82,31 @@ nextcloud:
           // user_oidc app fetches the OIDC discovery document server-side.
           'allow_local_remote_servers' => true,
         ); ?>
+      # enabledPreviewProviders REPLACES the upstream default list, so the 11
+      # defaults must stay in it; HEIC (Samsung photos) is the addition. Without
+      # it every HEIC thumbnail request returns 404.
+      previews.config.php: |-
+        <?php
+        $CONFIG = array (
+          'enabledPreviewProviders' => array(
+            'OC\Preview\PNG',
+            'OC\Preview\JPEG',
+            'OC\Preview\GIF',
+            'OC\Preview\BMP',
+            'OC\Preview\XBitmap',
+            'OC\Preview\Krita',
+            'OC\Preview\WebP',
+            'OC\Preview\AVIF',
+            'OC\Preview\MarkDown',
+            'OC\Preview\TXT',
+            'OC\Preview\OpenDocument',
+            'OC\Preview\HEIC',
+          ),
+          'preview_max_x' => 2048,
+          'preview_max_y' => 2048,
+          'preview_concurrency_new' => 2,
+          'preview_concurrency_all' => 4,
+        ); ?>
     # Default pm.max_children (5) is too small for real browsing load (Files
     # app fires many parallel requests per page: previews, notifications,
     # activity). Under load the pool saturates, the nginx sidecar's own
