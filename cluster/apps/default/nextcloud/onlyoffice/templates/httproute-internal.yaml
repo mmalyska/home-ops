@@ -1,0 +1,19 @@
+# LAN route, see the nextcloud app's httproute-internal.yaml: without it LAN
+# clients load the editor through Cloudflare and the internet uplink.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: onlyoffice-internal
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - office.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: onlyoffice
+          port: 80
