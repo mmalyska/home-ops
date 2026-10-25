@@ -56,7 +56,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: occ
-              image: registry.k8s.io/kubectl:v1.36.5
+              image: registry.k8s.io/kubectl:v1.36.5@sha256:0667e3f3e6ef435d7cd4c16684244703ebd67314c17511c2a9f87ea44f6cdf6b
               args:
                 - exec
                 - deploy/nextcloud-app
