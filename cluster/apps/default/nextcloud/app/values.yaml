@@ -53,8 +53,13 @@ nextcloud:
   image:
     registry: ghcr.io
     repository: mmalyska/nextcloud
-    tag: 35.0.2@sha256:c393742cafa32401901bf445b7d2126f8ddaeb89929009021fbb0d4947701d1d
+    tag: 35.0.2@sha256:fa0bc5edd75cbe71695b8ea714e46253111ce9125eb164ed0916ce8ba2977b35
   nextcloud:
+    # The runtime makes the render node owned by the container's uid:gid, so
+    # group 82 (www-data, which runs php-fpm and ffmpeg) gets read/write on
+    # /dev/dri/renderD128. Without it the node is root:root and VAAPI fails.
+    securityContext:
+      runAsGroup: 82
     extraEnv:
       - name: MAGICK_MEMORY_LIMIT
         value: 256MiB
@@ -167,16 +172,20 @@ nextcloud:
   # previews worked: php-fpm workers decode full-size photos (a 12 MP HEIC is
   # hundreds of MB in ImageMagick) and ffmpeg runs in the same cgroup. Nodes have
   # ~30 GiB. The MAGICK_* caps make ImageMagick spill to disk instead of RAM.
-  # Memories transcodes 4K HEVC (Samsung HLG) to 1080p H.264 with software
-  # libx264 (no GPU in the pod) inside this container, so the CPU limit is what
-  # keeps a playing video from starving the node; the nodes have 6 cores.
+  # Memories transcodes 4K HEVC (Samsung HLG) to 1080p H.264 inside this
+  # container. In software that saturated the 4 core limit, so it uses the
+  # node's Intel iGPU through VAAPI (same device plugin resource as jellyfin).
+  # The CPU limit stays as a backstop for the software fallback; the nodes have
+  # 6 cores.
   resources:
     requests:
       cpu: 100m
       memory: 512Mi
+      gpu.intel.com/i915: 1
     limits:
       cpu: "4"
       memory: 3Gi
+      gpu.intel.com/i915: 1
   nginx:
     enabled: true
     resources:
