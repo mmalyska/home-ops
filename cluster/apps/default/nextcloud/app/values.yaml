@@ -49,8 +49,11 @@ pgsql-cnpg:
 nextcloud:
   deploymentAnnotations:
     secret.reloader.stakater.com/reload: "nextcloud-admin-secret,nextcloud-redis-auth"
+  # mmalyska/containers: official fpm-alpine plus ffmpeg and exiftool (video previews, Memories)
   image:
-    flavor: fpm-alpine
+    registry: ghcr.io
+    repository: mmalyska/nextcloud
+    tag: 35.0.2@sha256:5cf29ce0a3c801b307dc4fc39ebc616787dc13550cf28195b94ac54f1e133e34
   nextcloud:
     host: nextcloud.<secret:private-domain>
     existingSecret:
