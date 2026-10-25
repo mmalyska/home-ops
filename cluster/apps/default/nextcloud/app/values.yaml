@@ -53,7 +53,7 @@ nextcloud:
   image:
     registry: ghcr.io
     repository: mmalyska/nextcloud
-    tag: 35.0.2@sha256:5cf29ce0a3c801b307dc4fc39ebc616787dc13550cf28195b94ac54f1e133e34
+    tag: 35.0.2@sha256:c393742cafa32401901bf445b7d2126f8ddaeb89929009021fbb0d4947701d1d
   nextcloud:
     host: nextcloud.<secret:private-domain>
     existingSecret:
