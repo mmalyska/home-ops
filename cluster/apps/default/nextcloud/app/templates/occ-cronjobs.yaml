@@ -63,11 +63,14 @@ spec:
                 - -c
                 - nextcloud
                 - --
-                - php
-                - occ
-                {{- range .command }}
-                - {{ . | quote }}
-                {{- end }}
+                # kubectl exec is root; occ must run as www-data or the files it
+                # writes (previews on the NFS volume) are not writable by php-fpm.
+                - su
+                - -s
+                - /bin/sh
+                - www-data
+                - -c
+                - {{ printf "cd /var/www/html && php occ %s" (join " " .command) | quote }}
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true

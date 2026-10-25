@@ -147,6 +147,7 @@ nav:
           - "nv1 Jetson (GPU)": k8s/nv1-jetson.md
           - "tuppr (upgrades)": k8s/tuppr.md
           - "Media stack (usenet)": k8s/media.md
+          - "Nextcloud": k8s/nextcloud.md
           - "Resource sizing": k8s/resource-sizing.md
       - "Talos":
           - "Config Map": talos/config-map.md
