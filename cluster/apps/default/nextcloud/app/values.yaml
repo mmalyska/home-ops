@@ -55,6 +55,13 @@ nextcloud:
     repository: mmalyska/nextcloud
     tag: 35.0.2@sha256:c393742cafa32401901bf445b7d2126f8ddaeb89929009021fbb0d4947701d1d
   nextcloud:
+    extraEnv:
+      - name: MAGICK_MEMORY_LIMIT
+        value: 256MiB
+      - name: MAGICK_MAP_LIMIT
+        value: 512MiB
+      - name: MAGICK_THREAD_LIMIT
+        value: "1"
     host: nextcloud.<secret:private-domain>
     existingSecret:
       enabled: true
@@ -156,12 +163,16 @@ nextcloud:
       enabled: true
       secretName: nextcloud-redis-auth
       passwordKey: redis-password
+  # The 1Gi limit OOM-killed the pod in a crash loop once HEIC and video
+  # previews worked: php-fpm workers decode full-size photos (a 12 MP HEIC is
+  # hundreds of MB in ImageMagick) and ffmpeg runs in the same cgroup. Nodes have
+  # ~30 GiB. The MAGICK_* caps make ImageMagick spill to disk instead of RAM.
   resources:
     requests:
       cpu: 25m
-      memory: 256Mi
+      memory: 512Mi
     limits:
-      memory: 1Gi
+      memory: 3Gi
   nginx:
     enabled: true
     resources:
