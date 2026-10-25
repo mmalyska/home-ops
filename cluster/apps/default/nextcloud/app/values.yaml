@@ -53,7 +53,7 @@ nextcloud:
   image:
     registry: ghcr.io
     repository: mmalyska/nextcloud
-    tag: 35.0.2@sha256:fa0bc5edd75cbe71695b8ea714e46253111ce9125eb164ed0916ce8ba2977b35
+    tag: 35.0.2@sha256:7a2250b96698f406fcb2586a0faec2438b7ad07ab89f60f5686bbc41b37e2841
   nextcloud:
     # The runtime makes the render node owned by the container's uid:gid, so
     # group 82 (www-data, which runs php-fpm and ffmpeg) gets read/write on
