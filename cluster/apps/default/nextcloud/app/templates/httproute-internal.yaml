@@ -1,0 +1,31 @@
+# LAN route. The chart's httpRoute only attaches to envoy-external, and the
+# AdGuard external-dns only publishes records for routes on envoy-internal.
+# Without this route LAN clients resolve the hostname to Cloudflare, so uploads
+# leave through the internet uplink and return through the tunnel (~100 KB/s).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nextcloud-internal
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - nextcloud.<secret:private-domain>
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: strict-transport-security
+                value: max-age=31536000
+      backendRefs:
+        - name: nextcloud-app
+          port: 8080
