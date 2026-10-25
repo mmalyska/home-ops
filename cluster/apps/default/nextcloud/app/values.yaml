@@ -86,8 +86,9 @@ nextcloud:
           'allow_local_remote_servers' => true,
         ); ?>
       # enabledPreviewProviders REPLACES the upstream default list, so the 11
-      # defaults must stay in it; HEIC (Samsung photos) is the addition. Without
-      # it every HEIC thumbnail request returns 404.
+      # defaults must stay in it; HEIC (Samsung photos) and Movie (video
+      # thumbnails, needs ffmpeg from the custom image) are the additions.
+      # Without HEIC every HEIC thumbnail request returns 404.
       previews.config.php: |-
         <?php
         $CONFIG = array (
@@ -104,6 +105,7 @@ nextcloud:
             'OC\Preview\TXT',
             'OC\Preview\OpenDocument',
             'OC\Preview\HEIC',
+            'OC\Preview\Movie',
           ),
           'preview_max_x' => 2048,
           'preview_max_y' => 2048,
