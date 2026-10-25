@@ -1,0 +1,83 @@
+{{- if .Values.occJobs }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nextcloud-occ
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nextcloud-occ
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nextcloud-occ
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: nextcloud-occ
+subjects:
+  - kind: ServiceAccount
+    name: nextcloud-occ
+{{- range .Values.occJobs }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nextcloud-occ-{{ .name }}
+spec:
+  schedule: {{ .schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          serviceAccountName: nextcloud-occ
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: occ
+              image: registry.k8s.io/kubectl:v1.36.5
+              args:
+                - exec
+                - deploy/nextcloud-app
+                - -c
+                - nextcloud
+                - --
+                - php
+                - occ
+                {{- range .command }}
+                - {{ . | quote }}
+                {{- end }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+{{- end }}
+{{- end }}
