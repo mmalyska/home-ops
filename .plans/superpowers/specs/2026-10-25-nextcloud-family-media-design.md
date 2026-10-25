@@ -1,7 +1,7 @@
 # Nextcloud as the Family's Single Files + Photos App — Design
 
 **Date:** 2026-10-25
-**Status:** Draft, awaiting approval
+**Status:** Approved by the user on 2026-10-25 (open questions 1 to 3 below still unanswered)
 **Builds on:** `.archive/.plans/superpowers/specs/2026-07-02-nextcloud-onedrive-replacement-design.md` (the deployment that already exists: Nextcloud + ONLYOFFICE, Keycloak SSO, QNAP NFS data, CNPG Postgres, Dragonfly)
 
 ## Intent
