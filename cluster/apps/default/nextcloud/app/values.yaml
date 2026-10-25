@@ -167,11 +167,15 @@ nextcloud:
   # previews worked: php-fpm workers decode full-size photos (a 12 MP HEIC is
   # hundreds of MB in ImageMagick) and ffmpeg runs in the same cgroup. Nodes have
   # ~30 GiB. The MAGICK_* caps make ImageMagick spill to disk instead of RAM.
+  # Memories transcodes 4K HEVC (Samsung HLG) to 1080p H.264 with software
+  # libx264 (no GPU in the pod) inside this container, so the CPU limit is what
+  # keeps a playing video from starving the node; the nodes have 6 cores.
   resources:
     requests:
-      cpu: 25m
+      cpu: 100m
       memory: 512Mi
     limits:
+      cpu: "4"
       memory: 3Gi
   nginx:
     enabled: true
