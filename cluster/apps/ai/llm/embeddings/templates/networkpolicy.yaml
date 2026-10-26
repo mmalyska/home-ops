@@ -1,6 +1,4 @@
-# Only the gateway calls the embeddings server. The Jetson's llama-server is
-# deliberately left without a policy (owner decision: nothing on the Jetson is
-# changed).
+# Only the gateway calls the embeddings server (see also the llama-server policy).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

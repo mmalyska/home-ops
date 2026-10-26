@@ -14,7 +14,7 @@ spec:
   policyTypes: [Ingress]
   ingress:
     # Clients: the Envoy gateways (litellm.<domain>), Coder workspaces (opencode),
-    # Honcho and Hermes, plus the operator in this namespace.
+    # Honcho, Hermes and Lingarr, plus the operator in this namespace.
     - from:
         - podSelector: {}
         - namespaceSelector:
@@ -29,6 +29,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: hermes-agent
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: media
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: lingarr
       ports:
         - port: 4000
           protocol: TCP
