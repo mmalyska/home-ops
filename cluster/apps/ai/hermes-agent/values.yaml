@@ -1,0 +1,138 @@
+hermes:
+  replicas: 1
+  image:
+    repository: nousresearch/hermes-agent
+    tag: "v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 768Mi
+    # Bumped 2026-09-30: OOMKilled (exit 137) under 4 concurrent real chat
+    # sessions (a corruption-rate test, not unusual production load) at the
+    # old 1Gi limit -- idle baseline alone measured 609Mi. mc3 has ample
+    # headroom (~28.5 GiB allocatable, ~45% used at the time), so this isn't
+    # tightly budgeted like nv1's llama-server.
+    limits:
+      cpu: 1500m
+      memory: 3Gi
+  config:
+    # Everything goes through the AI gateway (docs/src/k8s/ai-gateway.md): the
+    # gateway holds the provider credentials, picks the fallback (main, cheap,
+    # local) and enforces the budget, so Hermes keeps no provider key and no
+    # fallback_providers. LITELLM_API_KEY is the hermes team key (Secret
+    # hermes-litellm). Hermes rejects any model below 64K context; main and
+    # cheap are far above it, and local is served with -c 65536 -np 1.
+    model:
+      provider: custom
+      default: main
+      base_url: http://litellm.ai.svc.cluster.local:4000/v1
+      api_key: ${LITELLM_API_KEY}
+      context_length: 65536
+    approvals:
+      mode: smart
+    display:
+      show_cost: true
+    dashboard:
+      show_token_analytics: true
+    memory:
+      provider: honcho
+    tts:
+      provider: piper
+      piper:
+        voice: en_US-lessac-medium
+    timezone: "Europe/Warsaw"
+    discord:
+      require_mention: true
+      free_response_channels: "881886312574107758"
+      auto_thread: true
+    auxiliary:
+      vision:
+        provider: custom
+        model: cheap
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      web_extract:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      compression:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      skills_hub:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      approval:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      mcp:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      title_generation:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      triage_specifier:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      kanban_decomposer:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      profile_describer:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+      curator:
+        provider: custom
+        model: local
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+  # Per-profile config overlays deep-merged into /opt/data/profiles/<name>/config.yaml
+  # on every pod start (lists are replaced). Profiles themselves are created
+  # imperatively; overlays for profiles that do not exist yet are skipped.
+  profileOverlays:
+    researcher: &gatewayMainModel
+      model:
+        provider: custom
+        default: main
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        api_key: ${LITELLM_API_KEY}
+        context_length: 65536
+      tts:
+        provider: piper
+        piper:
+          voice: en_US-lessac-medium
+    devops: *gatewayMainModel
+    orchestrator: *gatewayMainModel
+
+externalSecrets:
+  - secretName: DISCORD_BOT_TOKEN
+    bwsId: "be7ed9dc-3301-4c8b-adcd-b45600ea8816" #gitleaks:allow #HERMES_DISCORD_BOT_TOKEN
+  - secretName: DISCORD_ALLOWED_USERS
+    bwsId: "17384da9-0339-44a9-b322-b45600eaaf2b" #gitleaks:allow #HERMES_DISCORD_ALLOWED_USERS
+  - secretName: GITHUB_PERSONAL_ACCESS_TOKEN
+    bwsId: "6eda6fc7-6ecf-4b73-b075-b45700db9d2b" #gitleaks:allow #HERMES_GITHUB_PERSONAL_ACCESS_TOKEN
+    envName: GITHUB_TOKEN
+  - secretName: SANDBOX_DEVOPS_SSH_KEY
+    bwsId: "5bae28c2-8722-422b-8263-b46201453181" #gitleaks:allow #SANDBOX_DEVOPS_SSH_PRIVATE_KEY
+
+backup:
+  schedule: "0 */6 * * *"
+  retention:
+    daily: 6
+    weekly: 4
+    monthly: 2
