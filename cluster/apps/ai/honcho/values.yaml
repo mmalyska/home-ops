@@ -1,7 +1,7 @@
 honcho:
   image:
     repository: ghcr.io/plastic-labs/honcho
-    tag: "v3.4.0@sha256:6a8c74cf6cbd51a0e14e56b6b8503b4182f546059eb9d7d0190ac177cf075603"
+    tag: "v3.4.1@sha256:dc55e09c1df00374fc887b39d123d60b7a3556c9bbfdaea4b1d3da7a6fd87c36"
   resources:
     requests:
       cpu: 100m
