@@ -169,6 +169,14 @@ kube-prometheus-stack:
             editable: false
             options:
               path: /var/lib/grafana/dashboards/device
+          - name: "ai"
+            orgId: 1
+            folder: "AI"
+            type: file
+            disableDeletion: true
+            editable: false
+            options:
+              path: /var/lib/grafana/dashboards/ai
           - name: "grafana-dashboards-kubernetes"
             orgId: 1
             folder: "Kubernetes"
@@ -202,6 +210,7 @@ kube-prometheus-stack:
               path: /var/lib/grafana/dashboards/unifi
     dashboardsConfigMaps:
       device: "device-dashboards"
+      ai: "ai-dashboards"
     dashboards:
       grafana-dashboards-kubernetes:
         k8s-system-api-server:

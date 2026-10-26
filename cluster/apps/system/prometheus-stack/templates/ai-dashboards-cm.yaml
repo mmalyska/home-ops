@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-dashboards
+  labels:
+    grafana_dashboard: "ai"
+data:
+  litellm.json: |
+{{ .Files.Get "dashboards/litellm.json" | indent 4 }}

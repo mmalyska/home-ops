@@ -19,7 +19,8 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 - A failed deployment is skipped for 300 s (`cooldown_time`) instead of being retried on every request.
 - The pay-per-token cap is `routerSettings.provider_budget_config.openrouter` in `templates/litellmproxy.yaml`: 13 USD per 30 days, about 50 zl. It is per provider on purpose: `litellm_settings.max_budget` is proxy-wide and would also block the free models.
 - The spend counters live in a small Dragonfly (`litellm-dragonfly`), so a proxy restart does not reset the cap. Dragonfly itself has no persistence here; the prepaid OpenRouter balance is the hard ceiling.
-- Alerts: `LiteLLMBudgetNearlyUsed` (under 20% left), `LiteLLMModelFailing` (over half of calls failing for 15 min). Metric names come from LiteLLM's docs; check them against `/metrics` after the first deploy.
+- Alerts: `LiteLLMBudgetNearlyUsed` (under 20% left), `LiteLLMModelFailing` (over half of calls failing for 15 min).
+- Dashboard: Grafana folder "AI", dashboard "AI gateway (LiteLLM)" (`cluster/apps/system/prometheus-stack/dashboards/litellm.json`, provisioned by the `ai-dashboards` ConfigMap). It shows traffic, tokens, latency, failures, fallbacks, deployment state and the OpenRouter budget. Counters restart with the proxy pod, so read it with `rate()`/`increase()`; calls made with the master key show up under team `None`.
 
 ## Teams and virtual keys
 
