@@ -245,12 +245,12 @@ dragonfly:
 # Nextcloud pod (see templates/occ-cronjobs.yaml). Each entry becomes the
 # CronJob `nextcloud-occ-<name>`.
 occJobs:
-  # The ONLYOFFICE connector stores `settings_error` after one failed check and
+  # The Euro-Office connector (a fork of the ONLYOFFICE one) stores `settings_error` after one failed check and
   # then switches the editor off (xlsx downloads instead of opening). Its own
   # cron check never clears it, so re-run the check to self-heal.
   - name: connector-check
     schedule: "*/15 * * * *"
-    command: ["onlyoffice:documentserver", "--check"]
+    command: ["eurooffice:documentserver", "--check"]
   # Pre-generate the thumbnails for new uploads (previewgenerator app), so the
   # first view of a photo grid does not render them on demand in php-fpm. The
   # app is installed with occ, see docs/src/k8s/nextcloud.md.

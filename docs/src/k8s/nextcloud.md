@@ -111,15 +111,15 @@ runs `occ preview:pre-generate` every 10 minutes (as `www-data`) so a new upload
 
 ## Troubleshooting
 
-| Symptom                                        | Cause and fix                                                                                                                                       |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| xlsx downloads instead of opening              | ONLYOFFICE connector `settings_error` set; the `connector-check` CronJob clears it every 15 minutes, or run `occ onlyoffice:documentserver --check` |
-| HEIC has no thumbnail                          | the image lacks `imagemagick-heic`, or `HEIC` is missing from `enabledPreviewProviders`                                                             |
-| pod `OOMKilled`, 502 on the probes             | memory limit too low for previews or transcodes, see "Resources and why"                                                                            |
-| uploads at 100-300 KB/s on the LAN             | client resolves to Cloudflare; check `nslookup` returns `192.168.48.21`, flush DNS                                                                  |
-| video plays rotated in Memories                | `memories.vod.use_transpose` is false                                                                                                               |
-| video stutters, new chunk every ~5 s           | the ffmpeg wrapper is not set as `memories.vod.ffmpeg`, or the 1080p variant of an HDR clip was chosen                                              |
-| `vainfo` or ffmpeg cannot open the render node | the container lost `runAsGroup: 82` or the `gpu.intel.com/i915` request                                                                             |
+| Symptom                                        | Cause and fix                                                                                                                                        |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| xlsx downloads instead of opening              | Euro-Office connector `settings_error` set; the `connector-check` CronJob clears it every 15 minutes, or run `occ eurooffice:documentserver --check` |
+| HEIC has no thumbnail                          | the image lacks `imagemagick-heic`, or `HEIC` is missing from `enabledPreviewProviders`                                                              |
+| pod `OOMKilled`, 502 on the probes             | memory limit too low for previews or transcodes, see "Resources and why"                                                                             |
+| uploads at 100-300 KB/s on the LAN             | client resolves to Cloudflare; check `nslookup` returns `192.168.48.21`, flush DNS                                                                   |
+| video plays rotated in Memories                | `memories.vod.use_transpose` is false                                                                                                                |
+| video stutters, new chunk every ~5 s           | the ffmpeg wrapper is not set as `memories.vod.ffmpeg`, or the 1080p variant of an HDR clip was chosen                                               |
+| `vainfo` or ffmpeg cannot open the render node | the container lost `runAsGroup: 82` or the `gpu.intel.com/i915` request                                                                              |
 
 Check the GPU from the pod: `su -s /bin/sh www-data -c "vainfo --display drm --device /dev/dri/renderD128"`.
 Do not run heavy ffmpeg tests in the live pod: a 1080p tone-mapping test next to a playing stream OOM-killed the container.
