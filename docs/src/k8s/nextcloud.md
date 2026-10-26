@@ -135,8 +135,9 @@ What was verified on the live setup (2026-10-26) and what was not:
   groups and quotas are managed in Nextcloud with `occ`. Display name and email come from Keycloak.
 - **Verified:** an account's Nextcloud user ID is the Keycloak subject (a UUID), not the username. Find it with
   `occ user:list`.
-- **Not tested on a real phone or computer:** the full client sign-in. Do it once with the first family member and fix
-  this page if a step differs.
+- **Verified on a real Android phone:** both sign-in routes work, scanning the QR code shown in the web UI (Settings,
+  Mobile & desktop) and entering the server address with a manual Keycloak login.
+- **Not tested:** the macOS and Windows desktop clients.
 
 ### Steps (per person)
 
@@ -156,7 +157,8 @@ What was verified on the live setup (2026-10-26) and what was not:
    With about 400 GB of photos shared by two people and about 580 GB free, an unlimited quota lets one phone fill the share.
    Set a quota per person until there is a free-space alert on the NFS volume.
 
-4. **Phone (Android).** Install the Nextcloud app, enter the server address, and sign in through the browser (Keycloak).
+4. **Phone (Android).** Install the Nextcloud app. Easiest: sign in to the web UI on a computer and scan the QR code
+   from Settings, Mobile & desktop. Otherwise enter the server address and sign in through the browser (Keycloak).
    Turn on auto-upload for the camera folder with "Wi-Fi only". Two accounts mean two separate upload folders, so
    same-named files from two phones cannot overwrite each other. Do **not** use "free up space" on the phone until the
    library has an offsite copy. Community reports say Android may also need the "All files access" permission for
