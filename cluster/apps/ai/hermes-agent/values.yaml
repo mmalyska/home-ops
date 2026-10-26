@@ -20,14 +20,17 @@ hermes:
     # gateway holds the provider credentials, picks the fallback (main, cheap,
     # local) and enforces the budget, so Hermes keeps no provider key and no
     # fallback_providers. LITELLM_API_KEY is the hermes team key (Secret
-    # hermes-litellm). Hermes rejects any model below 64K context; main and
-    # cheap are far above it, and local is served with -c 65536 -np 1.
+    # hermes-litellm). Hermes rejects any model below 64K context; local is
+    # served with -c 65536 -np 1. context_length is main's usable window (272K
+    # at the gateway) with headroom, so compression does not start at 32K.
+    # Auxiliary tasks that need quality use main (subscription, no budget
+    # cap); only small background ones stay on local.
     model:
       provider: custom
       default: main
       base_url: http://litellm.ai.svc.cluster.local:4000/v1
       api_key: ${LITELLM_API_KEY}
-      context_length: 65536
+      context_length: 200000
     approvals:
       mode: smart
     display:
@@ -48,17 +51,17 @@ hermes:
     auxiliary:
       vision:
         provider: custom
-        model: cheap
+        model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       web_extract:
         provider: custom
-        model: local
+        model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       compression:
         provider: custom
-        model: local
+        model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       skills_hub:
@@ -68,12 +71,12 @@ hermes:
         api_key: ${LITELLM_API_KEY}
       approval:
         provider: custom
-        model: local
+        model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       mcp:
         provider: custom
-        model: local
+        model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       title_generation:
@@ -88,7 +91,7 @@ hermes:
         api_key: ${LITELLM_API_KEY}
       kanban_decomposer:
         provider: custom
-        model: local
+        model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       profile_describer:
@@ -111,7 +114,7 @@ hermes:
         default: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
-        context_length: 65536
+        context_length: 200000
       tts:
         provider: piper
         piper:
