@@ -41,7 +41,7 @@ opencode in the Coder workspace is installed by the template startup script from
 - **No cost tracking:** LiteLLM records $0 for these models, so budgets never trigger on `main`. Fallback happens on errors (usage limit, 429), not on spend.
 - **Fallbacks:** `main` to `cheap` to `local`.
 - **Terms:** OpenAI has no explicit rule for using the Codex login in a self-hosted gateway, and its sanctioned route ("Sign in with ChatGPT") is approval-gated for hosted apps. This is a gray area; the account could be restricted. Anthropic's subscription is excluded for the opposite reason: its terms forbid it.
-- **Single replica:** refresh tokens are single use, so `auth.json` must be writable and shared; the proxy runs one replica on a ReadWriteOnce volume.
+- **Single replica:** refresh tokens are single use, so `auth.json` must be writable and shared; the proxy runs one replica on a ReadWriteMany CephFS volume (`ceph-filesystem`), so the surge pod of a rollout can start on another node.
 
 ### First login (and after revoking or losing the PVC)
 
