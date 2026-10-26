@@ -24,7 +24,7 @@ same tag shows up as a digest change that has to be bumped in `values.yaml`.
 ## Sizing assumptions
 
 - Library: about 400 GB for the family, on a share with about 580 GB free. Previews add roughly 10-20 % (the
-  `preview_max_x/y` cap is 2048 px), plus versions and trash. Watch the free space on the NFS volume.
+  `preview_max_x/y` cap is 2048 px), plus versions and trash. The alerts `NextcloudDataVolumeLow` (under 15% free, warning) and `NextcloudDataVolumeCritical` (under 7%, critical) watch the NFS volume.
 - **The QNAP holds the only copy.** Phones keep originals until the user frees space, so tell the family not to use
   "free up space" until there is an offsite copy. Recommended: QNAP snapshots on the share, and Hybrid Backup Sync to an
   encrypted cloud bucket. These are QNAP-side settings and are not in the cluster repo.
