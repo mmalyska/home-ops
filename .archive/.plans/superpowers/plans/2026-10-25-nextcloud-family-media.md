@@ -8,7 +8,7 @@
 
 **Tech Stack:** Nextcloud 35.0.2 (chart `nextcloud` 9.4.1), Helm, ArgoCD, GHCR (images built in mmalyska/containers), Renovate, CNPG Postgres, Memories 10.x, Euro-Office Document Server 9.3.x.
 
-**Spec:** `.plans/superpowers/specs/2026-10-25-nextcloud-family-media-design.md`
+**Spec:** `.archive/.plans/superpowers/specs/2026-10-25-nextcloud-family-media-design.md`
 
 ## Global Constraints
 
@@ -135,7 +135,9 @@ Done 2026-10-26 (PRs #5922, #5923). Image `ghcr.io/euro-office/documentserver:v9
 - [ ] **Step 2: Write the procedure:** Keycloak user, first login auto-provisioning, group and quota (`occ user:setting <uid> files quota <size>`), Android app auto-upload (Wi-Fi only, per-device subfolder, "All files access" permission reported by community, unofficial), macOS and Windows desktop clients, sharing a folder or album, Samsung motion photos behaviour.
 - [ ] **Step 3: Lint (`task lint:all`), commit, PR** (`docs(nextcloud): family onboarding runbook`).
 
-### Task 8: Load test and close-out
+### Task 8: Load test and close-out - CLOSED OUT, LOAD TEST DEFERRED
+
+Closed out 2026-10-26. Step 3 (archive) is done. Step 1 and 2 (the 300+ file phone upload and its pass criteria) are deferred to first real use, because the family is moving within about two months and nothing depends on it now; the test is carried in `.plans/TODO.md`. Storage alerts `NextcloudDataVolumeLow` and `NextcloudDataVolumeCritical` were added before the first big upload (#5926). The offsite copy of the QNAP library is open and is carried in `.plans/TODO.md`.
 
 - [ ] **Step 1 (needs Q1, Q2 answered):** with the user, upload at least 300 phone photos and videos at once from one real device. Record: `kubectl -n nextcloud get pod` restarts, `kubectl top pod --containers`, count of 5xx in nginx logs, Memories timeline completeness, and the Ceph write rate over the upload window using the `prometheus-portforward-session` and `prometheus-historical-queries` skills.
 - [ ] **Step 2: Pass criteria:** no restart or OOM, no 5xx, no new alert, Ceph write rate within its recent 0.34 to 0.39 MB/s range, all files with thumbnails. Tune `pm.max_children`, memory, and `preview_concurrency_*` in a follow-up PR if not.

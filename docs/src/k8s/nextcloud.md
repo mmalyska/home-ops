@@ -3,7 +3,7 @@
 Nextcloud in namespace `nextcloud` (ArgoCD apps `nextcloud-app` and `nextcloud-onlyoffice`, category `cluster/apps/default/nextcloud/`).
 It replaces OneDrive for the family: files, document editing (Euro-Office), sharing, and phone photo/video upload with the
 Memories timeline. Sign-in is Keycloak (`user_oidc`). The design is in
-`.plans/superpowers/specs/2026-10-25-nextcloud-family-media-design.md`.
+`.archive/.plans/superpowers/specs/2026-10-25-nextcloud-family-media-design.md`.
 
 ## How it is put together
 
