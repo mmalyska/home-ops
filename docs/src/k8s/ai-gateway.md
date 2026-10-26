@@ -48,7 +48,7 @@ The proxy cannot run the device-code flow itself, so sign in once from a termina
 1. In ChatGPT's security settings, enable device code login for the account.
 2. Run `kubectl -n ai exec -it deploy/litellm -- python -c "from litellm.llms.chatgpt.authenticator import Authenticator; Authenticator().get_access_token()"`.
 3. Open the printed URL, enter the code, approve.
-4. Restart the proxy: `kubectl -n ai delete pod -l app.kubernetes.io/name=litellm`. It builds `main` only at startup; if it started before `auth.json` existed it skips `main` (log: "ChatGPT device-code login needs a human") and every request silently falls back to `cheap`.
+4. Restart the proxy by deleting the pod: `kubectl -n ai delete pod -l app.kubernetes.io/name=litellm`. `kubectl rollout restart` does nothing here, because the operator owns the pod template and drops the restart annotation. The proxy builds `main` only at startup; if it started before `auth.json` existed it skips `main` (log: "ChatGPT device-code login needs a human") and every request silently falls back to `cheap`.
 5. Check with fallbacks off, so a fallback cannot hide a failure: `curl .../v1/chat/completions -d '{"model":"main","disable_fallbacks":true,...}'` must answer with `"model":"main"`. The result must still hold after another pod restart (the login lives on the PVC).
 
-Access tokens last about ten days and are refreshed on use. To revoke: delete `auth.json` from the PVC, restart the proxy, and sign the session out in ChatGPT's security settings.
+Access tokens last about ten days and are refreshed on use. To revoke: delete `auth.json` from the PVC, delete the proxy pod (step 4), and sign the session out in ChatGPT's security settings.
