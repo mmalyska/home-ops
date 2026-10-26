@@ -145,6 +145,7 @@ nav:
           - "Debugging with egctl": k8s/egctl.md
           - "NVMe Replacement": k8s/nvme-replacement.md
           - "nv1 Jetson (GPU)": k8s/nv1-jetson.md
+          - "AI gateway (LiteLLM)": k8s/ai-gateway.md
           - "tuppr (upgrades)": k8s/tuppr.md
           - "Media stack (usenet)": k8s/media.md
           - "Nextcloud": k8s/nextcloud.md

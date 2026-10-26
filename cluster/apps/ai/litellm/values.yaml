@@ -9,6 +9,13 @@ litellm-helm:
       memory: 512Mi
     limits:
       memory: 2Gi
+  # Separate metrics port without virtual-key auth; the chart's ServiceMonitor scrapes it.
+  metricsServer:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: prometheus-stack
   masterkeySecretName: litellm-secrets
   masterkeySecretKey: LITELLM_MASTER_KEY
   environmentSecrets:
@@ -24,6 +31,8 @@ litellm-helm:
           model: openai/gemma-4-26b-a4b
           api_base: http://llama-server.llm.svc.cluster.local:8080/v1
           api_key: local
+    litellm_settings:
+      callbacks: ["prometheus"]
     router_settings:
       num_retries: 1
       # A failed deployment sits out five minutes instead of being retried on every request.
