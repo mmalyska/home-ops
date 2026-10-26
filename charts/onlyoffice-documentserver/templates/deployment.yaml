@@ -68,7 +68,7 @@ spec:
             periodSeconds: 30
           volumeMounts:
             - name: data
-              mountPath: /var/www/onlyoffice/Data
+              mountPath: {{ .Values.dataMountPath }}
       volumes:
         - name: data
           persistentVolumeClaim:

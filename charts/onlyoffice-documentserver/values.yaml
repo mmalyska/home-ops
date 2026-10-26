@@ -1,7 +1,11 @@
 namespace: nextcloud
+# Euro-Office community build (fork of the ONLYOFFICE Document Server). Tags
+# carry a leading "v".
 image:
-  repository: onlyoffice/documentserver
-  tag: 9.0.0
+  repository: ghcr.io/euro-office/documentserver
+  tag: v9.3.7@sha256:39c4cdad8c335d05ea5653926e1fc3a69da006d9c1729936b2b4193140cd2962
+# The image keeps its data under euro-office, not onlyoffice.
+dataMountPath: /var/www/euro-office/Data
 port: 80
 jwt:
   secretName: onlyoffice-jwt-secret
