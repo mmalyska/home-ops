@@ -15,6 +15,17 @@ spec:
       labels:
         app: honcho-api
     spec:
+      # Never calls the Kubernetes API.
+      automountServiceAccountToken: false
+      # The image's own user (app, 100:101); set explicitly so runAsNonRoot can verify it.
+      securityContext:
+        runAsUser: 100
+        runAsGroup: 101
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: lancedb
+          emptyDir: {}
       initContainers:
         # A fresh database is migrated to vector(1536); Honcho refuses to start
         # until the columns match EMBEDDING_VECTOR_DIMENSIONS. The script is a
@@ -33,6 +44,19 @@ spec:
               memory: 128Mi
             limits:
               memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: lancedb
+              mountPath: /app/lancedb_data
       containers:
         - name: honcho-api
           image: "{{ .Values.honcho.image.repository }}:{{ .Values.honcho.image.tag }}"
@@ -58,3 +82,16 @@ spec:
             periodSeconds: 30
             failureThreshold: 3
           resources: {{toYaml .Values.honcho.resources | nindent 12}}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: lancedb
+              mountPath: /app/lancedb_data

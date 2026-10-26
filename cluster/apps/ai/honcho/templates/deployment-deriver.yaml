@@ -15,6 +15,17 @@ spec:
       labels:
         app: honcho-deriver
     spec:
+      # Never calls the Kubernetes API.
+      automountServiceAccountToken: false
+      # The image's own user (app, 100:101); set explicitly so runAsNonRoot can verify it.
+      securityContext:
+        runAsUser: 100
+        runAsGroup: 101
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: lancedb
+          emptyDir: {}
       containers:
         - name: honcho-deriver
           image: "{{ .Values.honcho.image.repository }}:{{ .Values.honcho.image.tag }}"
@@ -22,3 +33,16 @@ spec:
           env:
             {{- include "honcho.llmEnv" . | nindent 12 }}
           resources: {{toYaml .Values.honcho.deriver.resources | nindent 12}}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: lancedb
+              mountPath: /app/lancedb_data
