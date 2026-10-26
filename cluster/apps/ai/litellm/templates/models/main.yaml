@@ -1,0 +1,24 @@
+# ChatGPT (Codex) subscription through LiteLLM's chatgpt provider. The login lives
+# on the litellm-chatgpt PVC (CHATGPT_TOKEN_DIR); see docs/src/k8s/ai-gateway.md.
+# Spend is recorded as $0 for these models, so budgets never apply to them.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: main
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  modelName: main
+  proxyRef: litellm
+  params:
+    model: chatgpt/gpt-6.1-sol
+    additional:
+      additional_drop_params:
+        - temperature
+  info:
+    mode: responses
+    maxInputTokens: 272000
+    maxOutputTokens: 128000
+    supportsFunctionCalling: true
+    supportsVision: true
+    supportsPromptCaching: true
