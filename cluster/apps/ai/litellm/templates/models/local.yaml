@@ -1,0 +1,15 @@
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: local
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  modelName: local
+  proxyRef: litellm
+  params:
+    model: openai/gemma-4-26b-a4b
+    apiBase: http://llama-server.llm.svc.cluster.local:8080/v1
+    apiKey: local
+  info:
+    mode: chat

@@ -1,67 +1,3 @@
-litellm-helm:
-  deploymentAnnotations:
-    secret.reloader.stakater.com/reload: "litellm-secrets"
-  ingress:
-    enabled: false
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    limits:
-      memory: 2Gi
-  # Separate metrics port without virtual-key auth; the chart's ServiceMonitor scrapes it.
-  metricsServer:
-    enabled: true
-  serviceMonitor:
-    enabled: true
-    labels:
-      release: prometheus-stack
-  masterkeySecretName: litellm-secrets
-  masterkeySecretKey: LITELLM_MASTER_KEY
-  environmentSecrets:
-    - litellm-secrets
-  proxy_config:
-    model_list:
-      - model_name: cheap
-        litellm_params:
-          model: openrouter/google/gemini-3.1-flash-lite
-          api_key: os.environ/OPENROUTER_API_KEY
-      - model_name: local
-        litellm_params:
-          model: openai/gemma-4-26b-a4b
-          api_base: http://llama-server.llm.svc.cluster.local:8080/v1
-          api_key: local
-    litellm_settings:
-      callbacks: ["prometheus"]
-    router_settings:
-      num_retries: 1
-      # A failed deployment sits out five minutes instead of being retried on every request.
-      cooldown_time: 300
-      # Pay-per-token spend cap: about 50 zl as USD, review when the exchange rate moves.
-      # Per provider, not litellm_settings.max_budget: that one is proxy-wide and would
-      # also block `main`, which costs nothing per token. Once spent, the router skips
-      # openrouter and takes the fallback. Counted in memory, so a restart resets it;
-      # the prepaid OpenRouter balance is the hard ceiling.
-      provider_budget_config:
-        openrouter:
-          budget_limit: 13
-          time_period: 30d
-      fallbacks:
-        - cheap: ["local"]
-    # Virtual keys (create with POST /key/generate, store in Bitwarden): one per client,
-    # each limited to the models it needs.
-    #   hermes   -> main, cheap, local
-    #   honcho   -> cheap, local, embed
-    #   opencode -> main, cheap, local
-  db:
-    deployStandalone: false
-    useExisting: true
-    endpoint: litellmdb-cnpg-rw
-    database: app
-    secret:
-      name: litellmdb-cnpg-app
-      usernameKey: username
-      passwordKey: password
 pgsql-cnpg:
   name: litellmdb
   imageName: ghcr.io/cloudnative-pg/postgresql:17.6-standard-bookworm
@@ -104,3 +40,8 @@ pgsql-cnpg:
         immediate: true
         schedule: "5 0 0 * * *"
         backupOwnerReference: self
+
+# Redis-compatible store for LiteLLM: keeps the provider-budget spend counters
+# across pod restarts. In-namespace only, no password (ClusterIP).
+dragonfly:
+  name: litellm

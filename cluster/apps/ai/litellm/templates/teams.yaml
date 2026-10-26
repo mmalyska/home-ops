@@ -1,0 +1,35 @@
+# One team per client; the virtual keys live with each client app
+# (LiteLLMVirtualKey with proxyNamespace: ai) and name the team by teamID.
+# `main` and `embed` are added to the proxy in later steps.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMTeam
+metadata:
+  name: hermes
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  alias: hermes
+  proxyRef: litellm
+  models: [main, cheap, local]
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMTeam
+metadata:
+  name: honcho
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  alias: honcho
+  proxyRef: litellm
+  models: [cheap, local, embed]
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMTeam
+metadata:
+  name: opencode
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  alias: opencode
+  proxyRef: litellm
+  models: [main, cheap, local]

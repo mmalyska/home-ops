@@ -1,0 +1,16 @@
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: cheap
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  modelName: cheap
+  proxyRef: litellm
+  params:
+    model: openrouter/google/gemini-3.1-flash-lite
+    apiKeyRef:
+      name: litellm-secrets
+      key: OPENROUTER_API_KEY
+  info:
+    mode: chat

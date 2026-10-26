@@ -1,0 +1,64 @@
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMProxy
+metadata:
+  name: litellm
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  image: ghcr.io/berriai/litellm:v1.106.4@sha256:c169fb3adc514fcf210377c203f3de406d54f10bfdacf13948a4a839db9af7de
+  replicas: 1
+  # Admin API access for the database-backed resources (LiteLLMTeam, LiteLLMVirtualKey).
+  # Models stay file-backed (applyMode default).
+  apiAccess:
+    masterKeyRef:
+      name: litellm-secrets
+      key: LITELLM_MASTER_KEY
+  env:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: litellmdb-cnpg-app
+          key: uri
+    - name: LITELLM_MASTER_KEY
+      valueFrom:
+        secretKeyRef:
+          name: litellm-secrets
+          key: LITELLM_MASTER_KEY
+    - name: LITELLM_MODE
+      value: PRODUCTION
+    - name: REDIS_HOST
+      value: litellm-dragonfly.ai.svc.cluster.local
+    - name: REDIS_PORT
+      value: "6379"
+  generalSettings:
+    store_model_in_db: false
+    health_check_endpoint: /v1/health
+  litellmSettings:
+    # Prometheus metrics; the Admin UI stays master-key only, never anonymous.
+    success_callback: ["prometheus"]
+    failure_callback: ["prometheus"]
+    num_retries: 1
+  routerSettings:
+    # A failed deployment sits out five minutes instead of being retried on every request.
+    cooldown_time: 300
+    redis_host: os.environ/REDIS_HOST
+    redis_port: os.environ/REDIS_PORT
+    # Pay-per-token cap: about 50 zl as USD, review when the exchange rate moves.
+    # Per provider, not litellm_settings.max_budget: that one is proxy-wide and would
+    # also block `main`, which costs nothing per token. Counters live in Dragonfly,
+    # so a restart does not reset them; the prepaid OpenRouter balance is the hard ceiling.
+    provider_budget_config:
+      openrouter:
+        budget_limit: 13
+        time_period: 30d
+    fallbacks:
+      - cheap: ["local"]
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+  service:
+    type: ClusterIP
+    port: 4000

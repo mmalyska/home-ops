@@ -1,0 +1,12 @@
+- enabled: "true"
+  namespace: ai
+  syncWave: "-1"
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: baseline
+      pod-security.kubernetes.io/warn: baseline
+      pod-security.kubernetes.io/audit: baseline
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
