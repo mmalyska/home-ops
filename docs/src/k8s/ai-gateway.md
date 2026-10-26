@@ -31,6 +31,8 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 | `honcho`   | `cheap`, `local`, `embed` |
 | `opencode` | `main`, `cheap`, `local`  |
 
+opencode in the Coder workspace is installed by the template startup script from a pinned GitHub release, checked against a SHA-256 in `workspace-template/main.tf` (`opencode_version`, `opencode_sha256`). It is not installed with the upstream install script. After a version bump, take the new digest from the release page and change both values together; a mismatch skips the install and the workspace still starts.
+
 ## main model login
 
 `main` is the ChatGPT (Codex) subscription through LiteLLM's `chatgpt/` provider (`templates/models/main.yaml`). The model is `chatgpt/gpt-6.1-sol`; check OpenAI's Codex models page when it is retired.
