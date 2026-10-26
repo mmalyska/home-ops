@@ -1,6 +1,6 @@
 # AI gateway (LiteLLM)
 
-One OpenAI-compatible endpoint for every AI client in the cluster: `http://litellm.ai.svc.cluster.local:4000/v1`. The admin UI and API are on `envoy-internal` only (LAN). Clients hold a virtual key, never a provider key. Apps: `cluster/apps/ai/litellm-operator` (the home-operations operator, synced first) and `cluster/apps/ai/litellm` (the proxy, models, teams, database, Dragonfly, route). Each model, team and key is a resource (`LiteLLMModel`, `LiteLLMTeam`, `LiteLLMVirtualKey`), as in bjw-s `kubernetes/apps/ai`. Design and plan: `.plans/superpowers/specs/2026-10-26-ai-gateway-design.md`.
+One OpenAI-compatible endpoint for every AI client in the cluster: `http://litellm.ai.svc.cluster.local:4000/v1`. The admin UI and API are on `envoy-internal` only (LAN). Clients hold a virtual key, never a provider key. Apps: `cluster/apps/ai/litellm-operator` (the home-operations operator, synced first) and `cluster/apps/ai/litellm` (the proxy, models, teams, database, Dragonfly, route). Each model, team and key is a resource (`LiteLLMModel`, `LiteLLMTeam`, `LiteLLMVirtualKey`), as in bjw-s `kubernetes/apps/ai`. Design and plan: `.archive/.plans/superpowers/specs/2026-10-26-ai-gateway-design.md`.
 
 ## Models
 
