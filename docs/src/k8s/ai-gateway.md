@@ -54,3 +54,18 @@ The proxy cannot run the device-code flow itself, so sign in once from a termina
 5. Check with fallbacks off, so a fallback cannot hide a failure: `curl .../v1/chat/completions -d '{"model":"main","disable_fallbacks":true,...}'` must answer with `"model":"main"`. The result must still hold after another pod restart (the login lives on the PVC).
 
 Access tokens last about ten days and are refreshed on use. To revoke: delete `auth.json` from the PVC, delete the proxy pod (step 4), and sign the session out in ChatGPT's security settings.
+
+## Hardening
+
+Every workload in `ai` and `honcho` runs with `runAsNonRoot`, `allowPrivilegeEscalation: false`, a read-only root filesystem, `capabilities.drop: [ALL]` and seccomp `RuntimeDefault`, and the pods that never call the Kubernetes API have `automountServiceAccountToken: false`. The `ai` and `honcho` namespaces enforce Pod Security `restricted`; `llm` stays on `baseline`.
+
+| Workload                       | User                  | Writable paths                                                                                   |
+| ------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------ |
+| `litellm`                      | 65534                 | `/tmp` (emptyDir, also `HOME`), `/app/chatgpt_tokens` (CephFS, `fsGroup`)                        |
+| `litellm-dragonfly`            | 999                   | none                                                                                             |
+| `honcho-api`, `honcho-deriver` | 100:101 (image's own) | `/tmp`, `/app/lancedb_data` (emptyDir; pgvector is the vector store, so nothing is stored there) |
+| `llm-embeddings`               | 65534                 | model volume (`fsGroup`)                                                                         |
+
+**Exception: `llama-server` on the Jetson is not hardened.** It needs the CDI/GPU device path and runs as root; the owner decided not to touch it, so `llm` cannot move to `restricted` while it runs there.
+
+A new workload in these namespaces has to meet the same baseline or `restricted` admission rejects it. The Honcho and embeddings entries above show the pattern to copy.
