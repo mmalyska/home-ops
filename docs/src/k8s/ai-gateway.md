@@ -11,11 +11,11 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | `local` | llama-server on nv1 (`llm` namespace)              | none              |
 | `embed` | CPU llama.cpp embeddings server (nomic-embed-text) | none              |
 
-`main` and `embed` are added in later steps of the plan; until then only `cheap` and `local` exist.
+`embed` is added in a later step of the plan.
 
 ## Fallbacks and budget
 
-- `cheap` falls back to `local`. `main` will fall back to `cheap` once it exists.
+- `main` falls back to `cheap`, then `local`; `cheap` falls back to `local`.
 - A failed deployment is skipped for 300 s (`cooldown_time`) instead of being retried on every request.
 - The pay-per-token cap is `routerSettings.provider_budget_config.openrouter` in `templates/litellmproxy.yaml`: 13 USD per 30 days, about 50 zl. It is per provider on purpose: `litellm_settings.max_budget` is proxy-wide and would also block the free models.
 - The spend counters live in a small Dragonfly (`litellm-dragonfly`), so a proxy restart does not reset the cap. Dragonfly itself has no persistence here; the prepaid OpenRouter balance is the hard ceiling.
@@ -33,4 +33,21 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 
 ## main model login
 
-Filled in when `main` is added (plan task 3): terms check, the token PVC (`CHATGPT_TOKEN_DIR`), and how to redo the login.
+`main` is the ChatGPT (Codex) subscription through LiteLLM's `chatgpt/` provider (`templates/models/main.yaml`). The model is `chatgpt/gpt-6.1-sol`; check OpenAI's Codex models page when it is retired.
+
+- **One account:** every request uses the single login stored on the `litellm-chatgpt` PVC (`CHATGPT_TOKEN_DIR=/app/chatgpt_tokens`), whichever virtual key calls. Usage counts against that account's subscription limits.
+- **No cost tracking:** LiteLLM records $0 for these models, so budgets never trigger on `main`. Fallback happens on errors (usage limit, 429), not on spend.
+- **Fallbacks:** `main` to `cheap` to `local`.
+- **Terms:** OpenAI has no explicit rule for using the Codex login in a self-hosted gateway, and its sanctioned route ("Sign in with ChatGPT") is approval-gated for hosted apps. This is a gray area; the account could be restricted. Anthropic's subscription is excluded for the opposite reason: its terms forbid it.
+- **Single replica:** refresh tokens are single use, so `auth.json` must be writable and shared; the proxy runs one replica on a ReadWriteOnce volume.
+
+### First login (and after revoking or losing the PVC)
+
+The proxy cannot run the device-code flow itself, so sign in once from a terminal in the pod:
+
+1. In ChatGPT's security settings, enable device code login for the account.
+2. Run `kubectl -n ai exec -it deploy/litellm -- python -c "from litellm.llms.chatgpt.authenticator import Authenticator; Authenticator().get_access_token()"`.
+3. Open the printed URL, enter the code, approve.
+4. Check: a request for `main` through the gateway answers, and survives `kubectl -n ai delete pod -l app.kubernetes.io/name=litellm`.
+
+Access tokens last about ten days and are refreshed on use. To revoke: delete `auth.json` from the PVC, restart the proxy, and sign the session out in ChatGPT's security settings.

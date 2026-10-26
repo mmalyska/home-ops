@@ -26,6 +26,8 @@ spec:
           key: LITELLM_MASTER_KEY
     - name: LITELLM_MODE
       value: PRODUCTION
+    - name: CHATGPT_TOKEN_DIR
+      value: /app/chatgpt_tokens
     - name: REDIS_HOST
       value: litellm-dragonfly.ai.svc.cluster.local
     - name: REDIS_PORT
@@ -52,6 +54,9 @@ spec:
         budget_limit: 13
         time_period: 30d
     fallbacks:
+      # main is the subscription: on a usage limit or error it falls to the
+      # pay-per-token model, and to the Jetson once that budget is spent.
+      - main: ["cheap", "local"]
       - cheap: ["local"]
   resources:
     requests:
@@ -62,3 +67,10 @@ spec:
   service:
     type: ClusterIP
     port: 4000
+  volumeMounts:
+    - name: chatgpt
+      mountPath: /app/chatgpt_tokens
+  volumes:
+    - name: chatgpt
+      persistentVolumeClaim:
+        claimName: litellm-chatgpt
