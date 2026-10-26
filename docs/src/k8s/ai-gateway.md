@@ -69,3 +69,18 @@ Every workload in `ai` and `honcho` runs with `runAsNonRoot`, `allowPrivilegeEsc
 **Exception: `llama-server` on the Jetson is not hardened.** It needs the CDI/GPU device path and runs as root; the owner decided not to touch it, so `llm` cannot move to `restricted` while it runs there.
 
 A new workload in these namespaces has to meet the same baseline or `restricted` admission rejects it. The Honcho and embeddings entries above show the pattern to copy.
+
+### Network policies
+
+Cilium enforces `NetworkPolicy`. The gateway, its Postgres and Dragonfly, Honcho and its Postgres, and the embeddings server each have a default-deny ingress policy with explicit allows:
+
+| Target                            | Allowed from                                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `litellm:4000`                    | `envoy-gateway`, `coder`, `honcho`, `hermes-agent`, the `ai` namespace (operator), `monitoring` |
+| `litellm-dragonfly:6379`          | `litellm` pods; `:9999` from `dragonfly-system` and the replicas                                |
+| `litellmdb-cnpg`, `honchodb-cnpg` | the owning app (`:5432`), the instances themselves, `cnpg`, `monitoring` (`:9187`)              |
+| `honcho-api:8000`                 | `hermes-agent`                                                                                  |
+| `honcho-deriver`                  | nothing (queue worker)                                                                          |
+| `llm-embeddings:8080`             | `litellm` pods in `ai`                                                                          |
+
+Policies select the pods above, not the whole namespace, because the `litellm-operator` pod must stay reachable by the API server for its admission webhook. There is no egress policy: the gateway has to reach OpenRouter and ChatGPT. `llama-server` on the Jetson has no policy by owner decision, so a new client of the gateway has to be added to the `litellm` policy, but a new client of `llama-server` needs nothing.
