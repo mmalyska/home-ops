@@ -18,6 +18,15 @@ spec:
       # nv1 is arm64 and reserved for the GPU server; run on the x86 nodes.
       nodeSelector:
         kubernetes.io/arch: amd64
+      # Never calls the Kubernetes API.
+      automountServiceAccountToken: false
+      # 65534 (nobody) owns nothing in the images; fsGroup makes the model
+      # volume writable for the fetch step and readable for the server.
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
       initContainers:
         - name: fetch-model
           image: {{ .Values.embeddings.fetchImage }}
@@ -47,6 +56,14 @@ spec:
               value: {{ .Values.embeddings.model.sha256 | quote }}
             - name: MODEL_SIZE
               value: {{ .Values.embeddings.model.size | quote }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - name: models
               mountPath: /models
@@ -93,6 +110,14 @@ spec:
             periodSeconds: 30
             failureThreshold: 5
           resources: {{ toYaml .Values.embeddings.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - name: models
               mountPath: /models
