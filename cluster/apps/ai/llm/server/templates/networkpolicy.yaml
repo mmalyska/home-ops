@@ -1,0 +1,31 @@
+# Only the gateway calls llama-server; clients use the `local` alias. Prometheus
+# scrapes /metrics on the same port (podmonitor.yaml). Ingress only: this changes
+# nothing on the node itself.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: llama-server
+  namespace: llm
+spec:
+  podSelector:
+    matchLabels:
+      app: llama-server
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm
+      ports:
+        - port: 8080
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8080
+          protocol: TCP

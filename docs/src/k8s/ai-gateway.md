@@ -73,15 +73,16 @@ A new workload in these namespaces has to meet the same baseline or `restricted`
 
 ### Network policies
 
-Cilium enforces `NetworkPolicy`. The gateway, its Postgres and Dragonfly, Honcho and its Postgres, and the embeddings server each have a default-deny ingress policy with explicit allows:
+Cilium enforces `NetworkPolicy`. The gateway, its Postgres and Dragonfly, Honcho and its Postgres, the embeddings server and `llama-server` each have a default-deny ingress policy with explicit allows:
 
-| Target                            | Allowed from                                                                                    |
-| --------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `litellm:4000`                    | `envoy-gateway`, `coder`, `honcho`, `hermes-agent`, the `ai` namespace (operator), `monitoring` |
-| `litellm-dragonfly:6379`          | `litellm` pods; `:9999` from `dragonfly-system` and the replicas                                |
-| `litellmdb-cnpg`, `honchodb-cnpg` | the owning app (`:5432`), the instances themselves, `cnpg`, `monitoring` (`:9187`)              |
-| `honcho-api:8000`                 | `hermes-agent`                                                                                  |
-| `honcho-deriver`                  | nothing (queue worker)                                                                          |
-| `llm-embeddings:8080`             | `litellm` pods in `ai`                                                                          |
+| Target                            | Allowed from                                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `litellm:4000`                    | `envoy-gateway`, `coder`, `honcho`, `hermes-agent`, `lingarr` (in `media`), the `ai` namespace (operator), `monitoring` |
+| `litellm-dragonfly:6379`          | `litellm` pods; `:9999` from `dragonfly-system` and the replicas                                                        |
+| `litellmdb-cnpg`, `honchodb-cnpg` | the owning app (`:5432`), the instances themselves, `cnpg`, `monitoring` (`:9187`)                                      |
+| `honcho-api:8000`                 | `hermes-agent`                                                                                                          |
+| `honcho-deriver`                  | nothing (queue worker)                                                                                                  |
+| `llm-embeddings:8080`             | `litellm` pods in `ai`                                                                                                  |
+| `llama-server:8080`               | `litellm` pods in `ai`; `monitoring` (metrics)                                                                          |
 
-Policies select the pods above, not the whole namespace, because the `litellm-operator` pod must stay reachable by the API server for its admission webhook. There is no egress policy: the gateway has to reach OpenRouter and ChatGPT. `llama-server` on the Jetson has no policy by owner decision, so a new client of the gateway has to be added to the `litellm` policy, but a new client of `llama-server` needs nothing.
+Policies select the pods above, not the whole namespace, because the `litellm-operator` pod must stay reachable by the API server for its admission webhook. There is no egress policy: the gateway has to reach OpenRouter and ChatGPT. Every model call goes through the gateway: a new client gets a team, a virtual key and an entry in the `litellm` policy, and nothing may call `llama-server` or `llm-embeddings` directly. The `llama-server` policy is ingress-only and leaves the Jetson node itself untouched. Lingarr is a client too (team `lingarr`, alias `local`).

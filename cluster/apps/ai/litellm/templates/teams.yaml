@@ -33,3 +33,14 @@ spec:
   alias: opencode
   proxyRef: litellm
   models: [main, cheap, local]
+---
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMTeam
+metadata:
+  name: lingarr
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  alias: lingarr
+  proxyRef: litellm
+  models: [local]
