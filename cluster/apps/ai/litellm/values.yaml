@@ -45,3 +45,19 @@ pgsql-cnpg:
 # across pod restarts. In-namespace only, no password (ClusterIP).
 dragonfly:
   name: litellm
+  # The image runs as 999 and needs no writable root.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault

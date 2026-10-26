@@ -14,6 +14,14 @@ spec:
       name: {{ .Values.authentication.existingSecret }}
       key: {{ .Values.authentication.existingSecretKey }}
   {{- end }}
+  {{- with .Values.podSecurityContext }}
+  podSecurityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.containerSecurityContext }}
+  containerSecurityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- with .Values.args }}
   args:
     {{- toYaml . | nindent 4 }}
