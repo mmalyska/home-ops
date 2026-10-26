@@ -1,0 +1,108 @@
+# Default-deny ingress for the gateway pods, with explicit allows. Scoped to these
+# pods, not the whole namespace: the operator pod must stay reachable by the API
+# server for its admission webhook. No egress policy: litellm has to reach
+# OpenRouter and ChatGPT, and an allow-list there would be brittle.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: litellm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: litellm
+      app.kubernetes.io/managed-by: litellm-operator
+  policyTypes: [Ingress]
+  ingress:
+    # Clients: the Envoy gateways (litellm.<domain>), Coder workspaces (opencode),
+    # Honcho and Hermes, plus the operator in this namespace.
+    - from:
+        - podSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: coder
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: honcho
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: hermes-agent
+      ports:
+        - port: 4000
+          protocol: TCP
+    # Prometheus scrapes /metrics on the same port.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 4000
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: litellm-dragonfly
+spec:
+  podSelector:
+    matchLabels:
+      app: litellm-dragonfly
+      app.kubernetes.io/name: dragonfly
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm
+      ports:
+        - port: 6379
+          protocol: TCP
+    # The Dragonfly operator manages replication over the admin port.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: dragonfly-system
+        - podSelector:
+            matchLabels:
+              app: litellm-dragonfly
+      ports:
+        - port: 9999
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: litellmdb-cnpg
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: litellmdb-cnpg
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm
+      ports:
+        - port: 5432
+          protocol: TCP
+    # Replication between the instances.
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: litellmdb-cnpg
+    # The CloudNativePG operator and the barman-cloud plugin manage the instances.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg
+    # Prometheus scrapes the exporter.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9187
+          protocol: TCP

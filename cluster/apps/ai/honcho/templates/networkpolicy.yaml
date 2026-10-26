@@ -1,0 +1,71 @@
+# Default-deny ingress for the Honcho pods, with explicit allows. No egress
+# policy: the pods reach the gateway, Postgres and nothing external, but an
+# allow-list adds little here.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: honcho-api
+spec:
+  podSelector:
+    matchLabels:
+      app: honcho-api
+  policyTypes: [Ingress]
+  ingress:
+    # Hermes is the only client.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: hermes-agent
+      ports:
+        - port: 8000
+          protocol: TCP
+---
+# The deriver is a queue worker and takes no inbound traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: honcho-deriver
+spec:
+  podSelector:
+    matchLabels:
+      app: honcho-deriver
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: honchodb-cnpg
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: honchodb-cnpg
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: honcho-api
+        - podSelector:
+            matchLabels:
+              app: honcho-deriver
+      ports:
+        - port: 5432
+          protocol: TCP
+    # Replication between the instances.
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: honchodb-cnpg
+    # The CloudNativePG operator and the barman-cloud plugin manage the instances.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg
+    # Prometheus scrapes the exporter.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9187
+          protocol: TCP
