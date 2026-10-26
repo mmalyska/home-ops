@@ -24,7 +24,8 @@
 - Hermes needs >= 64K context per slot; `local` already provides it (`-c 65536 -np 1`).
 - Never mutate cluster state (apply, sync, kubectl delete) without asking the owner first. Work in the `feat/ai-gateway` worktree; open a PR per delivery step.
 - If the ChatGPT-subscription check (Task 3) fails, stop and ask the owner before choosing another `main`.
-- Namespace is `litellm` (matches the removed app and the repo's one-namespace-per-app habit; the spec's "`ai`" meant the category directory `cluster/apps/ai`).
+- Namespace is `ai` (owner's decision). In-cluster URL: `http://litellm.ai.svc.cluster.local:4000/v1`. The removed app used namespace `litellm`, so change it in `app-config.yaml` and remember the CNPG Service is now `litellmdb-cnpg-rw.ai`.
+- The Bitwarden entries from the removed app still exist (owner confirmed): reuse the master key and S3 UUIDs from `git show 2b06f7d2^:cluster/apps/ai/litellm/templates/api-externalsecret.yaml`. Only the OpenRouter key and the per-client keys need checking or adding; the archived Honcho OpenRouter entry (`.archive/cluster/ai/honcho/values.yaml`, `openrouterBwsId`) can supply the OpenRouter key.
 
 ## Review Focus
 
@@ -47,11 +48,11 @@
 - Reference: `git show 2b06f7d2^:cluster/apps/ai/litellm/<file>` for each file (they match the layout above)
 
 **Interfaces:**
-- Produces: Service `litellm` port 4000 in namespace `litellm`; Secret `litellm-secrets` with keys `LITELLM_MASTER_KEY`, `OPENROUTER_API_KEY`, `S3_ACCESS_KEY_ID`, `S3_ACCESS_SECRET_KEY`; model aliases `cheap` and `local`; CNPG cluster `litellmdb`.
+- Produces: Service `litellm` port 4000 in namespace `ai`; Secret `litellm-secrets` with keys `LITELLM_MASTER_KEY`, `OPENROUTER_API_KEY`, `S3_ACCESS_KEY_ID`, `S3_ACCESS_SECRET_KEY`; model aliases `cheap` and `local`; CNPG cluster `litellmdb`.
 
-- [ ] **Step 1: Restore files from `2b06f7d2^`** with `git show`, set `enabled: "true"` in `app-config.yaml`, bump `litellm-helm` to the latest 1.x release Renovate tracks and the CNPG image to the one `.archive/cluster/ai/honcho/values.yaml` uses (`17.6-standard-bookworm`).
+- [ ] **Step 1: Restore files from `2b06f7d2^`** with `git show`, set `enabled: "true"` and `namespace: ai` in `app-config.yaml` (add `managedNamespaceMetadata` with the baseline pod-security labels, copied from `cluster/apps/ai/coder/app-config.yaml`), bump `litellm-helm` to the latest 1.x release Renovate tracks and the CNPG image to the one `.archive/cluster/ai/honcho/values.yaml` uses (`17.6-standard-bookworm`).
 - [ ] **Step 2: Rewrite `proxy_config.model_list`** to exactly two entries: `cheap` -> `openrouter/<model chosen by price/quality at build time, DeepSeek or Gemini Flash class>`, `local` -> `openai/gemma-4-26b-a4b` with `api_base: http://llama-server.llm.svc.cluster.local:8080/v1` and `api_key: local`. Remove the Anthropic/OpenAI credentials and keys.
-- [ ] **Step 3: Rewrite `api-externalsecret.yaml`** with keys `LITELLM_MASTER_KEY`, `OPENROUTER_API_KEY`, `S3_ACCESS_KEY_ID`, `S3_ACCESS_SECRET_KEY`. Ask the owner which Bitwarden UUIDs exist: the old master-key and S3 UUIDs may still be valid; the OpenRouter key needs a new entry. Do not guess UUIDs.
+- [ ] **Step 3: Rewrite `api-externalsecret.yaml`** with keys `LITELLM_MASTER_KEY`, `OPENROUTER_API_KEY`, `S3_ACCESS_KEY_ID`, `S3_ACCESS_SECRET_KEY`. Reuse the old master-key and S3 UUIDs (they still exist); for `OPENROUTER_API_KEY` ask the owner to confirm the archived Honcho UUID is the right key. Do not invent UUIDs.
 - [ ] **Step 4: Set resources** (requests 100m/512Mi, memory limit 2Gi: the old audits show ~1 GiB use) and the CNPG backup destination under a new path `s3://.../cnpg/litellm`.
 - [ ] **Step 5: Render and lint**
   Run: `cd cluster/apps/ai/litellm && helm dependency build . && helm template litellm . -f values.yaml | grep -E "kind: (Deployment|HTTPRoute|ExternalSecret|Cluster)$"`
@@ -112,7 +113,7 @@
 - Modify: `cluster/apps/ai/coder/workspace-template/main.tf` (container env / opencode config), `cluster/apps/ai/coder/templates/externalsecret.yaml` if a key must reach the template
 
 **Interfaces:**
-- Consumes: the `opencode` virtual key from Task 2; URL `http://litellm.litellm.svc.cluster.local:4000/v1`.
+- Consumes: the `opencode` virtual key from Task 2; URL `http://litellm.ai.svc.cluster.local:4000/v1`.
 
 - [ ] **Step 1: Read how the template passes env** and where opencode is configured (`main.tf` around the `kubernetes_deployment_v1.workspace` container). Deliver the key from a Kubernetes Secret via `secret_key_ref`, not as a Coder parameter.
 - [ ] **Step 2: Provide an opencode provider config** pointing at the URL, with models `main`, `cheap`, `local` (OpenAI-compatible provider). Mount or write it at workspace start.
@@ -146,7 +147,7 @@
 - Re-add the Renovate rule for `nousresearch/hermes-agent` (README step 4)
 
 - [ ] **Step 1: Restore** per README steps 1, 3-4.
-- [ ] **Step 2: Set `model` to the gateway:** `provider: custom`, `default: main`, `base_url: http://litellm.litellm.svc.cluster.local:4000/v1`, `api_key` from the `hermes` key via ExternalSecret; remove `fallback_providers` (the gateway handles fallback).
+- [ ] **Step 2: Set `model` to the gateway:** `provider: custom`, `default: main`, `base_url: http://litellm.ai.svc.cluster.local:4000/v1`, `api_key` from the `hermes` key via ExternalSecret; remove `fallback_providers` (the gateway handles fallback).
 - [ ] **Step 3: Set auxiliary tasks** (title generation, compression, approval, web_extract, triage, kanban) to `local` through the gateway; vision to `cheap`. Compression needs >= 64K; verify with the Hermes startup log.
 - [ ] **Step 4: Render** and lint; deploy with owner confirmation; test a Discord message end to end.
 - [ ] **Step 5: Update `.archive/cluster/ai/README.md`** (restored items removed from the archived list).
