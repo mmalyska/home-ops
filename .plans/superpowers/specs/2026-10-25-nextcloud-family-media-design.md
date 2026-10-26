@@ -102,6 +102,8 @@ Why: Euro-Office (Nextcloud + IONOS backed fork) has no 20-connection cap in sou
 - **Rollback:** revert the PR, re-enable the ONLYOFFICE connector, `occ <connector>:documentserver --check`. No documents move, so rollback is safe.
 - Keep the namespace, app names and chart names unchanged for now (my call); rename later in its own PR.
 
+**Result (2026-10-26):** done, all acceptance tests passed. Tags use a `v` prefix (`v9.3.7`); the image mounts data at `/var/www/euro-office/Data`; DB/JWT env names match ONLYOFFICE; the existing `onlyofficedb` worked as is. The pod does not meet the PodSecurity `restricted` profile (warning only, same as before).
+
 ### Phase 5 — Family onboarding runbook (docs)
 
 A page under `docs/` covering, per family member: create the Keycloak user, first login auto-provisions the Nextcloud account, add to groups, set quota, install the Android app and enable auto-upload (Wi-Fi only, charging optional, "All files access" permission per community reports, unofficial), install macOS and Windows desktop clients, share the Photos folder or albums. Include the decision on Samsung motion photos (Memories handles them; the stock Photos app does not).

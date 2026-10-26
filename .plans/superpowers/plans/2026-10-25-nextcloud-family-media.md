@@ -105,7 +105,9 @@ Ruling (user): custom images are built in https://github.com/mmalyska/containers
 - [ ] **Step 4: Document every command and admin setting** in the "Admin setup" section of `docs/src/k8s/nextcloud.md`; add the nav entry; commit and PR (`docs(nextcloud): admin setup runbook`).
 - [ ] **Step 5: Verify** the 11 test files plus one video appear in the Memories timeline with correct dates; Samsung motion photo plays.
 
-### Task 6: Euro-Office instead of ONLYOFFICE
+### Task 6: Euro-Office instead of ONLYOFFICE - DONE
+
+Done 2026-10-26 (PRs #5922, #5923). Image `ghcr.io/euro-office/documentserver:v9.3.7` (tags carry a `v`, pinned by digest), data path `/var/www/euro-office/Data` (new `dataMountPath`), env names unchanged, onlyofficedb reused with no schema problem. Connector `eurooffice` 11.0.6 installed, `onlyoffice` disabled, settings copied with `occ config:app:set`, check OK (9.3.7.37). The on-demand CNPG backup was skipped (merged first); the daily backup at 00:00 was the rollback point. All five acceptance tests passed, including the editor after a pod restart with no manual `occ`. Skill `onlyoffice-stuck-document` updated for the new paths.
 
 **Files:**
 - Modify: `charts/onlyoffice-documentserver/values.yaml`, `charts/onlyoffice-documentserver/templates/deployment.yaml`, `charts/onlyoffice-documentserver/Chart.yaml` (version bump), `cluster/apps/default/nextcloud/onlyoffice/Chart.yaml` (dependency bump), `cluster/apps/default/nextcloud/app/values.yaml` (`connector-check` command)

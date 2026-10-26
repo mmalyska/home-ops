@@ -14,6 +14,11 @@ when_to_use: >
 
 # ONLYOFFICE Stuck Document (orphaned task_result row)
 
+> Since 2026-10-26 the `onlyoffice` pod runs the Euro-Office fork (same docservice, same DB schema).
+> Paths and process names differ: config and logs live under `/etc/euro-office` and
+> `/var/log/euro-office`, supervisor programs are `docservice` and `converter` (no `ds:` prefix),
+> and the Nextcloud connector app is `eurooffice`. The diagnosis below is unchanged.
+
 ## Symptom
 
 Editor UI loads fine (static assets, websocket connects, all 200s in the browser
@@ -45,7 +50,7 @@ after the OnlyOffice pod itself has been cycled.
 ## Fast diagnosis (skip debug logging if you can identify the doc key)
 
 Get the document key from the Nextcloud OCS config endpoint response
-(`document.key` field) or from any `/apps/onlyoffice/track?doc=...` JWT payload
+(`document.key` field) or from any `/apps/eurooffice/track?doc=...` JWT payload
 (`fileId` maps to the Nextcloud file, but the docserver `key` is what's needed —
 easiest to get it live, see below).
 
@@ -65,8 +70,8 @@ uptime) confirms the stuck row.
 1. Bump docservice log level to DEBUG (reversible, ~seconds of editor downtime):
    ```sh
    kubectl -n <ns> exec deploy/onlyoffice -- sh -c \
-     'sed -i "s/\"level\": \"WARN\"/\"level\": \"DEBUG\"/" /etc/onlyoffice/documentserver/log4js/production.json'
-   kubectl -n <ns> exec deploy/onlyoffice -- supervisorctl restart ds:docservice ds:converter
+     'sed -i "s/\"level\": \"WARN\"/\"level\": \"DEBUG\"/" /etc/euro-office/documentserver/log4js/production.json'
+   kubectl -n <ns> exec deploy/onlyoffice -- supervisorctl restart docservice converter
    ```
 2. Tail logs (`kubectl -n <ns> logs -f deploy/onlyoffice`) and have the user retry
    opening the document.
