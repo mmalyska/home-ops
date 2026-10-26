@@ -84,11 +84,3 @@ app-template:
         lingarr:
           app:
             - path: /tmp
-    # The libraries (/data/tv-series, /data/movies) so Lingarr can read the source
-    # subtitles and write the translated ones next to them; same mount as Sonarr.
-    media:
-      existingClaim: media
-      advancedMounts:
-        lingarr:
-          app:
-            - path: /data
