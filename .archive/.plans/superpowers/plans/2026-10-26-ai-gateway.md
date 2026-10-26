@@ -8,7 +8,7 @@
 
 **Tech Stack:** ArgoCD ApplicationSet, home-operations `litellm-operator` chart and CRDs (`litellm.home-operations.com/v1alpha1`), `charts/pgsql-cnpg`, External Secrets (Bitwarden), Envoy Gateway `envoy-internal`, Prometheus, Coder Terraform template.
 
-**Spec:** `.plans/superpowers/specs/2026-10-26-ai-gateway-design.md`
+**Spec:** `.archive/.plans/superpowers/specs/2026-10-26-ai-gateway-design.md`
 
 ## Global Constraints
 
@@ -150,10 +150,10 @@
 
 ### Task 8: Jetson model review and close-out
 
-- [ ] **Step 1: Benchmark one lighter model** for `local` (housekeeping, summaries, Lingarr translation) against the current one with the paused-llama-server procedure from the nv1 notes (owner confirms the pause window).
-- [ ] **Step 2: Switch only if quality holds;** record the result in `docs/src/k8s/nv1-jetson.md`.
-- [ ] **Step 3: After Task 9 is done, move this plan and spec to `.archive/.plans/superpowers/{plans,specs}/`**, update links and both `list.md` files.
-- [ ] **Step 4: Commit/PR** `chore(plans): archive ai-gateway`
+- [x] **Step 1 (skipped by the owner 2026-10-26, moved to `.plans/TODO.md`): Benchmark one lighter model** for `local` (housekeeping, summaries, Lingarr translation) against the current one with the paused-llama-server procedure from the nv1 notes (owner confirms the pause window).
+- [x] **Step 2 (skipped with Step 1): Switch only if quality holds;** record the result in `docs/src/k8s/nv1-jetson.md`.
+- [x] **Step 3: After Task 9 is done, move this plan and spec to `.archive/.plans/superpowers/{plans,specs}/`**, update links and both `list.md` files.
+- [x] **Step 4: Commit/PR** `chore(plans): archive ai-gateway`
 
 ### Task 9: Harden the apps in `ai`, `honcho` and `llm`
 
