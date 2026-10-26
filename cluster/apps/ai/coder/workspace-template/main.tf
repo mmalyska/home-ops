@@ -70,6 +70,31 @@ resource "coder_agent" "main" {
     chmod 700 /home/coder/.ssh
     chmod 600 /home/coder/.ssh/authorized_keys
     chown -R coder:coder /home/coder/.ssh
+    # opencode talks to the AI gateway; the key stays in LITELLM_API_KEY, not on disk.
+    mkdir -p /home/coder/.config/opencode
+    cat > /home/coder/.config/opencode/opencode.json <<'JSON'
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "model": "gateway/main",
+      "small_model": "gateway/local",
+      "provider": {
+        "gateway": {
+          "npm": "@ai-sdk/openai-compatible",
+          "name": "AI gateway",
+          "options": {
+            "baseURL": "http://litellm.ai.svc.cluster.local:4000/v1",
+            "apiKey": "{env:LITELLM_API_KEY}"
+          },
+          "models": {
+            "main": { "name": "main (Codex)" },
+            "cheap": { "name": "cheap (OpenRouter)" },
+            "local": { "name": "local (Jetson)" }
+          }
+        }
+      }
+    }
+    JSON
+    chown -R coder:coder /home/coder/.config
     /usr/sbin/sshd -D >/dev/null 2>&1 &
   EOT
 }
@@ -145,6 +170,19 @@ resource "kubernetes_deployment_v1" "workspace" {
           env {
             name  = "CODER_AGENT_TOKEN"
             value = coder_agent.main.token
+          }
+
+          # Created by the LiteLLMVirtualKey in templates/opencode-key.yaml;
+          # optional so workspaces still start before the gateway exists.
+          env {
+            name = "LITELLM_API_KEY"
+            value_from {
+              secret_key_ref {
+                name     = "opencode-litellm"
+                key      = "key"
+                optional = true
+              }
+            }
           }
 
           resources {

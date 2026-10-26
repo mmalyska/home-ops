@@ -1,0 +1,17 @@
+# Virtual key for opencode in workspaces. The operator writes the key into the
+# Secret opencode-litellm in this namespace (key name `key`); the workspace pods
+# read it as LITELLM_API_KEY.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: opencode
+  namespace: coder
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  keyAlias: opencode
+  proxyRef: litellm
+  proxyNamespace: ai
+  teamID: opencode
+  secretName: opencode-litellm
+  models: [main, cheap, local]

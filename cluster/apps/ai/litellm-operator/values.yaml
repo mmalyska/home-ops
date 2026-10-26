@@ -1,0 +1,15 @@
+litellm-operator:
+  controller:
+    leaderElection:
+      enabled: true
+  webhook:
+    enabled: true
+  # No LLMKube in this cluster.
+  llmkube:
+    autoRegister: false
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

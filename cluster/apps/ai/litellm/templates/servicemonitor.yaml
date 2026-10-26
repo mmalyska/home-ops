@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: litellm
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: litellm
+      app.kubernetes.io/name: litellm
+  namespaceSelector:
+    matchNames:
+      - ai
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      # /metrics sits behind virtual-key auth on the proxy port.
+      bearerTokenSecret:
+        name: litellm-secrets
+        key: LITELLM_MASTER_KEY
