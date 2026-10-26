@@ -1,6 +1,6 @@
 # Virtual key for Lingarr. The operator writes the key into the Secret
-# lingarr-litellm (key name `key`) in this namespace; the pod reads it as
-# LOCAL_AI_API_KEY and Lingarr sends it as a Bearer token.
+# lingarr-litellm (key name `key`) in this namespace;
+# it is not an env var (see values.yaml): paste it into the Lingarr UI, which stores it encrypted.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMVirtualKey
 metadata:
