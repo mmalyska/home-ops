@@ -152,5 +152,32 @@
 
 - [ ] **Step 1: Benchmark one lighter model** for `local` (housekeeping, summaries, Lingarr translation) against the current one with the paused-llama-server procedure from the nv1 notes (owner confirms the pause window).
 - [ ] **Step 2: Switch only if quality holds;** record the result in `docs/src/k8s/nv1-jetson.md`.
-- [ ] **Step 3: Move this plan and spec to `.archive/.plans/superpowers/{plans,specs}/`**, update links and both `list.md` files.
+- [ ] **Step 3: After Task 9 is done, move this plan and spec to `.archive/.plans/superpowers/{plans,specs}/`**, update links and both `list.md` files.
 - [ ] **Step 4: Commit/PR** `chore(plans): archive ai-gateway`
+
+### Task 9: Harden the apps in `ai`, `honcho` and `llm`
+
+Audit on 2026-10-26 (`kubectl get pods -o json`, securityContext per container): the operator and the CNPG pods already run non-root, read-only root, `drop: [ALL]`, seccomp `RuntimeDefault`. `litellm`, `litellm-dragonfly`, `honcho-api`, `honcho-deriver`, `llama-server` and `llm-embeddings` set none of that. No NetworkPolicy exists in `ai`, `honcho` or `llm`. Namespaces `ai` and `llm` enforce Pod Security `baseline`; `honcho` has no Pod Security label. The goal is the same posture on every container, with no change in behaviour.
+
+**Files:**
+- Modify: `cluster/apps/ai/litellm/templates/litellmproxy.yaml` (`securityContext`, `podSecurityContext`, writable `emptyDir` mounts), `cluster/apps/ai/litellm/values.yaml` (Dragonfly chart values), `cluster/apps/ai/honcho/templates/deployment-*.yaml`, `cluster/apps/ai/llm/embeddings/templates/deployment.yaml`, `cluster/apps/ai/llm/server/templates/*` (check GPU/CDI first)
+- Create: `cluster/apps/ai/litellm/templates/networkpolicy.yaml`, matching policies in the `honcho` and `llm` apps
+- Modify: `cluster/apps/ai/honcho/app-config.yaml` (`managedNamespaceMetadata` Pod Security labels), `docs/src/k8s/ai-gateway.md` (a "Hardening" section)
+
+**Interfaces:**
+- Consumes: the operator CRD fields `LiteLLMProxy.spec.securityContext` / `podSecurityContext` / `volumes` / `volumeMounts`.
+- Produces: one security baseline per container that later apps (Hermes, Task 7) copy.
+
+- [ ] **Step 1: Check that the CNI enforces NetworkPolicy** (`kubectl -n kube-system get pods`, CNI name and its docs). If it does not, drop Steps 6-7 and note it here.
+- [ ] **Step 2: Write the check first.** A script (git-ignored, in the ledger workspace) that renders each app with `helm template` and asserts with `yq` that every container has `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `seccompProfile.type: RuntimeDefault`, and `readOnlyRootFilesystem: true` unless a ruling in the ledger names why not. Run it; it must fail on the six workloads above.
+- [ ] **Step 3: Harden one workload at a time** in this order: `llm-embeddings`, `honcho-api`/`honcho-deriver`, `litellm-dragonfly`, `litellm`, then `llama-server` only if the Jetson CDI/GPU path still works (otherwise ledger a ruling and leave it). For each: find the writable paths the image needs (`/tmp`, caches, `/app/chatgpt_tokens`), mount `emptyDir` for them, find a working non-root UID, render, then deploy with the owner's confirmation and check the pod starts and answers (Honcho `/health`, `embed` returns 768 dims, `main`/`cheap`/`local` answer, Dragonfly counters still shared).
+- [ ] **Step 4: Turn off the ServiceAccount token** (`automountServiceAccountToken: false`) on `honcho-api`, `honcho-deriver` and `llm-embeddings`, which never call the Kubernetes API.
+- [ ] **Step 5: Add Pod Security labels** to the `honcho` namespace (`enforce`/`warn`/`audit` at `baseline`, like `ai` and `llm`); try `restricted` on `ai` after Step 3 and keep it only if every pod still admits.
+- [ ] **Step 6: NetworkPolicies, default deny ingress** in each of the three namespaces, with explicit allows: Envoy Gateway to `litellm:4000`; the `coder`, `honcho` (and later `hermes-agent`) namespaces to `litellm:4000`; Prometheus (`monitoring`) to `litellm:4000` metrics and the CNPG/Dragonfly metrics ports; the operator to `litellm:4000`; `litellm` to its Postgres and Dragonfly; `ai` to `llm-embeddings:8080` and `llama-server:8080`; Lingarr's namespace to `llama-server:8080`; `honcho` to its Postgres. No egress policy: `litellm` must reach OpenRouter and ChatGPT, so an allow-list there is brittle.
+- [ ] **Step 7: Apply policies one namespace at a time** and run the full client check after each (opencode in a Coder workspace, Honcho, Prometheus target up, Lingarr).
+- [ ] **Step 8: Document and commit/PR per workload group:** `docs/src/k8s/ai-gateway.md` "Hardening" section with the baseline and the per-workload exceptions; `feat(ai): harden the gateway workloads`, `feat(ai): add network policies`.
+
+**Review Focus:**
+- A read-only root filesystem breaking a rarely used path (LiteLLM UI log writes, Honcho migrations, ChatGPT token refresh writing `auth.json`): exercise a token refresh and a Honcho migration, not only a health check.
+- A NetworkPolicy blocking a path nobody tests daily (Prometheus scrape, CNPG backups to S3, the operator calling the admin API, webhook calls to the operator).
+- Rolling a hardened `litellm` with the ReadWriteMany login volume: the new pod must read the existing `auth.json` under the new UID (volume ownership, `fsGroup`).
