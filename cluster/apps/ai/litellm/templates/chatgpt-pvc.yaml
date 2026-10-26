@@ -1,12 +1,15 @@
 # Holds auth.json for the chatgpt provider. Refresh tokens are single use, so the
-# file must be writable and survive restarts; one proxy replica only.
+# file must be writable and survive restarts; one proxy replica only. ReadWriteMany
+# (CephFS) so the surge pod of a rollout can start on another node while the old
+# pod still holds the volume.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: litellm-chatgpt
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  storageClassName: ceph-filesystem
   resources:
     requests:
       storage: 1Gi
