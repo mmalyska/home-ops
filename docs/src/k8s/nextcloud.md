@@ -1,7 +1,7 @@
 # Nextcloud (family files and photos)
 
 Nextcloud in namespace `nextcloud` (ArgoCD apps `nextcloud-app` and `nextcloud-onlyoffice`, category `cluster/apps/default/nextcloud/`).
-It replaces OneDrive for the family: files, document editing (ONLYOFFICE), sharing, and phone photo/video upload with the
+It replaces OneDrive for the family: files, document editing (Euro-Office), sharing, and phone photo/video upload with the
 Memories timeline. Sign-in is Keycloak (`user_oidc`). The design is in
 `.plans/superpowers/specs/2026-10-25-nextcloud-family-media-design.md`.
 
@@ -14,7 +14,7 @@ Memories timeline. Sign-in is Keycloak (`user_oidc`). The design is in
 | Database / cache | CNPG Postgres (`nextclouddb-cnpg`) and a Dragonfly instance                                                             |
 | Data             | user files and `appdata_*` (previews) on the QNAP NFS PV; the app code and config on a 5 Gi Ceph PVC                    |
 | Routes           | `envoy-external` (internet, Cloudflare tunnel) **and** `envoy-internal` (LAN), see "LAN access"                         |
-| Editor           | ONLYOFFICE document server, own app, own CNPG database                                                                  |
+| Editor           | Euro-Office document server (ONLYOFFICE fork), own app, own CNPG database                                               |
 
 The custom image is the official `nextcloud:<version>-fpm-alpine` plus `ffmpeg`, `exiftool`, the ImageMagick HEIC coder
 (`imagemagick-heic`), the Intel VAAPI driver (`intel-media-driver`, `vainfo`) and `/usr/local/bin/memories-ffmpeg`.
@@ -47,7 +47,7 @@ The `nextcloud` container has request `cpu: 100m`, `memory: 512Mi` and limits `c
 
 The AdGuard external-dns only publishes records for routes attached to `envoy-internal`. A route on `envoy-external` alone
 makes LAN clients resolve the hostname to Cloudflare, so every upload leaves through the internet uplink and returns
-through the tunnel (measured: 114-274 KB/s). Nextcloud and ONLYOFFICE therefore each have a second route
+through the tunnel (measured: 114-274 KB/s). Nextcloud and the document server therefore each have a second route
 (`httproute-internal.yaml`) on `envoy-internal`. After a change, client devices may need a DNS flush or reconnect.
 
 ## Admin setup (imperative state)
@@ -124,7 +124,57 @@ runs `occ preview:pre-generate` every 10 minutes (as `www-data`) so a new upload
 Check the GPU from the pod: `su -s /bin/sh www-data -c "vainfo --display drm --device /dev/dri/renderD128"`.
 Do not run heavy ffmpeg tests in the live pod: a 1080p tone-mapping test next to a playing stream OOM-killed the container.
 
+## Onboarding a family member
+
+What was verified on the live setup (2026-10-26) and what was not:
+
+- **Verified:** Nextcloud answers the app login flow (`POST /index.php/login/v2` returns a browser login URL and a poll
+  endpoint). That is what the Android and desktop clients use, so they sign in through the browser, which goes to Keycloak
+  (`user_oidc`), and the client receives an app password. The family never types a Nextcloud password.
+- **Verified:** the Keycloak provider maps no groups (`mappingGroups` is empty) and no quota (`mappingQuota` is empty), so
+  groups and quotas are managed in Nextcloud with `occ`. Display name and email come from Keycloak.
+- **Verified:** an account's Nextcloud user ID is the Keycloak subject (a UUID), not the username. Find it with
+  `occ user:list`.
+- **Not tested on a real phone or computer:** the full client sign-in. Do it once with the first family member and fix
+  this page if a step differs.
+
+### Steps (per person)
+
+1. **Keycloak.** Create the user in the realm used by Nextcloud, with email and name, and set a password or send the
+   reset link. Nothing is needed in Nextcloud first.
+2. **First login.** The person opens the Nextcloud address and uses the Keycloak button. The account is created on the
+   first login.
+3. **Find the user ID, then group and quota** (run `occ` as `www-data`, see "Admin setup"):
+
+   ```sh
+   occ user:list
+   occ group:add family                       # once
+   occ group:adduser family <user-id>
+   occ user:setting <user-id> files quota "300 GB"   # or "none"
+   ```
+
+   With about 400 GB of photos shared by two people and about 580 GB free, an unlimited quota lets one phone fill the share.
+   Set a quota per person until there is a free-space alert on the NFS volume.
+
+4. **Phone (Android).** Install the Nextcloud app, enter the server address, and sign in through the browser (Keycloak).
+   Turn on auto-upload for the camera folder with "Wi-Fi only". Two accounts mean two separate upload folders, so
+   same-named files from two phones cannot overwrite each other. Do **not** use "free up space" on the phone until the
+   library has an offsite copy. Community reports say Android may also need the "All files access" permission for
+   auto-upload; this is unofficial and not tested here.
+5. **Computer (macOS and Windows).** Install the Nextcloud desktop client and sign in with the same browser flow. Choose the
+   folders to sync. The desktop client can also keep files online only; check which of those modes the installed version
+   supports.
+6. **Sharing.** Share a folder with the `family` group or with the other person. For photos, use albums in Memories and
+   share the album.
+
+### Rules to tell the family
+
+- **Photos and videos: use Memories** (timeline, Folders, albums). It transcodes and tone-maps HDR video. The Files app
+  shows originals, and HDR video looks washed out and stutters there.
+- **Documents: use Files** and open them in the browser editor.
+- **Samsung motion photos** play in Memories; the stock Photos app does not play them.
+- The browser editor and the app sign in with Keycloak; there is no separate Nextcloud password.
+
 ## Not done yet
 
-Family onboarding (Keycloak user, groups, quota, Android auto-upload settings, macOS/Windows sync clients) and the
-Euro-Office replacement of ONLYOFFICE are tracked in the plan `2026-10-25-nextcloud-family-media`.
+Load test with a few hundred files (plan Task 8) and an offsite copy of the library. The QNAP holds the only copy.
