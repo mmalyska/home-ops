@@ -11,7 +11,7 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | `local` | llama-server on nv1 (`llm` namespace)              | none              |
 | `embed` | CPU llama.cpp embeddings server (nomic-embed-text) | none              |
 
-`embed` is added in a later step of the plan.
+`embed` is the `LiteLLMModel` in `templates/models/embed.yaml` (768-dimension vectors; Honcho depends on the dimension).
 
 ## Fallbacks and budget
 
@@ -31,6 +31,8 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 | `honcho`   | `cheap`, `local`, `embed` |
 | `opencode` | `main`, `cheap`, `local`  |
 
+opencode in the Coder workspace is installed by the template startup script from a pinned GitHub release, checked against a SHA-256 in `workspace-template/main.tf` (`opencode_version`, `opencode_sha256`). It is not installed with the upstream install script. After a version bump, take the new digest from the release page and change both values together; a mismatch skips the install and the workspace still starts.
+
 ## main model login
 
 `main` is the ChatGPT (Codex) subscription through LiteLLM's `chatgpt/` provider (`templates/models/main.yaml`). The model is `chatgpt/gpt-6.1-sol`; check OpenAI's Codex models page when it is retired.
@@ -39,7 +41,7 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 - **No cost tracking:** LiteLLM records $0 for these models, so budgets never trigger on `main`. Fallback happens on errors (usage limit, 429), not on spend.
 - **Fallbacks:** `main` to `cheap` to `local`.
 - **Terms:** OpenAI has no explicit rule for using the Codex login in a self-hosted gateway, and its sanctioned route ("Sign in with ChatGPT") is approval-gated for hosted apps. This is a gray area; the account could be restricted. Anthropic's subscription is excluded for the opposite reason: its terms forbid it.
-- **Single replica:** refresh tokens are single use, so `auth.json` must be writable and shared; the proxy runs one replica on a ReadWriteOnce volume.
+- **Single replica:** refresh tokens are single use, so `auth.json` must be writable and shared; the proxy runs one replica on a ReadWriteMany CephFS volume (`ceph-filesystem`), so the surge pod of a rollout can start on another node.
 
 ### First login (and after revoking or losing the PVC)
 

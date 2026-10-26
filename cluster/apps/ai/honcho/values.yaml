@@ -16,8 +16,6 @@ honcho:
       limits:
         memory: 512Mi
 
-openrouterBwsId: "7ece641d-8f3e-42f6-b306-b45900a618ad" #gitleaks:allow #HONCHO_OPENROUTER_API_KEY
-
 pgsql-cnpg:
   name: honchodb
   imageName: ghcr.io/cloudnative-pg/postgresql:17.6-standard-bookworm

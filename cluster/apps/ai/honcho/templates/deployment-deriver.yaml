@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: honcho-deriver
   annotations:
-    secret.reloader.stakater.com/reload: "honcho-secrets"
+    secret.reloader.stakater.com/reload: "honcho-secrets,honcho-litellm"
   namespace: honcho
 spec:
   replicas: 1

@@ -54,6 +54,12 @@ data "coder_parameter" "storage_size" {
 
 locals {
   workspace_id = "${data.coder_workspace_owner.me.name}-${data.coder_workspace.me.name}"
+  # Pinned release, verified by checksum; v1.19.3 is the last one published before
+  # the 2026-10-17 Console breach. Bump both values together after checking the
+  # digest on the release page.
+  # renovate: datasource=github-releases depName=anomalyco/opencode
+  opencode_version = "1.19.3"
+  opencode_sha256  = "13a8fb2978302071b86f9d7e00da9c8895f9cd846978379c3bdc6a5333536c9b"
 }
 
 resource "coder_agent" "main" {
@@ -95,6 +101,21 @@ resource "coder_agent" "main" {
     }
     JSON
     chown -R coder:coder /home/coder/.config
+    # Installed once into the home volume from a pinned, checksummed release (never
+    # the install script); a failed download or mismatch must not stop sshd.
+    if [ ! -x /home/coder/.opencode/bin/opencode ]; then
+      (
+        set -e
+        tmp=$(mktemp -d)
+        curl -fsSL -o "$tmp/opencode.tar.gz" "https://github.com/anomalyco/opencode/releases/download/v${local.opencode_version}/opencode-linux-x64.tar.gz"
+        echo "${local.opencode_sha256}  $tmp/opencode.tar.gz" | sha256sum -c -
+        install -d -o coder -g coder /home/coder/.opencode/bin
+        tar -xzf "$tmp/opencode.tar.gz" -C /home/coder/.opencode/bin opencode
+        chown coder:coder /home/coder/.opencode/bin/opencode
+        rm -rf "$tmp"
+      ) || echo "opencode install failed"
+    fi
+    ln -sf /home/coder/.opencode/bin/opencode /usr/local/bin/opencode
     /usr/sbin/sshd -D >/dev/null 2>&1 &
   EOT
 }
