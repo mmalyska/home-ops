@@ -81,7 +81,7 @@ All secrets are provisioned by `ExternalSecret honcho-secrets` (ESO + `ClusterSe
 - **Image**: `ghcr.io/cloudnative-pg/postgresql:17.6-standard-bookworm` — bundles pgvector, no custom image needed
 - **Extension**: `CREATE EXTENSION IF NOT EXISTS vector` runs via `bootstrap.initdb.postInitApplicationSQL` on cluster creation
 - **Connection**: `DB_CONNECTION_URI` is built at runtime from `$(DB_USER):$(DB_PASS)` via Kubernetes dependent env vars (CNPG passwords are alphanumeric, URL-safe)
-- **Backup**: barman to `s3://k8s-at-home-backup/cnpg/honcho` daily at 00:10, 10-day retention. `<secret:s3_endpoint>` resolved at sync time via `cluster-secrets` plugin.
+- **Backup**: barman to `s3://k8s-at-home-backup/cnpg/honcho-2026-10` daily at 00:10, 10-day retention. The older `cnpg/honcho` prefix holds the archived cluster's WAL and backups; barman refuses to archive into a non-empty prefix (`Expected empty archive`), so it is not reused. `<secret:s3_endpoint>` resolved at sync time via `cluster-secrets` plugin.
 
 ## Helm Values (`values.yaml`)
 
