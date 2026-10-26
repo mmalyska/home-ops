@@ -5,10 +5,9 @@ Plan: `.archive/.plans/superpowers/plans/2026-10-21-remove-hermes-stack.md`.
 
 | Directory | What it was |
 |-----------|-------------|
-| `hermes-agent` | Hermes agent (Discord, Signal, SSH terminal backend into Coder workspaces) |
 | `llm-stt` | speaches speech-to-text for Hermes (was `llm/stt`) |
 
-Restored 2026-10-26 behind the AI gateway: `honcho` (`cluster/apps/ai/honcho`) and `llm-embeddings` (`cluster/apps/ai/llm/embeddings`). Honcho now has an empty `honchodb` and no provider key; see `docs/src/k8s/ai-gateway.md`.
+Restored 2026-10-26 behind the AI gateway: `hermes-agent` (`cluster/apps/ai/hermes-agent`, Discord only: Signal, the Anthropic/OpenRouter keys and four of the five sandbox SSH keys were dropped), `honcho` (`cluster/apps/ai/honcho`) and `llm-embeddings` (`cluster/apps/ai/llm/embeddings`). Honcho now has an empty `honchodb` and no provider key; see `docs/src/k8s/ai-gateway.md`.
 
 Still running: `cluster/apps/ai/llm/server` (llama-server on nv1, used by Lingarr) and `cluster/apps/ai/coder` (`devops` workspace only).
 Renovate ignores `.archive/**` and the ApplicationSets only read `cluster/apps/**`, so nothing here is deployed or updated.

@@ -1,0 +1,17 @@
+# Virtual key for Hermes. The operator writes the key into the Secret
+# hermes-litellm (key name `key`) in this namespace; the pod reads it as
+# LITELLM_API_KEY and config.yaml refers to it as ${LITELLM_API_KEY}.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: hermes
+  namespace: hermes-agent
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  keyAlias: hermes
+  proxyRef: litellm
+  proxyNamespace: ai
+  teamID: hermes
+  secretName: hermes-litellm
+  models: [main, cheap, local]

@@ -5,35 +5,37 @@ Hermes Agent deployed as a single-pod application on the home Kubernetes cluster
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────┐
-│                   Pod                         │
-│                                               │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
-│  │  nginx   │  │  hermes  │  │ signal-cli  │  │
-│  │  :9119   │→ │  :9120   │  │   :8080     │  │
-│  └──────────┘  └──────────┘  └────────────┘  │
-│       ↑              │              │          │
-│       │         ┌────┴────┐    ┌───┴───┐      │
-│  HTTPRoute     │  PVC     │    │  PVC  │      │
-│  (envoy)       │  1Gi     │    │  1Gi  │      │
-│                └─────────┘    └───────┘      │
-└───────────────────────┬──────────────────────┘
-                        │ memory.provider: honcho
-                        ▼
-          http://honcho.honcho.svc.cluster.local:8000
-          (namespace: honcho — see ../honcho/README.md)
+┌──────────────────────────────────┐
+│               Pod                │
+│                                  │
+│  ┌──────────┐    ┌───────────┐   │
+│  │  nginx   │ →  │  hermes   │   │
+│  │  :9119   │    │  :9120    │   │
+│  └──────────┘    └─────┬─────┘   │
+│       ↑            ┌───┴───┐     │
+│  HTTPRoute         │  PVC  │     │
+│  (envoy)           │  5Gi  │     │
+│                    └───────┘     │
+└────────────┬─────────────┬───────┘
+             │             │ every model call
+             │             ▼
+             │   http://litellm.ai.svc.cluster.local:4000/v1
+             │   (AI gateway — docs/src/k8s/ai-gateway.md)
+             │ memory.provider: honcho
+             ▼
+   http://honcho.honcho.svc.cluster.local:8000
+   (namespace: honcho — see ../honcho/README.md)
 ```
 
-| Component | Purpose |
-|-----------|---------|
-| **hermes-agent** | Main process — gateway server (Discord + Signal), kanban dispatcher, dashboard |
-| **nginx** | Reverse proxy in front of hermes-agent; rewrites Host to `127.0.0.1` so hermes gateway loopback guard passes |
-| **signal-cli** | Sidecar REST API wrapping Signal CLI for Signal messaging |
-| **PVC `hermes-agent-data`** | Persistent state — config, profiles, skills, sessions, memory, logs |
-| **PVC `hermes-signal-data`** | Signal CLI state (registration, key material) |
-| **VolSync** | Restic backups of both PVCs to S3 (every 6 hours) |
-| **ExternalSecret** | API keys from Bitwarden → K8s Secret → env vars in pod |
-| **Honcho** | Self-hosted memory server (separate namespace) — provides persistent cross-session user memory via Theory-of-Mind reasoning and vector recall |
+| Component                      | Purpose                                                                                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **hermes-agent**               | Main process — gateway server (Discord), kanban dispatcher, dashboard                                                                                     |
+| **nginx**                      | Reverse proxy in front of hermes-agent; rewrites Host to `127.0.0.1` so hermes gateway loopback guard passes                                              |
+| **PVC `hermes-agent-data`**    | Persistent state — config, profiles, skills, sessions, memory, logs                                                                                       |
+| **VolSync**                    | Restic backups of the PVC to S3 (every 6 hours)                                                                                                           |
+| **ExternalSecret**             | Discord, GitHub and sandbox SSH credentials from Bitwarden → K8s Secret → env vars in pod                                                                 |
+| **LiteLLMVirtualKey `hermes`** | Team key for the AI gateway; the operator writes it to Secret `hermes-litellm`, the pod reads it as `LITELLM_API_KEY` (no provider key in this namespace) |
+| **Honcho**                     | Self-hosted memory server (separate namespace) — provides persistent cross-session user memory via Theory-of-Mind reasoning and vector recall             |
 
 ## Helm Values (`values.yaml`)
 
@@ -41,8 +43,7 @@ The declarative configuration lives in `values.yaml` and covers:
 
 - **`hermes.image`** — Container image (`nousresearch/hermes-agent`)
 - **`hermes.resources`** — CPU/memory requests and limits
-- **`hermes.config`** — Core config (model, approvals, timezone, Discord settings, provider routing, fallback providers, auxiliary models). Gets rendered into a ConfigMap, then merged into `/opt/data/config.yaml` by an init container on every pod start.
-- **`signalCli`** — Signal CLI sidecar image and resources
+- **`hermes.config`** — Core config (model, approvals, timezone, Discord settings, auxiliary models; all through the gateway). Gets rendered into a ConfigMap, then merged into `/opt/data/config.yaml` by an init container on every pod start.
 - **`externalSecrets`** — Bitwarden secret references for API keys
 - **`backup`** — VolSync schedule and retention
 
@@ -65,17 +66,17 @@ On every container boot, the s6-overlay `02-reconcile-profiles` script walks `/o
 
 ### Current Profile Fleet
 
-| Profile | Role | Gateway | Key Tools |
-|---------|------|---------|-----------|
-| **default** | Interactive user-facing profile | ✅ (Discord + Signal) | Full tools |
-| **orchestrator** | Decomposes goals into kanban tasks, routes to workers | ❌ | `kanban`, `web`, `memory` only |
-| **devops** | Home infrastructure: K8s, Proxmox, NAS, network, CI/CD | ❌ | `terminal`, `file`, `web`, `github` |
-| **researcher** | Technology research, feature planning, comparisons | ❌ | `terminal`, `file`, `web` |
-| **dotnet-dev** | .NET / C# development | ❌ | `terminal`, `file`, `web`, `github` |
-| **node-dev** | Node.js / TypeScript backend and CLI | ❌ | `terminal`, `file`, `web`, `github` |
-| **mobile-dev** | Cross-platform mobile (Expo / React Native) | ❌ | `terminal`, `file`, `web`, `github` |
+| Profile          | Role                                                   | Gateway      | Key Tools                           |
+| ---------------- | ------------------------------------------------------ | ------------ | ----------------------------------- |
+| **default**      | Interactive user-facing profile                        | ✅ (Discord) | Full tools                          |
+| **orchestrator** | Decomposes goals into kanban tasks, routes to workers  | ❌           | `kanban`, `web`, `memory` only      |
+| **devops**       | Home infrastructure: K8s, Proxmox, NAS, network, CI/CD | ❌           | `terminal`, `file`, `web`, `github` |
+| **researcher**   | Technology research, feature planning, comparisons     | ❌           | `terminal`, `file`, `web`           |
+| **dotnet-dev**   | .NET / C# development                                  | ❌           | `terminal`, `file`, `web`, `github` |
+| **node-dev**     | Node.js / TypeScript backend and CLI                   | ❌           | `terminal`, `file`, `web`, `github` |
+| **mobile-dev**   | Cross-platform mobile (Expo / React Native)            | ❌           | `terminal`, `file`, `web`, `github` |
 
-Only the **default** profile runs a gateway — it handles Discord and Signal messaging. Worker profiles are spawned by the kanban dispatcher on demand.
+Only the **default** profile runs a gateway — it handles Discord messaging. Worker profiles are spawned by the kanban dispatcher on demand.
 
 ### Creating a New Profile
 
@@ -95,7 +96,7 @@ Each profile has its own `config.yaml` at `/opt/data/profiles/<name>/config.yaml
 
 ```bash
 # Set the model for a specific profile
-hermes -p <name> config set model.default "anthropic/claude-sonnet-4"
+hermes -p <name> config set model.default "cheap"
 
 # Enable/disable toolsets
 hermes -p <name> tools enable terminal file web
@@ -186,7 +187,7 @@ Honcho configuration lives at `/opt/data/.hermes/honcho.json` on the PVC. It is 
 ### Useful commands
 
 ```bash
-# Check memory provider status (run in Discord/Signal)
+# Check memory provider status (run in Discord)
 # hermes honcho status
 
 # Sync profile host registration with Honcho server
@@ -199,15 +200,15 @@ kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
 
 ### Profile → Honcho host mapping
 
-| Hermes profile | Honcho host key | aiPeer |
-|----------------|----------------|--------|
-| default | `hermes` | `hermes` |
-| orchestrator | `hermes.orchestrator` | `orchestrator` |
-| devops | `hermes.devops` | `devops` |
-| researcher | `hermes.researcher` | `researcher` |
-| dotnet-dev | `hermes.dotnet-dev` | `dotnet-dev` |
-| node-dev | `hermes.node-dev` | `node-dev` |
-| mobile-dev | `hermes.mobile-dev` | `mobile-dev` |
+| Hermes profile | Honcho host key       | aiPeer         |
+| -------------- | --------------------- | -------------- |
+| default        | `hermes`              | `hermes`       |
+| orchestrator   | `hermes.orchestrator` | `orchestrator` |
+| devops         | `hermes.devops`       | `devops`       |
+| researcher     | `hermes.researcher`   | `researcher`   |
+| dotnet-dev     | `hermes.dotnet-dev`   | `dotnet-dev`   |
+| node-dev       | `hermes.node-dev`     | `node-dev`     |
+| mobile-dev     | `hermes.mobile-dev`   | `mobile-dev`   |
 
 All profiles share `peerName: mmalyska` and `workspace: hermes`.
 
@@ -218,9 +219,6 @@ All profiles share `peerName: mmalyska` and `workspace: hermes`.
 ```bash
 # Main agent
 kubectl logs deploy/hermes-agent -n hermes-agent -c hermes-agent --tail=100
-
-# Signal sidecar
-kubectl logs deploy/hermes-agent -n hermes-agent -c signal-cli --tail=50
 
 # s6 boot reconciliation
 kubectl exec deploy/hermes-agent -n hermes-agent -- tail -50 /opt/data/logs/container-boot.log
@@ -248,18 +246,16 @@ Restart the pod — the init container re-seeds config.yaml from the ConfigMap:
 kubectl rollout restart deploy/hermes-agent -n hermes-agent
 ```
 
-## Local inference
+## Models (through the AI gateway)
 
-The main model, the `compression` task, and seven of Hermes' other auxiliary tasks (web_extract, approval, title_generation, triage_specifier, kanban_decomposer, profile_describer, curator) run on the local `llama-server` (`llm` namespace, Gemma 4 26B-A4B (UD-Q2_K_XL) on nv1's GPU) for every profile and the default. Honcho's deriver, summary and minimal/low/medium dialectic calls also run there. OpenRouter and Anthropic are the automatic fallback chain (`fallback_providers`). Speech-to-text runs on Speaches (`Systran/faster-whisper-small`, CPU, `llm` namespace) and text-to-speech on Piper inside this pod (voices cached under `cache/piper-voices/` in each profile home; `piper-tts` is pip-installed in `postStart`, so a restart needs PyPI).
+Hermes holds no provider key. `model.base_url` is the gateway, `model.api_key` is `${LITELLM_API_KEY}` (the `hermes` team key), and `model.default` is `main` (the ChatGPT/Codex subscription). Fallback is the gateway's job (`main` → `cheap` → `local`, budget cap on `cheap`), so there is no `fallback_providers` block. The team may call `main`, `cheap` and `local` only.
 
-- Endpoint: `http://llama-server.llm.svc.cluster.local:8080/v1`, model `gemma-4-26b-a4b`, `model.context_length: 65536`.
-- **Hermes refuses to build an agent for any model with less than 64,000 tokens of context** (`agent_init._enforce_minimum_context`; `compression` has the same floor). llama-server runs `-c 65536 -np 1`, so its single slot serves 65536 tokens (`ctx / parallel`). If the server's context or slot count ever changes, `context_length` here must still equal the real per-slot size, and it must stay >= 64000 or every session fails outright (see the 2026-09-25 outage note in `.claude/memory/reference_hermes_64k_context_floor.md`).
-- Gemma 4 **thinks by default** and the reasoning consumes `max_tokens`, so small-budget calls return empty content. Thinking is disabled server-side (`--chat-template-kwargs '{"enable_thinking":false}'`, `--reasoning-budget -1`); a request can opt in with `chat_template_kwargs.enable_thinking=true`. See `cluster/apps/ai/llm/server/values.yaml`.
-- **Why Gemma 4 at one slot (2026-10-15):** the previous model, LFM2.5-8B-A1B, has a hybrid recurrent state that llama.cpp corrupts under multi-sequence serving ([ggml-org/llama.cpp#29002](https://github.com/ggml-org/llama.cpp/issues/29002), still open): reasoning leaked into replies or replies cut off mid-sentence, **29.0% (n=100)** under real Hermes traffic. Gemma 4 has no recurrent state: **0 corrupt turns of 66** multi-turn tool-calling turns (95% upper bound about 4.5%). The cost is a single slot: sessions are served one at a time (about 23-39 s per turn alone, 90-260 s with four profiles interleaved), generation is about 17 tok/s, and a per-request cap (`--n-predict 2048`) bounds a runaway generation. Measurement and decision record: `.archive/.plans/superpowers/plans/2026-10-13-llm-reliability-gemma4.md` and `docs/src/k8s/nv1-jetson.md`.
-- Profiles are not in `values.yaml`; their config lives on the PVC. `hermes.profileOverlays.<name>` is deep-merged into `/opt/data/profiles/<name>/config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile to another provider, overwrite `model.provider`, `model.default`, `model.base_url`, `model.api_key` and `model.context_length` explicitly, otherwise a stale value keeps traffic on the old endpoint. `hermes chat -q "ping"` (or `hermes -p <name> chat -q "ping"`) in the pod is the quickest check that an agent can start.
-- Vision still uses Gemini via OpenRouter (vision was not evaluated on the local model).
-- The local auxiliary tasks above fall back to the main model (also local) if llama-server is down; the main model itself falls back to the cloud chain.
-- GPU rules, memory budget and recovery: see `docs/src/k8s/nv1-jetson.md`.
+- Auxiliary tasks (compression, web_extract, approval, title_generation, triage_specifier, kanban_decomposer, profile_describer, curator, skills_hub, mcp) use `local`; `vision` uses `cheap`.
+- **Hermes refuses to build an agent for any model with less than 64,000 tokens of context** (`agent_init._enforce_minimum_context`; `compression` has the same floor). `main` and `cheap` are far above it; `local` is llama-server with `-c 65536 -np 1`, one slot of 65536 tokens, so `context_length: 65536` stays and must never drop below 64000 (see `.claude/memory/reference_hermes_64k_context_floor.md`). `local` serves one request at a time.
+- Text-to-speech is Piper inside this pod (voices cached under `cache/piper-voices/` in each profile home; `piper-tts` is pip-installed in `postStart`, so a restart needs PyPI). Speech-to-text (Speaches) is not restored.
+- Profiles are not in `values.yaml`; their config lives on the PVC. `hermes.profileOverlays.<name>` (researcher, devops, orchestrator) is deep-merged into `/opt/data/profiles/<name>/config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile to another provider, overwrite `model.provider`, `model.default`, `model.base_url`, `model.api_key` and `model.context_length` explicitly, otherwise a stale value keeps traffic on the old endpoint. `hermes chat -q "ping"` (or `hermes -p <name> chat -q "ping"`) in the pod is the quickest check that an agent can start.
+- `${LITELLM_API_KEY}` in `config.yaml` is expanded by Hermes from the pod environment. If `hermes chat -q "ping"` reports an authentication error, check that expansion first.
+- GPU rules, memory budget and recovery for `local`: see `docs/src/k8s/nv1-jetson.md`.
 
 ## Security Notes
 
