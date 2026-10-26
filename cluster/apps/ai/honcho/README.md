@@ -34,42 +34,34 @@
 └───────────────────────────────────────────────────────────┘
 ```
 
-| Component | Purpose |
-|-----------|---------|
-| **honcho-api** | REST API (`docker/entrypoint.sh` → alembic migrations + FastAPI on :8000). Migrations are idempotent and run on every start. |
-| **honcho-deriver** | Background Theory-of-Mind worker. Reads sessions queued by the API and derives user facts into the vector store. |
-| **honchodb (CNPG)** | CloudNativePG PostgreSQL 17 cluster with `pgvector` extension (standard bookworm image). Two replicas; S3 barman backup daily at 00:10. |
-| **ExternalSecret `honcho-secrets`** | Pulls OpenRouter API key + S3 credentials from Bitwarden via ESO. |
-| **Service `honcho`** | ClusterIP, port 8000. DNS: `honcho.honcho.svc.cluster.local:8000`. Not exposed outside the cluster (no HTTPRoute). |
+| Component                           | Purpose                                                                                                                                 |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **honcho-api**                      | REST API (`docker/entrypoint.sh` → alembic migrations + FastAPI on :8000). Migrations are idempotent and run on every start.            |
+| **honcho-deriver**                  | Background Theory-of-Mind worker. Reads sessions queued by the API and derives user facts into the vector store.                        |
+| **honchodb (CNPG)**                 | CloudNativePG PostgreSQL 17 cluster with `pgvector` extension (standard bookworm image). Two replicas; S3 barman backup daily at 00:10. |
+| **ExternalSecret `honcho-secrets`** | Pulls the S3 backup credentials from Bitwarden via ESO.                                                                                 |
+| **Service `honcho`**                | ClusterIP, port 8000. DNS: `honcho.honcho.svc.cluster.local:8000`. Not exposed outside the cluster (no HTTPRoute).                      |
 
 ## LLM Model Strategy
 
-Honcho runs 9 distinct LLM module slots. Deriver, Summary and Dialectic minimal/low/medium run on the local `llama-server` (`gemma-4-26b-a4b`, `llm` namespace, `openai` transport, thinking disabled server-side via `chat_template_kwargs.enable_thinking=false`); the rest route through OpenRouter (`openai` transport). Embeddings use the local `llm-embeddings` server.
+Every model call goes through the AI gateway (`http://litellm.ai.svc.cluster.local:4000/v1`, see `docs/src/k8s/ai-gateway.md`) with the `honcho` team key. The key is a `LiteLLMVirtualKey` (`templates/litellm-key.yaml`); the operator writes it to the Secret `honcho-litellm` (key `key`). Honcho holds no provider key. The team may use `cheap`, `local` and `embed` only.
 
-### Primary / Fallback
+| Module                           | Gateway alias                                        |
+| -------------------------------- | ---------------------------------------------------- |
+| Deriver, Summary                 | `local` (gemma-4-26b-a4b on nv1)                     |
+| Dialectic minimal / low / medium | `local`                                              |
+| Dialectic high / max             | `cheap` (OpenRouter, counts against the monthly cap) |
+| Dream deduction / induction      | `cheap`                                              |
+| Embeddings                       | `embed`                                              |
 
-Every module has a free-tier primary and a paid fallback. The fallback activates automatically on the **final retry attempt** — which covers 429 rate-limit exhaustion and (for the local slots) an unavailable llama-server without any manual intervention.
-
-| Module | Primary | Fallback |
-|--------|---------|---------|
-| Deriver | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Summary | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dream deduction | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dream induction | `deepseek/deepseek-v4-flash:free` (free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic minimal | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic low | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic medium | `gemma-4-26b-a4b` (local llama-server, free) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic high | `qwen/qwen3-235b-a22b-2507` ($0.071/$0.10) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-| Dialectic max | `qwen/qwen3-235b-a22b-2507` ($0.071/$0.10) | `deepseek/deepseek-v4-flash` ($0.10/$0.20) |
-
-Prices are per 1M input/output tokens.
+The gateway has no fallback for `local`, so a `local` slot fails when llama-server is down or busy and relies on Honcho's own retries. The per-module fallback to `deepseek/deepseek-v4-flash` was dropped with the OpenRouter key.
 
 ### Embeddings
 
-Embeddings use the CPU-only `llm-embeddings` server (llama.cpp, `llm` namespace) to avoid OpenRouter's lack of embedding endpoint support:
+Embeddings use the CPU-only `llm-embeddings` server (llama.cpp, `llm` namespace), reached through the gateway alias `embed`:
 
 - **Model**: `nomic-embed-text` v1.5 (f16, 768 dimensions)
-- **Endpoint**: `http://llm-embeddings.llm.svc.cluster.local:8080/v1`
+- **Endpoint**: the gateway (`embed` maps to `http://llm-embeddings.llm.svc.cluster.local:8080/v1`)
 - **Cost**: free (local inference), works offline
 - **Dimensions**: `EMBEDDING_VECTOR_DIMENSIONS=768`, `DIMENSIONS_MODE=never` (the server ignores the dimensions parameter)
 
@@ -77,10 +69,9 @@ Embeddings use the CPU-only `llm-embeddings` server (llama.cpp, `llm` namespace)
 
 ## Secrets
 
-| Secret key | Source (Bitwarden ID) | Used for |
-|------------|----------------------|---------|
-| `HONCHO_OPENROUTER_API_KEY` | `7ece641d-8f3e-42f6-b306-b45900a618ad` | All LLM calls via OpenRouter |
-| `S3_ACCESS_KEY_ID` | `e00e1e38-ae37-479a-8b46-b409016331eb` | CNPG S3 backup |
+| Secret key             | Source (Bitwarden ID)                  | Used for       |
+| ---------------------- | -------------------------------------- | -------------- |
+| `S3_ACCESS_KEY_ID`     | `e00e1e38-ae37-479a-8b46-b409016331eb` | CNPG S3 backup |
 | `S3_ACCESS_SECRET_KEY` | `4d5a418c-82ed-4b8e-bfbf-b40901634ea4` | CNPG S3 backup |
 
 All secrets are provisioned by `ExternalSecret honcho-secrets` (ESO + `ClusterSecretStore bitwarden`). The CNPG operator additionally creates `honchodb-cnpg-app` automatically with `username` and `password` for the database connection.
@@ -94,13 +85,12 @@ All secrets are provisioned by `ExternalSecret honcho-secrets` (ESO + `ClusterSe
 
 ## Helm Values (`values.yaml`)
 
-| Key | Purpose |
-|-----|---------|
-| `honcho.image` | API + deriver image (`ghcr.io/plastic-labs/honcho:v3.0.7`) |
-| `honcho.resources` | API container CPU/memory |
-| `honcho.deriver.resources` | Deriver container CPU/memory |
-| `openrouterBwsId` | Bitwarden secret ID for the OpenRouter API key |
-| `pgsql-cnpg.*` | CloudNativePG cluster config (replicas, storage, backup, pgvector bootstrap) |
+| Key                        | Purpose                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `honcho.image`             | API + deriver image (`ghcr.io/plastic-labs/honcho:v3.0.7`)                   |
+| `honcho.resources`         | API container CPU/memory                                                     |
+| `honcho.deriver.resources` | Deriver container CPU/memory                                                 |
+| `pgsql-cnpg.*`             | CloudNativePG cluster config (replicas, storage, backup, pgvector bootstrap) |
 
 LLM module configuration lives entirely in `templates/_helpers.tpl` (`honcho.llmEnv` helper) — not in `values.yaml` — since the env var matrix is too large to template usefully.
 
@@ -113,15 +103,15 @@ hermes-agent connects to Honcho via two additions applied at pod start by init c
 
 The `honcho.json` declares all 7 Hermes profiles as Honcho hosts:
 
-| Honcho host key | Hermes profile | aiPeer | workspace |
-|----------------|----------------|--------|-----------|
-| `hermes` | default | `hermes` | `hermes` |
-| `hermes.orchestrator` | orchestrator | `orchestrator` | `hermes` |
-| `hermes.devops` | devops | `devops` | `hermes` |
-| `hermes.researcher` | researcher | `researcher` | `hermes` |
-| `hermes.dotnet-dev` | dotnet-dev | `dotnet-dev` | `hermes` |
-| `hermes.node-dev` | node-dev | `node-dev` | `hermes` |
-| `hermes.mobile-dev` | mobile-dev | `mobile-dev` | `hermes` |
+| Honcho host key       | Hermes profile | aiPeer         | workspace |
+| --------------------- | -------------- | -------------- | --------- |
+| `hermes`              | default        | `hermes`       | `hermes`  |
+| `hermes.orchestrator` | orchestrator   | `orchestrator` | `hermes`  |
+| `hermes.devops`       | devops         | `devops`       | `hermes`  |
+| `hermes.researcher`   | researcher     | `researcher`   | `hermes`  |
+| `hermes.dotnet-dev`   | dotnet-dev     | `dotnet-dev`   | `hermes`  |
+| `hermes.node-dev`     | node-dev       | `node-dev`     | `hermes`  |
+| `hermes.mobile-dev`   | mobile-dev     | `mobile-dev`   | `hermes`  |
 
 All profiles share `peerName: mmalyska` and `workspace: hermes`. Deep-merge strategy means `hermes honcho sync` additions to `honcho.json` survive pod restarts while ConfigMap changes propagate on next restart.
 

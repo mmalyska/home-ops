@@ -11,7 +11,7 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | `local` | llama-server on nv1 (`llm` namespace)              | none              |
 | `embed` | CPU llama.cpp embeddings server (nomic-embed-text) | none              |
 
-`embed` is added in a later step of the plan.
+`embed` is the `LiteLLMModel` in `templates/models/embed.yaml` (768-dimension vectors; Honcho depends on the dimension).
 
 ## Fallbacks and budget
 

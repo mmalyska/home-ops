@@ -9,3 +9,14 @@
     labels:
       pod-security.kubernetes.io/enforce: baseline
       pod-security.kubernetes.io/warn: baseline
+- enabled: "true"
+  appSubfolder: embeddings
+  namespace: llm
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: baseline
+      pod-security.kubernetes.io/warn: baseline

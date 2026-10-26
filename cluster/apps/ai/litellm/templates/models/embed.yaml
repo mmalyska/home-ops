@@ -1,0 +1,15 @@
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: embed
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  modelName: embed
+  proxyRef: litellm
+  params:
+    model: openai/nomic-embed-text
+    apiBase: http://llm-embeddings.llm.svc.cluster.local:8080/v1
+    apiKey: local
+  info:
+    mode: embedding

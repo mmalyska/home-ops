@@ -1,0 +1,16 @@
+# Virtual key for Honcho. The operator writes the key into the Secret
+# honcho-litellm (key name `key`) in this namespace.
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMVirtualKey
+metadata:
+  name: honcho
+  namespace: honcho
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  keyAlias: honcho
+  proxyRef: litellm
+  proxyNamespace: ai
+  teamID: honcho
+  secretName: honcho-litellm
+  models: [cheap, local, embed]
