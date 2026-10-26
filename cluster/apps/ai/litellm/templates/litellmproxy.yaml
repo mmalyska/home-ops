@@ -26,6 +26,11 @@ spec:
           key: LITELLM_MASTER_KEY
     - name: LITELLM_MODE
       value: PRODUCTION
+    # Read-only root: no bytecode writes, and Prisma/HOME caches go to the /tmp emptyDir.
+    - name: PYTHONDONTWRITEBYTECODE
+      value: "1"
+    - name: HOME
+      value: /tmp
     - name: CHATGPT_TOKEN_DIR
       value: /app/chatgpt_tokens
     - name: REDIS_HOST
@@ -67,10 +72,31 @@ spec:
   service:
     type: ClusterIP
     port: 4000
+  # Never calls the Kubernetes API (the operator talks to the proxy, not the other way round).
+  automountServiceAccountToken: false
+  # 65534 (nobody) reads the image; fsGroup makes the CephFS token volume group-writable
+  # so the ChatGPT login can refresh itself.
+  podSecurityContext:
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
     - name: chatgpt
       mountPath: /app/chatgpt_tokens
+    - name: tmp
+      mountPath: /tmp
   volumes:
+    - name: tmp
+      emptyDir: {}
     - name: chatgpt
       persistentVolumeClaim:
         claimName: litellm-chatgpt

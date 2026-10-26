@@ -11,3 +11,6 @@ authentication:
   existingSecret: ""
   existingSecretKey: password
 args: []
+# Optional pod/container security contexts, passed straight to the Dragonfly resource.
+podSecurityContext: {}
+containerSecurityContext: {}
