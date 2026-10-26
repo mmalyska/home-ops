@@ -4,9 +4,9 @@
 
 **Goal:** One LiteLLM gateway in the cluster that serves Codex-subscription `main`, OpenRouter `cheap`, Jetson `local` and CPU `embed`, with a 50 zl/month cap on pay-per-token spend, then move opencode, Honcho and Hermes onto it.
 
-**Architecture:** Restore the removed LiteLLM app (`cluster/apps/ai/litellm`, removed in commit `2b06f7d2`) with the `litellm-helm` chart and a CNPG database from the local `pgsql-cnpg` chart. Model routing, fallbacks and budgets live in `proxy_config` in `values.yaml`. Clients get one virtual key each. No LiteLLM operator.
+**Architecture:** Two apps, as in bjw-s `kubernetes/apps/ai`: `cluster/apps/ai/litellm-operator` (the home-operations operator chart) and `cluster/apps/ai/litellm` (a `LiteLLMProxy`, one `LiteLLMModel` per model, `LiteLLMTeam` and `LiteLLMVirtualKey` per client, a CNPG database from the local `pgsql-cnpg` chart, ExternalSecret, ServiceMonitor, optional Dragonfly for budget counters). Pattern source: `gh api repos/bjw-s-labs/home-ops/contents/kubernetes/apps/ai/litellm/app` and the operator README (`gh api repos/home-operations/litellm-operator/contents/README.md`). Earlier commits on this branch (config in `proxy_config` with `litellm-helm`) are superseded by Task 1.
 
-**Tech Stack:** ArgoCD ApplicationSet, `litellm-helm` (oci://ghcr.io/berriai), `charts/pgsql-cnpg`, External Secrets (Bitwarden), Envoy Gateway `envoy-internal`, Prometheus, Coder Terraform template.
+**Tech Stack:** ArgoCD ApplicationSet, home-operations `litellm-operator` chart and CRDs (`litellm.home-operations.com/v1alpha1`), `charts/pgsql-cnpg`, External Secrets (Bitwarden), Envoy Gateway `envoy-internal`, Prometheus, Coder Terraform template.
 
 **Spec:** `.plans/superpowers/specs/2026-10-26-ai-gateway-design.md`
 
@@ -40,70 +40,65 @@
 
 ## Delivery step 1: gateway alone
 
-### Task 1: Restore the LiteLLM app with `cheap`, `local`, DB and route
+### Task 1: Operator app and proxy skeleton with `cheap` and `local`
 
 **Files:**
-- Create: `cluster/apps/ai/litellm/{Chart.yaml,app-config.yaml,values.yaml}`
-- Create: `cluster/apps/ai/litellm/templates/{httproute.yaml,api-externalsecret.yaml}`
-- Reference: `git show 2b06f7d2^:cluster/apps/ai/litellm/<file>` for each file (they match the layout above)
+- Create: `cluster/apps/ai/litellm-operator/{Chart.yaml,app-config.yaml,values.yaml}` (wrap `oci://ghcr.io/home-operations/charts/litellm-operator`, latest 0.0.x; `syncWave: "-1"`; webhook and leader election on, memory limit 128Mi as in bjw-s)
+- Rework: `cluster/apps/ai/litellm/` — drop `litellm-helm` and `proxy_config`; keep `pgsql-cnpg` dependency, `templates/api-externalsecret.yaml`, route
+- Create: `cluster/apps/ai/litellm/templates/{litellmproxy.yaml,models/cheap.yaml,models/local.yaml}`
 
 **Interfaces:**
-- Produces: Service `litellm` port 4000 in namespace `ai`; Secret `litellm-secrets` with keys `LITELLM_MASTER_KEY`, `OPENROUTER_API_KEY`, `S3_ACCESS_KEY_ID`, `S3_ACCESS_SECRET_KEY`; model aliases `cheap` and `local`; CNPG cluster `litellmdb`.
+- Produces: `LiteLLMProxy/litellm` (image from `ghcr.io/berriai/litellm`, pinned by tag and digest, Renovate tracks it; `apiAccess.masterKeyRef` -> Secret `litellm-secrets` key `LITELLM_MASTER_KEY`; `DATABASE_URL` from the CNPG app secret `litellmdb-cnpg-app` key `uri`); `LiteLLMModel` `cheap` and `local` with `proxyRef: litellm`; Service `litellm:4000` in namespace `ai`; route on `envoy-internal` via `spec.route` hostnames `litellm.<secret:private-domain>`.
 
-- [ ] **Step 1: Restore files from `2b06f7d2^`** with `git show`, set `enabled: "true"` and `namespace: ai` in `app-config.yaml` (add `managedNamespaceMetadata` with the baseline pod-security labels, copied from `cluster/apps/ai/coder/app-config.yaml`), bump `litellm-helm` to the latest 1.x release Renovate tracks and the CNPG image to the one `.archive/cluster/ai/honcho/values.yaml` uses (`17.6-standard-bookworm`).
-- [ ] **Step 2: Rewrite `proxy_config.model_list`** to exactly two entries: `cheap` -> `openrouter/<model chosen by price/quality at build time, DeepSeek or Gemini Flash class>`, `local` -> `openai/gemma-4-26b-a4b` with `api_base: http://llama-server.llm.svc.cluster.local:8080/v1` and `api_key: local`. Remove the Anthropic/OpenAI credentials and keys.
-- [ ] **Step 3: Rewrite `api-externalsecret.yaml`** with keys `LITELLM_MASTER_KEY`, `OPENROUTER_API_KEY`, `S3_ACCESS_KEY_ID`, `S3_ACCESS_SECRET_KEY`. Reuse the old master-key and S3 UUIDs (they still exist); for `OPENROUTER_API_KEY` ask the owner to confirm the archived Honcho UUID is the right key. Do not invent UUIDs.
-- [ ] **Step 4: Set resources** (requests 100m/512Mi, memory limit 2Gi: the old audits show ~1 GiB use) and the CNPG backup destination under a new path `s3://.../cnpg/litellm`.
-- [ ] **Step 5: Render and lint**
-  Run: `cd cluster/apps/ai/litellm && helm dependency build . && helm template litellm . -f values.yaml | grep -E "kind: (Deployment|HTTPRoute|ExternalSecret|Cluster)$"`
-  Expected: one each, no render error. Then `task lint:all` passes.
-- [ ] **Step 6: Commit** `feat(litellm): restore the gateway with OpenRouter and local models`
+- [ ] **Step 1: Write the failing check** `check1.sh`: renders both apps and asserts the kinds `LiteLLMProxy`, `LiteLLMModel` (2), `ExternalSecret`, `Cluster`; no `litellm-helm`; route parent is `envoy-internal`; models are `cheap` (`openrouter/google/gemini-3.1-flash-lite`, key from `OPENROUTER_API_KEY`) and `local` (`openai/gemma-4-26b-a4b`, `apiBase` the llama-server Service). Run it; expect FAIL.
+- [ ] **Step 2: Create the operator app.** CRDs must exist before the proxy app syncs: operator `syncWave` lower than litellm, and the litellm app syncs with `SkipDryRunOnMissingResource=true` (see `cluster/apps/system/tuppr/templates/*` for the pattern).
+- [ ] **Step 3: Rework the litellm app** to the interfaces above. Resources: requests 100m/256Mi, memory limit 2Gi. Set `generalSettings.store_model_in_db: false`, `litellmSettings.callbacks: ["prometheus"]`, `routerSettings.cooldown_time: 300`, `num_retries: 1`. Admin UI: master key only, never anonymous (no Kanidm yet).
+- [ ] **Step 4: Reuse the Bitwarden entries** (master key, S3 from `git show 2b06f7d2^:cluster/apps/ai/litellm/templates/api-externalsecret.yaml`; OpenRouter key from the archived Honcho UUID, owner to confirm). Add `LITELLM_SALT_KEY` (new entry, owner creates; encrypts stored credentials, must never change).
+- [ ] **Step 5: Run `check1.sh`** until OK; `task lint:all` clean for the two apps.
+- [ ] **Step 6: Commit** `feat(litellm): move the gateway to the LiteLLM operator`
 
-### Task 2: Budget, per-client keys and fallback config
+### Task 2: Budget, fallbacks, teams and virtual keys
 
 **Files:**
-- Modify: `cluster/apps/ai/litellm/values.yaml` (`proxy_config`)
+- Modify: `cluster/apps/ai/litellm/templates/litellmproxy.yaml` (`routerSettings`)
+- Create: `cluster/apps/ai/litellm/templates/{teams.yaml,keys.yaml}`, optionally `dragonfly.yaml`
 
 **Interfaces:**
-- Consumes: aliases from Task 1.
-- Produces: `router_settings` with `fallbacks: [{"main": ["cheap"]}]` (placeholder until Task 3 adds `main`), `cooldown_time` of 300s, `num_retries: 1`; `litellm_settings.max_budget` (fixed USD figure close to 50 zl, review against the exchange rate) with `budget_duration: 30d`, applied to `cheap` only; `general_settings.disable_spend_logs: false`.
+- Produces: `routerSettings.provider_budget_config.openrouter` (`budget_limit: 13`, `time_period: 30d`), `fallbacks: [{cheap: [local]}]` (the `main -> cheap` entry is added in Task 3); one `LiteLLMTeam` per client with `secretName` `hermes-litellm`, `honcho-litellm`, `opencode-litellm`. The operator writes each key into that Secret in the key resource's own namespace, and `proxyNamespace: ai` lets a key live in the client's namespace, so create `opencode` in `coder` (where workspace pods can read it), and `hermes`/`honcho` with their apps in Tasks 6-7; Task 2 creates only the teams and a throwaway test key and `models` limited per the key table in the docs.
 
-- [ ] **Step 1: Add the settings above** and a per-key budget block as comments documenting the key layout: `hermes`, `honcho`, `opencode` (one key each, models limited to what each needs).
-- [ ] **Step 2: Render** `helm template ... | grep -A3 -E "max_budget|cooldown_time|fallbacks"` shows the values from the Global Constraints.
-- [ ] **Step 3: Ask the owner for approval, then deploy** (merge the PR, owner syncs). Verify from a port-forward, using the master key from the owner's shell:
-  `curl -s localhost:4000/v1/chat/completions -H "Authorization: Bearer $KEY" -d '{"model":"cheap","messages":[{"role":"user","content":"say ok"}]}'` returns a completion; same for `local`.
-- [ ] **Step 4: Create the three virtual keys** with `curl localhost:4000/key/generate` (`models`, `max_budget`, `key_alias`), store each in Bitwarden (owner action), and test that a key rejects a model outside its list with a 401/403.
-- [ ] **Step 5: Budget test:** generate a throwaway key with `max_budget: 0.0001`, call `cheap` until it is rejected, then confirm a call to `local` still works. Delete the key.
-- [ ] **Step 6: Commit/PR** `feat(litellm): budget cap, cooldown and per-client keys`
+- [ ] **Step 1: Extend `check1.sh` into `check2.sh`**: assert the budget block, no `litellm_settings.max_budget`, cooldown 300, `cheap -> local` fallback, and three `LiteLLMTeam` with the model lists from the docs table. Expect FAIL.
+- [ ] **Step 2: Implement** (budget via `routerSettings` free-form fields; keys per bjw-s `hermes/app/litellmvirtualkey.yaml`).
+- [ ] **Step 3: Budget counters.** Provider-budget spend is in memory unless Redis is configured. Owner decision pending (spec "Builder's choices"): if yes, add a small Dragonfly instance (the cluster has `dragonfly-operator`) and `REDIS_HOST`/`REDIS_PORT` env plus `routerSettings.redis_host/redis_port`; if no, document the restart reset.
+- [ ] **Step 4: Owner approves and deploys** (merge, sync operator first, then litellm). Verify via port-forward with the master key from the owner's shell: `cheap` and `local` complete; the operator-created key Secrets exist; a key rejects a model outside its list.
+- [ ] **Step 5: Budget test:** throwaway `LiteLLMVirtualKey` with a tiny budget, call `cheap` until rejected, `local` still works. Delete it.
+- [ ] **Step 6: Commit/PR** `feat(litellm): budget cap, teams and virtual keys`
 
 ### Task 3: ChatGPT-subscription `main` (needs the owner)
 
 **Files:**
-- Modify: `cluster/apps/ai/litellm/values.yaml`, `cluster/apps/ai/litellm/templates/` (token storage as found)
-- Create: `docs/src/k8s/ai-gateway.md` (section "main model login")
+- Modify: `cluster/apps/ai/litellm/templates/litellmproxy.yaml` (env `CHATGPT_TOKEN_DIR=/app/chatgpt_tokens`, PVC volume and mount as in bjw-s), create `templates/pvc.yaml` (1Gi), `templates/models/main.yaml`
+- Modify: `docs/src/k8s/ai-gateway.md` ("main model login")
 
 **Interfaces:**
-- Produces: alias `main`; fallback `main -> cheap` active; a documented way to re-do the login.
+- Produces: `LiteLLMModel` `main` (`params.model: chatgpt/<current model>`, `info.mode: responses`, `additional_drop_params: [temperature]`, as bjw-s `models/chatgpt/*.yaml`), fallback `main -> cheap`, plus a final `local` fallback for budget exhaustion.
 
-- [ ] **Step 1: Check, before building.** Read LiteLLM's current docs (Context7) for the ChatGPT-subscription provider, and OpenAI's terms for subscription use through a gateway. If either blocks it, stop and ask the owner. Write the finding into `docs/src/k8s/ai-gateway.md`.
-- [ ] **Step 2: Decide token storage** from the docs: where LiteLLM writes the OAuth token and whether it survives a restart (PVC mounted at that path, a DB, or an ExternalSecret re-seed). Add what is needed (for a PVC, a PVC manifest plus a `volumeMounts` entry; size 1Gi).
-- [ ] **Step 3: Add `main`** to `model_list` and the real fallback `[{"main": ["cheap"]}]`, plus `context_window_fallbacks` and a `local` fallback for budget exhaustion as the Global Constraints require.
-- [ ] **Step 4: With the owner, do the interactive device login** against the running pod (owner enters the code in a browser). Never paste tokens into chat or git.
-- [ ] **Step 5: Verify:** `main` completes; delete the pod and confirm `main` still works after it restarts (Review Focus: login survives restart).
-- [ ] **Step 6: Simulate a usage-limit response** (LiteLLM `mock_testing_fallbacks: true` on the request) and confirm the answer comes from `cheap` and `main` is cooled down on the next call.
-- [ ] **Step 7: Commit/PR** `feat(litellm): add the ChatGPT subscription as main`
+- [ ] **Step 1: Check, before building.** OpenAI terms for subscription use through a gateway, and LiteLLM's `chatgpt/` provider docs (Context7); bjw-s already runs it, which is evidence it works but not about the terms. If either blocks it, stop and ask the owner.
+- [ ] **Step 2: Add the PVC, env and mount**, then `main` and the fallback. The OAuth token lives on the PVC at `CHATGPT_TOKEN_DIR`, so it survives restarts.
+- [ ] **Step 3: With the owner, do the interactive device login** against the running pod. Never paste tokens into chat or git.
+- [ ] **Step 4: Verify** `main` completes; delete the pod and confirm `main` still works after restart.
+- [ ] **Step 5: Simulate a usage-limit response** (`mock_testing_fallbacks: true`) and confirm the answer comes from `cheap` and `main` cools down.
+- [ ] **Step 6: Document** the login procedure; commit/PR `feat(litellm): add the ChatGPT subscription as main`
 
-### Task 4: Metrics, alert and docs
+### Task 4: Metrics, alerts and docs
 
 **Files:**
-- Create: `cluster/apps/ai/litellm/templates/servicemonitor.yaml` (or PodMonitor, match `cluster/apps/ai/llm/server/templates/podmonitor.yaml`), `cluster/apps/ai/litellm/templates/prometheusrule.yaml`
-- Modify: `docs/src/k8s/ai-gateway.md`, `docs/src/k8s/network.md` or the LB/IP table only if an IP is used (none expected)
+- Create: `cluster/apps/ai/litellm/templates/{servicemonitor.yaml,prometheusrule.yaml}` (ServiceMonitor as bjw-s `litellm/app/serviceMonitor.yaml`, label `release: prometheus-stack`; rules as already written in commit `659451a5`, copy them)
+- Modify: `docs/src/k8s/ai-gateway.md` (already written; update the operator parts), `.github/mkdocs/mkdocs.yml` (nav entry exists)
 
-- [ ] **Step 1: Enable `litellm_settings.callbacks: ["prometheus"]`** and add the monitor.
-- [ ] **Step 2: Add two alerts:** budget used > 80% of `max_budget`; `main` failure ratio > 50% over 15m.
-- [ ] **Step 3: Verify:** `helm template` renders them; after sync the target is `up` in Prometheus (owner confirms or read-only query).
-- [ ] **Step 4: Document** model aliases, fallback chain, key layout, login procedure, budget reset in `docs/src/k8s/ai-gateway.md`; add the plan to `.plans/list.md`.
-- [ ] **Step 5: Commit/PR** `feat(litellm): metrics, alerts and docs`
+- [ ] **Step 1: Write the failing check** (`check4.sh` from the branch history): ServiceMonitor with the release label, PrometheusRule with `LiteLLMBudgetNearlyUsed` and `LiteLLMModelFailing`, prometheus callback in the proxy settings. Expect FAIL after Task 1 removes the old chart.
+- [ ] **Step 2: Implement** and rerun until OK.
+- [ ] **Step 3: After deploy,** the target is `up` in Prometheus and the metric names in the rules exist on `/metrics` (read-only query; owner confirms).
+- [ ] **Step 4: Commit/PR** `feat(litellm): metrics, alerts and docs`
 
 ## Delivery step 2: opencode in Coder
 
@@ -113,7 +108,7 @@
 - Modify: `cluster/apps/ai/coder/workspace-template/main.tf` (container env / opencode config), `cluster/apps/ai/coder/templates/externalsecret.yaml` if a key must reach the template
 
 **Interfaces:**
-- Consumes: the `opencode` virtual key from Task 2; URL `http://litellm.ai.svc.cluster.local:4000/v1`.
+- Consumes: Secret `opencode-litellm` (key `key`; confirm the key name in the operator README or a created Secret) from a `LiteLLMVirtualKey` named `opencode` that this task adds in the `coder` namespace with `proxyNamespace: ai`; URL `http://litellm.ai.svc.cluster.local:4000/v1`.
 
 - [ ] **Step 1: Read how the template passes env** and where opencode is configured (`main.tf` around the `kubernetes_deployment_v1.workspace` container). Deliver the key from a Kubernetes Secret via `secret_key_ref`, not as a Coder parameter.
 - [ ] **Step 2: Provide an opencode provider config** pointing at the URL, with models `main`, `cheap`, `local` (OpenAI-compatible provider). Mount or write it at workspace start.
@@ -133,7 +128,7 @@
 - Produces: alias `embed` -> `openai/nomic-embed-text` at the embeddings Service; Honcho using key `honcho` for chat (`cheap` or `local`, builder picks by testing summary quality) and `embed` for vectors.
 
 - [ ] **Step 1: Do the archive restore** exactly as the README describes; keep the embedding model (nomic-embed-text v1.5, 768-dim) so the schema matches.
-- [ ] **Step 2: Replace the OpenRouter key in Honcho** with the gateway URL and the `honcho` key; update its ExternalSecret and Reloader annotation.
+- [ ] **Step 2: Replace the OpenRouter key in Honcho** with the gateway URL and the `honcho-litellm` Secret from a `LiteLLMVirtualKey` named `honcho` in the Honcho namespace (`proxyNamespace: ai`); update its Reloader annotation.
 - [ ] **Step 3: Add `embed`** to LiteLLM; test `curl .../v1/embeddings` returns a 768-length vector.
 - [ ] **Step 4: Render** both apps with `helm template`; `task lint:all`.
 - [ ] **Step 5: Owner creates the empty `honchodb` data (new database, no data was kept) on first sync; verify Honcho `/health`.**
@@ -147,7 +142,7 @@
 - Re-add the Renovate rule for `nousresearch/hermes-agent` (README step 4)
 
 - [ ] **Step 1: Restore** per README steps 1, 3-4.
-- [ ] **Step 2: Set `model` to the gateway:** `provider: custom`, `default: main`, `base_url: http://litellm.ai.svc.cluster.local:4000/v1`, `api_key` from the `hermes` key via ExternalSecret; remove `fallback_providers` (the gateway handles fallback).
+- [ ] **Step 2: Set `model` to the gateway:** `provider: custom`, `default: main`, `base_url: http://litellm.ai.svc.cluster.local:4000/v1`, `api_key` from the `hermes-litellm` Secret of a `LiteLLMVirtualKey` named `hermes` (`proxyNamespace: ai`); remove `fallback_providers` (the gateway handles fallback).
 - [ ] **Step 3: Set auxiliary tasks** (title generation, compression, approval, web_extract, triage, kanban) to `local` through the gateway; vision to `cheap`. Compression needs >= 64K; verify with the Hermes startup log.
 - [ ] **Step 4: Render** and lint; deploy with owner confirmation; test a Discord message end to end.
 - [ ] **Step 5: Update `.archive/cluster/ai/README.md`** (restored items removed from the archived list).

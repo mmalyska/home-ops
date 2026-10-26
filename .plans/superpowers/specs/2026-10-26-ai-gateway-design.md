@@ -26,7 +26,6 @@ Put one gateway (LiteLLM) in the cluster as the single OpenAI-compatible endpoin
 
 - Not using the Anthropic subscription anywhere (blocked by its Terms of Service).
 - No public exposure of the gateway; no external HTTPRoute.
-- No LiteLLM operator at first (see builder's choices).
 - Not restoring speech-to-text/text-to-speech or other archived Hermes extras unless needed.
 - Not replacing llama-server for Lingarr; it keeps working as is.
 - The owner's JetBrains AI subscription (assumed: Junie, the IDE coding agent) stays an IDE-side tool on JetBrains' own quota; it is not routed through the gateway.
@@ -59,7 +58,8 @@ Put one gateway (LiteLLM) in the cluster as the single OpenAI-compatible endpoin
 
 ## Builder's choices (my calls, not agreed with the owner)
 
-- Start with plain Helm values/ConfigMap for LiteLLM (existing app pattern), not the LiteLLM operator. Revisit if the model list grows.
+- Use the home-operations LiteLLM operator (`oci://ghcr.io/home-operations/charts/litellm-operator`), as in the bjw-s home-ops repo, instead of one big `proxy_config`: the proxy, each model, each team and each virtual key are Kubernetes resources. This was the owner's decision on PR 5927; it replaces my earlier call to skip the operator.
+- Budget counters: LiteLLM keeps provider-budget spend in memory unless Redis is set, so a restart resets the cap. The cluster already has `dragonfly-operator`; add a small Dragonfly instance for LiteLLM so the cap survives restarts (builder's call, to confirm with the owner).
 - Namespace `ai`; new app `cluster/apps/ai/litellm`.
 - Restore Hermes and Honcho from `.archive/cluster/ai/` in a second step, after the gateway works.
 - Pick the cheap pay-per-token model (a DeepSeek or Gemini Flash class model) by price and quality at build time; it is served through OpenRouter, using the owner's credits.
