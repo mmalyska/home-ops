@@ -45,4 +45,5 @@
 - [Talos log shipping to Loki](reference_talos_log_shipping.md) — UDP via Alloy loki.source.syslog raw (TCP stalls minutes after a receiver pod restart); Alloy/ArgoCD gotchas hit building it
 - [container_fs_writes double count](reference_container_fs_writes_double_count.md) — pod-level series next to per-container ones; unfiltered sums are 2x; use container!=""
 - [LAN route for external-only apps](reference_lan_route_for_external_apps.md) — external-only HTTPRoute gets no AdGuard record, LAN traffic hairpins via Cloudflare (114 KB/s uploads); add an envoy-internal route
-- [AI gateway](reference_ai_gateway.md) — LiteLLM endpoint, aliases, restart/label-sync/probe gotchas; Jetson deliberately unhardened
+- [AI gateway](reference_ai_gateway.md) — LiteLLM endpoint, aliases, restart/label-sync/probe gotchas; Jetson llama-server has an ingress policy only
+- [Lingarr API key is UI-only](reference_lingarr_api_key_ui_only.md) — LOCAL_AI_API_KEY env sends no header (401/500); paste the key in the UI, never restart before the env is gone
