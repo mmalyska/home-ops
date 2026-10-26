@@ -15,6 +15,24 @@ spec:
       labels:
         app: honcho-api
     spec:
+      initContainers:
+        # A fresh database is migrated to vector(1536); Honcho refuses to start
+        # until the columns match EMBEDDING_VECTOR_DIMENSIONS. The script is a
+        # no-op when they match and refuses to alter tables that hold data.
+        - name: configure-embeddings
+          image: "{{ .Values.honcho.image.repository }}:{{ .Values.honcho.image.tag }}"
+          command:
+            - sh
+            - -c
+            - /app/.venv/bin/python scripts/provision_db.py && /app/.venv/bin/python scripts/configure_embeddings.py --yes
+          env:
+            {{- include "honcho.llmEnv" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
       containers:
         - name: honcho-api
           image: "{{ .Values.honcho.image.repository }}:{{ .Values.honcho.image.tag }}"
