@@ -1,0 +1,42 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: nextcloud-storage
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: nextcloud.storage
+      rules:
+        # The data volume is a QNAP NFS share (about 959 GiB) that holds the
+        # family's photos, the previews and the versions. The kubelet reports
+        # the share's own capacity, not the 2000Gi on the PV object. The
+        # library is expected to reach about 400 GB, so 15% free (about 150 GB)
+        # leaves room to act before uploads start to fail.
+        - alert: NextcloudDataVolumeLow
+          expr: >-
+            kubelet_volume_stats_available_bytes{namespace="nextcloud",persistentvolumeclaim="nextcloud-data-pvc"}
+            / kubelet_volume_stats_capacity_bytes{namespace="nextcloud",persistentvolumeclaim="nextcloud-data-pvc"} < 0.15
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: Nextcloud data volume is over 85% full
+            description: >-
+              The QNAP share behind nextcloud-data-pvc has under 15% free. Free
+              space on the share or add capacity; see "Sizing assumptions" in
+              docs/src/k8s/nextcloud.md.
+        # Below 7% (about 70 GB) a bulk phone upload can fill the share.
+        - alert: NextcloudDataVolumeCritical
+          expr: >-
+            kubelet_volume_stats_available_bytes{namespace="nextcloud",persistentvolumeclaim="nextcloud-data-pvc"}
+            / kubelet_volume_stats_capacity_bytes{namespace="nextcloud",persistentvolumeclaim="nextcloud-data-pvc"} < 0.07
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: Nextcloud data volume is nearly full
+            description: >-
+              The QNAP share behind nextcloud-data-pvc has under 7% free.
+              Uploads from the family's phones will start to fail.

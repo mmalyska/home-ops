@@ -49,9 +49,24 @@ pgsql-cnpg:
 nextcloud:
   deploymentAnnotations:
     secret.reloader.stakater.com/reload: "nextcloud-admin-secret,nextcloud-redis-auth"
+  # mmalyska/containers: official fpm-alpine plus ffmpeg and exiftool (video previews, Memories)
   image:
-    flavor: fpm-alpine
+    registry: ghcr.io
+    repository: mmalyska/nextcloud
+    tag: 35.0.2@sha256:7a2250b96698f406fcb2586a0faec2438b7ad07ab89f60f5686bbc41b37e2841
   nextcloud:
+    # The runtime makes the render node owned by the container's uid:gid, so
+    # group 82 (www-data, which runs php-fpm and ffmpeg) gets read/write on
+    # /dev/dri/renderD128. Without it the node is root:root and VAAPI fails.
+    securityContext:
+      runAsGroup: 82
+    extraEnv:
+      - name: MAGICK_MEMORY_LIMIT
+        value: 256MiB
+      - name: MAGICK_MAP_LIMIT
+        value: 512MiB
+      - name: MAGICK_THREAD_LIMIT
+        value: "1"
     host: nextcloud.<secret:private-domain>
     existingSecret:
       enabled: true
@@ -81,6 +96,33 @@ nextcloud:
           // (LocalServerException: "violates local access rules") when the
           // user_oidc app fetches the OIDC discovery document server-side.
           'allow_local_remote_servers' => true,
+        ); ?>
+      # enabledPreviewProviders REPLACES the upstream default list, so the 11
+      # defaults must stay in it; HEIC (Samsung photos) and Movie (video
+      # thumbnails, needs ffmpeg from the custom image) are the additions.
+      # Without HEIC every HEIC thumbnail request returns 404.
+      previews.config.php: |-
+        <?php
+        $CONFIG = array (
+          'enabledPreviewProviders' => array(
+            'OC\Preview\PNG',
+            'OC\Preview\JPEG',
+            'OC\Preview\GIF',
+            'OC\Preview\BMP',
+            'OC\Preview\XBitmap',
+            'OC\Preview\Krita',
+            'OC\Preview\WebP',
+            'OC\Preview\AVIF',
+            'OC\Preview\MarkDown',
+            'OC\Preview\TXT',
+            'OC\Preview\OpenDocument',
+            'OC\Preview\HEIC',
+            'OC\Preview\Movie',
+          ),
+          'preview_max_x' => 2048,
+          'preview_max_y' => 2048,
+          'preview_concurrency_new' => 2,
+          'preview_concurrency_all' => 4,
         ); ?>
     # Default pm.max_children (5) is too small for real browsing load (Files
     # app fires many parallel requests per page: previews, notifications,
@@ -126,12 +168,25 @@ nextcloud:
       enabled: true
       secretName: nextcloud-redis-auth
       passwordKey: redis-password
+  # The 1Gi limit OOM-killed the pod in a crash loop once HEIC and video
+  # previews worked: php-fpm workers decode full-size photos (a 12 MP HEIC is
+  # hundreds of MB in ImageMagick) and ffmpeg runs in the same cgroup. Nodes have
+  # ~30 GiB. The MAGICK_* caps make ImageMagick spill to disk instead of RAM.
+  # Memories transcodes 4K HEVC (Samsung HLG) to 1080p H.264 inside this
+  # container. In software that saturated the 4 core limit, so it uses the
+  # node's Intel iGPU through VAAPI (same device plugin resource as jellyfin).
+  # The CPU limit stays as a backstop for the software fallback; the nodes have
+  # 6 cores.
   resources:
     requests:
-      cpu: 25m
-      memory: 256Mi
+      cpu: 100m
+      memory: 512Mi
+      gpu.intel.com/i915: 1
     limits:
-      memory: 1Gi
+      cpu: "4"
+      # One HDR transcode peaks at ~2.3 GiB (measured), so two at once need this.
+      memory: 4Gi
+      gpu.intel.com/i915: 1
   nginx:
     enabled: true
     resources:
@@ -185,3 +240,20 @@ dragonfly:
   authentication:
     existingSecret: nextcloud-redis-auth
     existingSecretKey: redis-password
+
+# Scheduled `occ` commands, run as CronJobs that `kubectl exec` into the
+# Nextcloud pod (see templates/occ-cronjobs.yaml). Each entry becomes the
+# CronJob `nextcloud-occ-<name>`.
+occJobs:
+  # The Euro-Office connector (a fork of the ONLYOFFICE one) stores `settings_error` after one failed check and
+  # then switches the editor off (xlsx downloads instead of opening). Its own
+  # cron check never clears it, so re-run the check to self-heal.
+  - name: connector-check
+    schedule: "*/15 * * * *"
+    command: ["eurooffice:documentserver", "--check"]
+  # Pre-generate the thumbnails for new uploads (previewgenerator app), so the
+  # first view of a photo grid does not render them on demand in php-fpm. The
+  # app is installed with occ, see docs/src/k8s/nextcloud.md.
+  - name: preview-pre-generate
+    schedule: "*/10 * * * *"
+    command: ["preview:pre-generate"]
