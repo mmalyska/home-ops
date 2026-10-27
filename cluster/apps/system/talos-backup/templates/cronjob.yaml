@@ -6,6 +6,9 @@ spec:
   schedule: "0 0/1 * * *"
   jobTemplate:
     spec:
+      # a failed job (e.g. an S3 outage) otherwise keeps KubeJobFailed firing
+      # until the next failure, long after the backups recovered
+      ttlSecondsAfterFinished: 43200
       template:
         spec:
           containers:
