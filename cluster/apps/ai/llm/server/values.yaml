@@ -29,9 +29,11 @@ server:
   # Consequence: requests from concurrent sessions are served one at a time.
   ctx: 65536
   parallel: 1
-  # Empty: LFM3's chat template kwargs are undocumented. Gemma needed
-  # enable_thinking=false; set a default here once LFM3's template is known.
-  chatTemplateKwargs: "{}"
+  # LFM3 thinks by default (verified 2026-10-28 on v0.8.0): reasoning eats
+  # max_tokens and small-budget calls return empty `content` with
+  # finish_reason=length. Its chat template reads `enable_thinking`, so default
+  # it off; a request can turn it back on with chat_template_kwargs.enable_thinking=true.
+  chatTemplateKwargs: '{"enable_thinking":false}'
   # The chart always renders --reasoning-budget; -1 is "unrestricted". (0 breaks
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1

@@ -98,7 +98,9 @@ Plan: `.archive/.plans/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image
 
 - Flags start unchanged from the Gemma setup: `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 -ub 256`, so only the model differs. Pod request 3Gi, limit 8Gi (not yet measured).
 - LFM3 is a conv/attention hybrid. `-np 1` stays until the corruption harness shows 0 corrupt turns at more slots: llama.cpp#29002 (co-batching corrupts hybrid state) is still open; #30666 (SWA checkpoint invalidation, in v0.8.0) fixed the single-sequence variant.
-- Unverified when written: Polish translation quality for Lingarr, the chat template's tool-call format, and the memory numbers.
+- First run (2026-10-28): the v0.8.0 image took 27 min to pull (8.5 GB, 52 layers; ghcr's blob CDN served 0.2-1.1 MB/s to nv1 and to a second machine, while Hugging Face gave ~50 MB/s), then the model loaded in about 2 s. A short completion generated at 28-29 tok/s with ~250 tok/s prompt processing and the node CPU at 1%, so the GPU does the work; v0.8.0 logs no `ggml_cuda_init` line, so check CPU use, not the log. Node `MemAvailable` was 10.1 GB right after start (Gemma: 0.5-0.9 GB). Pre-pull a new image tag on nv1 before merging a bump, otherwise the node serves nothing while it downloads.
+- LFM3 **thinks by default**: reasoning consumed `max_tokens` and `content` came back empty (`finish_reason=length`). Its chat template reads `enable_thinking`, so the server defaults it to false (`chatTemplateKwargs`); a request can opt in with `chat_template_kwargs.enable_thinking=true`.
+- Still unverified: Polish translation quality for Lingarr, the tool-call format, multi-slot corruption, and the steady-state memory numbers.
 - Rollback is a revert of the PR; ArgoCD recreates the pod (the single GPU unit cannot be shared by two pods, see "How GPU access works").
 
 ## Gemma 4 26B-A4B at one slot (2026-10-15, replaced 2026-10-28)
