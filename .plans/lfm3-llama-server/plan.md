@@ -33,6 +33,19 @@ Started 2026-10-28. Owner decision: stop using Gemma; Liquid AI positions LFM3 a
 - Upside to test later: continuous batching and its own hybrid-state handling may avoid llama.cpp#29002 at -np > 1. One model per process, so it does not solve the multi-model/one-GPU question either.
 - Decision: stay on llama.cpp for the LFM3 cutover; revisit vLLM when it supports LFM3 and a Jetson image exists.
 
+## Tuning notes from the model cards (read 2026-10-28, for the later settings pass)
+
+Sources: https://huggingface.co/LiquidAI/LFM3-1.7B and https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF.
+
+- **Sampling, general (chat, tool use, agents, coding):** temperature 0.1, top-k 50, repetition penalty 1.1. **Math/STEM:** temperature 1.0, top-p 0.95, top-k 20. min-p and presence penalty are not mentioned. The card's own benchmarks used temperature 0.6, top-p 0.95 (an eval setup, not a recommendation). Our server sets none of these (`cluster/apps/ai/llm/server/templates/deployment.yaml` has no `--temp`, `--top-k`, `--repeat-penalty`), so clients decide; the llama-server flags set defaults that a request overrides.
+- **Thinking:** on by default (the generation prompt ends with an opening think tag). Off via the template kwarg `enable_thinking` set to false, which the card warns "can be inconsistent, especially for reasoning-heavy tasks". Reasoning from turns before the latest user message is dropped unless the kwarg `preserve_thinking` is true; the v0.8.0 log says the template supports preserving reasoning and it is enabled by default (disable with `--no-reasoning-preserve`), which costs tokens in long Hermes sessions.
+- **Tool calls:** XML (`<tool_call>`, `<function=NAME>`, `<parameter=NAME>`); the harness must keep passing the tool schemas on every request and keep the current turn's assistant content and reasoning in history. Deferred tools (`defer_loading`, `tool_reference` parts) are supported; llama.cpp#31256 added deferred-tools support to the server. Check with a real tool call before trusting Hermes on it.
+- **Output length:** the Transformers example uses 2048 max new tokens; with thinking on, budget well above that.
+- **Context:** 256K trained (input plus output); we run 65536 per slot.
+- **Quantization:** no recommendation between Q8_0 (running), Q4_K_M and the QAD Q4_0 ("trained to recover the accuracy lost to Q4_0 quantization", 1.05 GB). KV cache quantization is not discussed; our `-ctk q8_0 -ctv q4_0` is hard-coded in the deployment template and untested for LFM3 (q4_0 values on only 6 global attention layers; try f16 or q8_0 since memory is plentiful).
+- **Limitations (card):** "not recommended for agentic coding or complex multi-step reasoning because of its small size"; for knowledge-heavy tasks use retrieval or search. This bears directly on Hermes: expect weak long-horizon tool use and consider a larger model for the main loop (see the multi-model section).
+- **Tuning checklist:** (1) client or server sampling defaults per consumer (Lingarr translation may dislike repetition penalty 1.1; test 1.0); (2) `--reasoning-budget` instead of -1 to bound thinking on small calls; (3) `--no-reasoning-preserve` if long sessions bloat; (4) KV cache types; (5) Q8_0 against QAD Q4_0 quality and speed; (6) `-ub`, `--cache-ram`, `--ctx-checkpoints` now that memory is free; (7) `--n-predict` cap with thinking on.
+
 ## Files to change
 
 - `cluster/apps/ai/llm/server/values.yaml` (image tag+digest, model block, ctx/parallel, cache, resources, comments)
