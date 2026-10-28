@@ -48,7 +48,7 @@ Every model call goes through the AI gateway (`http://litellm.ai.svc.cluster.loc
 
 | Module                           | Gateway alias                                        |
 | -------------------------------- | ---------------------------------------------------- |
-| Deriver, Summary                 | `local` (gemma-4-26b-a4b on nv1)                     |
+| Deriver, Summary                 | `local` (lfm3-1.7b on nv1)                           |
 | Dialectic minimal / low / medium | `local`                                              |
 | Dialectic high / max             | `cheap` (OpenRouter, counts against the monthly cap) |
 | Dream deduction / induction      | `cheap`                                              |

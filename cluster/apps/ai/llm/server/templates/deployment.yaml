@@ -64,7 +64,7 @@ spec:
             - /models/{{ .Values.server.model.file }}
             - --alias
             - {{ .Values.server.model.alias }}
-            # Short flags exactly as verified on this image (b8708, CUDA 12.6).
+            # Short flags as verified on this image (llama.cpp v0.8.0, CUDA 13).
             - -ngl
             - "99"
             - -fa
@@ -78,17 +78,16 @@ spec:
             - -np
             - {{ .Values.server.parallel | quote }}
             - --jinja
-            # Gemma 4 thinks by default and the reasoning consumes max_tokens, so
-            # small-budget calls return empty content.
-            # Default it off; a request can turn it back on with
-            # chat_template_kwargs.enable_thinking=true.
+            # Default chat template kwargs (values.yaml); a request can override
+            # them with chat_template_kwargs.
             - --chat-template-kwargs
             - {{ .Values.server.chatTemplateKwargs | default "{}" | quote }}
             - --reasoning-budget
             - {{ .Values.server.reasoningBudget | quote }}
-            # nv1 has ~12.4 GiB of unified memory left for this pod. The host-RAM
-            # prompt cache defaults to 8 GiB and each context checkpoint is ~100 MiB
-            # (32 per slot), which starved the node into global OOM. Cap both.
+            # nv1 shares 15.6 GiB of unified memory with the system. The host-RAM
+            # prompt cache defaults to 8 GiB and there are 32 context checkpoints
+            # per slot, which starved the node into global OOM with the old 26B
+            # model. Cap both.
             - --cache-ram
             - {{ .Values.server.cacheRam | quote }}
             - --ctx-checkpoints
@@ -109,7 +108,7 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          # Cold start loads ~10.5 GB from Ceph (1-2 min); allow up to 10 min.
+          # Cold start loads the model from Ceph (~2 GB for LFM3, ~10.5 GB was Gemma); allow up to 10 min.
           startupProbe:
             httpGet:
               path: /health

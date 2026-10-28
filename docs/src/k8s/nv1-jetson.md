@@ -64,6 +64,8 @@ nv1 had a leftover platform network config in the Talos META partition (key `0x0
 
 ## Memory budget (llama-server)
 
+> The figures in this section and the next two were measured with Gemma 4 26B-A4B (about 11.9 GiB pod). Since 2026-10-28 nv1 serves LFM3-1.7B (see below), which needs far less; the limits below are history until the LFM3 numbers are measured.
+
 nv1 has 15.6 GiB of unified memory. The system (Talos, kubelet, Cilium, DaemonSets) uses about 3.4 GiB, and the llama-server pod sits at **about 11.9 GiB right after warm-up** (weights 10.0 GiB, KV cache 0.76 GiB, compute buffers 0.6 GiB, CUDA context). That leaves roughly 1.3 GiB of node headroom, and the pod can grow to about 13.4 GiB before the node starves.
 
 - Settings that fit (`cluster/apps/ai/llm/server/values.yaml`): memory limit `13Gi`, request `11Gi`, `--cache-ram 256`, `--ctx-checkpoints 2`, `-ub 256`. Measured steady state: 11.8–12.2 GiB, node `MemAvailable` about 1.3 GiB, 15–16 tok/s, no restarts across a sustained multi-prompt test.
@@ -90,7 +92,16 @@ Plan: `.archive/.plans/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image
 - `llama-bench` and the server both ran on the GPU with no CUDA 13.2 gibberish, so Unsloth's warning does not apply to our build.
 - Qwen3.6-35B-A3B at 2-bit is about the ceiling nv1 can load at all (IQ2_M is already out). A 3-bit file or `UD-Q2_K_XL` (11.45 GiB) cannot work. A usable Qwen3.6 or Qwen3.8-27B needs a 24 GB-class GPU.
 
-## Gemma 4 26B-A4B at one slot (2026-10-15)
+## LFM3-1.7B (2026-10-28)
+
+`llama-server` serves `LFM3-1.7B-Q8_0` (1.85 GB, alias `lfm3-1.7b`) from `LiquidAI/LFM3-1.7B-GGUF` (license `lfm1.0`) on `llama-cpp-jetson:v0.8.0`, the first llama.cpp release with LFM3 support (ggml-org/llama.cpp#31252). It replaced Gemma 4 26B-A4B by owner decision: Liquid AI positions LFM3 for agents like Hermes (BFCL V4 71.4, IFEval 96.7, 256K context), and the node gets about 10 GB of room back for tailored models. Plan: `.plans/lfm3-llama-server/`.
+
+- Flags start unchanged from the Gemma setup: `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 -ub 256`, so only the model differs. Pod request 3Gi, limit 8Gi (not yet measured).
+- LFM3 is a conv/attention hybrid. `-np 1` stays until the corruption harness shows 0 corrupt turns at more slots: llama.cpp#29002 (co-batching corrupts hybrid state) is still open; #30666 (SWA checkpoint invalidation, in v0.8.0) fixed the single-sequence variant.
+- Unverified when written: Polish translation quality for Lingarr, the chat template's tool-call format, and the memory numbers.
+- Rollback is a revert of the PR; ArgoCD recreates the pod (the single GPU unit cannot be shared by two pods, see "How GPU access works").
+
+## Gemma 4 26B-A4B at one slot (2026-10-15, replaced 2026-10-28)
 
 > Hermes and Honcho were archived on 2026-10-21 (`.archive/cluster/ai/README.md`); Lingarr is the only consumer of this server now. The Hermes figures below are kept as history and as the baseline for a restore.
 
