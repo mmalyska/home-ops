@@ -20,14 +20,18 @@ server:
     sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
     size: "1846238496"
     alias: lfm3-1.7b
-  # One slot of 65536 tokens (Hermes refuses a model with less than 64,000
-  # tokens of context per slot). Kept at one slot for the first LFM3 run: LFM2.5's
+  # One slot (Hermes refuses a model with less than 64,000 tokens of context
+  # per slot). Kept at one slot for the first LFM3 run: LFM2.5's
   # hybrid recurrent state corrupted multi-turn output when sequences were
   # co-batched (llama.cpp#29002, still open) and LFM3 is also a conv/attention
   # hybrid. Raise `parallel` (and `ctx` to parallel x 65536) only after the
   # corruption harness shows 0 corrupt turns at that slot count.
   # Consequence: requests from concurrent sessions are served one at a time.
-  ctx: 65536
+  # Context raised to 131072 (2x the Hermes floor) on 2026-10-28: only 6 of
+  # LFM3's 24 layers keep a global KV cache (~4.9 KB/token with q8_0/q4_0), so
+  # 128K costs ~0.65 GB. 262144 is the model's trained maximum (~1.3 GB) if a
+  # consumer ever needs it. Still one slot, so this is one 131072-token window.
+  ctx: 131072
   parallel: 1
   # Thinking is on by design (owner decision 2026-10-28): LFM3's chat template
   # reads `enable_thinking` and defaults it to true; it is pinned here so an
@@ -47,13 +51,20 @@ server:
   # ~9K tokens and a 2048 cap truncated the JSON on every retry. Keep the cap
   # below Bazarr's 32 minute Lingarr timeout (~28K tokens).
   nPredict: 16384
-  # Prompt cache and checkpoints are unchanged from the Gemma setup so the first
-  # LFM3 run changes one thing (the model). The node has far more headroom now
-  # (1.85 GB model vs ~10.5 GB), so both can be raised after measuring: GPU
-  # allocations are not charged to the pod cgroup, so watch NODE MemAvailable
+  # Raised from the Gemma-era 640 / 2 now that the model is 1.85 GB (node had
+  # ~9.4 GB MemAvailable with it loaded). LFM3 checkpoints are small (256-token
+  # SWA window plus conv state), so many fit. GPU allocations are not charged to
+  # the pod cgroup, so watch NODE MemAvailable
   # (`talosctl -n 192.168.48.5 read /proc/meminfo`), not `kubectl top`.
-  cacheRam: 640 # MiB of host-RAM prompt cache
-  ctxCheckpoints: 2 # per slot
+  cacheRam: 2048 # MiB of host-RAM prompt cache (counts against the pod limit)
+  ctxCheckpoints: 16 # per slot
+  # Defaults from the LFM3 model card for chat, tool use and agents. A client
+  # that sends its own value wins. Lingarr (translation) may dislike repeat
+  # penalty 1.1; test 1.0 for it. Remove a key to fall back to llama.cpp's default.
+  sampling:
+    temp: 0.1
+    topK: 50
+    repeatPenalty: 1.1
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   storage: 30Gi
   resources:

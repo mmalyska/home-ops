@@ -99,6 +99,21 @@ spec:
             {{- end }}
             - -ub
             - {{ .Values.server.ubatch | quote }}
+            {{- with .Values.server.sampling }}
+            # Server-side sampling defaults; a request that sets its own value wins.
+            {{- with .temp }}
+            - --temp
+            - {{ . | quote }}
+            {{- end }}
+            {{- with .topK }}
+            - --top-k
+            - {{ . | quote }}
+            {{- end }}
+            {{- with .repeatPenalty }}
+            - --repeat-penalty
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
             - --metrics
             - --host
             - 0.0.0.0
