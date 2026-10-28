@@ -5,7 +5,9 @@ metadata:
   type: reference
 ---
 
-nv1 (Orin NX, 15.6 GiB unified) runs llama-server with Gemma 4 26B-A4B Q2_K_XL. Pod working set is ~11.9 GiB right after warm-up; the system uses ~3.4 GiB, so the pod can grow to ~13.4 GiB before the node starves.
+**Superseded 2026-10-28:** nv1 now serves LFM3-1.7B Q8_0 (1.85 GB, ~10 GB less than Gemma), so the numbers below are Gemma-era; limits are 3Gi request / 8Gi limit and unmeasured. The lessons (GPU memory is invisible to the cgroup, watch node `MemAvailable`, cap `--cache-ram`/`--ctx-checkpoints`) still apply. See [[project_nv1_drop_gemma_multi_model]].
+
+nv1 (Orin NX, 15.6 GiB unified) ran llama-server with Gemma 4 26B-A4B Q2_K_XL. Pod working set is ~11.9 GiB right after warm-up; the system uses ~3.4 GiB, so the pod can grow to ~13.4 GiB before the node starves.
 
 - llama-server defaults (`--cache-ram` 8192 MiB, `--ctx-checkpoints` 32, each checkpoint ~100-120 MiB for Gemma's sliding window) starve the node: Talos OOM controller then kills besteffort system pods (cilium-envoy, node-exporter, NFD go CrashLoopBackOff, DNS times out) and generation speed decays from 14 to ~3 tok/s. Not thermal.
 - A pod memory limit of 12Gi OOM-kills llama-server (baseline is ~11.9 GiB). Working config: limit 13Gi, request 11Gi, `--cache-ram 256`, `--ctx-checkpoints 2`, `-ub 256` (chart `cluster/apps/ai/llm/server`).

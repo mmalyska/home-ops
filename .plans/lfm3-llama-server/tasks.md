@@ -11,3 +11,6 @@
 - [ ] Open PR from `feat/lfm3-llama-server`; after merge, archive the plan to `.archive/.plans/` and update both list.md files.
 - [ ] After the single-model test: choose the multi-model layout (router mode vs CPU pods vs GPU time-slicing; one GPU unit, see plan.md) and map roles to LiteLLM aliases (main, route, translate, vision, embed).
 - [ ] (Optional, if router mode falls short) Fork schwankner/talos-jetson-orin `plugins/jetson-device-plugin`: advertise N device IDs from a `GPU_REPLICAS` env var, build as `ghcr.io/mmalyska/jetson-device-plugin` in mmalyska/containers, bump `cluster/apps/system/nvidia/resources/device-plugin.yaml` (cluster change: confirm first), then verify `nvidia.com/gpu: N` allocatable on nv1.
+- [ ] After merge and a good run: delete the orphan Gemma file (~10.5 GB, `gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf` and its `.ok`) from the `llama-server-models` PVC with a throwaway root pod (cluster change: confirm first); shrink the 30Gi PVC request only if wanted (PVCs cannot shrink, so leave it).
+- [ ] After merge: measure the LFM3 pod working set and node `MemAvailable`, then tune `resources`, `cacheRam`, `ctxCheckpoints` in values.yaml and update `docs/src/k8s/nv1-jetson.md` ("Memory budget" still holds Gemma numbers).
+- [ ] Close the two TODO.md items (hybrid re-test, lighter `local` model) when the harness and Lingarr checks are done.
