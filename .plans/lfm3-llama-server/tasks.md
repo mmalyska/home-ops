@@ -14,3 +14,4 @@
 - [ ] After merge and a good run: delete the orphan Gemma file (~10.5 GB, `gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf` and its `.ok`) from the `llama-server-models` PVC with a throwaway root pod (cluster change: confirm first); shrink the 30Gi PVC request only if wanted (PVCs cannot shrink, so leave it).
 - [ ] After merge: measure the LFM3 pod working set and node `MemAvailable`, then tune `resources`, `cacheRam`, `ctxCheckpoints` in values.yaml and update `docs/src/k8s/nv1-jetson.md` ("Memory budget" still holds Gemma numbers).
 - [ ] Close the two TODO.md items (hybrid re-test, lighter `local` model) when the harness and Lingarr checks are done.
+- [ ] Settings tuning pass (owner, later): work through the checklist in plan.md "Tuning notes from the model cards" (sampling, reasoning budget, preserve-thinking, KV cache types, quant, batch/cache sizes, n-predict), one values.yaml change per PR, measuring tok/s, node MemAvailable and the corruption harness each time.
