@@ -40,10 +40,11 @@
 - [Talos live config + apply health quirk](reference_talos_live_config_yq_spec.md) — yq needs two passes on .spec; task talos:apply health step fails on cp nodes after a good apply
 - [tuppr upgrades](reference_tuppr_upgrades.md) — os:admin credential in tuppr's Secret, pre-hooks suppress inter-batch checks, Failed terminal until reset, nv1 alias tag and run-wide PrePullFailed
 - [Qwen3.6 on nv1 benchmark](reference_qwen36_nv1_benchmark.md) — 35B-A3B at 2-bit loads but leaves 0.4 GB node headroom; IQ2_M fails to load; next step is hardware
-- [Gemma 4 single slot on nv1](reference_gemma4_single_slot_swap.md) — served model since 2026-10-15; 0/66 corrupt; -np 2 and bigger prompt cache do not fit; watch node MemAvailable not kubectl top
+- [Gemma 4 single slot on nv1](reference_gemma4_single_slot_swap.md) — SUPERSEDED by LFM3 2026-10-28, history only; served 2026-10-15 to 10-28; 0/66 corrupt; -np 2 and bigger prompt cache do not fit; watch node MemAvailable not kubectl top
 - [QNAP /media share layout](reference_qnap_media_share_layout.md) — one share mounted as /data by all media pods; hardlinks need a single mount; File Station cannot write, use a root pod; old shares retire 2026-10-30
 - [Talos log shipping to Loki](reference_talos_log_shipping.md) — UDP via Alloy loki.source.syslog raw (TCP stalls minutes after a receiver pod restart); Alloy/ArgoCD gotchas hit building it
 - [container_fs_writes double count](reference_container_fs_writes_double_count.md) — pod-level series next to per-container ones; unfiltered sums are 2x; use container!=""
 - [LAN route for external-only apps](reference_lan_route_for_external_apps.md) — external-only HTTPRoute gets no AdGuard record, LAN traffic hairpins via Cloudflare (114 KB/s uploads); add an envoy-internal route
 - [AI gateway](reference_ai_gateway.md) — LiteLLM endpoint, aliases, restart/label-sync/probe gotchas; Jetson llama-server has an ingress policy only
 - [Lingarr API key is UI-only](reference_lingarr_api_key_ui_only.md) — LOCAL_AI_API_KEY env sends no header (401/500); paste the key in the UI, never restart before the env is gone
+- [Drop Gemma, go multi-model on nv1](project_nv1_drop_gemma_multi_model.md) — owner decision 2026-10-28; LFM3 + tailored models, plan in .plans/lfm3-llama-server

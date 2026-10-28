@@ -1,9 +1,11 @@
 ---
 name: reference_gemma4_single_slot_swap
-description: nv1 serves Gemma 4 26B-A4B Q2 at -np 1 since 2026-10-15; why (hybrid corruption), what it costs, and why -np 2 and a bigger prompt cache do not fit
+description: SUPERSEDED 2026-10-28 by LFM3 (project_nv1_drop_gemma_multi_model); history of the Gemma 4 single-slot setup. nv1 served Gemma 4 26B-A4B Q2 at -np 1 since 2026-10-15; why (hybrid corruption), what it costs, and why -np 2 and a bigger prompt cache do not fit
 metadata:
   type: reference
 ---
+
+**Superseded 2026-10-28:** nv1 now serves LFM3-1.7B ([[project_nv1_drop_gemma_multi_model]]). The findings below (hybrid corruption, `-np 2` memory limits, 640 MiB cache) are Gemma-era numbers; the hybrid-corruption warning still applies to LFM3.
 
 Since 2026-10-15 `llama-server` runs `gemma-4-26B-A4B-it-UD-Q2_K_XL` at `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 --n-predict 2048`, alias `gemma-4-26b-a4b` (PR #5702). It replaced LFM2.5-8B-A1B because LFM2.5's hybrid recurrent state is corrupted by llama.cpp under multi-sequence serving (#29002, open): 29.0% of real Hermes turns. Gemma has no recurrent state: 0 corrupt of 66 multi-turn tool-calling turns plus 0 of 10 on the live service.
 

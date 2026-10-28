@@ -2,67 +2,64 @@ server:
   replicaCount: 1
   image:
     # Our own build (mmalyska/containers), not NVIDIA's stale nvidia-ai-iot
-    # image: b8708 predates the LFM2 tool-call double-escaping fix (b9660,
-    # 2026-06-16) and the think-tag leak fix (ggml-org/llama.cpp#24234). This
-    # tag tracks upstream llama.cpp releases (ci/latest.sh) on top of the same
-    # proven-good JetPack6/r36.4/CUDA12.6/Orin(sm_87) base NVIDIA publishes.
-    # NEVER use *-cu129 anything on nv1 (CUDA 13/12.9 does not initialize on
-    # this driver and silently falls back to CPU).
+    # image. v0.8.0 is the first llama.cpp release with LFM3 support
+    # (ggml-org/llama.cpp#31252) and includes the SWA checkpoint fix
+    # (ggml-org/llama.cpp#30666). This tag tracks upstream llama.cpp releases
+    # (ci/latest.sh). nv1 runs JetPack 7 (CUDA 13); see
+    # .claude/memory/reference_jetson_llama_cuda_tag.md before changing the base.
     repository: ghcr.io/mmalyska/llama-cpp-jetson
-    tag: "v0.7.0@sha256:35a92c8eff48d19996ab6f32bd7e3da9ffb575c279f170531474429b8bb03ca9"
+    tag: "v0.8.0@sha256:405d802b8e6395b674b45fc4d1ea386b3d0c228eda424ae33442222eadd800bf"
   fetchImage: alpine:3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   model:
-    file: gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
-    url: https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-UD-Q2_K_XL.gguf
-    sha256: 2a1d26dfe6ea00a467940a5728316af6edb366bbdba950d65b85d232392fb658
-    size: "10546934240"
-    alias: gemma-4-26b-a4b
-  # One slot of 65536 tokens (the Hermes agent, archived under .archive/cluster/ai,
-  # refused a model with less than 64,000 tokens of context per slot). Why one slot and not two:
-  # 2 x 64K needs -c 131072, the config that OOM-killed Gemma at 13.78 GB under
-  # concurrent turns on 2026-09-28. Why Gemma at all: LFM2.5's hybrid
-  # recurrent state corrupts multi-turn output (llama.cpp#29002, still open;
-  # measured 29.0% under real Hermes traffic). Gemma 4 has no recurrent state:
-  # 0 corrupt turns of 66 multi-turn tool-calling turns on 2026-10-15
-  # (95% upper bound ~4.5%). See .archive/.plans/superpowers/plans/2026-10-13-llm-reliability-gemma4.md.
+    # LFM3-1.7B replaced Gemma 4 26B-A4B on 2026-10-28 (owner decision, plan in
+    # .plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
+    # room than it had with Gemma. The old Gemma file stays on the PVC until it
+    # is cleaned up by hand.
+    file: LFM3-1.7B-Q8_0.gguf
+    url: https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/main/LFM3-1.7B-Q8_0.gguf
+    sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
+    size: "1846238496"
+    alias: lfm3-1.7b
+  # One slot of 65536 tokens (Hermes refuses a model with less than 64,000
+  # tokens of context per slot). Kept at one slot for the first LFM3 run: LFM2.5's
+  # hybrid recurrent state corrupted multi-turn output when sequences were
+  # co-batched (llama.cpp#29002, still open) and LFM3 is also a conv/attention
+  # hybrid. Raise `parallel` (and `ctx` to parallel x 65536) only after the
+  # corruption harness shows 0 corrupt turns at that slot count.
   # Consequence: requests from concurrent sessions are served one at a time.
   ctx: 65536
   parallel: 1
-  # Gemma 4 thinks by default and the reasoning consumes max_tokens, so
-  # small-budget calls return empty content. Default
-  # it off; a request can turn it back on with chat_template_kwargs.enable_thinking=true.
-  chatTemplateKwargs: '{"enable_thinking":false}'
+  # Empty: LFM3's chat template kwargs are undocumented. Gemma needed
+  # enable_thinking=false; set a default here once LFM3's template is known.
+  chatTemplateKwargs: "{}"
   # The chart always renders --reasoning-budget; -1 is "unrestricted". (0 breaks
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1
   # Hard cap on tokens generated per request that does not set max_tokens
   # (Lingarr sends none). On one slot a single runaway generation
-  # blocks every session until it reaches the context limit (about an hour at
-  # 14 tok/s); at 16384 it costs ~19 minutes. It was 2048 (~2 minutes), verified
-  # to stop at exactly 2048 with finish_reason=length, until Lingarr: it sends a
+  # blocks every session until it reaches the context limit; at 16384 it costs
+  # ~19 minutes at Gemma's speed. It was 2048 until Lingarr: it sends a
   # whole subtitle file as one batch, ~25 output tokens per cue, so 357 cues need
   # ~9K tokens and a 2048 cap truncated the JSON on every retry. Keep the cap
   # below Bazarr's 32 minute Lingarr timeout (~28K tokens).
   nPredict: 16384
-  # Memory budget on nv1 (15.6 GiB unified, ~3.4 GiB used by the system). The
-  # pod itself sits at ~10.5-10.9 GiB, but GPU allocations are not charged to
-  # its cgroup: watch NODE MemAvailable (steady ~0.86 GB, transient low ~0.54 GB
-  # after a fresh start; accepted by the owner 2026-10-15), not `kubectl top`.
-  # One saved prompt state is ~276 MiB. 256 MiB rejects every entry, so
-  # sessions that alternate re-prefill ~16K tokens on every call. 640 MiB holds
-  # two states = two interleaved sessions: measured 3-4x faster turns (no-tool
-  # 48-51 s -> 12-18 s). It does NOT help 3+ sessions (cyclic eviction, no gain,
-  # 0.48 GB dip) and nothing the node can afford does. Do not raise it further.
+  # Prompt cache and checkpoints are unchanged from the Gemma setup so the first
+  # LFM3 run changes one thing (the model). The node has far more headroom now
+  # (1.85 GB model vs ~10.5 GB), so both can be raised after measuring: GPU
+  # allocations are not charged to the pod cgroup, so watch NODE MemAvailable
+  # (`talosctl -n 192.168.48.5 read /proc/meminfo`), not `kubectl top`.
   cacheRam: 640 # MiB of host-RAM prompt cache
-  ctxCheckpoints: 2 # per slot; each ~81 MiB
+  ctxCheckpoints: 2 # per slot
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   storage: 30Gi
   resources:
     requests:
       cpu: 500m
-      memory: 9Gi
-    # Tested at 13Gi. Keep it under the ~13.4 GiB point where the node itself
-    # starves, so a runaway kills this pod and not cilium-envoy / node-exporter.
+      memory: 3Gi
+    # Not yet measured with LFM3 (model 1.85 GB plus KV cache and the 640 MiB
+    # prompt cache). Re-check the pod working set after the first run. Keep the
+    # limit well under the ~13.4 GiB point where the node itself starves, so a
+    # runaway kills this pod and not cilium-envoy / node-exporter.
     limits:
-      memory: 13Gi
+      memory: 8Gi
       nvidia.com/gpu: 1

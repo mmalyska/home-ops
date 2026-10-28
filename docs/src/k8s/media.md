@@ -109,7 +109,7 @@ subtitle providers and languages.
 ## Lingarr
 
 Lingarr translates subtitles for Bazarr. It uses the local model on nv1 (`llama-server` in namespace `llm`, alias
-`gemma-4-26b-a4b`) through the OpenAI-compatible `LOCAL_AI_ENDPOINT`, English to Polish, one job at a time because
+`lfm3-1.7b`) through the OpenAI-compatible `LOCAL_AI_ENDPOINT`, English to Polish, one job at a time because
 llama-server has a single slot. The settings are environment variables in `cluster/apps/media/lingarr/values.yaml`; its
 SQLite config lives on a 1Gi `ceph-block` PVC and is not backed up, since everything in it can be recreated.
 
