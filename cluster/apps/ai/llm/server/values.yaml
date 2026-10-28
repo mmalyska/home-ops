@@ -29,11 +29,13 @@ server:
   # Consequence: requests from concurrent sessions are served one at a time.
   ctx: 65536
   parallel: 1
-  # LFM3 thinks by default (verified 2026-10-28 on v0.8.0): reasoning eats
-  # max_tokens and small-budget calls return empty `content` with
-  # finish_reason=length. Its chat template reads `enable_thinking`, so default
-  # it off; a request can turn it back on with chat_template_kwargs.enable_thinking=true.
-  chatTemplateKwargs: '{"enable_thinking":false}'
+  # Thinking is on by design (owner decision 2026-10-28): LFM3's chat template
+  # reads `enable_thinking` and defaults it to true; it is pinned here so an
+  # image or template change cannot flip it. Cost: reasoning tokens count toward
+  # max_tokens, so a request with a small budget (titles, short summaries) can
+  # return empty `content` with finish_reason=length. Give such calls enough
+  # max_tokens, or opt out per request with chat_template_kwargs.enable_thinking=false.
+  chatTemplateKwargs: '{"enable_thinking":true}'
   # The chart always renders --reasoning-budget; -1 is "unrestricted". (0 breaks
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1
