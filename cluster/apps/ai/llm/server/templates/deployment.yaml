@@ -30,19 +30,26 @@ spec:
           args:
             - |
               set -eu
-              DEST="/models/${MODEL_FILE}"
-              # Skip the network entirely when a previously verified file exists
-              # (lets the pod restart while offline).
-              if [ -f "${DEST}.ok" ] && [ "$(cat "${DEST}.ok")" = "${MODEL_SHA256}" ] \
-                 && [ "$(stat -c %s "${DEST}")" = "${MODEL_SIZE}" ]; then
-                echo "model present and verified; skipping download"
-                exit 0
-              fi
-              echo "downloading ${MODEL_URL}"
-              wget -c -O "${DEST}.part" "${MODEL_URL}"
-              echo "${MODEL_SHA256}  ${DEST}.part" | sha256sum -c -
-              mv "${DEST}.part" "${DEST}"
-              echo "${MODEL_SHA256}" > "${DEST}.ok"
+              # fetch FILE URL SHA256 SIZE
+              fetch() {
+                DEST="/models/$1"
+                # Skip the network entirely when a previously verified file exists
+                # (lets the pod restart while offline).
+                if [ -f "${DEST}.ok" ] && [ "$(cat "${DEST}.ok")" = "$3" ] \
+                   && [ "$(stat -c %s "${DEST}")" = "$4" ]; then
+                  echo "$1 present and verified; skipping download"
+                  return 0
+                fi
+                echo "downloading $2"
+                wget -c -O "${DEST}.part" "$2"
+                echo "$3  ${DEST}.part" | sha256sum -c -
+                mv "${DEST}.part" "${DEST}"
+                echo "$3" > "${DEST}.ok"
+              }
+              fetch "${MODEL_FILE}" "${MODEL_URL}" "${MODEL_SHA256}" "${MODEL_SIZE}"
+              {{- with .Values.server.mmproj }}
+              fetch "${MMPROJ_FILE}" "${MMPROJ_URL}" "${MMPROJ_SHA256}" "${MMPROJ_SIZE}"
+              {{- end }}
           env:
             - name: MODEL_FILE
               value: {{ .Values.server.model.file | quote }}
@@ -52,6 +59,16 @@ spec:
               value: {{ .Values.server.model.sha256 | quote }}
             - name: MODEL_SIZE
               value: {{ .Values.server.model.size | quote }}
+            {{- with .Values.server.mmproj }}
+            - name: MMPROJ_FILE
+              value: {{ .file | quote }}
+            - name: MMPROJ_URL
+              value: {{ .url | quote }}
+            - name: MMPROJ_SHA256
+              value: {{ .sha256 | quote }}
+            - name: MMPROJ_SIZE
+              value: {{ .size | quote }}
+            {{- end }}
           volumeMounts:
             - name: models
               mountPath: /models
@@ -62,6 +79,11 @@ spec:
           args:
             - -m
             - /models/{{ .Values.server.model.file }}
+            {{- with .Values.server.mmproj }}
+            # Vision projector for a multimodal model (images, video frames).
+            - --mmproj
+            - /models/{{ .file }}
+            {{- end }}
             - --alias
             - {{ .Values.server.model.alias }}
             # Short flags as verified on this image (llama.cpp v0.8.0, CUDA 13).
