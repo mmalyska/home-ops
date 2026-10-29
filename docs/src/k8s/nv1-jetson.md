@@ -64,7 +64,7 @@ nv1 had a leftover platform network config in the Talos META partition (key `0x0
 
 ## Memory budget (llama-server)
 
-nv1 has 15.6 GiB of unified memory shared between the system and the GPU. Since 2026-10-28 it serves LFM3-1.7B, which needs a fraction of what Gemma did.
+nv1 has 15.6 GiB of unified memory shared between the system and the GPU. Since 2026-10-28 it serves LFM3 (text-only 1.7B, then LFM3-VL-2B from 2026-10-29), which needs a fraction of what Gemma did.
 
 ### LFM3-1.7B (measured 2026-10-29)
 
@@ -131,6 +131,16 @@ Plan: `.archive/.plans/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image
 - LFM3 **thinks by default and the owner wants it that way**: the server pins `enable_thinking: true` (`chatTemplateKwargs`). Reasoning consumes `max_tokens`, so a 120-token request returned empty `content` (`finish_reason=length`); callers with small budgets need more tokens, or opt out per request with `chat_template_kwargs.enable_thinking=false` (verified: a 291-token story came back as normal content and stopped on its own).
 - Still unverified: Polish translation quality for Lingarr, the tool-call format, multi-slot corruption, and the steady-state memory numbers.
 - Rollback is a revert of the PR; ArgoCD recreates the pod (the single GPU unit cannot be shared by two pods, see "How GPU access works").
+
+## LFM3-VL-2B (2026-10-29, live)
+
+`llama-server` serves `LFM3-VL-2B-Q8_0` (1.85 GB) plus `mmproj-LFM3-VL-2B-Q8_0` (0.20 GB, chart value `server.mmproj`) from `LiquidAI/LFM3-VL-2B-GGUF` (PRs #6004, #6005). The served alias is still `lfm3-1.7b`, so the LiteLLM `local` and `local-fast` models did not change. The language model is the same size as the text-only 1.7B, so one server now covers text and images and there is no second pod for the one GPU unit. Rollback: revert #6005 (the LFM3-1.7B file stays on the PVC).
+
+- **Load:** `/props` reports `vision: true, video: true, audio: false`. Pod working set 3.3 GB, node `MemAvailable` 8.19 GB after the tests (8.39 GB just after load), no restarts.
+- **Text roles** (`bench/roles.py`, the six Hermes/Honcho-style tasks, same prompts as LFM3-1.7B): thinking off is fine for summary, extraction, triage and persona, and the title no longer leaks reasoning (7 tokens, "Ceph Cluster Health Warning Resolution"). The curate (keep/drop) judgment flipped to "drop" against 1.7B's "keep", so treat it as unreliable either way. Thinking on still returns empty `content` with small budgets, and at 2048 tokens the memory-extraction task produced nothing, so short tasks belong on `local-fast`.
+- **Images** (`bench/vision.py`, four synthetic Pillow images, 1-2 s with thinking off, 8-13 s with thinking on): receipt total and most expensive item correct; bar chart highest/lowest correct; four shapes and colors correct. A dashboard mock was wrong with thinking off (OSD and "12 pagins" garbled) and right with thinking on. Clean synthetic images only: real screenshots and photos, video and concurrent requests are untested.
+- **Consumers:** Hermes `vision` auxiliary task moved from `main` to `local` (thinking on; a call with a small `max_tokens` can come back empty, in which case move it back or to `local-fast`). Image input goes through LiteLLM unchanged.
+- **Next:** `-np 2` test (see `.plans/TODO.md`), real Hermes vision prompts, d1-omni GGUF when published.
 
 ## Gemma 4 26B-A4B at one slot (2026-10-15, replaced 2026-10-28)
 
