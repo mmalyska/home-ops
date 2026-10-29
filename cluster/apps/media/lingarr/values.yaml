@@ -27,7 +27,7 @@ app-template:
             SERVICE_TYPE: localai
             # Through the AI gateway: `cheap` (Gemini Flash Lite via OpenRouter, paid per token). The local
             # LFM3-1.7B was tried first (2026-10-29): in a whole-file batch it left ~21% of lines in English,
-            # drifted out of cue order and returned invalid JSON (docs/src/k8s/nv1-jetson.md). `local-fast`
+            # drifted out of cue order and returned invalid JSON (docs/src/k8s/nv1-jetson.md). `local`
             # (llama-server, thinking off) stays allowed on the key for a UI rollback. The API key is not an
             # env var: Lingarr keeps it encrypted and a plain LOCAL_AI_API_KEY (also on every
             # start) is not sent. Paste the lingarr-litellm Secret's `key` into Settings,
