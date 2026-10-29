@@ -77,3 +77,7 @@ Dropping Gemma frees ~10 GB on nv1, so use tailored models instead of one genera
 **Plugin source read (schwankner/talos-jetson-orin, plugins/jetson-device-plugin/main.go, ~150 lines Go):** `ListAndWatch` sends one hard-coded device `{ID: "igpu0"}`; `Allocate` ignores which IDs were requested and always returns the same sentinel DeviceSpec `/dev/nvgpu/igpu0/ctrl` plus CDI device `nvidia.com/gpu=0`. So sharing = advertise N IDs (e.g. `igpu0-0..N-1`, N from an env var such as `GPU_REPLICAS`) and keep `Allocate` as is; nothing else is per-device. Needs our own build (fork, like llama-cpp-jetson in mmalyska/containers) and a DaemonSet image bump; the watchdog sidecar is unaffected. Reject requests for more than one unit per container (nothing to gain). Cluster change: the plugin restart briefly re-registers the resource; running GPU pods are not evicted but confirm before applying.
 
 Decide after the single-model LFM3 test passes; the LiteLLM gateway then gets one alias per role.
+
+## Closed 2026-10-29
+
+LFM3-1.7B Q8_0 is live on nv1 (`-c 131072 -np 1`, cache 2048 MiB, 16 checkpoints, sampling temp 0.1 / top-k 50 / repeat-penalty 1.1, KV q8_0/q8_0). Results and numbers are in `docs/src/k8s/nv1-jetson.md`. Not suitable for subtitle translation (Lingarr uses `cheap`). The Gemma file was deleted from the PVC; the 7.7 GB LFM2.5 file remains. Unfinished items moved to `.plans/TODO.md`: thinking-on `local` for Hermes aux tasks and Honcho, nv1 alert thresholds, and the optional experiments (`-np 2`, 262144 context, f16 KV, QAD Q4_0, multi-model layout).

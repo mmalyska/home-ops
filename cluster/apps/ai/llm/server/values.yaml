@@ -12,7 +12,7 @@ server:
   fetchImage: alpine:3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
   model:
     # LFM3-1.7B replaced Gemma 4 26B-A4B on 2026-10-28 (owner decision, plan in
-    # .plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
+    # .archive/.plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
     # room than it had with Gemma. The old Gemma file stays on the PVC until it
     # is cleaned up by hand.
     # TEST 2026-10-29: LFM3-VL-2B replaces LFM3-1.7B to see whether one server can

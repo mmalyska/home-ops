@@ -115,7 +115,7 @@ Plan: `.archive/.plans/superpowers/plans/2026-10-13-qwen3.6-benchmark.md`. Image
 
 ## LFM3-1.7B (2026-10-28)
 
-`llama-server` serves `LFM3-1.7B-Q8_0` (1.85 GB, alias `lfm3-1.7b`) from `LiquidAI/LFM3-1.7B-GGUF` (license `lfm1.0`) on `llama-cpp-jetson:v0.8.0`, the first llama.cpp release with LFM3 support (ggml-org/llama.cpp#31252). It replaced Gemma 4 26B-A4B by owner decision: Liquid AI positions LFM3 for agents like Hermes (BFCL V4 71.4, IFEval 96.7, 256K context), and the node gets about 10 GB of room back for tailored models. Plan: `.plans/lfm3-llama-server/`.
+`llama-server` serves `LFM3-1.7B-Q8_0` (1.85 GB, alias `lfm3-1.7b`) from `LiquidAI/LFM3-1.7B-GGUF` (license `lfm1.0`) on `llama-cpp-jetson:v0.8.0`, the first llama.cpp release with LFM3 support (ggml-org/llama.cpp#31252). It replaced Gemma 4 26B-A4B by owner decision: Liquid AI positions LFM3 for agents like Hermes (BFCL V4 71.4, IFEval 96.7, 256K context), and the node gets about 10 GB of room back for tailored models. Plan: `.archive/.plans/lfm3-llama-server/`.
 
 - First LFM3 run used the Gemma-era flags `-c 65536 -np 1 --cache-ram 640 --ctx-checkpoints 2 -ub 256`, so only the model differed.
 - **Tuning step 1 (2026-10-28, PR #5979, live):** `-c 131072 -np 1 --cache-ram 2048 --ctx-checkpoints 16` plus server sampling defaults from the model card (`--temp 0.1 --top-k 50 --repeat-penalty 1.1`, chart value `server.sampling`; a request's own values win). Global-attention KV is ~4.9 KB/token with q8_0/q4_0 (6 of 24 layers), so 128K is ~0.65 GB and the model's 262144 maximum ~1.3 GB.
