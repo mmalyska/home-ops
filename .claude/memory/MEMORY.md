@@ -48,3 +48,4 @@
 - [AI gateway](reference_ai_gateway.md) — LiteLLM endpoint, aliases, restart/label-sync/probe gotchas; Jetson llama-server has an ingress policy only
 - [Lingarr API key is UI-only](reference_lingarr_api_key_ui_only.md) — LOCAL_AI_API_KEY env sends no header (401/500); paste the key in the UI, never restart before the env is gone
 - [Drop Gemma, go multi-model on nv1](project_nv1_drop_gemma_multi_model.md) — owner decision 2026-10-28; LFM3 + tailored models, plan in .plans/lfm3-llama-server
+- [Bazarr and Lingarr translation behaviour](reference_bazarr_lingarr_translation.md) — 40-line batches, Bazarr upgrades from opensubtitles overwrite translations, read the history DB to see the real origin
