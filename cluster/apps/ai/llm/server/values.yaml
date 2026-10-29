@@ -43,8 +43,12 @@ server:
   # LFM3's 24 layers keep a global KV cache (~4.9 KB/token with q8_0/q4_0), so
   # 128K costs ~0.65 GB. 262144 is the model's trained maximum (~1.3 GB) if a
   # consumer ever needs it. Still one slot, so this is one 131072-token window.
-  ctx: 131072
-  parallel: 1
+  # TEST 2026-10-29: two slots. `ctx` is the total, split across slots, so 262144 /
+  # 2 keeps 131072 per slot. Revert to ctx 131072 / parallel 1 if the corruption
+  # harness shows any corrupt turn (llama.cpp#29002) or node MemAvailable drops
+  # under ~3 GB.
+  ctx: 262144
+  parallel: 2
   # Thinking is off by default (owner decision 2026-10-29, reversing 2026-10-28):
   # LFM3's chat template reads `enable_thinking` and defaults it to true, so it is
   # pinned here. Reasoning tokens count toward max_tokens, so with it on a request
