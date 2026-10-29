@@ -47,11 +47,13 @@ spec:
     # from the chart's default rules. These cover what they do not.
     - name: resource.alerts
       rules:
-        # llama-server is excluded: its working set includes the mmap'd model and
-        # sits near the limit by design; nv1 memory is watched by Nv1MemoryLow.
+        # llama-server used to be excluded because Gemma's working set sat near the
+        # limit by design. With LFM3-VL-2B it peaks around 54% of its 8Gi limit
+        # (measured 2026-10-29), so it is covered like every other container;
+        # node-level memory is also watched by Nv1MemoryLowWarning / Nv1MemoryLow.
         - alert: ContainerMemoryNearLimit
           expr: >-
-            max by (namespace, pod, container) (container_memory_working_set_bytes{container!="",container!="POD",container!="llama-server"})
+            max by (namespace, pod, container) (container_memory_working_set_bytes{container!="",container!="POD"})
             / on (namespace, pod, container)
             max by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory"})
             > 0.9

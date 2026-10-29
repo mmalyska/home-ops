@@ -43,7 +43,7 @@ Rows are per pod name, so a pod that was replaced in the window shows up twice; 
 
 ## Alerts (all go to Discord)
 
-- `ContainerMemoryNearLimit`: over 90% of the limit for 15 minutes. `llama-server` is excluded.
+- `ContainerMemoryNearLimit`: over 90% of the limit for 15 minutes. Covers every container; `llama-server` was excluded until 2026-10-29 (Gemma sat near its limit, LFM3-VL-2B peaks around 54% of 8Gi).
 - `ContainerOOMKilled`: a restart whose last termination reason is `OOMKilled`.
 - `ContainerMissingMemoryLimit`: a running container with no memory limit for 24 hours (catches new apps).
 - `NodeMemoryLimitsOvercommitted`: limits on a node above 2.5x its allocatable memory.
