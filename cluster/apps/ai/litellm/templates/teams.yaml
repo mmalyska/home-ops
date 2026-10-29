@@ -43,4 +43,4 @@ metadata:
 spec:
   alias: lingarr
   proxyRef: litellm
-  models: [local, local-fast]
+  models: [cheap, local, local-fast]

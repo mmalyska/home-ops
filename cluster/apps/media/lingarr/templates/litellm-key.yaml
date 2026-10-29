@@ -14,4 +14,4 @@ spec:
   proxyNamespace: ai
   teamID: lingarr
   secretName: lingarr-litellm
-  models: [local, local-fast]
+  models: [cheap, local, local-fast]
