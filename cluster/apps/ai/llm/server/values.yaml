@@ -20,6 +20,13 @@ server:
     sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
     size: "1846238496"
     alias: lfm3-1.7b
+  # Optional vision projector for a multimodal model (e.g. LFM3-VL-2B). Unset =
+  # text-only. Fetched and verified like the model file and passed as --mmproj.
+  # mmproj:
+  #   file: mmproj-LFM3-VL-2B-Q8_0.gguf
+  #   url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/mmproj-LFM3-VL-2B-Q8_0.gguf
+  #   sha256: c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab
+  #   size: "203031872"
   # One slot (Hermes refuses a model with less than 64,000 tokens of context
   # per slot). Kept at one slot for the first LFM3 run: LFM2.5's
   # hybrid recurrent state corrupted multi-turn output when sequences were
