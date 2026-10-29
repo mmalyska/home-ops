@@ -65,6 +65,13 @@ server:
     temp: 0.1
     topK: 50
     repeatPenalty: 1.1
+  # KV cache types. q8_0 K / q4_0 V was chosen for Gemma when memory was the
+  # constraint. LFM3 has only 6 global-attention layers, so even f16 is ~12 KiB/token
+  # (1.5 GB at 128K); q4_0 V is the likeliest cause of quality loss, so test q8_0/q8_0
+  # and f16/f16 against the corruption harness before keeping either.
+  kvCache:
+    k: q8_0
+    v: q8_0
   ubatch: 256 # physical batch; halves the compute buffer vs the 512 default
   storage: 30Gi
   resources:
