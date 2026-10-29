@@ -77,11 +77,11 @@ server:
   resources:
     requests:
       cpu: 500m
-      memory: 3Gi
-    # Not yet measured with LFM3 (model 1.85 GB plus KV cache and the 640 MiB
-    # prompt cache). Re-check the pod working set after the first run. Keep the
-    # limit well under the ~13.4 GiB point where the node itself starves, so a
-    # runaway kills this pod and not cilium-envoy / node-exporter.
+      memory: 4Gi # measured 2026-10-29: 4.0 GB working set (cgroup memory.current) after ~30 min of tests
+    # The prompt cache (2048 MiB) had not filled yet (anon 1.26 GB), so the pod
+    # can still grow by up to ~2 GiB. Keep the limit well under the ~13.4 GiB
+    # point where the node itself starves, so a runaway kills this pod and not
+    # cilium-envoy / node-exporter.
     limits:
       memory: 8Gi
       nvidia.com/gpu: 1
