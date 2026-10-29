@@ -64,7 +64,28 @@ nv1 had a leftover platform network config in the Talos META partition (key `0x0
 
 ## Memory budget (llama-server)
 
-> The figures in this section and the next two were measured with Gemma 4 26B-A4B (about 11.9 GiB pod). Since 2026-10-28 nv1 serves LFM3-1.7B (see below), which needs far less; the limits below are history until the LFM3 numbers are measured.
+nv1 has 15.6 GiB of unified memory shared between the system and the GPU. Since 2026-10-28 it serves LFM3-1.7B, which needs a fraction of what Gemma did.
+
+### LFM3-1.7B (measured 2026-10-29)
+
+Config: `-c 131072 -np 1 --cache-ram 2048 --ctx-checkpoints 16 -ctk q8_0 -ctv q8_0 -ub 256`, after about 30 minutes with the speed benchmark, a 10-turn corruption run and several translation tests (never more than two concurrent sessions).
+
+| Reading                                            | Value                                                                   |
+| -------------------------------------------------- | ----------------------------------------------------------------------- |
+| Pod cgroup `memory.current` / `memory.peak`        | 4.0 GB / 4.0 GB (limit 8 GiB); `kubectl top` shows 3286 Mi              |
+| of which `anon` / `file`                           | 1.26 GB / 0.57 GB (the rest is kernel and mapped memory)                |
+| Node `MemAvailable` right after load / after tests | 9.2-9.5 GB / 7.97-8.3 GB                                                |
+| PVC `llama-server-models`                          | 19 GB of 30 GB used, 18.3 GB of it unused models (see Cleanup, below)   |
+
+- **Settings and why:** the 2048 MiB prompt cache and 16 checkpoints would have starved the node with Gemma; with LFM3 they use only a part of the headroom. `anon` was still only 1.26 GB, so the prompt cache has not filled; when it does the pod can grow by up to about 2 GiB (about 6 GB total). The limit stays at `8Gi`, the request is `4Gi` (it was 3Gi, below the measured working set).
+- **KV cost:** only 6 of 24 layers hold global attention. About 4.9 KB per token at q8_0/q4_0 and 6.5 KB at q8_0/q8_0 (0.65 GB and 0.85 GB at 128K); 262144 tokens would be about 1.7 GB at q8_0/q8_0, f16 about 3.2 GB.
+- **Not measured:** behaviour under 3+ concurrent sessions or `-np` > 1, a full prompt cache, and a prompt that fills the 128K window (prefill alone would take over 1.5 minutes at ~1700 tok/s).
+- **Watch:** node `MemAvailable` (`talosctl -n 192.168.48.5 read /proc/meminfo`), not `kubectl top`; GPU allocations are not charged to the pod cgroup.
+- **Cleanup pending:** the PVC still holds the Gemma file (10.5 GB) and an older `LFM2.5-8B-A1B-UD-Q6_K_XL.gguf` (7.7 GB). Neither is used; deleting them needs a throwaway pod on nv1 (cluster change, owner's confirmation).
+
+### Gemma 4 26B-A4B era (history, measured 2026-10)
+
+> The figures below were measured with Gemma 4 26B-A4B (about 11.9 GiB pod).
 
 nv1 has 15.6 GiB of unified memory. The system (Talos, kubelet, Cilium, DaemonSets) uses about 3.4 GiB, and the llama-server pod sits at **about 11.9 GiB right after warm-up** (weights 10.0 GiB, KV cache 0.76 GiB, compute buffers 0.6 GiB, CUDA context). That leaves roughly 1.3 GiB of node headroom, and the pod can grow to about 13.4 GiB before the node starves.
 
