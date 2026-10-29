@@ -16,9 +16,9 @@ Each mc node (mc1/mc2/mc3) has **two drives with different visibility in Prometh
 | mc1 | 192.168.48.2 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
 | mc1 | 192.168.48.2 | `sda` (was `sdb`) ⚠️ | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-1 (raw block) | ❌ No |
 | mc2 | 192.168.48.3 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
-| mc2 | 192.168.48.3 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-2 (raw block) | ❌ No |
+| mc2 | 192.168.48.3 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-0 (raw block) | ❌ No |
 | mc3 | 192.168.48.4 | `nvme0n1` → `nvme0n1p4` | **ADATA SX8200PNP** | NVMe | ~238 GiB | OS + `/var` | ✅ Yes |
-| mc3 | 192.168.48.4 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-0 (raw block) | ❌ No |
+| mc3 | 192.168.48.4 | `sda` | **Crucial MX500** (CT500MX500SSD1) | SATA | 465.8 GiB | Ceph OSD-2 (raw block) | ❌ No |
 | (4th node) | 192.168.48.5 | `nvme0n1` | FORESEE XP1000F256G | NVMe | 236 GiB | OS + `/var` | ✅ Yes |
 | Jaskinia | 192.168.50.8 | `nvme0n1`, `nvme1n1` | — | NVMe | — | QNAP storage | ✅ SMART available |
 
@@ -167,6 +167,8 @@ None currently. smartmon-exporter covers `/dev/sda`, `/dev/sdb`, and `/dev/nvme0
 | `smartctl_device_attribute{..., value_type="raw"}` returns no data for SATA | The correct label name is `attribute_value_type`, not `value_type`. Use `attribute_value_type="value"` for the normalized % remaining. |
 | Instant query on any `smartctl_*` metric returns nothing, or only some nodes | The ServiceMonitor interval must stay under the 5m instant-query lookback. At 10m (until 2026-10-07) a series was visible only for 5 of every 10 minutes, so queries showed one random node and alert rules saw gaps. The scrape is cheap (exporter uses about 0.6 millicores and polls the disks itself every 120s); it is now 2m. Check `up` and `count_over_time(<metric>[1h])` before concluding a target is missing. |
 | `smartctl_device_percentage_used` returns no data for SATA | This metric is NVMe-only. SATA wear comes from attribute 202 via `smartctl_device_attribute`. |
+| The OSD id in the topology table may be assumed rather than checked | Confirm with `kubectl -n rook-ceph get pod -l ceph-osd-id=<n> -o jsonpath='{.items[0].spec.nodeName}'`: `osd.0` is mc2, `osd.1` mc1, `osd.2` mc3 (checked 2026-10-29; the table had mc2 and mc3 swapped). |
+| `node_disk_discards_completed_total` is 0 on `sda`, or "the weekly trim covers all disks" | The Talos scrub and trim (`FilesystemScrubConfig`, `FilesystemTrimConfig`) only act on the mounted XFS volumes on the NVMe disks. The SATA OSD disks are raw and only get TRIM from BlueStore: `bdev_enable_discard` and `bdev_async_discard_threads` (on since 2026-10-29, about 19 discards a second per disk; `bdev_async_discard` alone does nothing on Ceph 20). A zero on `sda` means discard is off. See the `ceph-osd-discard` memory. |
 
 ## Drive Identity Reference
 
