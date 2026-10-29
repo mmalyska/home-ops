@@ -45,13 +45,14 @@ server:
   # consumer ever needs it. Still one slot, so this is one 131072-token window.
   ctx: 131072
   parallel: 1
-  # Thinking is on by design (owner decision 2026-10-28): LFM3's chat template
-  # reads `enable_thinking` and defaults it to true; it is pinned here so an
-  # image or template change cannot flip it. Cost: reasoning tokens count toward
-  # max_tokens, so a request with a small budget (titles, short summaries) can
-  # return empty `content` with finish_reason=length. Give such calls enough
-  # max_tokens, or opt out per request with chat_template_kwargs.enable_thinking=false.
-  chatTemplateKwargs: '{"enable_thinking":true}'
+  # Thinking is off by default (owner decision 2026-10-29, reversing 2026-10-28):
+  # LFM3's chat template reads `enable_thinking` and defaults it to true, so it is
+  # pinned here. Reasoning tokens count toward max_tokens, so with it on a request
+  # with a small budget (titles, summaries) returned empty `content`
+  # (finish_reason=length). A client that wants reasoning opts in per request with
+  # chat_template_kwargs.enable_thinking=true (LiteLLM forwards it to the backend)
+  # and gives the call a large max_tokens (4096+).
+  chatTemplateKwargs: '{"enable_thinking":false}'
   # The chart always renders --reasoning-budget; -1 is "unrestricted". (0 breaks
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1

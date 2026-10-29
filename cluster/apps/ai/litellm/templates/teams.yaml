@@ -10,7 +10,7 @@ metadata:
 spec:
   alias: hermes
   proxyRef: litellm
-  models: [main, cheap, local]
+  models: [main, cheap, local, local-think]
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMTeam
@@ -43,4 +43,4 @@ metadata:
 spec:
   alias: lingarr
   proxyRef: litellm
-  models: [cheap, local, local-fast]
+  models: [cheap, local]
