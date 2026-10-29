@@ -12,10 +12,15 @@ spec:
     apiBase: http://llama-server.llm.svc.cluster.local:8080/v1
     apiKey: local
     # Same llama-server as `local`, but with reasoning on. `local` has it off
-    # (server default). Reasoning tokens count toward max_tokens, so callers need
-    # a large budget (4096+) or the reply can come back empty.
+    # (server default). Reasoning is capped at 256 tokens per request
+    # (thinking_budget_tokens, a llama-server body field; a caller can send its
+    # own). Measured 2026-10-29: 256 kept the text roles and a dashboard
+    # screenshot correct, 128 slipped on the screenshot. Reasoning tokens still
+    # count toward max_tokens, so callers need max_tokens of at least
+    # 256 + the length of the answer (1024 is safe), or the reply can come back empty.
     additional:
       extra_body:
+        thinking_budget_tokens: 256
         chat_template_kwargs:
           enable_thinking: true
   info:
