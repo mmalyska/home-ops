@@ -18,8 +18,10 @@ spec:
           annotations:
             summary: llama-server has no available replica
             description: >-
-              Lingarr subtitle translation fails while this is down. Check GPU
-              registration (NodeGpuUnavailable), the model PVC and the pod logs.
+              Gateway calls to `local` and `local-think` fail while this is down
+              (Hermes vision and small background tasks, Honcho). Lingarr uses
+              `cheap` and is not affected. Check GPU registration
+              (NodeGpuUnavailable), the model PVC and the pod logs.
         # llamacpp:predicted_tokens_seconds is an average since pod start that
         # keeps its value while idle and drops with concurrent slots, so it
         # false-fires on a healthy GPU. CPU use separates the cases: about
