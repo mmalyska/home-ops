@@ -16,4 +16,4 @@ Operational gotchas:
 - Lingarr's key is entered in its UI, not via env: [[lingarr-api-key-ui-only]].
 
 **Why:** these cost real debugging time (rollout deadlock, stale labels, missing `main`). **How to apply:** read this before touching the gateway or adding a client; a new client also needs adding to the `litellm` NetworkPolicy.
-- **Gateway check 2026-10-29:** image input works through LiteLLM to the VL server; `local` = thinking off, `local-think` needs max_tokens 4096+ (48 tokens returns empty). Hermes can also set thinking per auxiliary task with `extra_body.chat_template_kwargs.enable_thinking` or `reasoning_effort` (Hermes v2026.9.24 supports both; llama-server ignores `reasoning_effort`).
+- **Gateway check 2026-10-29:** image input works through LiteLLM to the VL server; `local` = thinking off, `local-think` caps reasoning at `thinking_budget_tokens` 256 (2026-10-29; needs max_tokens >= 256 + answer, 1024 is safe; uncapped it needed 4096+). Hermes can also set thinking per auxiliary task with `extra_body.chat_template_kwargs.enable_thinking` or `reasoning_effort` (Hermes v2026.9.24 supports both; llama-server ignores `reasoning_effort`).
