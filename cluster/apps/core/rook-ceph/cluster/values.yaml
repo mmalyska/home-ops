@@ -12,11 +12,17 @@ rook-ceph-cluster:
     # mons left on the default, with no store growth. The saving is small.
     mon_compact_on_trim = false
     [osd]
-    # Async TRIM/discard lets the SSD firmware reclaim freed blocks
-    # proactively instead of only on overwrite, reducing internal write
-    # amplification (and thus wear) on the consumer-grade Crucial MX500
-    # drives backing the OSDs. Async (not sync) avoids adding op latency.
-    bdev_async_discard = true
+    # TRIM/discard lets the SSD firmware reclaim freed blocks proactively
+    # instead of only on overwrite, reducing internal write amplification
+    # (and thus wear) on the consumer-grade Crucial MX500 drives backing the
+    # OSDs. Both options are needed: bdev_enable_discard (default false) is
+    # the master switch, and bdev_async_discard_threads (default 0) moves the
+    # discards to a background thread so they add no op latency. The earlier
+    # bdev_async_discard = true is a deprecated alias for threads = 1 and did
+    # nothing alone: sda saw 0 discards in 7 days (checked 2026-10-29). Both
+    # options can be changed at runtime (ceph tell osd.N config set).
+    bdev_enable_discard = true
+    bdev_async_discard_threads = 1
     [mds]
     # Ceph's default is 4 GiB, which is more than double the MDS container
     # limit set below (2G). The cache limit is a target Ceph grows into, not
