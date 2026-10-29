@@ -75,13 +75,13 @@ Config: `-c 131072 -np 1 --cache-ram 2048 --ctx-checkpoints 16 -ctk q8_0 -ctv q8
 | Pod cgroup `memory.current` / `memory.peak`        | 4.0 GB / 4.0 GB (limit 8 GiB); `kubectl top` shows 3286 Mi              |
 | of which `anon` / `file`                           | 1.26 GB / 0.57 GB (the rest is kernel and mapped memory)                |
 | Node `MemAvailable` right after load / after tests | 9.2-9.5 GB / 7.97-8.3 GB                                                |
-| PVC `llama-server-models`                          | 19 GB of 30 GB used, 18.3 GB of it unused models (see Cleanup, below)   |
+| PVC `llama-server-models`                          | 9.0 GB of 30 GB used after the Gemma file was deleted (2026-10-29)      |
 
 - **Settings and why:** the 2048 MiB prompt cache and 16 checkpoints would have starved the node with Gemma; with LFM3 they use only a part of the headroom. `anon` was still only 1.26 GB, so the prompt cache has not filled; when it does the pod can grow by up to about 2 GiB (about 6 GB total). The limit stays at `8Gi`, the request is `4Gi` (it was 3Gi, below the measured working set).
 - **KV cost:** only 6 of 24 layers hold global attention. About 4.9 KB per token at q8_0/q4_0 and 6.5 KB at q8_0/q8_0 (0.65 GB and 0.85 GB at 128K); 262144 tokens would be about 1.7 GB at q8_0/q8_0, f16 about 3.2 GB.
 - **Not measured:** behaviour under 3+ concurrent sessions or `-np` > 1, a full prompt cache, and a prompt that fills the 128K window (prefill alone would take over 1.5 minutes at ~1700 tok/s).
 - **Watch:** node `MemAvailable` (`talosctl -n 192.168.48.5 read /proc/meminfo`), not `kubectl top`; GPU allocations are not charged to the pod cgroup.
-- **Cleanup pending:** the PVC still holds the Gemma file (10.5 GB) and an older `LFM2.5-8B-A1B-UD-Q6_K_XL.gguf` (7.7 GB). Neither is used; deleting them needs a throwaway pod on nv1 (cluster change, owner's confirmation).
+- **Cleanup:** the Gemma file (10.5 GB) and its `.ok` marker were deleted on 2026-10-29 with a throwaway pod on nv1 (owner's confirmation). The PVC still holds an unused `LFM2.5-8B-A1B-UD-Q6_K_XL.gguf` (7.7 GB); the server pod stayed healthy.
 
 ### Gemma 4 26B-A4B era (history, measured 2026-10)
 

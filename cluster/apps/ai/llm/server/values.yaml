@@ -13,8 +13,8 @@ server:
   model:
     # LFM3-1.7B replaced Gemma 4 26B-A4B on 2026-10-28 (owner decision, plan in
     # .plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
-    # room than it had with Gemma. The old Gemma file stays on the PVC until it
-    # is cleaned up by hand.
+    # room than it had with Gemma. The old Gemma file was deleted from the PVC
+    # on 2026-10-29.
     file: LFM3-1.7B-Q8_0.gguf
     url: https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/main/LFM3-1.7B-Q8_0.gguf
     sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
