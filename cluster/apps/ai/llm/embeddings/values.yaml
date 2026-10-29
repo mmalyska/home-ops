@@ -1,7 +1,7 @@
 embeddings:
   image:
     repository: ghcr.io/ggml-org/llama.cpp
-    tag: "server@sha256:8052c13edd987de8858f8150031e025ac3d66823f09cf3ec8220899c4abce220"
+    tag: "server@sha256:01c2bc28d51291536df2ccebe5c6af1cdec9ea9b2bd98ac59556408caf96d3f8"
   fetchImage: alpine:3@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
   model:
     file: nomic-embed-text-v1.5.f16.gguf
