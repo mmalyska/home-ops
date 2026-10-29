@@ -70,9 +70,9 @@ spec:
             - -fa
             - "on"
             - -ctk
-            - q8_0
+            - {{ .Values.server.kvCache.k | quote }}
             - -ctv
-            - q4_0
+            - {{ .Values.server.kvCache.v | quote }}
             - -c
             - {{ .Values.server.ctx | quote }}
             - -np
