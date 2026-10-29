@@ -25,13 +25,15 @@ app-template:
             # llama-server on nv1 has one slot; more jobs would only queue there.
             MAX_CONCURRENT_JOBS: "1"
             SERVICE_TYPE: localai
-            # Through the AI gateway: `local-fast` is llama-server on nv1 with thinking off (`local` thinks and
-            # spends the whole token budget of a subtitle batch on reasoning). The API key is not an
+            # Through the AI gateway: `cheap` (Gemini Flash Lite via OpenRouter, paid per token). The local
+            # LFM3-1.7B was tried first (2026-10-29): in a whole-file batch it left ~21% of lines in English,
+            # drifted out of cue order and returned invalid JSON (docs/src/k8s/nv1-jetson.md). `local-fast`
+            # (llama-server, thinking off) stays allowed on the key for a UI rollback. The API key is not an
             # env var: Lingarr keeps it encrypted and a plain LOCAL_AI_API_KEY (also on every
             # start) is not sent. Paste the lingarr-litellm Secret's `key` into Settings,
             # Translation, Local AI once; it is stored encrypted on the config volume.
             LOCAL_AI_ENDPOINT: http://litellm.ai.svc.cluster.local:4000/v1/chat/completions
-            LOCAL_AI_MODEL: local-fast
+            LOCAL_AI_MODEL: cheap
             USE_BATCH_TRANSLATION: "true"
             SOURCE_LANGUAGES: '[{"name":"English","code":"en"}]'
             TARGET_LANGUAGES: '[{"name":"Polish","code":"pl"}]'

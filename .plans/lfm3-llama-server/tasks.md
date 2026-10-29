@@ -20,3 +20,4 @@
 - [x] (done 2026-10-29: `local-fast` alias, team and key allow-lists, #5994/#5997/#5998; gateway check 0.6 s, no reasoning) Give Lingarr a thinking-off path (separate LiteLLM alias with `chat_template_kwargs.enable_thinking=false`, point Lingarr at it) and compare its Polish against Gemma or a larger model.
 - [ ] Still open from step 1: checkpoint size from the log; longer corruption run at the new config.
 - [x] Tuning step 3 (#5993): V cache q8_0, no regression (see docs). Still to decide: f16 K/V, ctx 262144, `-np 2` (own corruption run), `--reasoning-budget` for `local`, QAD Q4_0 vs Q8_0, Lingarr Polish quality vs a stronger model.
+- [x] Whole-file Leanne S01E01 test on LFM3 (2026-10-29): unusable (invalid JSON, 21% English left, drift). Lingarr moved to the `cheap` alias. Optional: retry with 15-20 line batches before ruling LFM3 out for translation.
