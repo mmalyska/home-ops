@@ -15,18 +15,23 @@ server:
     # .plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
     # room than it had with Gemma. The old Gemma file stays on the PVC until it
     # is cleaned up by hand.
-    file: LFM3-1.7B-Q8_0.gguf
-    url: https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/main/LFM3-1.7B-Q8_0.gguf
-    sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
+    # TEST 2026-10-29: LFM3-VL-2B replaces LFM3-1.7B to see whether one server can
+    # cover text and vision. Revert this block (and mmproj below) to go back to
+    # file LFM3-1.7B-Q8_0.gguf, sha256 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6,
+    # alias lfm3-1.7b. The LiteLLM models still point at alias lfm3-1.7b, so the
+    # alias is kept to avoid touching the gateway.
+    file: LFM3-VL-2B-Q8_0.gguf
+    url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/LFM3-VL-2B-Q8_0.gguf
+    sha256: e138e54189a751d90ea8c0b236360490613ecd465d28d68fa6094d3db7fa6727
     size: "1846238496"
     alias: lfm3-1.7b
-  # Optional vision projector for a multimodal model (e.g. LFM3-VL-2B). Unset =
-  # text-only. Fetched and verified like the model file and passed as --mmproj.
-  # mmproj:
-  #   file: mmproj-LFM3-VL-2B-Q8_0.gguf
-  #   url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/mmproj-LFM3-VL-2B-Q8_0.gguf
-  #   sha256: c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab
-  #   size: "203031872"
+  # Vision projector for the multimodal model, fetched and verified like the
+  # model file and passed as --mmproj. Remove for a text-only model.
+  mmproj:
+    file: mmproj-LFM3-VL-2B-Q8_0.gguf
+    url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/mmproj-LFM3-VL-2B-Q8_0.gguf
+    sha256: c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab
+    size: "203031872"
   # One slot (Hermes refuses a model with less than 64,000 tokens of context
   # per slot). Kept at one slot for the first LFM3 run: LFM2.5's
   # hybrid recurrent state corrupted multi-turn output when sequences were
