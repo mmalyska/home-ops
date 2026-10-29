@@ -14,4 +14,4 @@ spec:
   proxyNamespace: ai
   teamID: hermes
   secretName: hermes-litellm
-  models: [main, cheap, local]
+  models: [main, cheap, local, local-think]

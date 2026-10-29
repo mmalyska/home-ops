@@ -15,11 +15,23 @@ server:
     # .archive/.plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
     # room than it had with Gemma. The old Gemma file stays on the PVC until it
     # is cleaned up by hand.
-    file: LFM3-1.7B-Q8_0.gguf
-    url: https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/main/LFM3-1.7B-Q8_0.gguf
-    sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
+    # TEST 2026-10-29: LFM3-VL-2B replaces LFM3-1.7B to see whether one server can
+    # cover text and vision. Revert this block (and mmproj below) to go back to
+    # file LFM3-1.7B-Q8_0.gguf, sha256 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6,
+    # alias lfm3-1.7b. The LiteLLM models still point at alias lfm3-1.7b, so the
+    # alias is kept to avoid touching the gateway.
+    file: LFM3-VL-2B-Q8_0.gguf
+    url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/LFM3-VL-2B-Q8_0.gguf
+    sha256: e138e54189a751d90ea8c0b236360490613ecd465d28d68fa6094d3db7fa6727
     size: "1846238496"
     alias: lfm3-1.7b
+  # Vision projector for the multimodal model, fetched and verified like the
+  # model file and passed as --mmproj. Remove for a text-only model.
+  mmproj:
+    file: mmproj-LFM3-VL-2B-Q8_0.gguf
+    url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/mmproj-LFM3-VL-2B-Q8_0.gguf
+    sha256: c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab
+    size: "203031872"
   # One slot (Hermes refuses a model with less than 64,000 tokens of context
   # per slot). Kept at one slot for the first LFM3 run: LFM2.5's
   # hybrid recurrent state corrupted multi-turn output when sequences were
@@ -33,13 +45,14 @@ server:
   # consumer ever needs it. Still one slot, so this is one 131072-token window.
   ctx: 131072
   parallel: 1
-  # Thinking is on by design (owner decision 2026-10-28): LFM3's chat template
-  # reads `enable_thinking` and defaults it to true; it is pinned here so an
-  # image or template change cannot flip it. Cost: reasoning tokens count toward
-  # max_tokens, so a request with a small budget (titles, short summaries) can
-  # return empty `content` with finish_reason=length. Give such calls enough
-  # max_tokens, or opt out per request with chat_template_kwargs.enable_thinking=false.
-  chatTemplateKwargs: '{"enable_thinking":true}'
+  # Thinking is off by default (owner decision 2026-10-29, reversing 2026-10-28):
+  # LFM3's chat template reads `enable_thinking` and defaults it to true, so it is
+  # pinned here. Reasoning tokens count toward max_tokens, so with it on a request
+  # with a small budget (titles, summaries) returned empty `content`
+  # (finish_reason=length). A client that wants reasoning opts in per request with
+  # chat_template_kwargs.enable_thinking=true (LiteLLM forwards it to the backend)
+  # and gives the call a large max_tokens (4096+).
+  chatTemplateKwargs: '{"enable_thinking":false}'
   # The chart always renders --reasoning-budget; -1 is "unrestricted". (0 breaks
   # the reasoning-content parser on this build, as found with LFM2.5.)
   reasoningBudget: -1

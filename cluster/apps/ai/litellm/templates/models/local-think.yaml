@@ -1,23 +1,22 @@
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
-  name: local-fast
+  name: local-think
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  # Same llama-server and model as `local`, with thinking switched off per
-  # request. For batch work that needs the answer inside a bounded token budget
-  # (Lingarr subtitle translation): with thinking on, a 16-line batch spent its
-  # whole 6000-token budget reasoning and returned no usable JSON.
-  modelName: local-fast
+  modelName: local-think
   proxyRef: litellm
   params:
     model: openai/lfm3-1.7b
     apiBase: http://llama-server.llm.svc.cluster.local:8080/v1
     apiKey: local
+    # Same llama-server as `local`, but with reasoning on. `local` has it off
+    # (server default). Reasoning tokens count toward max_tokens, so callers need
+    # a large budget (4096+) or the reply can come back empty.
     additional:
       extra_body:
         chat_template_kwargs:
-          enable_thinking: false
+          enable_thinking: true
   info:
     mode: chat

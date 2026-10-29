@@ -8,7 +8,8 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | ------- | -------------------------------------------------- | ----------------- |
 | `main`  | ChatGPT (Codex) subscription, see below            | none per token    |
 | `cheap` | OpenRouter, `google/gemini-3.1-flash-lite`         | per token, capped |
-| `local` | llama-server on nv1 (`llm` namespace)              | none              |
+| `local` | llama-server on nv1 (`llm` namespace), thinking off | none              |
+| `local-think` | same llama-server, thinking on (needs `max_tokens` 4096+) | none     |
 | `embed` | CPU llama.cpp embeddings server (nomic-embed-text) | none              |
 
 `embed` is the `LiteLLMModel` in `templates/models/embed.yaml` (768-dimension vectors; Honcho depends on the dimension).
@@ -28,7 +29,7 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 
 | Team       | Models                    |
 | ---------- | ------------------------- |
-| `hermes`   | `main`, `cheap`, `local`  |
+| `hermes`   | `main`, `cheap`, `local`, `local-think` |
 | `honcho`   | `cheap`, `local`, `embed` |
 | `opencode` | `main`, `cheap`, `local`  |
 
