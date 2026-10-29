@@ -49,3 +49,4 @@
 - [Lingarr API key is UI-only](reference_lingarr_api_key_ui_only.md) — LOCAL_AI_API_KEY env sends no header (401/500); paste the key in the UI, never restart before the env is gone
 - [Drop Gemma, go multi-model on nv1](project_nv1_drop_gemma_multi_model.md) — owner decision 2026-10-28; LFM3 + tailored models, plan in .archive/.plans/lfm3-llama-server
 - [Bazarr and Lingarr translation behaviour](reference_bazarr_lingarr_translation.md) — 40-line batches, Bazarr upgrades from opensubtitles overwrite translations, read the history DB to see the real origin
+- [Ceph OSD discard](reference_ceph_osd_discard.md) — bdev_async_discard alone does nothing; both options on since 2026-10-29, owner accepted ~2 ms extra write latency; wear check 2026-11-12
