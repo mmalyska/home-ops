@@ -43,7 +43,7 @@ instructions.
 | OpenCode    | Nothing. Placeholder: read `AGENTS.md`, run the preflight by hand before the first write. No parity claim                                    | Everything                                                                                                                                           |
 
 The IDs (N1 to N10) and the dated results are in the
-[evidence file](https://github.com/mmalyska/home-ops/blob/main/.plans/hybrid-ai-workflow/evidence.md). A claim without a
+[evidence file](https://github.com/mmalyska/home-ops/blob/main/.archive/.plans/hybrid-ai-workflow/evidence.md). A claim without a
 result there is not verified. Windows checkout behaviour of repository symlinks (N10) is not verified either, which is why
 the repository carries no symlink for skills.
 

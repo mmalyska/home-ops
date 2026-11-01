@@ -311,3 +311,38 @@ The real build (`mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml`)
 F1.1 is merged and tagged in `claude-plugins`: tag `ai-workflow-v0.1.0-preview.2` peels to `5cf7485aa8e73b8ae89dc87ea9a78b0543a5be9e`, and `docs/workflow/repository-adoption-guide.md` exists at that tag (checked read-only). `docs/src/contributing/ai-workflow.md` section 1 now links the guide at that immutable tag; the workflow-contract links stay at `ai-workflow-v0.1.0-preview.1`. `test_docs_page.sh` pins the two separately (`PIN_TAG`, `GUIDE_TAG`). This supersedes the T5.4 line in 13.3 that says the guide is not linked.
 
 The delivering PR is #6051.
+
+## 15. Closure at archive (2026-11-01)
+
+Written in the archival change (PR-7). It adds to sections 1 to 14; nothing above was edited. Base `origin/main` `46a316c9` (#6051). Read-only GitHub checks: #6041, #6042, #6047, #6048, #6049, #6050 and #6051 are merged; every CI check on #6050 and #6051 passed, including `Instruction checks` and `MkDocs strict build`. `bash .agents/tests/run.sh` (165 tests) and `.agents/bin/check-plans` passed on the base before this change.
+
+### 15.1 Completed implementation
+
+Acceptance criteria of plan.md section 16, with the evidence that exists. A criterion is not claimed where evidence is missing.
+
+| AC  | Result                  | Evidence                                                                                                                                                                                                                                                                   |
+| --- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Met, limits stated      | `AGENTS.md` merged in #6042. N1 and N2 PASS in section 11 (stated behaviour of tool-less sessions, one run per cell). N3 PASS                                                                                                                                              |
+| 2   | Met                     | thin `CLAUDE.md` in #6042; `test_thin_adapter.sh`; preservation table in plan.md section 5                                                                                                                                                                                 |
+| 3   | Met                     | `test_no_workflow_copy.sh`; the pin is written once in `AGENTS.md`                                                                                                                                                                                                         |
+| 4   | Met                     | `.agents/policy/permissions.md` and `test_permissions_parity.sh` (#6042); `gh api` and `gh pr merge` asked (D5, T1.5)                                                                                                                                                      |
+| 5   | Met                     | GITOPS_TRIGGER class and impact map in `AGENTS.md` and `permissions.md`; S3, S4, S5 in section 11 (the first Codex S5 run was PARTIAL, the rerun PASS, recorded as it happened)                                                                                             |
+| 6   | Met, limits stated      | `worktree-preflight`, pre-commit guard, Claude hook (#6047); layer table in section 12. A Codex edit in the primary checkout is instruction-only; c2 and N8 are NOT RUN                                                                                                    |
+| 7   | Met                     | `check-plans` and the plan convention in #6048. The archive diff of #6048 is `.archive/.plans/README.md` (new notice) and two lines in `.archive/.plans/list.md`; no archived plan was touched                                                                              |
+| 8   | Met                     | `.agents/policy/validation.md`, `.github/pull_request_template.md`, `test_validation_policy.sh` (#6049)                                                                                                                                                                    |
+| 9   | Met                     | `.agents/skills` canonical with a generated `.claude/skills` mirror, `test_skills_parity.sh` (#6050); N3 PASS; N6 and N10 NOT RUN and not needed by the mirror                                                                                                              |
+| 10  | Partly evidenced        | gitleaks runs in `pre-commit` and CI. An exact-value search for the private domain was NOT RUN (the value is not available in the devcontainer, plan.md section 17); the files were written without it                                                                      |
+| 11  | Not separately recorded | Each PR merged as one squash commit, so each reverts alone. A recorded review of every PR against plan.md section 15 was not found in the evidence                                                                                                                         |
+| 12  | Met                     | `docs/src/contributing/ai-workflow.md` with nav entry (#6050); `test_docs_page.sh`; CI job `MkDocs strict build` passed on #6050 and #6051. The local strict build is NOT RUN (section 13.4). The adoption guide (F1.1) is not an acceptance condition                      |
+
+### 15.2 Accepted dropped optional pilot
+
+PR-6 (T6.1) is `dropped` by owner decision on 2026-11-01. Reason: PRs #6041, #6042, #6047, #6048, #6049, #6050 and #6051 already exercised planning, worktree-first enforcement, shared instructions, validation, documentation CI, canonical skills, cross-repository handoff and immutable references, so a synthetic pilot would add little evidence. T7.1 allows archiving when PR-6 is done or dropped by the owner. No pilot was run and none is claimed.
+
+### 15.3 External follow-up completed
+
+F1.1 is merged and tagged in `mmalyska/claude-plugins` (section 14). F1.2 is #6051 (`46a316c9`). Both are complete.
+
+### 15.4 Remaining follow-ups, unrelated to the archive
+
+Left open by the adoption work and recorded above as NOT RUN or as open decisions: N4/c2, N6, N8, N9, N10, N11 (local), S2, S7, S8, a live Claude session with the new hook loaded, D6, D7, D11 (owner cleanup) and the `dotfiles` Codex configuration (D5). They are listed in `.plans/TODO.md` so that archiving does not hide them.

@@ -1,17 +1,19 @@
 ---
-status: in-progress
+status: shipped
 owner: repository owner
 profile: DEEP
 topology: SOLO
 base_sha: 6c76fea1a4409d9ea9643d46c3b7f06cfe611a8b
 branch: docs/hybrid-ai-workflow-home-ops-plan
 worktree: .worktrees/docs/hybrid-ai-workflow-home-ops-plan
-pr: "#6041, #6042, #6047, #6048, #6050, #6051"
+pr: "#6041, #6042, #6047, #6048, #6049, #6050, #6051"
 started: 2026-11-01
 updated: 2026-11-01
 ---
 
 # Adapt home-ops to the Hybrid AI Engineering Workflow
+
+> **Archived, status `shipped` (2026-11-01).** This is the record of what was decided and done, not an instruction. The outcome is in section 20 and `evidence.md` section 15. The text below is kept as written; its in-progress status lines (for example the PR-1 and PR-2 notes in section 14) describe the time they were written.
 
 <!-- markdownlint-disable MD013 -->
 
@@ -383,3 +385,30 @@ D2, D4, D5, D8 and D9 were decided on 2026-11-01 (marked in the table). The rema
 | D11 | Add `.worktrees/` to `.claudeignore` to cut search noise; clean up the 37 stale branches and old worktrees                    | Yes for the ignore entry in PR-2 (verify it is honored); cleanup is a separate owner action                                                                                                                                                                                                                 |
 | D12 | Run the S1–S8 behavioural scenarios in Claude Code and Codex before PR-1 merges or after                                      | Before merge for S3 to S6 (safety); the rest after                                                                                                                                                                                                                                                          |
 | D13 | Documentation ownership                                                                                                       | **Decided 2026-11-01:** `claude-plugins` owns the universal adoption guide (F1.1); `home-ops` owns only its local application page (T5.4, `docs/src/contributing/ai-workflow.md`). The guide is created later, in its own repository, and is not created by this plan                                       |
+
+## 20. Outcome at archive (2026-11-01)
+
+Status `shipped`, closed by the owner on 2026-11-01. This section records the outcome only; sections 1 to 19 are unchanged history. Per-criterion evidence is in `evidence.md` section 15.
+
+### Delivered
+
+| Step | PR    | Merge commit | Notes                                                                                                                 |
+| ---- | ----- | ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| PR-0 | #6041 | `3ed3c019`   | this plan, tasks, evidence, index row                                                                                 |
+| PR-1 | #6042 | `fb7a2d82`   | `AGENTS.md`, thin `CLAUDE.md`, permission policy, `.claude/settings.json` parity                                      |
+| PR-2 | #6047 | `c809d72a`   | `worktree-preflight`, pre-commit guard, Claude project hook, Codex rule file                                          |
+| PR-3 | #6048 | `0dbe9732`   | plan convention, widened index, `check-plans`, archive notice                                                         |
+| PR-4 | #6049 | `68ae0be5`   | validation matrix, PR template, instruction-check CI                                                                  |
+| PR-5 | #6050 | `a5c8e3e7`   | canonical skills with a generated mirror, memory triage, `docs/src/contributing/ai-workflow.md`, PR-time MkDocs build |
+| F1.1 | n/a   | n/a          | in `mmalyska/claude-plugins`, outside every `home-ops` PR; tag `ai-workflow-v0.1.0-preview.2` carries the guide      |
+| F1.2 | #6051 | `46a316c9`   | the `home-ops` page links the guide at that tag                                                                       |
+
+The delivering PR set is #6041, #6042, #6047, #6048, #6049, #6050 and #6051. The archival change (PR-7) is not in this list; its number is added to the `pr` field and the archive index while that PR is still open.
+
+### Dropped: PR-6 (optional pilot)
+
+PR-6 is `dropped` by owner decision on 2026-11-01. Reason: PRs #6041, #6042, #6047, #6048, #6049, #6050 and #6051 already exercised planning, worktree-first enforcement, shared instructions, validation, documentation CI, canonical skills, cross-repository handoff and immutable references, so a synthetic pilot would add little evidence. T7.1 allows archiving once PR-6 is "done or dropped by the owner". Dropping it is an accepted decision, not an unfinished blocker. No pilot was run: this plan holds no pilot evidence and no pilot friction list.
+
+### Not done, and not claimed
+
+Recorded as NOT RUN in `evidence.md` sections 10 to 13 and not shipped by this plan: N4 (trusted Codex hook, case c2), N6, N8, N9, N10, N11 locally (CI ran the strict build), the S2, S7 and S8 scenarios, and a Claude Code session started with the new hook loaded. Open owner items outside this plan: cleanup of stale local branches and old worktrees (D11), strict lint and local markdownlint (D6), a local private-domain check (D7), and user-level Codex configuration in `dotfiles` (D5). They are collected in `.plans/TODO.md`.
