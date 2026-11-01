@@ -33,13 +33,13 @@ topology: SOLO
 base_sha: 0000000000000000000000000000000000000000
 branch: feat/example-slug
 worktree: .worktrees/feat/example-slug
-pr: "#0000 (merge decided by the owner)"
+pr: not-opened
 started: 2026-01-01
 updated: 2026-01-02
 ---
 ```
 
-`status` is one of `draft`, `approved`, `in-progress`, `blocked`, `shipped`, `dropped`, `superseded`. Dates are `YYYY-MM-DD`. `profile` and `topology` hold the names the workflow defines; they are not validated here, so this repository never restates the vocabulary.
+`status` is one of `draft`, `approved`, `in-progress`, `blocked`, `shipped`, `dropped`, `superseded`. Dates are `YYYY-MM-DD`. `pr` is `not-opened` until the PR exists, then the PR number (`"#1234"`, quoted because `#` starts a YAML comment) or URL; several PRs are separated by `, `. Anything else is an error. `profile` and `topology` hold the names the workflow defines; they are not validated here, so this repository never restates the vocabulary.
 
 ## The index
 
@@ -54,7 +54,7 @@ The first cell is a link `[<slug>](<slug>/plan.md)`; Profile/Topology is written
 - Superpowers is an optional technique provider, not the owner of the convention. When a Superpowers skill proposes `docs/superpowers/` or `.plans/superpowers/`, write to `.plans/<slug>/` instead. `docs/superpowers/` is an error; `.plans/superpowers/` is not created again.
 - Plans are text. A plan never authorizes an action: consent for a mutation comes from the user in the current session ([`AGENTS.md`](../AGENTS.md)). Put a command that changes cluster or external state in a fenced block whose info string contains `consent-gated`, or `check-plans` warns.
 - A plan names references, never the private domain, Bitwarden identifiers or secret output.
-- A task becomes a PR row in `plan.md` (branch, PR number once opened); the index `PR` cell carries the same text, shortened.
+- `pr` lifecycle: a plan is written with `pr: not-opened` and the index `PR` cell `—`. After the PR is opened, set `pr` to the number or URL in `plan.md` and the same text in the index, in the same branch. `check-plans` rejects an empty or free-text `pr` and any index cell that differs.
 - Legacy: plans written before this convention stay where they are. The paths that are accepted without a row are listed in [`.agents/policy/plans-legacy.txt`](../.agents/policy/plans-legacy.txt). `.plans/superpowers/`, if it reappears on a branch, only warns and each file there needs an index row.
 
 ## Archive after Ship

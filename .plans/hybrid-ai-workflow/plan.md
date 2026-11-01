@@ -6,7 +6,7 @@ topology: SOLO
 base_sha: 6c76fea1a4409d9ea9643d46c3b7f06cfe611a8b
 branch: docs/hybrid-ai-workflow-home-ops-plan
 worktree: .worktrees/docs/hybrid-ai-workflow-home-ops-plan
-pr: "#6041 (PR-0), #6042 (PR-1), #6047 (PR-2); PR-3 awaiting the owner's push"
+pr: "#6041, #6042, #6047"
 started: 2026-11-01
 updated: 2026-11-01
 ---

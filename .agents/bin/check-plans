@@ -16,6 +16,10 @@ REQUIRED_KEYS="status owner profile topology base_sha branch worktree pr started
 STATUSES="draft approved in-progress blocked shipped dropped superseded"
 TERMINAL="shipped dropped superseded"
 ACTIVE_HEADER="Plan|Status|Owner|Profile/Topology|Branch|PR|Started|Updated|Description"
+PR_SENTINEL="not-opened"   # pr value before the PR exists; the index shows PR_EMPTY
+PR_EMPTY="—"
+PR_REF='(#[0-9]+|https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/pull/[0-9]+)'
+PR_RE="^${PR_REF}(, ${PR_REF})*\$"
 ARCHIVE_NOTICE='not instructions'
 
 ROOT=""
@@ -62,6 +66,10 @@ check_front_matter() {
     val="$(fm_get "$f" "$key")"
     if [ -n "$val" ] && ! [[ "$val" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then err "$label" "'$key' must be YYYY-MM-DD, got '$val'"; fi
   done
+  val="$(fm_get "$f" pr)"
+  if [ -n "$val" ] && [ "$val" != "$PR_SENTINEL" ] && ! [[ "$val" =~ $PR_RE ]]; then
+    err "$label" "'pr' must be '$PR_SENTINEL', or PR numbers (#1234) or PR URLs separated by ', ', got '$val'"
+  fi
   local s u; s="$(fm_get "$f" started)"; u="$(fm_get "$f" updated)"
   if [[ "$s" =~ ^[0-9-]{10}$ && "$u" =~ ^[0-9-]{10}$ && "$u" < "$s" ]]; then err "$label" "'updated' ($u) is earlier than 'started' ($s)"; fi
 }
@@ -176,6 +184,8 @@ if [ -f "$PLANS/list.md" ]; then
     chk Owner "${c[2]}" "$(fm_get "$pm" owner)"
     chk Profile/Topology "${c[3]}" "$(fm_get "$pm" profile) / $(fm_get "$pm" topology)"
     b="${c[4]//\`/}"; chk Branch "$b" "$(fm_get "$pm" branch)"
+    prv="$(fm_get "$pm" pr)"; [ "$prv" = "$PR_SENTINEL" ] && prv="$PR_EMPTY"
+    chk PR "${c[5]}" "$prv"
     chk Started "${c[6]}" "$(fm_get "$pm" started)"
     chk Updated "${c[7]}" "$(fm_get "$pm" updated)"
   done < <(table_rows "$PLANS/list.md")

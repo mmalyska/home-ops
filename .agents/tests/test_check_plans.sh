@@ -44,7 +44,7 @@ topology: T
 base_sha: abc
 branch: feat/$s
 worktree: .worktrees/feat/$s
-pr: none
+pr: not-opened
 started: 2026-01-01
 updated: 2026-01-02
 ---
@@ -52,7 +52,7 @@ updated: 2026-01-02
 # $s
 PLAN
   printf '# Tasks\n' >"$d/.plans/$s/tasks.md"
-  printf '| [%s](%s/plan.md) | draft | tester | P / T | feat/%s | none | 2026-01-01 | 2026-01-02 | test |\n' "$s" "$s" "$s" >>"$d/.plans/list.md"
+  printf '| [%s](%s/plan.md) | draft | tester | P / T | feat/%s | — | 2026-01-01 | 2026-01-02 | test |\n' "$s" "$s" "$s" >>"$d/.plans/list.md"
 }
 
 echo "-- real repository"
@@ -73,7 +73,22 @@ printf '# old\n' >"$TMP/legacy/.plans/superpowers/plans/2026-01-01-old.md"
 printf '| [old](superpowers/plans/2026-01-01-old.md) | | | | | | | | legacy |\n' >>"$TMP/legacy/.plans/list.md"
 expect_warn "legacy .plans/superpowers only warns" "$TMP/legacy" "legacy"
 
+tree "$TMP/ok2"; newplan "$TMP/ok2" opened-plan
+sed -i 's/^pr: .*/pr: "#7001, https:\/\/github.com\/example\/repo\/pull\/7002"/' "$TMP/ok2/.plans/opened-plan/plan.md"
+sed -i '/opened-plan\/plan.md/s/| — |/| #7001, https:\/\/github.com\/example\/repo\/pull\/7002 |/' "$TMP/ok2/.plans/list.md"
+assert_ok "a plan with opened PR numbers and URLs is accepted" "$CP" --root "$TMP/ok2"
+
 echo "-- negative fixtures"
+tree "$TMP/pr1"; newplan "$TMP/pr1" p; sed -i 's/^pr: .*/pr:/' "$TMP/pr1/.plans/p/plan.md"
+expect_error "empty pr" "$TMP/pr1" "field 'pr' is empty"
+tree "$TMP/pr2"; newplan "$TMP/pr2" p; sed -i 's/^pr: .*/pr: none/' "$TMP/pr2/.plans/p/plan.md"
+expect_error "pr with a random value" "$TMP/pr2" "'pr' must be 'not-opened'"
+tree "$TMP/pr3"; newplan "$TMP/pr3" p; sed -i 's/^pr: .*/pr: "#12 pending"/' "$TMP/pr3/.plans/p/plan.md"
+expect_error "pr with trailing text" "$TMP/pr3" "'pr' must be 'not-opened'"
+tree "$TMP/pr4"; newplan "$TMP/pr4" p; sed -i 's/^pr: .*/pr: "#12"/' "$TMP/pr4/.plans/p/plan.md"
+expect_error "index PR differs from plan.md" "$TMP/pr4" "PR is '—' but plan.md says '#12'"
+tree "$TMP/pr5"; newplan "$TMP/pr5" p; sed -i '/\[p\](p\/plan.md)/s/| — |/| none |/' "$TMP/pr5/.plans/list.md"
+expect_error "index shows none instead of the dash" "$TMP/pr5" "PR is 'none' but plan.md says '—'"
 tree "$TMP/a"; rm "$TMP/a/.plans/hybrid-ai-workflow/tasks.md"
 expect_error "missing tasks.md" "$TMP/a" "tasks.md is missing"
 tree "$TMP/b"; rm "$TMP/b/.plans/hybrid-ai-workflow/plan.md"
