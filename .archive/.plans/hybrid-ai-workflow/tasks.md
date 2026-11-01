@@ -488,4 +488,4 @@ Ownership: `claude-plugins` owns the general guide; `home-ops` owns only its loc
 - **Acceptance:** live docs links to the plan (if any) updated; nothing else under `.archive/` changed.
 - **Rollback:** move the folder back, restore both rows.
 - **Mutation consent:** none for the move; push and PR only on explicit instruction (D4).
-- **Status:** done 2026-11-01 (this change). Status `shipped`, PR-6 `dropped`, F1.1 and F1.2 complete; see plan.md section 20 and evidence.md section 15.
+- **Status:** done 2026-11-01 (this change, PR #6052). Status `shipped`, PR-6 `dropped`, F1.1 and F1.2 complete; see plan.md section 20 and evidence.md section 15.

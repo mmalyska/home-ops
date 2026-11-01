@@ -316,6 +316,8 @@ The delivering PR is #6051.
 
 Written in the archival change (PR-7). It adds to sections 1 to 14; nothing above was edited. Base `origin/main` `46a316c9` (#6051). Read-only GitHub checks: #6041, #6042, #6047, #6048, #6049, #6050 and #6051 are merged; every CI check on #6050 and #6051 passed, including `Instruction checks` and `MkDocs strict build`. `bash .agents/tests/run.sh` (165 tests) and `.agents/bin/check-plans` passed on the base before this change.
 
+The archival change (T7.1, PR-7) is PR #6052, branch `chore/archive-hybrid-ai-workflow`. It is recorded in the `pr` field of `plan.md`, the archive index row and the T7.1 status.
+
 ### 15.1 Completed implementation
 
 Acceptance criteria of plan.md section 16, with the evidence that exists. A criterion is not claimed where evidence is missing.

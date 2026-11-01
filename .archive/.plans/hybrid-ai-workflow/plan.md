@@ -6,7 +6,7 @@ topology: SOLO
 base_sha: 6c76fea1a4409d9ea9643d46c3b7f06cfe611a8b
 branch: docs/hybrid-ai-workflow-home-ops-plan
 worktree: .worktrees/docs/hybrid-ai-workflow-home-ops-plan
-pr: "#6041, #6042, #6047, #6048, #6049, #6050, #6051"
+pr: "#6041, #6042, #6047, #6048, #6049, #6050, #6051, #6052"
 started: 2026-11-01
 updated: 2026-11-01
 ---
@@ -403,7 +403,7 @@ Status `shipped`, closed by the owner on 2026-11-01. This section records the ou
 | F1.1 | n/a   | n/a          | in `mmalyska/claude-plugins`, outside every `home-ops` PR; tag `ai-workflow-v0.1.0-preview.2` carries the guide      |
 | F1.2 | #6051 | `46a316c9`   | the `home-ops` page links the guide at that tag                                                                       |
 
-The delivering PR set is #6041, #6042, #6047, #6048, #6049, #6050 and #6051. The archival change (PR-7) is not in this list; its number is added to the `pr` field and the archive index while that PR is still open.
+The delivering PR set is #6041, #6042, #6047, #6048, #6049, #6050 and #6051. The archival change (PR-7) is #6052; it is not in this list because it is the PR that archives the plan, and its number is recorded in the `pr` field and the archive index.
 
 ### Dropped: PR-6 (optional pilot)
 
