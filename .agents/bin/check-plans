@@ -50,6 +50,11 @@ fm_get() {
 }
 fm_has() { awk -v key="$2" 'NR==1{if($0!="---")exit;i=1;next} i&&$0=="---"{exit} i{k=$0;sub(/:.*/,"",k);if(k==key){f=1;exit}} END{exit f?0:1}' "$1"; }
 
+# fm_raw FILE KEY: the text after "key:" exactly as written (quotes kept).
+fm_raw() {
+  awk -v key="$2" 'NR==1{if($0!="---")exit;i=1;next} i&&$0=="---"{exit} i{k=$0;sub(/:.*/,"",k);if(k==key){v=$0;sub(/^[^:]*:[ \t]*/,"",v);print v;exit}}' "$1"
+}
+
 # check_front_matter FILE LABEL
 check_front_matter() {
   local f="$1" label="$2" key val
@@ -59,6 +64,9 @@ check_front_matter() {
     if ! fm_has "$f" "$key"; then err "$label" "front matter field '$key' is missing"; continue; fi
     val="$(fm_get "$f" "$key")"
     [ -n "$val" ] || err "$label" "front matter field '$key' is empty"
+    case "$(fm_raw "$f" "$key")" in
+      '#'*) err "$label" "front matter field '$key' starts with an unquoted #, which YAML reads as an empty value with a comment; quote it" ;;
+    esac
   done
   val="$(fm_get "$f" status)"
   if [ -n "$val" ] && ! in_list "$val" "$STATUSES"; then err "$label" "status '$val' is not one of: $STATUSES"; fi
