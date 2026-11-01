@@ -248,3 +248,60 @@ Updates N4 and N5 from section 10 (T2.1). Base `origin/main` `fb7a2d82` (PR-1, #
 **Deviations from the plan text.** The Claude hook denies a file-tool call with no readable path (the plan said allow): a missing path in a real call means malformed input, and the contract here is no silent fail-open. The matcher also includes `Bash`, to deny commands that set a bypass. The hook entry in `settings.json` wraps the script so that a crash or a missing file exits 2, which Claude Code treats as a block. The pre-commit entry passes `--human-only`, so a break-glass reason is honoured at commit time only with a controlling terminal. Exit code 4 (could not classify) was added.
 
 **NOT RUN.** c2 (trusted Codex hook); Windows and Git Bash for the scripts and tests (no Windows host); a Claude Code session with the new hook loaded (the hook was exercised through its exact command string, not inside a live session started with it); markdownlint (not installed); macOS or BSD userland.
+
+## 13. PR-5 skills, memory and repository documentation (2026-11-01)
+
+Branch `chore/agents-shared-skills-docs`, base `origin/main` `68ae0be5` (PR-4, #6049). Linux devcontainer. No Claude or Codex session was started for PR-5.
+
+### 13.1 T5.1 strategy decision and the open results
+
+Owner decision (this session): use the plan's fallback, a generated mirror, not a `.claude/skills` directory symlink. Reason: N10 cannot be validated without a Windows host, so the symlink strategy cannot meet its acceptance condition (N3, N6 and N10 all PASS).
+
+| ID  | Result                       | Note                                                                                                                                                                                                                 |
+| --- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| N3  | PASS (unchanged, section 11) | Codex discovers skills in `.agents/skills`. `.agents/skills` is now a real directory; the section 11 run used the transitional link and was not repeated                                                             |
+| N6  | NOT RUN                      | Not required by the mirror strategy. No new `claude -p` session was started, as instructed. The mirror is not evidence that a Claude Code symlink works or fails                                                     |
+| N10 | NOT RUN                      | No Windows host; the repository is worked on in a Linux devcontainer. The mirror holds only regular files, so it does not depend on the result                                                                       |
+| N11 | NOT RUN (local)              | `mkdocs` is on `PATH` but `pymdownx` and the Material theme are not installed; installing them was not approved. CI (`Docs build`, T5.5) is the acceptance evidence. See 13.4 for the degraded run that was possible |
+
+Implementation: `git mv` of all 18 skills (one commit, renames only, 100% similarity), `.agents/bin/sync-skills` generates `.claude/skills` (byte copy with modes, plus a fixed `GENERATED` marker), and `test_skills_parity` runs `sync-skills --check` (the plan's `test_skills_drift`) with idempotency and eleven drift or invalid-source fixtures. The tests run in the existing `Agent instructions` CI job. `git log --follow` on a moved skill reaches the pre-move history through the rename commit.
+
+### 13.2 T5.3 memory triage: decision per file
+
+41 memory files plus `MEMORY.md` (52 lines before and after). Applied: one narrowing that the task allows (D4), three path or wording corrections that carry no semantic change, and no deletion. Nothing needs an owner decision.
+
+| File                                                                         | Decision                      | Evidence or destination                                                                                                                                    |
+| ---------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feedback_push_and_pr_after_branch`                                          | **Narrowed** (D4)             | Was "push and open a PR immediately"; now push and PR only on instruction or when plainly part of the task. Description and index line updated             |
+| `feedback_claude_files_in_workspace`                                         | Stay, path line corrected     | Claude-only mechanics, covered by the `CLAUDE.md` Memory section. The `skills/` bullet names the generated mirror and `.agents/skills`; index line updated |
+| `reference_talos_taint_noderestriction`                                      | Stay, path corrected          | Procedure already lives in the `talos-node-taints` skill; the path now points at `.agents/skills`                                                          |
+| `project_plans_location_convention`                                          | Stay, no change               | Already reconciled to `.plans/<slug>/` (PR-3); matches `.plans/README.md`                                                                                  |
+| `feedback_no_domain_in_comments`                                             | Stay (long form)              | Rule in `AGENTS.md` Secrets Management                                                                                                                     |
+| `feedback_cluster_access_rules`                                              | Stay (long form)              | `AGENTS.md` Permissions and Consent, `permissions.md`                                                                                                      |
+| `feedback_verify_manifests`                                                  | Stay (long form)              | `AGENTS.md` Verification, `validation.md` Helm and Kustomize rows                                                                                          |
+| `feedback_update_docs`                                                       | Stay (long form)              | `AGENTS.md` Documentation                                                                                                                                  |
+| `feedback_check_live_ips_before_assigning`                                   | Stay (long form)              | `validation.md` Network row                                                                                                                                |
+| `feedback_talosctl_config`                                                   | Stay (long form)              | `cluster-reference` skill carries the `TALOSCONFIG` path                                                                                                   |
+| `project_secrets_architecture`                                               | Stay (long form)              | `AGENTS.md` Secrets Management (mechanisms 1 and 2, the rule), `add-app` skill (ESO raw-string tip), `validation.md` ExternalSecret row                    |
+| `feedback_deployment_strategy_patch`                                         | Stay; skill destination added | `add-app` skill, new Gotchas section; the `validation.md` pointer now names the skill, not memory                                                          |
+| `feedback_check_native_gateway`                                              | Stay; skill destination added | `add-app` skill, Gotchas section                                                                                                                           |
+| `reference_app_removal_procedure`                                            | Stay; skill summary added     | `add-app` skill, Gotchas section carries the rule and the consent classes; the incident history stays in memory                                            |
+| `reference_coredns_argo_bootstrap_deadlock`                                  | Stay (explicit)               | One-off incident knowledge with a "before you delete coredns" check; no skill covers CoreDNS. Candidate for a skill if it recurs                           |
+| `reference_qnap_s3_barman_caveat`                                            | Stay (explicit)               | The rule is in the `validation.md` Storage row; the memory file holds the cause                                                                            |
+| `feedback_grafana_no_anonymous_access`, `project_nv1_drop_gemma_multi_model` | Stay, no change               | Dated owner decisions                                                                                                                                      |
+| `reference_gemma4_single_slot_swap`, `reference_hermes_64k_context_floor`    | Stay, no change               | Already marked superseded or archived                                                                                                                      |
+| The other 21 `reference_*` files                                             | Stay, no change               | Dated domain knowledge, not rules (section 9.2). Not re-verified against live state in this PR                                                             |
+
+The other 21 files are `ai_gateway`, `bazarr_lingarr_translation`, `ceph_alert_job_scoping`, `ceph_osd_discard`, `container_fs_writes_double_count`, `gateway_dns_architecture`, `home_network_hardware`, `jetson_llama_cuda_tag`, `lan_route_for_external_apps`, `lingarr_api_key_ui_only`, `llama_server_nv1_memory`, `matter_thread_cross_vlan`, `music_assistant_cluster`, `nv1_gpu_test_pause`, `nv1_meta_dhcp`, `qnap_media_share_layout`, `qwen36_nv1_benchmark`, `talos_log_shipping`, `talos_workload_isolation`, `tuppr_upgrades` and `uncased_bert_embeddings`.
+
+The `AGENTS.md` memory pointer now names `.claude/memory/MEMORY.md` and says the notes are read when they apply and verified. The domain scan over the touched memory files found no private domain, secret or identifier.
+
+### 13.3 T5.2, T5.4, T5.5
+
+- T5.2: wording changes in three skills plus the branch-type line in `dev-workflow`; skill names and trigger phrases unchanged (the `prometheus-portforward-session` description says "an agent session" instead of "Claude Code").
+- T5.4: `docs/src/contributing/ai-workflow.md`, nav group "Contributing". It links the workflow at tag `ai-workflow-v0.1.0-preview.1` and does not link the general adoption guide: that guide (F1.1, F1.2) does not exist, so the dependency condition is not met.
+- T5.5: `.github/workflows/docs-build.yaml`.
+
+### 13.4 Local MkDocs
+
+The real build (`mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml`) is **NOT RUN** locally: `pymdownx` and the Material theme are missing and installing them was not approved. A degraded strict build was run with a throwaway configuration outside the repository (built-in theme, no plugins, no `pymdownx` extensions, same `docs_dir` and `nav`, link validation set to warn). It found one existing defect: the nav entry `k8s/nvme-replacement.md` pointed at a page deleted in #5162, which the strict build turns into a failure (`publish-pages.yaml` builds without `--strict`, so `main` never noticed). The entry was removed in this PR; the degraded build then passed. This is indicative only: it does not exercise the Material theme, `autolinks`, `git-revision-date-localized` or `pymdownx.snippets`, so CI stays the evidence. The negative test (a deliberately broken nav entry makes the job fail) is NOT RUN: it needs a pushed scratch branch.

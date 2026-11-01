@@ -10,7 +10,7 @@ workspace directory — not to `~/.claude/` (`/home/vscode/.claude/`).
 
 Tracked in the repo under `.claude/`:
 
-- `skills/` — project skills (`add-app`, `cluster-reference`, `dev-workflow`, …)
+- `skills/` — generated mirror of the project skills; edit `.agents/skills/` and run `.agents/bin/sync-skills`
 - `memory/` — memory files and `MEMORY.md`
 - `settings.json`, `statusline/`
 

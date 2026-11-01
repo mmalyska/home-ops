@@ -24,19 +24,23 @@ finish() {
   [ "$FAILS" -eq 0 ]
 }
 
-# fixture <dir>: copy the files the instruction tests read into <dir>, keeping the skills link.
+# fixture <dir>: copy the files the instruction tests read into <dir>, with the canonical skills and their generated mirror.
 fixture() {
   local dir="$1"
   mkdir -p "$dir/.agents" "$dir/.claude"
   cp "$REPO_ROOT/AGENTS.md" "$REPO_ROOT/CLAUDE.md" "$dir/"
   cp -a "$REPO_ROOT/.agents/README.md" "$REPO_ROOT/.agents/policy" "$dir/.agents/"
   cp "$REPO_ROOT/.claude/settings.json" "$dir/.claude/"
+  cp -a "$REPO_ROOT/.agents/skills" "$dir/.agents/"
   cp -a "$REPO_ROOT/.claude/skills" "$dir/.claude/"
-  ln -s ../.claude/skills "$dir/.agents/skills"
+  mkdir -p "$dir/docs/src" "$dir/.github/mkdocs" "$dir/.github/workflows"
+  cp -a "$REPO_ROOT/docs/src/contributing" "$dir/docs/src/"
+  cp "$REPO_ROOT/.github/mkdocs/mkdocs.yml" "$dir/.github/mkdocs/"
+  cp "$REPO_ROOT/.github/workflows/docs-build.yaml" "$dir/.github/workflows/"
 }
 
-# instruction_files <root>: the markdown files that carry agent instructions.
+# instruction_files <root>: the markdown files that carry agent instructions, including the public contributing pages.
 instruction_files() {
   local root="$1"
-  ls "$root/AGENTS.md" "$root/CLAUDE.md" "$root/.agents/README.md" "$root"/.agents/policy/*.md
+  ls "$root/AGENTS.md" "$root/CLAUDE.md" "$root/.agents/README.md" "$root"/.agents/policy/*.md "$root"/docs/src/contributing/*.md
 }

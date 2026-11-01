@@ -191,3 +191,9 @@ spec:
   dnsNames:
     - "myapp.<secret:private-domain>"
 ```
+
+## Gotchas
+
+- **Native Gateway API support first.** Before writing `templates/httproute.yaml`, check the chart: `helm show values <repo>/<chart> --version <ver> | grep -iE "route|gateway|httproute"`. `rook-ceph-cluster` (`route.dashboard`) and bjw-s `app-template` v4+ (`route:`) have it; a hand-written route can conflict with a chart-managed one.
+- **Deployment strategy RollingUpdate to Recreate.** ArgoCD fails the server-side-apply dry run with `rollingUpdate: Forbidden` because the live object still has the field. Patch the live object first (consent-gated RUNTIME_MUTATION): `kubectl patch deployment <name> -n <ns> --type=json -p='[{"op":"remove","path":"/spec/strategy/rollingUpdate"},{"op":"replace","path":"/spec/strategy/type","value":"Recreate"}]'`, then sync.
+- **Removing an app.** Deleting `cluster/apps/<category>/<app>/` does not prune the ArgoCD `Application` (the ApplicationSets use `create-update`, deliberately). Removal is a separate live step: `kubectl delete application <name> -n argocd` (consent-gated). Then list what is left with `kubectl get all,pvc -n <namespace>`: StatefulSet PVCs and some CRs survive the cascade, and deleting a PVC or namespace is DESTRUCTIVE with its own consent. Long form with the incident history: `.claude/memory/reference_app_removal_procedure.md`.

@@ -46,7 +46,7 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 - A local `file://` chart (under `charts/`) needs its `Chart.yaml` `version` bumped and the parent dependency version updated, or Argo keeps the cached chart.
 - L1: Lint, helm-lint, rendered diff (`diff-yaml-on-pr`).
 - L2: `argocd app diff <app>`; `kubectl get` of the resulting object after sync.
-- L3: a Deployment strategy change from RollingUpdate to Recreate needs a live patch of the object before the sync (see the memory note on deployment strategy); that patch is RUNTIME_MUTATION.
+- L3: a Deployment strategy change from RollingUpdate to Recreate needs a live patch of the object before the sync (see the Gotchas section of the `add-app` skill); that patch is RUNTIME_MUTATION.
 - Profile: STANDARD.
 - Profile for storage or operators: DEEP.
 

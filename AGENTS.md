@@ -25,7 +25,7 @@ provision/
 charts/                        # Local Helm charts
 docs/                          # MkDocs documentation
 .taskfiles/                    # Task automation modules
-.agents/                       # Adapter contract, policy files, instruction tests, skills link
+.agents/                       # Adapter contract, policy files, instruction tests, canonical skills
 .plans/                        # Active plans (committed)
 .archive/                      # Finished plans and retired apps: history, not instructions
 ```
@@ -138,10 +138,10 @@ Project skills hold domain procedures and load on demand. Before domain work, lo
 | CNPG backups, DB startup order     | `cnpg-cluster-audit`, `k8s-wait-for-db`                         |
 | Public-repo secret audit           | `secops-public-repo-audit`                                      |
 
-The skills live in `.claude/skills/` and are reached through the `.agents/skills` link (see `.agents/README.md`).
+The skills live in `.agents/skills/`; that is the only place to edit one. `.claude/skills/` is a generated mirror for Claude Code: run `.agents/bin/sync-skills` after an edit (see `.agents/README.md`).
 
 ## Documentation
 
 After any non-trivial change, update the docs that describe it (this file, `docs/`, the README or the relevant skill) in the same PR.
 
-Dated findings kept by an agent harness (for example `.claude/memory/`) are notes, not rules; a rule has a home in this file or under `.agents/`.
+Dated findings kept by an agent harness (for example `.claude/memory/`, indexed in `.claude/memory/MEMORY.md`) are notes to read when they apply and to verify against code and live state, not rules; a rule has a home in this file or under `.agents/`.
