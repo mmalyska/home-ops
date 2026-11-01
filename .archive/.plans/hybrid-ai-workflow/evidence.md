@@ -311,3 +311,81 @@ The real build (`mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml`)
 F1.1 is merged and tagged in `claude-plugins`: tag `ai-workflow-v0.1.0-preview.2` peels to `5cf7485aa8e73b8ae89dc87ea9a78b0543a5be9e`, and `docs/workflow/repository-adoption-guide.md` exists at that tag (checked read-only). `docs/src/contributing/ai-workflow.md` section 1 now links the guide at that immutable tag; the workflow-contract links stay at `ai-workflow-v0.1.0-preview.1`. `test_docs_page.sh` pins the two separately (`PIN_TAG`, `GUIDE_TAG`). This supersedes the T5.4 line in 13.3 that says the guide is not linked.
 
 The delivering PR is #6051.
+
+## 15. Closure at archive (2026-11-01)
+
+Written in the archival change (PR-7). It adds to sections 1 to 14; nothing above was edited. Base `origin/main` `46a316c9` (#6051). Read-only GitHub checks: #6041, #6042, #6047, #6048, #6049, #6050 and #6051 are merged; every CI check on #6050 and #6051 passed, including `Instruction checks` and `MkDocs strict build`. `bash .agents/tests/run.sh` (165 tests) and `.agents/bin/check-plans` passed on the base before this change.
+
+The archival change (T7.1, PR-7) is PR #6052, branch `chore/archive-hybrid-ai-workflow`. It is recorded in the `pr` field of `plan.md`, the archive index row and the T7.1 status.
+
+### 15.1 Completed implementation
+
+Acceptance criteria of plan.md section 16, with the evidence that exists. A criterion is not claimed where evidence is missing.
+
+| AC  | Result                  | Evidence                                                                                                                                                                                                                                                                   |
+| --- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Met, limits stated      | `AGENTS.md` merged in #6042. N1 and N2 PASS in section 11 (stated behaviour of tool-less sessions, one run per cell). N3 PASS                                                                                                                                              |
+| 2   | Met                     | thin `CLAUDE.md` in #6042; `test_thin_adapter.sh`; preservation table in plan.md section 5                                                                                                                                                                                 |
+| 3   | Met                     | `test_no_workflow_copy.sh`; the pin is written once in `AGENTS.md`                                                                                                                                                                                                         |
+| 4   | Met                     | `.agents/policy/permissions.md` and `test_permissions_parity.sh` (#6042); `gh api` and `gh pr merge` asked (D5, T1.5)                                                                                                                                                      |
+| 5   | Met                     | GITOPS_TRIGGER class and impact map in `AGENTS.md` and `permissions.md`; S3, S4, S5 in section 11 (the first Codex S5 run was PARTIAL, the rerun PASS, recorded as it happened)                                                                                             |
+| 6   | Met, limits stated      | `worktree-preflight`, pre-commit guard, Claude hook (#6047); layer table in section 12. A Codex edit in the primary checkout is instruction-only; c2 and N8 are NOT RUN                                                                                                    |
+| 7   | Met                     | `check-plans` and the plan convention in #6048. The archive diff of #6048 is `.archive/.plans/README.md` (new notice) and two lines in `.archive/.plans/list.md`; no archived plan was touched                                                                              |
+| 8   | Met                     | `.agents/policy/validation.md`, `.github/pull_request_template.md`, `test_validation_policy.sh` (#6049)                                                                                                                                                                    |
+| 9   | Met                     | `.agents/skills` canonical with a generated `.claude/skills` mirror, `test_skills_parity.sh` (#6050); N3 PASS; N6 and N10 NOT RUN and not needed by the mirror                                                                                                              |
+| 10  | Met                     | All three parts evidenced in 15.5: secret values (gitleaks, token exact-value search), private domain (exact-value search, patterns confirmed non-empty) and sensitive identifiers (identifier-pattern and reference scan). Zero disallowed hits over the adoption change set, commits and PR text. This replaces the first draft of this row ("partly evidenced"), written before the search was run                |
+| 11  | Met (documentary)       | Review of all seven delivering PRs against their recorded rollback, in 15.6. A documentary review, not a rollback rehearsal; nothing was reverted. This replaces the first draft of this row ("not separately recorded")                                                                      |
+| 12  | Met                     | `docs/src/contributing/ai-workflow.md` with nav entry (#6050); `test_docs_page.sh`; CI job `MkDocs strict build` passed on #6050 and #6051. The local strict build is NOT RUN (section 13.4). The adoption guide (F1.1) is not an acceptance condition                      |
+
+### 15.2 Accepted dropped optional pilot
+
+PR-6 (T6.1) is `dropped` by owner decision on 2026-11-01. Reason: PRs #6041, #6042, #6047, #6048, #6049, #6050 and #6051 already exercised planning, worktree-first enforcement, shared instructions, validation, documentation CI, canonical skills, cross-repository handoff and immutable references, so a synthetic pilot would add little evidence. T7.1 allows archiving when PR-6 is done or dropped by the owner. No pilot was run and none is claimed.
+
+### 15.3 External follow-up completed
+
+F1.1 is merged and tagged in `mmalyska/claude-plugins` (section 14). F1.2 is #6051 (`46a316c9`). Both are complete.
+
+### 15.4 Remaining follow-ups, unrelated to the archive
+
+Left open by the adoption work and recorded above as NOT RUN or as open decisions: N4/c2, N6, N8, N9, N10, N11 (local), S2, S7, S8, a live Claude session with the new hook loaded, D6, D7, D11 (owner cleanup) and the `dotfiles` Codex configuration (D5). They are listed in `.plans/TODO.md` so that archiving does not hide them.
+
+### 15.5 AC10: secret values, private domain, sensitive identifiers (2026-11-01)
+
+AC10 wording (plan.md section 16): "No secret value, private domain or sensitive identifier appears in any new file." Result: **PASS** for all three parts. Nothing below prints a value or a matched line.
+
+**Part 1, secret values: PASS.** gitleaks runs in `pre-commit` and in the CI `Lint` job; both passed on every delivering PR and on both archival commits. In addition the exact value of the Bitwarden access token (environment variable `BWS_ACCESS_TOKEN`, non-empty: yes) was searched as a fixed string in the same scope as part 3: 0 files, 0 added diff lines.
+
+**Part 2, private domain: PASS.**
+
+- **Value source:** the two existing environment variables that carry the private domain (`PRIVATE_DOMAIN`, non-empty: yes; `TALHELPER_CLUSTERDOMAIN`, non-empty: yes). Both patterns were loaded (2 patterns). The values were used as fixed-string patterns read from a temporary file and were not printed or written anywhere. Case-insensitive.
+- **Revision:** base `46a316c9` plus the first archival commit `3ac28957`, with the working tree of this correction; plan base `6c76fea1`.
+- **Scope searched, all with zero hits:** `AGENTS.md`, `CLAUDE.md`, `.agents/**`, `.plans/**`, `.archive/.plans/hybrid-ai-workflow/**`, `docs/src/contributing/ai-workflow.md`, the PR template, the two workflow files, `.pre-commit-config.yaml`, `.claude/settings.json`, `.claude/memory`, `.claude/skills`, `.codex`; all 72 files changed between `6c76fea1` and HEAD; the full added-line diff of that range; the commit messages of that range; the titles and bodies of #6041, #6042, #6047, #6048, #6049, #6050 and #6051 (read through `gh pr view`, not stored).
+- **Whole-repository search for context:** zero hits outside that scope as well, so there was no pre-existing operational configuration to tell apart from a leak. The repository keeps the domain behind `<secret:...>` tokens.
+- **Limit:** a fixed-string search finds the exact value only, not a reworded or partial form of it.
+
+**Part 3, sensitive identifiers: PASS.**
+
+- **Forms taken from repository policy** (`AGENTS.md` Secrets Management, `.agents/policy/validation.md` ExternalSecret section, the `add-app` and `secops-public-repo-audit` skills, `test_docs_page.sh`): Bitwarden secret, project and organisation identifiers are UUID-shaped; an `ExternalSecret` `remoteRef` key holds one (such lines in `cluster/` carry a `gitleaks:allow` marker and are accepted operational configuration there); the approved symbolic form is `<secret:name>`; a BWS access token has the shape `<digit>.<UUID>.<secret>`. A literal identifier is never allowed in instructions, plans, fixtures, documentation or PR text.
+- **Scope:** the 72 files changed between `6c76fea1` and HEAD (52 added), the full archived plan folder, `docs/src/contributing/ai-workflow.md`, `AGENTS.md`, `CLAUDE.md`, `.agents/**`, `.plans/**`, `.codex`; the added lines of the whole adoption diff; the commit messages; the titles and bodies of the seven delivering PRs. Revision: HEAD after `8a82f8fa` plus this correction.
+- **Rule categories, all 0 files:** BWS token shape; `BWS_ACCESS_TOKEN` assigned a value; `<secret:` followed by a UUID; `remoteRef` key with a UUID; `bws secret` or `bws project` with a UUID argument; "bitwarden" or "bws" on the same line as a UUID. Added diff lines with a UUID-shaped value: 0. Commit messages with an identifier shape: 0. PR texts with an identifier shape: 0.
+- **Generic UUID-shaped values:** 4 files in the scope contain one, in lines that exist unchanged at the plan base (`git show 6c76fea1:<path>`), so the adoption added none: three `.claude/memory` front matter lines hold a Claude Code `originSessionId` (not a Bitwarden or secret identifier, and not equal to any identifier in `cluster/`, `provision/` or `charts/`), and one line in `provision/talos/README.md` holds a value that also appears in live configuration. That file is outside the AI-workflow scope; the adoption changed one unrelated line in it (#6050). To tell the UUIDs apart, all 95 distinct UUID-shaped values in `cluster/`, `provision/` and `charts/` were harvested and compared; only the `provision/talos/README.md` occurrence matches.
+- **Symbolic placeholders:** `<secret:name>` tokens appear in `AGENTS.md`, the `add-app` skill and its mirror, the archived evidence and one existing app file. They are the approved form and are not values.
+- **Limit:** pattern-based. An identifier that is not UUID-shaped and not a token would not be found; gitleaks entropy rules are the other layer.
+
+### 15.6 AC11: documentary rollback review (2026-11-01)
+
+AC11 wording (plan.md section 16): "Every PR is independently revertible and was reviewed against section 15." This is a **documentary review** of the recorded rollback (plan.md section 15) against each merged diff (`git diff <merge>^ <merge>`) and the PR description. No rollback was executed or rehearsed. Every merged diff is limited to documentation, tooling, CI and agent-instruction files; the only path outside `docs/`, `.agents/`, `.plans/`, `.archive/`, `.claude/`, `.github/`, `.codex/`, `.pre-commit-config.yaml`, `AGENTS.md` and `CLAUDE.md` is one documentation line in `provision/talos/README.md` (#6050). No `cluster/`, `charts/` or Terraform path is touched, and every PR description names its rollback.
+
+"Independently revertible" is read as: each PR is one squash commit whose revert is a complete undo of its own scope with no runtime state to restore. A later PR that builds on it (the "Depends on" column of plan.md section 14) must be reverted first, so reverts run in reverse merge order.
+
+| PR    | Rollback recorded (plan.md section 15)                                            | Revert covers the merged scope?                                                                                            | Residual external or runtime state                                                                                                           | Result |
+| ----- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| #6041 | Revert the commit, delete the row                                                 | Yes: three new plan files and one index row                                                                                | None. Later PRs link to the plan, so they are reverted first                                                                                 | PASS   |
+| #6042 | `git revert` restores the old `CLAUDE.md` and `settings.json`, removes `AGENTS.md` | Yes: `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `.agents` policy, README and tests, plan files                    | Running sessions keep the old rules until restarted; Codex loses the rules again, as before                                                  | PASS   |
+| #6047 | Revert; user-level plugin hook untouched; remove the pre-commit hook              | Yes: guard scripts, tests, `.codex/rules`, `settings.json` hook entry, `.pre-commit-config.yaml` entry                     | Installed local git hook script refreshes at the next `pre-commit install`; the user-level plugin hook is unchanged                          | PASS   |
+| #6048 | Revert; `list.md` returns to four columns; archive untouched                      | Yes: plan README, widened index, `check-plans` and its test, archive notice files, two memory files                        | None. The archive diff was notice text only, so no archived plan is affected                                                                 | PASS   |
+| #6049 | Revert; delete the workflow file                                                  | Yes: validation policy, PR template, `agent-instructions.yaml`, test runner pieces                                         | No branch protection requires the new check (N7), so removing it blocks nothing                                                              | PASS   |
+| #6050 | Delete the link, revert text edits; page, nav entry and `docs-build` removed together | Yes: skill move and mirror, memory triage, docs page, nav entry and nav fix, `docs-build.yaml`, one README line           | Merge published the docs site (`publish-pages.yaml` runs on `docs/**` pushes); the revert republishes on its own merge. No other state       | PASS   |
+| #6051 | `git revert`                                                                      | Yes: one sentence and link in the docs page, the pinned-tag test constant                                                  | Docs republication on merge and again on revert. The `claude-plugins` tag is unaffected                                                      | PASS   |
+
+Result for AC11: PASS as a documentary review. What this does not show: that a revert applies without conflicts today (several of these files were edited by later PRs, which is why the reverse order matters), or that the docs site republishes correctly after a revert.

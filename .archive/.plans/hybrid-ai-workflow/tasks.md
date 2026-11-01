@@ -449,6 +449,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** frictions are turned into follow-up tasks or `.plans/TODO.md` items.
 - **Rollback:** revert the pilot PR.
 - **Mutation consent:** none for docs. Push and PR need an explicit instruction (D4); merge is the owner's (D8).
+- **Status:** dropped 2026-11-01 by owner decision. Reason: PRs #6041, #6042, #6047, #6048, #6049, #6050 and #6051 already exercised planning, worktree-first enforcement, shared instructions, validation, documentation CI, canonical skills, cross-repository handoff and immutable references, so a synthetic pilot would add little evidence. No pilot was run.
 
 ## External follow-up (not part of any home-ops PR): `claude-plugins` adoption guide
 
@@ -463,6 +464,7 @@ Ownership: `claude-plugins` owns the general guide; `home-ops` owns only its loc
 - **Acceptance:** the checklist and the plan template are present and usable; every `home-ops`-specific detail is generalized or removed; the `home-ops` page and the guide do not contradict each other (cross-read recorded in the PR).
 - **Rollback:** revert the `claude-plugins` PR; `home-ops` is unaffected because it links to the guide only after F1.2.
 - **Mutation consent:** none for the file; push, PR and merge in `claude-plugins` follow that repository's rules and the owner's explicit instruction (D4, D8).
+- **Status:** done 2026-11-01 in `mmalyska/claude-plugins`; tag `ai-workflow-v0.1.0-preview.2` (peels to `5cf7485aa8e73b8ae89dc87ea9a78b0543a5be9e`) carries `docs/workflow/repository-adoption-guide.md` (evidence.md section 14, checked read-only).
 
 ### F1.2 Link the guide from the `home-ops` page (small home-ops PR, after F1.1 is merged)
 
@@ -486,3 +488,4 @@ Ownership: `claude-plugins` owns the general guide; `home-ops` owns only its loc
 - **Acceptance:** live docs links to the plan (if any) updated; nothing else under `.archive/` changed.
 - **Rollback:** move the folder back, restore both rows.
 - **Mutation consent:** none for the move; push and PR only on explicit instruction (D4).
+- **Status:** done 2026-11-01 (this change, PR #6052). Status `shipped`, PR-6 `dropped`, F1.1 and F1.2 complete; see plan.md section 20 and evidence.md section 15.
