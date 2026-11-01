@@ -1,0 +1,280 @@
+#!/usr/bin/env bash
+# check-plans: one plan convention, consistent indexes, archive marked as history.
+# Reads files only; never writes, never touches git, the network or the cluster.
+#
+#   check-plans [--root DIR]            check a repository tree (default: this repository)
+#   check-plans --front-matter FILE     validate only the front matter of one plan.md
+#
+# Output: one "ERROR <path>: <message>" or "WARN <path>: <message>" line per finding, sorted
+# (byte order) and de-duplicated, then a summary line. Exit 0 = no errors (warnings allowed),
+# 1 = at least one error, 2 = usage error. Legacy exceptions are listed in
+# .agents/policy/plans-legacy.txt; the legacy form .plans/superpowers/ only warns.
+set -uo pipefail
+export LC_ALL=C
+
+REQUIRED_KEYS="status owner profile topology base_sha branch worktree pr started updated"
+STATUSES="draft approved in-progress blocked shipped dropped superseded"
+TERMINAL="shipped dropped superseded"
+ACTIVE_HEADER="Plan|Status|Owner|Profile/Topology|Branch|PR|Started|Updated|Description"
+ARCHIVE_NOTICE='not instructions'
+
+ROOT=""
+FM_ONLY=""
+MSGS=()
+
+err() { MSGS+=("ERROR $1: $2"); }
+warn() { MSGS+=("WARN $1: $2"); }
+in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+
+usage() { echo "usage: check-plans [--root DIR | --front-matter FILE]" >&2; exit 2; }
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --root) [ $# -ge 2 ] || usage; ROOT="$2"; shift 2 ;;
+    --front-matter) [ $# -ge 2 ] || usage; FM_ONLY="$2"; shift 2 ;;
+    *) usage ;;
+  esac
+done
+
+# fm_get FILE KEY: value of a top-level front matter key (first block only), quotes removed.
+fm_get() {
+  awk -v key="$2" '
+    NR == 1 { if ($0 != "---") exit; infm = 1; next }
+    infm && $0 == "---" { exit }
+    infm { k = $0; sub(/:.*/, "", k); if (k == key) { v = $0; sub(/^[^:]*:[ \t]*/, "", v); sub(/[ \t]+$/, "", v); gsub(/^"|"$/, "", v); print v; exit } }
+  ' "$1"
+}
+fm_has() { awk -v key="$2" 'NR==1{if($0!="---")exit;i=1;next} i&&$0=="---"{exit} i{k=$0;sub(/:.*/,"",k);if(k==key){f=1;exit}} END{exit f?0:1}' "$1"; }
+
+# check_front_matter FILE LABEL
+check_front_matter() {
+  local f="$1" label="$2" key val
+  if [ "$(head -n 1 "$f")" != "---" ]; then err "$label" "no front matter (the file must start with a --- line)"; return; fi
+  if ! awk 'NR>1 && $0=="---"{f=1} END{exit f?0:1}' "$f"; then err "$label" "front matter is not closed with a --- line"; return; fi
+  for key in $REQUIRED_KEYS; do
+    if ! fm_has "$f" "$key"; then err "$label" "front matter field '$key' is missing"; continue; fi
+    val="$(fm_get "$f" "$key")"
+    [ -n "$val" ] || err "$label" "front matter field '$key' is empty"
+  done
+  val="$(fm_get "$f" status)"
+  if [ -n "$val" ] && ! in_list "$val" "$STATUSES"; then err "$label" "status '$val' is not one of: $STATUSES"; fi
+  for key in started updated; do
+    val="$(fm_get "$f" "$key")"
+    if [ -n "$val" ] && ! [[ "$val" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then err "$label" "'$key' must be YYYY-MM-DD, got '$val'"; fi
+  done
+  local s u; s="$(fm_get "$f" started)"; u="$(fm_get "$f" updated)"
+  if [[ "$s" =~ ^[0-9-]{10}$ && "$u" =~ ^[0-9-]{10}$ && "$u" < "$s" ]]; then err "$label" "'updated' ($u) is earlier than 'started' ($s)"; fi
+}
+
+summary() {
+  local e=0 w=0 m
+  if [ "${#MSGS[@]}" -gt 0 ]; then
+    printf '%s\n' "${MSGS[@]}" | sort -u
+    for m in "${MSGS[@]}"; do case "$m" in ERROR*) e=$((e + 1)) ;; WARN*) w=$((w + 1)) ;; esac; done
+  fi
+  printf 'check-plans: %s error(s), %s warning(s)\n' "$e" "$w"
+  [ "$e" -eq 0 ]
+}
+
+if [ -n "$FM_ONLY" ]; then
+  [ -f "$FM_ONLY" ] || { echo "check-plans: no such file: $FM_ONLY" >&2; exit 2; }
+  check_front_matter "$FM_ONLY" "$FM_ONLY"
+  summary; exit $?
+fi
+
+if [ -z "$ROOT" ]; then ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"; fi
+[ -d "$ROOT" ] || { echo "check-plans: no such directory: $ROOT" >&2; exit 2; }
+cd "$ROOT" || exit 2
+
+PLANS=.plans
+ARCH=.archive/.plans
+LEGACY_LIST=.agents/policy/plans-legacy.txt
+
+legacy_allowed() { # path: listed in the legacy file
+  [ -f "$LEGACY_LIST" ] || return 1
+  grep -qxF -- "$1" <(grep -v '^[[:space:]]*#' "$LEGACY_LIST" | sed 's/[[:space:]]*$//')
+}
+
+# --- forbidden and legacy locations ---------------------------------------------------------
+if [ -e docs/superpowers ]; then err docs/superpowers "plans do not live here; use .plans/<slug>/ (see .plans/README.md)"; fi
+if [ -d "$PLANS/superpowers" ]; then warn "$PLANS/superpowers" "legacy plan location, accepted but not for new plans; use .plans/<slug>/"; fi
+if [ -d "$PLANS" ]; then
+  for p in "$PLANS"/* "$PLANS"/.[!.]*; do
+    [ -e "$p" ] || continue
+    b="$(basename "$p")"
+    if [ -d "$p" ]; then continue; fi
+    case "$b" in README.md|list.md|TODO.md) ;; *) err "$p" "plan file outside .plans/<slug>/" ;; esac
+  done
+else
+  err "$PLANS" "directory is missing"
+fi
+
+# --- active plan folders --------------------------------------------------------------------
+declare -A SLUG_DIR=()   # slug -> 1 for active folders
+if [ -d "$PLANS" ]; then
+  for d in "$PLANS"/*/; do
+    [ -d "$d" ] || continue
+    slug="$(basename "$d")"
+    [ "$slug" = superpowers ] && continue
+    SLUG_DIR[$slug]=1
+    [[ "$slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || err "$PLANS/$slug" "folder name is not a lowercase kebab-case slug"
+    [ -f "$PLANS/$slug/plan.md" ] || err "$PLANS/$slug" "plan.md is missing"
+    [ -f "$PLANS/$slug/tasks.md" ] || err "$PLANS/$slug" "tasks.md is missing"
+    if [ -f "$PLANS/$slug/plan.md" ]; then
+      check_front_matter "$PLANS/$slug/plan.md" "$PLANS/$slug/plan.md"
+      st="$(fm_get "$PLANS/$slug/plan.md" status)"
+      if in_list "$st" "$TERMINAL"; then warn "$PLANS/$slug/plan.md" "status '$st': archive the plan (see .plans/README.md)"; fi
+    fi
+  done
+fi
+
+# --- index parsing ----------------------------------------------------------------------------
+# table_rows FILE: print each data row of the first table as one line, cells separated by US (0x1f).
+table_rows() {
+  awk -F'|' '
+    /^\|/ {
+      n++
+      if (n <= 2) next
+      line = ""
+      for (i = 2; i < NF; i++) { c = $i; gsub(/^[ \t]+|[ \t]+$/, "", c); line = line (i > 2 ? "\037" : "") c }
+      print line
+    }' "$1"
+}
+table_header() { awk -F'|' '/^\|/ { line=""; for (i=2;i<NF;i++){c=$i;gsub(/^[ \t]+|[ \t]+$/,"",c);line=line (i>2?"|":"") c}; print line; exit }' "$1"; }
+link_parts() { # "[label](target)" -> label<TAB>target, fails when the cell is not exactly one link
+  local re='^\[([^]]+)\]\(([^)]+)\)$'
+  [[ "$1" =~ $re ]] || return 1
+  printf '%s\t%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+}
+
+declare -A ROW_SLUG=() ROW_TARGET=()
+if [ -f "$PLANS/list.md" ]; then
+  hdr="$(table_header "$PLANS/list.md")"
+  [ "$hdr" = "$ACTIVE_HEADER" ] || err "$PLANS/list.md" "table header must be: | ${ACTIVE_HEADER//|/ | } | (found: $hdr)"
+  while IFS= read -r row; do
+    IFS=$'\037' read -r -a c <<<"$row"
+    if [ "${#c[@]}" -ne 9 ]; then err "$PLANS/list.md" "row '${c[0]:-?}' has ${#c[@]} columns, expected 9"; continue; fi
+    if ! lp="$(link_parts "${c[0]}")"; then err "$PLANS/list.md" "first cell '${c[0]}' must be a single [slug](slug/plan.md) link"; continue; fi
+    label="${lp%%$'\t'*}"; target="${lp#*$'\t'}"
+    if [ -n "${ROW_TARGET[$target]:-}" ]; then err "$PLANS/list.md" "duplicate row for $target"; continue; fi
+    ROW_TARGET[$target]=1
+    [ -e "$PLANS/$target" ] || err "$PLANS/list.md" "row '$label' links to $target, which does not exist"
+    if [[ "$target" == superpowers/* ]]; then
+      warn "$PLANS/list.md" "row '$label' is a legacy .plans/superpowers entry"
+      continue
+    fi
+    if ! [[ "$target" =~ ^([a-z0-9-]+)/plan\.md$ ]]; then err "$PLANS/list.md" "row '$label': link must be <slug>/plan.md, got $target"; continue; fi
+    slug="${BASH_REMATCH[1]}"
+    [ "$label" = "$slug" ] || err "$PLANS/list.md" "row label '$label' differs from the slug '$slug'"
+    ROW_SLUG[$slug]=1
+    [ -n "${SLUG_DIR[$slug]:-}" ] || { err "$PLANS/list.md" "row '$slug' has no folder .plans/$slug/"; continue; }
+    pm="$PLANS/$slug/plan.md"; [ -f "$pm" ] || continue
+    chk() { # column-name cell expected
+      [ "$2" = "$3" ] || err "$PLANS/list.md" "row '$slug': $1 is '$2' but plan.md says '$3'"
+    }
+    chk Status "${c[1]}" "$(fm_get "$pm" status)"
+    chk Owner "${c[2]}" "$(fm_get "$pm" owner)"
+    chk Profile/Topology "${c[3]}" "$(fm_get "$pm" profile) / $(fm_get "$pm" topology)"
+    b="${c[4]//\`/}"; chk Branch "$b" "$(fm_get "$pm" branch)"
+    chk Started "${c[6]}" "$(fm_get "$pm" started)"
+    chk Updated "${c[7]}" "$(fm_get "$pm" updated)"
+  done < <(table_rows "$PLANS/list.md")
+else
+  err "$PLANS/list.md" "index is missing"
+fi
+for slug in "${!SLUG_DIR[@]}"; do
+  [ -n "${ROW_SLUG[$slug]:-}" ] || err "$PLANS/$slug" "active plan folder has no row in .plans/list.md"
+done
+if [ -d "$PLANS/superpowers/plans" ]; then
+  for f in "$PLANS"/superpowers/plans/*.md; do
+    [ -f "$f" ] || continue
+    [ -n "${ROW_TARGET[superpowers/plans/$(basename "$f")]:-}" ] || err "$f" "legacy plan has no row in .plans/list.md"
+  done
+fi
+
+# --- archive: history, indexed, never instructions ------------------------------------------
+if [ -f "$ARCH/README.md" ]; then
+  grep -qi -- "$ARCHIVE_NOTICE" "$ARCH/README.md" || err "$ARCH/README.md" "must state that archived plans are '$ARCHIVE_NOTICE'"
+else
+  err "$ARCH/README.md" "archive notice is missing"
+fi
+if [ -f AGENTS.md ]; then
+  grep -qE 'Archive is not instructions' AGENTS.md || err AGENTS.md "must carry the line 'Archive is not instructions'"
+fi
+for f in AGENTS.md CLAUDE.md .agents/README.md; do
+  [ -f "$f" ] || continue
+  if grep -nE '^[[:space:]]*@[^[:space:]]*\.archive' "$f" >/dev/null; then err "$f" "imports a file under .archive/ as an instruction"; fi
+done
+
+declare -A ARCH_TARGET=()
+if [ -f "$ARCH/list.md" ]; then
+  while IFS= read -r row; do
+    IFS=$'\037' read -r -a c <<<"$row"
+    if ! lp="$(link_parts "${c[0]}")"; then err "$ARCH/list.md" "first cell '${c[0]}' must be a single [name](path) link"; continue; fi
+    target="${lp#*$'\t'}"
+    if [ -n "${ARCH_TARGET[$target]:-}" ]; then err "$ARCH/list.md" "duplicate row for $target"; continue; fi
+    ARCH_TARGET[$target]=1
+    [ -e "$ARCH/$target" ] || err "$ARCH/list.md" "row links to $target, which does not exist"
+  done < <(table_rows "$ARCH/list.md")
+else
+  err "$ARCH/list.md" "archive index is missing"
+fi
+if [ -d "$ARCH" ]; then
+  for p in "$ARCH"/*; do
+    [ -e "$p" ] || continue
+    b="$(basename "$p")"
+    if [ -d "$p" ]; then
+      [ "$b" = superpowers ] && continue
+      [ -z "${SLUG_DIR[$b]:-}" ] || err "$PLANS/$b" "slug is also an archived plan ($ARCH/$b)"
+      if [ -z "${ARCH_TARGET[$b/plan.md]:-}" ] && ! legacy_allowed "$p"; then err "$p" "archived plan folder has no row in $ARCH/list.md"; fi
+    else
+      case "$b" in README.md|list.md) ;; *) legacy_allowed "$p" || err "$p" "plan file in the old location; new plans go to .plans/<slug>/" ;; esac
+    fi
+  done
+  for f in "$ARCH"/superpowers/plans/*.md; do
+    [ -f "$f" ] || continue
+    rel="superpowers/plans/$(basename "$f")"
+    if [ -z "${ARCH_TARGET[$rel]:-}" ] && ! legacy_allowed "$f"; then err "$f" "archived plan has no row in $ARCH/list.md"; fi
+  done
+fi
+# Stale legacy entries (listed but gone) would hide nothing; report them so the list stays honest.
+if [ -f "$LEGACY_LIST" ]; then
+  while IFS= read -r entry; do
+    entry="${entry%"${entry##*[![:space:]]}"}"
+    case "$entry" in ''|'#'*) continue ;; esac
+    [ -e "$entry" ] || warn "$LEGACY_LIST" "lists $entry, which no longer exists"
+  done < <(cat "$LEGACY_LIST")
+fi
+
+# --- links and consent-gated commands ---------------------------------------------------------
+# strip_fences FILE: the file without fenced code blocks and inline code.
+# shellcheck disable=SC2016  # backticks here are literal Markdown fences
+strip_fences() { awk '/^[ \t]*```/ { f = !f; next } !f' "$1" | sed 's/`[^`]*`//g'; }
+check_links() { # file
+  local f="$1" dir t
+  dir="$(dirname "$f")"
+  while IFS= read -r t; do
+    t="${t%% *}"; t="${t%%#*}"
+    case "$t" in ''|http://*|https://*|mailto:*) continue ;; esac
+    [ -e "$dir/$t" ] || err "$f" "broken link: $t"
+  done < <(strip_fences "$f" | grep -o '\]([^)]*)' | sed 's/^](//; s/)$//')
+}
+link_files=()
+for f in "$PLANS/README.md" "$PLANS/list.md" "$ARCH/README.md" "$ARCH/list.md"; do [ -f "$f" ] && link_files+=("$f"); done
+if [ -d "$PLANS" ]; then
+  while IFS= read -r f; do link_files+=("$f"); done < <(find "$PLANS" -mindepth 2 -name '*.md' -type f | sort)
+fi
+for f in "${link_files[@]}"; do check_links "$f"; done
+
+gate_re='^[[:space:]]*(\$ )?(kubectl (apply|create|delete|patch|annotate|scale|exec)|talosctl (apply-config|upgrade|reset|reboot|shutdown)|terraform (apply|destroy)|argocd app sync|gh pr merge)([[:space:]]|$)'
+if [ -d "$PLANS" ]; then
+  while IFS= read -r f; do
+    while IFS= read -r hit; do
+      [ -n "$hit" ] && warn "$f" "line $hit: mutating command in a fenced block not marked 'consent-gated'"
+    done < <(awk -v re="$gate_re" '
+      /^[ \t]*```/ { if (!f) { f = 1; gated = ($0 ~ /consent-gated/) } else { f = 0 } ; next }
+      f && !gated && $0 ~ re { print FNR }' "$f")
+  done < <(find "$PLANS" -name '*.md' -type f ! -name TODO.md | sort)
+fi
+
+summary

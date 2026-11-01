@@ -4,17 +4,17 @@ How AI coding harnesses attach to this repository. The rules themselves live in 
 
 ## What lives where
 
-| Path                            | Holds                                                                               |
-| ------------------------------- | ----------------------------------------------------------------------------------- |
-| `AGENTS.md`                     | Canonical, harness-neutral project rules, always loaded                             |
-| `CLAUDE.md`                     | Thin Claude Code adapter: imports `AGENTS.md`, memory location, Claude-only facts   |
-| `.agents/policy/permissions.md` | Per-tool command lists, read-only `exec` allowlist, merge-impact map                |
-| `.agents/bin/`                  | `worktree-preflight` (worktree classifier) and `claude-pretool-guard` (Claude hook) |
-| `.agents/tests/`                | Bash tests for the instruction files and the guards; `bash .agents/tests/run.sh`    |
-| `.codex/rules/`                 | Codex execution-policy rules (forbid skipping git hooks)                            |
-| `.agents/skills`                | Link to the project skills (see below)                                              |
-| `.claude/`                      | Claude Code data: `settings.json`, `skills/`, `memory/`, `statusline/`              |
-| `.plans/`, `.archive/`          | Active plans; finished plans (history, not instructions)                            |
+| Path                            | Holds                                                                                                                   |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md`                     | Canonical, harness-neutral project rules, always loaded                                                                 |
+| `CLAUDE.md`                     | Thin Claude Code adapter: imports `AGENTS.md`, memory location, Claude-only facts                                       |
+| `.agents/policy/permissions.md` | Per-tool command lists, read-only `exec` allowlist, merge-impact map                                                    |
+| `.agents/bin/`                  | `worktree-preflight` (worktree classifier), `claude-pretool-guard` (Claude hook), `check-plans` (plan convention check) |
+| `.agents/tests/`                | Bash tests for the instruction files and the guards; `bash .agents/tests/run.sh`                                        |
+| `.codex/rules/`                 | Codex execution-policy rules (forbid skipping git hooks)                                                                |
+| `.agents/skills`                | Link to the project skills (see below)                                                                                  |
+| `.claude/`                      | Claude Code data: `settings.json`, `skills/`, `memory/`, `statusline/`                                                  |
+| `.plans/`, `.archive/`          | Active plans, see `.plans/README.md`; finished plans (history, not instructions)                                        |
 
 ## Workflow pin
 
