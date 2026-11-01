@@ -1,0 +1,8 @@
+{
+  "name": "Codex CLI",
+  "id": "codex-cli",
+  "version": "1.0.0",
+  "description": "Installs the OpenAI Codex CLI",
+  "options": {},
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}
