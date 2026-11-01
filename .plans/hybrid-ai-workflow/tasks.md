@@ -9,7 +9,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - Base commit of the audit: `6c76fea1a4409d9ea9643d46c3b7f06cfe611a8b`. Re-check `origin/main` before starting a PR; if it moved, rebase and re-verify the paths a task names.
 - The workflow itself (lifecycle Spec → Plan → Build → Test → Review → Simplify → Ship, QUICK/STANDARD/DEEP, SOLO/HANDOFF/PARALLEL/REVIEW, default STANDARD + SOLO) belongs to `mmalyska/claude-plugins`, tag `ai-workflow-v0.1.0-preview.1`, commit `25d785abee26ca7a3c87e8311f46e8a90f225301`. Do not copy it into this repository. Refer to it by name.
 - Work only in a linked worktree: `git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main`, with `type` one of `feat`, `fix`, `chore`, `docs`. Never write in the primary checkout. Never commit to `main`. Never use `--no-verify`.
-- Do not run, in any task, a command that changes cluster or external state: no `kubectl apply/create/delete/patch/annotate/scale/exec` (except allowlisted read-only `exec`), no ArgoCD sync or refresh, no `talosctl apply-config/upgrade/reset/reboot/shutdown`, no `terraform apply`, no Bitwarden secret change, no `gh pr merge`, no `gh workflow run`. Read-only checks (`kubectl get/describe/logs`, `argocd app get/list/diff`, `talosctl get`) are allowed. Pushing a branch and opening a PR need the owner's confirmation unless decision D4 has been recorded as accepted.
+- Do not run, in any task, a command that changes cluster or external state: no `kubectl apply/create/delete/patch/annotate/scale/exec` (except allowlisted read-only `exec`), no ArgoCD sync or refresh, no `talosctl apply-config/upgrade/reset/reboot/shutdown`, no `terraform apply`, no Bitwarden secret change, no `gh pr merge`, no `gh workflow run`. Read-only checks (`kubectl get/describe/logs`, `argocd app get/list/diff`, `talosctl get`) are allowed. Pushing a branch and opening a PR need an explicit instruction from the owner, or must plainly be part of the task you were given (D4: no general authorization). Merging is done by the owner, or by an agent only after unambiguous consent naming that PR (D8).
 - Secrets: never write secret values, tokens, the private domain, Bitwarden identifiers or node credentials into any file, prompt, log, test fixture or PR text. Use names and references. Run `pre-commit run --all-files` (includes gitleaks) before every commit.
 - Commit messages: conventional (`docs(agents): ...`), no AI attribution lines, no session links (hook and CI enforce this).
 - Validation commands available in the devcontainer: `git diff --check`, `yamllint -c .github/linters/.yamllint.yaml <files>`, `prettier --ignore-path .github/linters/.prettierignore --config .github/linters/.prettierrc.yaml --check <files>`, `shellcheck`, `jq`, `yq`, `helm`, `kubectl kustomize`, `gitleaks` via `pre-commit`. `markdownlint` is not installed locally; CI runs it with `.github/linters/.markdownlint.yaml` (line length 240). `task lint:*` always exits 0, so read its output, do not rely on the exit code.
@@ -121,8 +121,8 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 ### T1.5 Align `.claude/settings.json` with the matrix
 
 - **Scope:** `.claude/settings.json` only.
-- **Depends on:** T1.3 and owner decision D5.
-- **Content:** remove `Bash(gh api *)` from allow and allow explicit GET forms only (or leave it to prompt); move `gh run *` to `gh run view/list/watch`; replace `git branch*` by read forms; add `ask` for `gh pr merge*`, `gh pr create*`, `gh workflow run*`, `gh run rerun*`, `argocd app sync*`, `argocd app set*`, `argocd app delete*`, `terraform apply*`, `terraform import*`, `talosctl apply-config*`, `talosctl upgrade*`, `kubectl apply*`, `create*`, `delete*`, `patch*`, `annotate*`, `label*`, `scale*`, `exec*`, `drain*`, `cordon*`, `uncordon*`, `rollout*`, `bws secret create*`, `edit*`, `delete*`; add `deny` for `git commit*--no-verify*`, `git push*--no-verify*`, `git push*origin main*`, `bws secret get*`, `printenv*`, `env`. Keep every existing deny.
+- **Depends on:** T1.3. Decision D5 is accepted (2026-11-01).
+- **Content:** distinguish read-only variants as precisely as the permission pattern syntax allows: remove `Bash(gh api *)` from allow, allow only `gh api --method GET *` and `gh api -X GET *` forms, and add `ask` for every other `gh api` call; allow the read subcommands `gh pr view/list/diff/checks/status`, `gh run view/list/watch`, `gh label list`; allow `kubectl rollout status/history` and `kubectl auth can-i`; keep `ask` for `kubectl rollout restart/undo`; record in `permissions.md` where a prefix pattern cannot tell a read from a write (for example a `gh api` call with the method set late in the command) and treat that case as consent-required; move `gh run *` to `gh run view/list/watch`; replace `git branch*` by read forms; add `ask` for `gh pr merge*`, `gh pr create*`, `gh workflow run*`, `gh run rerun*`, `argocd app sync*`, `argocd app set*`, `argocd app delete*`, `terraform apply*`, `terraform import*`, `talosctl apply-config*`, `talosctl upgrade*`, `kubectl apply*`, `create*`, `delete*`, `patch*`, `annotate*`, `label*`, `scale*`, `exec*`, `drain*`, `cordon*`, `uncordon*`, `rollout*`, `bws secret create*`, `edit*`, `delete*`; add `deny` for `git commit*--no-verify*`, `git push*--no-verify*`, `git push*origin main*`, `bws secret get*`, `printenv*`, `env`. Keep every existing deny.
 - **Tests:** `jq empty .claude/settings.json`; `test_permissions_parity`; diff reviewed by the owner (behaviour change: tighter).
 - **Expected result:** the Claude enforcement matches the policy file.
 - **Acceptance:** no previously blocked command became allowed; routine read commands still run without a prompt.
@@ -149,6 +149,16 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Rollback:** none.
 - **Mutation consent:** none for the cluster. Needs the owner's go-ahead because it starts other harness sessions.
 - **Not run otherwise:** record NOT RUN with the reason; PR-1 may merge only if the owner accepts that.
+
+### T1.8 Transitional skills link for Codex
+
+- **Scope:** create the symlink `.agents/skills` pointing to `../.claude/skills`; add the link check to `.agents/tests/` (`test_skills_parity.sh`, stage-1 part); one sentence in `.agents/README.md` saying the link is transitional and `.agents/skills` is the target canonical source (D2).
+- **Depends on:** T1.1, T1.2, T1.6.
+- **Tests:** the link resolves; every `SKILL.md` has `name` equal to its directory and a non-empty `description`; `grep -R "superpowers:" .claude/skills` returns nothing; during the T1.7 sessions a Codex session lists `add-app` and `dev-workflow` (N3) and Claude still loads `.claude/skills` unchanged.
+- **Expected result:** Codex can discover the existing skills; no skill is moved, copied or edited.
+- **Acceptance:** `git diff --stat` shows one added symlink and the test; if Codex does not follow the directory link, record it in `evidence.md` and keep the link for documentation only until T5.1 chooses the mirror fallback.
+- **Rollback:** remove the symlink and the test.
+- **Mutation consent:** none; owner approval for the harness sessions (same as T1.7).
 
 ## PR-2: harness-agnostic worktree-first
 
@@ -326,17 +336,28 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Rollback:** `git revert`.
 - **Mutation consent:** none.
 
+### T4.5 Verify GitHub repository settings by hand (owner)
+
+- **Scope:** read-only inspection in the GitHub web UI (Settings, Branches and Rules); results appended to `.plans/hybrid-ai-workflow/evidence.md` section 10 (N7). No setting is changed by this task.
+- **Depends on:** none; schedule before PR-4 merges so the CI design can use the result.
+- **Tests:** record, with the date, for `main`: branch protection or rulesets present or absent, required reviews, required status checks (names), enforcement for administrators, force-push and deletion rules, whether the `Lint`, `Talos config` and `No Claude attribution` checks are required, `allow_auto_merge`, merge methods, and who may bypass.
+- **Expected result:** N7 changes from NOT VERIFIED to VERIFIED with the observed values, or stays NOT VERIFIED with the reason.
+- **Acceptance:** nothing is inferred from a failed API call (HTTP 403 on the protection endpoint is not evidence of missing protection); any gap found becomes a new open decision, not an automatic change.
+- **Rollback:** none needed (read-only).
+- **Mutation consent:** none for reading. Changing a setting is a separate decision by the owner.
+
 ## PR-5: skills, memory and user documentation
 
-### T5.1 Shared skill discovery
+### T5.1 Canonical skills move to `.agents/skills`
 
-- **Scope:** create the symlink `.agents/skills` pointing to `../.claude/skills`; `.agents/tests/test_skills_parity.sh`.
-- **Depends on:** PR-1; owner authorizes Claude and Codex sessions; decision D2.
-- **Tests:** link resolves; each `SKILL.md` has `name` equal to its directory and a non-empty `description`; `grep -R "superpowers:" .claude/skills` returns nothing; in fresh sessions of both harnesses, the skill list contains `add-app` and `dev-workflow` and a trigger phrase loads the right skill (N3, N6).
-- **Expected result:** no skill is copied or moved.
-- **Acceptance:** if Codex does not follow the directory link, use per-skill links or delegator files and record it; no divergent copies.
-- **Rollback:** remove the symlink.
-- **Mutation consent:** none; owner approval for the sessions.
+- **Scope:** replace the transitional link: `git mv .claude/skills/<skill> .agents/skills/<skill>` for all 18 skills in one commit, then make `.claude/skills` an adapter symlink to `../.agents/skills`; update path references (`CLAUDE.md`, `AGENTS.md`, `.agents/README.md`, `.claude/memory/feedback_claude_files_in_workspace.md` and its index line, any `docs/` page or skill that names `.claude/skills/`); extend `.agents/tests/test_skills_parity.sh`.
+- **Depends on:** PR-1 (T1.8), PR-4; results N3, N6 and N10 recorded as PASS in `evidence.md` (owner authorizes the Claude and Codex sessions); decision D2.
+- **Tests:** both links resolve; in fresh Claude and Codex sessions the skill list contains `add-app` and `dev-workflow` and a trigger phrase loads the right skill; `git log --follow` still shows skill history; `grep -rn ".claude/skills" AGENTS.md CLAUDE.md docs .agents` shows only intentional adapter mentions.
+- **Fallback (a harness does not follow a symlink, or N10 fails):** keep `.agents/skills` as the real source and make `.claude/skills` a real directory generated by `.agents/bin/sync-skills` (copy plus a "generated, do not edit" marker file); add `test_skills_drift` (byte comparison of the mirror with `.agents/skills`) to the agent-instructions CI job so any hand edit or stale mirror fails the PR.
+- **Expected result:** one canonical copy of each skill, available to both harnesses, with no drift possible.
+- **Acceptance:** no skill content changed in the move commit (renames only); `test_skills_parity` (and `test_skills_drift` in the fallback) pass in CI.
+- **Rollback:** `git revert` restores `.claude/skills` as the real directory and the stage-1 link.
+- **Mutation consent:** none; owner approval for the harness sessions.
 
 ### T5.2 Neutral skill text
 
@@ -353,7 +374,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 
 - **Scope:** `.claude/memory/*.md` listed in evidence section 9.2 and `.claude/memory/MEMORY.md`.
 - **Depends on:** PR-1, PR-3.
-- **Content:** for each rule-bearing entry, confirm it exists in `AGENTS.md` or a policy file in short form; reconcile `feedback_push_and_pr_after_branch` with D4 (state the standing authorization exactly or narrow the entry); procedure gotchas get a skill or docs destination or an explicit "stay"; nothing deleted without the owner's yes.
+- **Content:** for each rule-bearing entry, confirm it exists in `AGENTS.md` or a policy file in short form; narrow `feedback_push_and_pr_after_branch` to match D4 (no standing authorization: push and PR only on explicit instruction or when plainly part of the assigned task); procedure gotchas get a skill or docs destination or an explicit "stay"; nothing deleted without the owner's yes.
 - **Tests:** list of 41 files with a decision each recorded in `evidence.md`; no private domain, secret or identifier in any touched file; index line count unchanged or smaller.
 - **Expected result:** no rule exists only in Claude memory.
 - **Acceptance:** `AGENTS.md` memory pointer line is accurate.
@@ -382,7 +403,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Expected result:** evidence that the model works end to end, and a list of frictions.
 - **Acceptance:** frictions are turned into follow-up tasks or `.plans/TODO.md` items.
 - **Rollback:** revert the pilot PR.
-- **Mutation consent:** none for docs. Push, PR and merge follow D4 and D8.
+- **Mutation consent:** none for docs. Push and PR need an explicit instruction (D4); merge is the owner's (D8).
 
 ## PR-7: ship and archive
 
@@ -394,4 +415,4 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Expected result:** the plan is history; status `shipped` with the PR numbers.
 - **Acceptance:** live docs links to the plan (if any) updated; nothing else under `.archive/` changed.
 - **Rollback:** move the folder back, restore both rows.
-- **Mutation consent:** none for the move; push and PR per D4.
+- **Mutation consent:** none for the move; push and PR only on explicit instruction (D4).
