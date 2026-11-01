@@ -331,7 +331,7 @@ Acceptance criteria of plan.md section 16, with the evidence that exists. A crit
 | 7   | Met                     | `check-plans` and the plan convention in #6048. The archive diff of #6048 is `.archive/.plans/README.md` (new notice) and two lines in `.archive/.plans/list.md`; no archived plan was touched                                                                              |
 | 8   | Met                     | `.agents/policy/validation.md`, `.github/pull_request_template.md`, `test_validation_policy.sh` (#6049)                                                                                                                                                                    |
 | 9   | Met                     | `.agents/skills` canonical with a generated `.claude/skills` mirror, `test_skills_parity.sh` (#6050); N3 PASS; N6 and N10 NOT RUN and not needed by the mirror                                                                                                              |
-| 10  | Met                     | Exact-value search with zero hits over the whole adoption change set, its commits and PR text, plus gitleaks in `pre-commit` and CI. Method and redacted result in 15.5. This replaces the first draft of this row ("partly evidenced"), written before the search was run                |
+| 10  | Met                     | All three parts evidenced in 15.5: secret values (gitleaks, token exact-value search), private domain (exact-value search, patterns confirmed non-empty) and sensitive identifiers (identifier-pattern and reference scan). Zero disallowed hits over the adoption change set, commits and PR text. This replaces the first draft of this row ("partly evidenced"), written before the search was run                |
 | 11  | Met (documentary)       | Review of all seven delivering PRs against their recorded rollback, in 15.6. A documentary review, not a rollback rehearsal; nothing was reverted. This replaces the first draft of this row ("not separately recorded")                                                                      |
 | 12  | Met                     | `docs/src/contributing/ai-workflow.md` with nav entry (#6050); `test_docs_page.sh`; CI job `MkDocs strict build` passed on #6050 and #6051. The local strict build is NOT RUN (section 13.4). The adoption guide (F1.1) is not an acceptance condition                      |
 
@@ -347,16 +347,28 @@ F1.1 is merged and tagged in `mmalyska/claude-plugins` (section 14). F1.2 is #60
 
 Left open by the adoption work and recorded above as NOT RUN or as open decisions: N4/c2, N6, N8, N9, N10, N11 (local), S2, S7, S8, a live Claude session with the new hook loaded, D6, D7, D11 (owner cleanup) and the `dotfiles` Codex configuration (D5). They are listed in `.plans/TODO.md` so that archiving does not hide them.
 
-### 15.5 AC10: private value search (2026-11-01)
+### 15.5 AC10: secret values, private domain, sensitive identifiers (2026-11-01)
 
-AC10 wording (plan.md section 16): "No secret value, private domain or sensitive identifier appears in any new file." Result: **PASS** for the private domain, with no hit anywhere.
+AC10 wording (plan.md section 16): "No secret value, private domain or sensitive identifier appears in any new file." Result: **PASS** for all three parts. Nothing below prints a value or a matched line.
 
-- **Value source:** the two existing environment variables that carry the private domain (`PRIVATE_DOMAIN` and `TALHELPER_CLUSTERDOMAIN`). The values were used as fixed-string patterns read from a temporary file and were not printed or written anywhere. Case-insensitive.
+**Part 1, secret values: PASS.** gitleaks runs in `pre-commit` and in the CI `Lint` job; both passed on every delivering PR and on both archival commits. In addition the exact value of the Bitwarden access token (environment variable `BWS_ACCESS_TOKEN`, non-empty: yes) was searched as a fixed string in the same scope as part 3: 0 files, 0 added diff lines.
+
+**Part 2, private domain: PASS.**
+
+- **Value source:** the two existing environment variables that carry the private domain (`PRIVATE_DOMAIN`, non-empty: yes; `TALHELPER_CLUSTERDOMAIN`, non-empty: yes). Both patterns were loaded (2 patterns). The values were used as fixed-string patterns read from a temporary file and were not printed or written anywhere. Case-insensitive.
 - **Revision:** base `46a316c9` plus the first archival commit `3ac28957`, with the working tree of this correction; plan base `6c76fea1`.
 - **Scope searched, all with zero hits:** `AGENTS.md`, `CLAUDE.md`, `.agents/**`, `.plans/**`, `.archive/.plans/hybrid-ai-workflow/**`, `docs/src/contributing/ai-workflow.md`, the PR template, the two workflow files, `.pre-commit-config.yaml`, `.claude/settings.json`, `.claude/memory`, `.claude/skills`, `.codex`; all 72 files changed between `6c76fea1` and HEAD; the full added-line diff of that range; the commit messages of that range; the titles and bodies of #6041, #6042, #6047, #6048, #6049, #6050 and #6051 (read through `gh pr view`, not stored).
 - **Whole-repository search for context:** zero hits outside that scope as well, so there was no pre-existing operational configuration to tell apart from a leak. The repository keeps the domain behind `<secret:...>` tokens.
-- **Other secret classes:** covered by gitleaks (`pre-commit` and the CI `Lint` job passed on every delivering PR). Bitwarden identifiers were not searched by value.
 - **Limit:** a fixed-string search finds the exact value only, not a reworded or partial form of it.
+
+**Part 3, sensitive identifiers: PASS.**
+
+- **Forms taken from repository policy** (`AGENTS.md` Secrets Management, `.agents/policy/validation.md` ExternalSecret section, the `add-app` and `secops-public-repo-audit` skills, `test_docs_page.sh`): Bitwarden secret, project and organisation identifiers are UUID-shaped; an `ExternalSecret` `remoteRef` key holds one (such lines in `cluster/` carry a `gitleaks:allow` marker and are accepted operational configuration there); the approved symbolic form is `<secret:name>`; a BWS access token has the shape `<digit>.<UUID>.<secret>`. A literal identifier is never allowed in instructions, plans, fixtures, documentation or PR text.
+- **Scope:** the 72 files changed between `6c76fea1` and HEAD (52 added), the full archived plan folder, `docs/src/contributing/ai-workflow.md`, `AGENTS.md`, `CLAUDE.md`, `.agents/**`, `.plans/**`, `.codex`; the added lines of the whole adoption diff; the commit messages; the titles and bodies of the seven delivering PRs. Revision: HEAD after `8a82f8fa` plus this correction.
+- **Rule categories, all 0 files:** BWS token shape; `BWS_ACCESS_TOKEN` assigned a value; `<secret:` followed by a UUID; `remoteRef` key with a UUID; `bws secret` or `bws project` with a UUID argument; "bitwarden" or "bws" on the same line as a UUID. Added diff lines with a UUID-shaped value: 0. Commit messages with an identifier shape: 0. PR texts with an identifier shape: 0.
+- **Generic UUID-shaped values:** 4 files in the scope contain one, in lines that exist unchanged at the plan base (`git show 6c76fea1:<path>`), so the adoption added none: three `.claude/memory` front matter lines hold a Claude Code `originSessionId` (not a Bitwarden or secret identifier, and not equal to any identifier in `cluster/`, `provision/` or `charts/`), and one line in `provision/talos/README.md` holds a value that also appears in live configuration. That file is outside the AI-workflow scope; the adoption changed one unrelated line in it (#6050). To tell the UUIDs apart, all 95 distinct UUID-shaped values in `cluster/`, `provision/` and `charts/` were harvested and compared; only the `provision/talos/README.md` occurrence matches.
+- **Symbolic placeholders:** `<secret:name>` tokens appear in `AGENTS.md`, the `add-app` skill and its mirror, the archived evidence and one existing app file. They are the approved form and are not values.
+- **Limit:** pattern-based. An identifier that is not UUID-shaped and not a token would not be found; gitleaks entropy rules are the other layer.
 
 ### 15.6 AC11: documentary rollback review (2026-11-01)
 
