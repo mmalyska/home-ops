@@ -346,7 +346,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Rollback:** none needed (read-only).
 - **Mutation consent:** none for reading. Changing a setting is a separate decision by the owner.
 
-## PR-5: skills, memory and user documentation
+## PR-5: skills, memory and repository documentation
 
 ### T5.1 Canonical skills move to `.agents/skills`
 
@@ -381,16 +381,44 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Rollback:** `git revert`.
 - **Mutation consent:** none.
 
-### T5.4 User documentation
+### T5.4 Repository page `docs/src/contributing/ai-workflow.md` (home-ops ownership)
 
-- **Scope:** new page `docs/src/general/ai-workflow.md`, `.github/mkdocs/mkdocs.yml` nav entry, `README.md` one line if it lists tooling.
-- **Depends on:** PR-1 to PR-4.
-- **Content:** how the pieces fit for a human (where rules live, how to start a task in each harness, consent examples, break-glass, how to read the PR Validation table). Public site: no private domain, no hostnames, no identifiers.
-- **Tests:** link check; prettier; mkdocs build only if `mkdocs` is installed (otherwise NOT RUN).
-- **Expected result:** the docs rule ("update docs after non-trivial changes") is satisfied.
-- **Acceptance:** no workflow definitions copied; links to `claude-plugins` point at the pinned tag.
-- **Rollback:** `git revert`.
-- **Mutation consent:** none. Merge publishes the page (documentation publication, owner decides).
+- **Ownership:** this page is the **local application** of the workflow in `home-ops` and is owned by `home-ops`. The general adoption guide for any repository is owned by `claude-plugins` (task F1.1) and is not written here.
+- **Scope:** new page `docs/src/contributing/ai-workflow.md`; a new nav group `"Contributing"` with entry `"AI workflow": contributing/ai-workflow.md` in `.github/mkdocs/mkdocs.yml` (the only MkDocs config in the repo, `docs_dir: ../../docs/src/`); `README.md` one line only if it lists tooling.
+- **Depends on:** PR-1 to PR-4; T5.5 for the PR-time build.
+- **Content (sections, in this order):**
+  1. What this page is and is not: the home-ops application of the workflow; the workflow definitions (lifecycle, profiles, topologies) live in `claude-plugins` and are linked at the pinned tag `ai-workflow-v0.1.0-preview.1`, never restated.
+  2. Where rules live: `AGENTS.md` (shared), `CLAUDE.md` (Claude adapter), `.agents/` (policy, tooling, tests), `.plans/`, skills.
+  3. Onboarding: Claude Code, Codex, and the future OpenCode placeholder (what is verified, what is NOT VERIFIED, per N1 to N10 in `evidence.md`; unverified claims are labelled as such).
+  4. Worktree-first: how to start a task, `.worktrees/<type>/<slug>`, what the preflight and the pre-commit hook enforce per harness, break-glass (human only, with a reason).
+  5. Plans: `.plans/<slug>/plan.md` and `tasks.md`, the index, the archive is history and not instructions.
+  6. Validation: the change-type matrix summary with a link to `.agents/policy/validation.md`; L0 to L3 and NOT RUN; how to read the PR Validation table.
+  7. Permission boundaries: action classes with a link to `.agents/policy/permissions.md`; examples of a valid consent request and of the GITOPS_TRIGGER impact statement; merge is a production operation.
+  8. Handoff: what a handoff note contains (state, base SHA, branch, worktree, next task, open questions, NOT RUN items) and where it is kept; link to the topology definitions in `claude-plugins`, not a copy.
+  9. Troubleshooting: guard blocks a write in the primary checkout; hook not installed in a new worktree; `@AGENTS.md` import not loaded; skill not discovered; pre-commit blocked by attribution or gitleaks (fix the cause, never `--no-verify`); `check-plans` failure; MkDocs build failure.
+- **Public-site rules:** no private domain, hostnames, IPs, bucket names or identifiers; examples use placeholders (`<app>`, `example.invalid`).
+- **Tests:**
+  - local link check over the page and the nav entry (relative links resolve; links to `claude-plugins` use the pinned tag URL form);
+  - `test_no_workflow_copy` (PR-1) extended to cover `docs/src/contributing/`: no definition of lifecycle, profiles or topologies;
+  - the secret/domain scan from T4.x over the page;
+  - prettier with the repo config;
+  - MkDocs build, see T5.5.
+- **Expected result:** the docs rule ("update docs after non-trivial changes") is satisfied for the adoption; a human can onboard from this page alone.
+- **Acceptance:** all nine sections present; no copied canonical definition; every link resolves; nav entry renders; MkDocs build passes in strict mode (T5.5) or is recorded NOT RUN with the reason.
+- **Rollback:** `git revert` removes the page and the nav entry; no other file refers to the page except an optional README line, which the same revert removes.
+- **Mutation consent:** none. Merge to `main` triggers the public GitHub Pages publication (`publish-pages.yaml`); the owner decides the merge (D8) and the PR states this in Impact.
+
+### T5.5 PR-time MkDocs build check
+
+- **Scope:** `.github/workflows/docs-build.yaml` (new): on `pull_request` with `paths` `docs/**`, `.github/mkdocs/**` and the workflow itself, install `.github/mkdocs/requirements.txt` and run `mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml --site-dir <runner temp>`; no deploy, read-only `contents` permission, no secrets.
+- **Why:** today `publish-pages.yaml` builds only on a push to `main`, so a broken nav entry or link is found after the merge, on the production publication path (evidence: `.github/workflows/publish-pages.yaml`).
+- **Depends on:** none; may merge before T5.4 so that T5.4 is validated by it.
+- **Tests:** `actionlint` and `yamllint` on the workflow; the job is green on the T5.4 PR; a deliberately broken nav entry in a scratch branch makes it fail (negative test; run in a worktree, not merged).
+- **Local variant (owner-approved install):** in a throwaway virtualenv outside the repo, `pip install -r .github/mkdocs/requirements.txt` then the same build command. Installing packages is external code, so the executor asks first; without approval the local build is recorded NOT RUN and CI is the evidence. Baseline on 2026-11-01: `mkdocs` is on `PATH` but `pymdownx` and the Material theme are missing, so the build does not start (config parse error); this is NOT RUN, not a failure of the docs.
+- **Expected result:** documentation errors are caught in the PR, not on `main`.
+- **Acceptance:** the check passes on a docs PR; it does not run for unrelated PRs; it is not marked required until the owner decides (D9, T4.5).
+- **Rollback:** delete the workflow file.
+- **Mutation consent:** none for the file; making the check required is a repository setting and the owner's decision.
 
 ## PR-6: pilot (optional)
 
@@ -405,12 +433,36 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Rollback:** revert the pilot PR.
 - **Mutation consent:** none for docs. Push and PR need an explicit instruction (D4); merge is the owner's (D8).
 
+## External follow-up (not part of any home-ops PR): `claude-plugins` adoption guide
+
+Ownership: `claude-plugins` owns the general guide; `home-ops` owns only its local application page (T5.4). Nothing in this section is done in `home-ops`, and nothing here is started by the current plan; it needs its own spec and PR in `mmalyska/claude-plugins` and the owner's explicit go-ahead.
+
+### F1.1 Canonical `docs/workflow/repository-adoption-guide.md` in `claude-plugins`
+
+- **Scope (in `mmalyska/claude-plugins`, its own worktree, branch `docs/repository-adoption-guide`):** create `docs/workflow/repository-adoption-guide.md`: a universal guide for adapting any repository to the Hybrid AI Engineering Workflow, derived from the `dotfiles` and `home-ops` adoptions. Contents: when to adopt (QUICK/STANDARD/DEEP triage by repository risk), the instruction-file model (`AGENTS.md` canonical, thin harness adapters, placeholder for harnesses not yet verified), worktree-first enforcement layers and their honest limits, plans and archive conventions, a permission-matrix template with the action classes, a validation-matrix template, CI and test patterns for the instructions themselves, rollout as small revertible PRs, rollback, a **checklist** (audit, decide, adopt, verify, record NOT RUN), and a **plan template** (`plan.md` and `tasks.md` skeletons with the front matter and the Scope/Depends on/Tests/Expected result/Acceptance/Rollback/Mutation consent task fields). Lessons learned from `home-ops` go in as general patterns (for example: validate documentation builds before merge when merge publishes; a merge in a GitOps repo is a production operation; no standing authorization to publish), with no private values.
+- **Depends on:** the `home-ops` PR-1 to PR-4 results, so the guide rests on a completed adoption and not on this plan; the `dotfiles` experience recorded by its owner.
+- **Tests (in `claude-plugins`):** its own link check and docs validation; the guide references the canonical lifecycle/profiles/topologies by link and does not duplicate any definition elsewhere; a scan for private domains, hostnames and identifiers; the template renders as valid Markdown and validates against that repository's own plan-check if it has one.
+- **Expected result:** a second repository can be adapted by following the guide alone.
+- **Acceptance:** the checklist and the plan template are present and usable; every `home-ops`-specific detail is generalized or removed; the `home-ops` page and the guide do not contradict each other (cross-read recorded in the PR).
+- **Rollback:** revert the `claude-plugins` PR; `home-ops` is unaffected because it links to the guide only after F1.2.
+- **Mutation consent:** none for the file; push, PR and merge in `claude-plugins` follow that repository's rules and the owner's explicit instruction (D4, D8).
+
+### F1.2 Link the guide from the `home-ops` page (small home-ops PR, after F1.1 is merged)
+
+- **Scope:** one sentence and one link in `docs/src/contributing/ai-workflow.md` section 1, pointing to the guide at a pinned tag or commit of `claude-plugins`; nothing else.
+- **Depends on:** F1.1 merged and tagged or pinned.
+- **Tests:** link check; T5.5 build; no copied content.
+- **Expected result:** readers of the home-ops page find the general guide.
+- **Acceptance:** the link resolves at the pinned reference.
+- **Rollback:** `git revert`.
+- **Mutation consent:** none; push and PR only on explicit instruction (D4).
+
 ## PR-7: ship and archive
 
 ### T7.1 Archive this plan after Ship
 
 - **Scope:** move `.plans/hybrid-ai-workflow/` to `.archive/.plans/hybrid-ai-workflow/`; edit both `list.md` files; rewrite links.
-- **Depends on:** PR-1 to PR-5 merged, T1.7 and T5.1 results recorded, PR-6 done or dropped by the owner.
+- **Depends on:** PR-1 to PR-5 merged, T1.7 and T5.1 results recorded, PR-6 done or dropped by the owner. F1.1 and F1.2 are tracked outside this plan and do not block archiving; if still open, list them in the archived plan status.
 - **Tests:** `check-plans`; link check; `git diff --stat` shows a rename plus index edits.
 - **Expected result:** the plan is history; status `shipped` with the PR numbers.
 - **Acceptance:** live docs links to the plan (if any) updated; nothing else under `.archive/` changed.
