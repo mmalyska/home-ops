@@ -32,3 +32,11 @@ repos:
         language: pygrep
         entry: '(?i)(noreply@anthropic\.com|claude\.ai/code/session|^Claude-Session:|Generated with \[Claude|^Co-Authored-By:\s*Claude)'
         stages: [commit-msg]
+      - id: worktree-first
+        name: worktree-first (no commit in the primary checkout or on the default branch)
+        description: Runs .agents/bin/worktree-preflight, which reads git state only. Break-glass needs a human at a terminal.
+        language: script
+        entry: .agents/bin/worktree-preflight --hook --human-only
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

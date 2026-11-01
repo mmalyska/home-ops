@@ -1,0 +1,22 @@
+# Codex execution policy for home-ops. Loaded from the project (verified in the PR-2 spike, Codex 0.164.0).
+# Scope is narrow on purpose: it forbids skipping git hooks, which is how the worktree-first commit
+# check (.agents/bin/worktree-preflight, via pre-commit) would be bypassed. The permission matrix and
+# the rest of the rules stay in AGENTS.md and .agents/policy/permissions.md.
+#
+# Limits: a rule matches the leading words of a command. `git commit -m x --no-verify` (flag last),
+# an environment prefix such as SKIP=... or HOME_OPS_BREAK_GLASS=..., and `git -c core.hooksPath=...`
+# are not matched. Those stay instruction-level for Codex.
+prefix_rule(
+    pattern = ["git", "commit", ["--no-verify", "-n"]],
+    decision = "forbidden",
+    justification = "Skipping hooks is not allowed in this repository (AGENTS.md). Fix the cause instead.",
+    match = [["git", "commit", "--no-verify", "-m", "x"], ["git", "commit", "-n", "-m", "x"]],
+    not_match = [["git", "commit", "-m", "x"]],
+)
+prefix_rule(
+    pattern = ["git", "push", ["--no-verify"]],
+    decision = "forbidden",
+    justification = "Skipping hooks is not allowed in this repository (AGENTS.md).",
+    match = [["git", "push", "--no-verify"]],
+    not_match = [["git", "push", "origin", "feat/x"]],
+)
