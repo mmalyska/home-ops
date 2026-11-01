@@ -473,6 +473,7 @@ Ownership: `claude-plugins` owns the general guide; `home-ops` owns only its loc
 - **Acceptance:** the link resolves at the pinned reference.
 - **Rollback:** `git revert`.
 - **Mutation consent:** none; push and PR only on explicit instruction (D4).
+- **Status:** done 2026-11-01 on branch `docs/adoption-guide-link` (PR #6051). Guide pinned at tag `ai-workflow-v0.1.0-preview.2`; evidence in `evidence.md` section 14.
 
 ## PR-7: ship and archive
 
