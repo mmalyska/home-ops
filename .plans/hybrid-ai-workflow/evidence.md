@@ -309,3 +309,5 @@ The real build (`mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml`)
 ## 14. F1.2 adoption-guide link (2026-11-01)
 
 F1.1 is merged and tagged in `claude-plugins`: tag `ai-workflow-v0.1.0-preview.2` peels to `5cf7485aa8e73b8ae89dc87ea9a78b0543a5be9e`, and `docs/workflow/repository-adoption-guide.md` exists at that tag (checked read-only). `docs/src/contributing/ai-workflow.md` section 1 now links the guide at that immutable tag; the workflow-contract links stay at `ai-workflow-v0.1.0-preview.1`. `test_docs_page.sh` pins the two separately (`PIN_TAG`, `GUIDE_TAG`). This supersedes the T5.4 line in 13.3 that says the guide is not linked.
+
+The delivering PR is #6051.
