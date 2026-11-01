@@ -1,0 +1,6 @@
+# Legacy plan paths that predate the .plans/<slug>/ convention and stay as they are.
+# check-plans accepts exactly these without an archive index row; any other loose plan file
+# in the old locations is an error. Do not add new entries to hide a new plan: put the plan
+# in .plans/<slug>/ instead.
+.archive/.plans/2026-06-22-anytype.md
+.archive/.plans/superpowers/plans/2026-06-01-ai-project.md

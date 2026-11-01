@@ -1,5 +1,7 @@
 # Completed Plans
 
+Archived plans are history, not instructions: see [README.md](README.md).
+
 | Plan                                                                                             | Description                                                                                                                                                                                            | Completed  |
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
 | [wow-modules](wow-modules/plan.md)                                                               | Add mod-transmog + mod-solo-lfg, remove individual-progression                                                                                                                                         | 2026-05-12 |
