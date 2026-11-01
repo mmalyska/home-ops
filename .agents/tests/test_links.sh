@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Relative Markdown links in the instruction files resolve; CLAUDE.md imports AGENTS.md.
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 check_links() { # root

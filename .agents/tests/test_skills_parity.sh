@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stage 1 of the skills layout: .agents/skills is a link to ../.claude/skills and every skill is well formed.
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 check_link() { # root

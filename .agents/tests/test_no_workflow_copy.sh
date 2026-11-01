@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The instruction files refer to the workflow; they must not restate it.
 # A line may name at most one process level and at most one topology, and must not spell out the lifecycle.
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 LEVELS='QUICK STANDARD DEEP'

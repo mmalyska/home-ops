@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # .claude/settings.json agrees with .agents/policy/permissions.md in both directions, and the
 # consent-required commands are not auto-allowed.
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 # class heading -> settings lists it may appear in

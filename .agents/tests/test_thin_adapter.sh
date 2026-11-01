@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CLAUDE.md is a thin adapter; AGENTS.md stays small, neutral and carries the workflow reference marker.
-# shellcheck source=lib.sh
+# shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 MAX_ADAPTER_LINES=40
