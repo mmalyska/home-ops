@@ -13,6 +13,7 @@
         "./local-features/homebrew": {},
         "./local-features/common": {},
         "./local-features/bws-cli": {},
-        "./local-features/coder-cli": {}
+        "./local-features/coder-cli": {},
+        "./local-features/codex-cli": {}
     }
 }
