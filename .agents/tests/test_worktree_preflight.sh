@@ -56,7 +56,17 @@ for SH in $(command -v sh) $(command -v dash) $(command -v bash); do
   (cd "$P" && expect_rc "default path is the current directory (primary)" 3)
 
   expect_kind "path inside .git is git-internal" git-internal --path "$P/.git/hooks"
-  expect_rc   "git-internal: exit 0" 0 --path "$P/.git/hooks/x"
+  expect_rc   "git-internal, plain classification: exit 0 (read-only report)" 0 --path "$P/.git/hooks/x"
+  for g in "$P/.git/hooks/pre-commit" "$P/.git/config" "$P/.git/refs/heads/x" "$W/.git"; do
+    expect_rc "--write into $g: exit 3" 3 --write --path "$g"
+  done
+  GITDIR_WT="$(git -C "$W" rev-parse --absolute-git-dir)"
+  expect_rc   "--write into a linked worktree's git dir ($GITDIR_WT): exit 3" 3 --write --path "$GITDIR_WT/HEAD"
+  expect_rc   "--write into .git/worktrees: exit 3" 3 --write --path "$P/.git/worktrees/x"
+  (cd "$W" && HOME_OPS_BREAK_GLASS="reason" expect_rc "--write into .git is not breakable" 3 --write --path "$P/.git/hooks/x")
+  expect_rc   "--write in a linked worktree: exit 0" 0 --write --path "$W/a.txt"
+  expect_rc   "--write in the primary: exit 3" 3 --write --path "$P/a.txt"
+  expect_rc   "--write outside any repository: exit 0" 0 --write --path "$SB/home/none"
   expect_kind "path inside .git/worktrees is git-internal" git-internal --path "$P/.git/worktrees"
   expect_kind "outside any repository is not-repo" not-repo --path "$SB/home"
   expect_rc   "not-repo: exit 0" 0 --path "$SB/home/none"
@@ -87,7 +97,21 @@ for SH in $(command -v sh) $(command -v dash) $(command -v bash); do
   SW="$(mk_wt "$P" "feat/sub-$RANDOM")"
   git -C "$SW" submodule add "${S%/my repo}/origin.git" vendor/sm >/dev/null 2>&1
   expect_kind "submodule is not primary" submodule --path "$SW/vendor/sm"
+  expect_rc   "submodule, plain classification: exit 0" 0 --path "$SW/vendor/sm"
+  expect_rc   "--write into a submodule of a linked worktree: exit 0" 0 --write --path "$SW/vendor/sm/x.md"
+  expect_rc   "--write into a submodule's .git: exit 3" 3 --write --path "$SW/vendor/sm/.git"
   git -C "$P" worktree remove --force "$SW" 2>/dev/null
+  # submodule under the primary (its own repo, so the fixture does not dirty $P)
+  PS="$(mk_repo "ps-$RANDOM")"
+  git -C "$PS" submodule add "${S%/my repo}/origin.git" vendor/sm >/dev/null 2>&1
+  expect_kind "submodule under a primary reports submodule" submodule --path "$PS/vendor/sm"
+  expect_rc   "--write into a submodule of the primary: exit 3" 3 --write --path "$PS/vendor/sm/x.md"
+  expect_rc   "--write into a not-yet-existing file of that submodule: exit 3" 3 --write --path "$PS/vendor/sm/new/dir/x.md"
+  (HOME_OPS_BREAK_GLASS="" expect_rc "no break-glass reason: still exit 3" 3 --write --path "$PS/vendor/sm/x.md")
+  # superproject cannot be classified: fail closed
+  mv "$PS/.git" "$PS/.git.off"
+  expect_rc   "--write into a submodule whose superproject is unreadable: not exit 0" 4 --write --path "$PS/vendor/sm/x.md"
+  mv "$PS/.git.off" "$PS/.git"
 
   # bare repository
   expect_kind "bare repository" bare --path "$SB/a/origin.git"

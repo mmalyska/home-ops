@@ -224,16 +224,17 @@ Updates N4 and N5 from section 10 (T2.1). Base `origin/main` `fb7a2d82` (PR-1, #
 
 **What each layer is (honest split).**
 
-| Layer                                            | Kind                         | Verified by                                                                                                                   |
-| ------------------------------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `AGENTS.md` rule, preflight call, no-bypass rule | Model instruction            | S6 in section 11 (stated behaviour only)                                                                                      |
-| Claude project hook, file tools                  | Technical, Claude only       | `test_claude_hook.sh` fixtures; run end to end through the exact `settings.json` command string                               |
-| Claude project hook, Bash bypass strings         | Technical but a string match | Same fixtures; obfuscation is not covered                                                                                     |
-| `pre-commit` `worktree-first`                    | Technical at commit          | `test_precommit_guard.sh` with the real hook entry, installed by `pre-commit` into temporary repos                            |
-| Skip flag at the git layer                       | Not enforced                 | The test confirms `--no-verify` defeats the git hook. Covered by the Claude hook, the settings `deny`, the Codex rule, review |
-| Codex rule file                                  | Technical, Codex only        | spike d; `codex execpolicy check`                                                                                             |
-| CI / branch protection                           | Check at merge               | Branch protection not verified (N7); the CI job for instruction tests is PR-4                                                 |
-| Codex edit in the primary before the commit      | Instruction only             | Nothing found that stops it from the repository                                                                               |
+| Layer                                            | Kind                         | Verified by                                                                                                                                                                                   |
+| ------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` rule, preflight call, no-bypass rule | Model instruction            | S6 in section 11 (stated behaviour only)                                                                                                                                                      |
+| Claude project hook, file tools                  | Technical, Claude only       | `test_claude_hook.sh` fixtures; run end to end through the exact `settings.json` command string                                                                                               |
+| Claude hook, git directory and submodules        | Technical, Claude only       | `--write` mode: a write into `.git` (hooks, config, refs, `.git/worktrees`) is refused and not breakable; a submodule is judged by its superproject; unreadable or non-object input is denied |
+| Claude project hook, Bash bypass strings         | Technical but a string match | Same fixtures; obfuscation is not covered                                                                                                                                                     |
+| `pre-commit` `worktree-first`                    | Technical at commit          | `test_precommit_guard.sh` with the real hook entry, installed by `pre-commit` into temporary repos                                                                                            |
+| Skip flag at the git layer                       | Not enforced                 | The test confirms `--no-verify` defeats the git hook. Covered by the Claude hook, the settings `deny`, the Codex rule, review                                                                 |
+| Codex rule file                                  | Technical, Codex only        | spike d; `codex execpolicy check`                                                                                                                                                             |
+| CI / branch protection                           | Check at merge               | Branch protection not verified (N7); the CI job for instruction tests is PR-4                                                                                                                 |
+| Codex edit in the primary before the commit      | Instruction only             | Nothing found that stops it from the repository                                                                                                                                               |
 
 **Ignoring `.worktrees/` (T2.6, D11), empirically.**
 

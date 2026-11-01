@@ -2,10 +2,15 @@
 # worktree-preflight: classify a path as primary checkout, linked worktree, or something else.
 # The single source of the worktree-first logic. POSIX sh and git only: no jq, no awk, no sed.
 #
-# Usage: worktree-preflight [--path <p>] [--hook] [--json] [--human-only]
+# Usage: worktree-preflight [--path <p>] [--write] [--hook] [--json] [--human-only]
 #
 #   --path <p>     classify <p> (default: the current directory). A path that does not exist yet
 #                  is classified by its nearest existing parent.
+#   --write        write mode, for a tool about to write to <p>. Stricter than plain classification:
+#                  a path inside a git directory (hooks, config, refs, .git/worktrees/...) or naming a
+#                  .git entry is refused (exit 3, no break-glass), and a submodule is judged by its
+#                  superproject: under the primary checkout is refused, under a linked worktree is allowed.
+#                  Plain classification reports git-internal and submodule but does not authorize a write.
 #   --hook         commit mode: also refuse when the checked-out branch is the default branch.
 #   --json         print the result as one JSON object instead of key=value lines.
 #   --human-only   a break-glass reason is honoured only when a controlling terminal is present.
@@ -35,14 +40,15 @@ unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_CEILING_DIRECTORIE
 PROG=worktree-preflight
 
 usage() {
-  printf 'usage: %s [--path <path>] [--hook] [--json] [--human-only]\n' "$PROG" >&2
+  printf 'usage: %s [--path <path>] [--write] [--hook] [--json] [--human-only]\n' "$PROG" >&2
   exit "${1:-2}"
 }
 
-TARGET='' HOOK=0 JSON=0 HUMAN_ONLY=0
+TARGET='' HOOK=0 JSON=0 HUMAN_ONLY=0 WRITE=0
 while [ $# -gt 0 ]; do
   case $1 in
     --path) [ $# -ge 2 ] || usage 2; TARGET=$2; shift 2 ;;
+    --write) WRITE=1; shift ;;
     --hook) HOOK=1; shift ;;
     --json) JSON=1; shift ;;
     --human-only) HUMAN_ONLY=1; shift ;;
@@ -82,7 +88,7 @@ has_git_ancestor() {
   done
 }
 
-KIND='' BRANCH='' DEFAULT_BRANCH='' DIRTY=false DETACHED=false COMMON='' DIR=''
+KIND='' BRANCH='' DEFAULT_BRANCH='' DIRTY=false DETACHED=false COMMON='' DIR='' SUPER=''
 
 classify() {
   DIR=$(nearest_dir "$1")
@@ -108,6 +114,7 @@ classify() {
   esac
 
   if [ -n "$(git -C "$DIR" rev-parse --show-superproject-working-tree 2>/dev/null)" ]; then
+    SUPER=$(git -C "$DIR" rev-parse --show-superproject-working-tree 2>/dev/null)
     KIND=submodule; return
   fi
 
@@ -156,9 +163,25 @@ print_result() {
 
 # Decide. VIOLATION holds the reason, empty when allowed.
 VIOLATION=''
+if [ "$WRITE" = 1 ]; then
+  case "/$TARGET/" in */.git/*) KIND=git-internal ;; esac
+fi
 case $KIND in
   primary) VIOLATION='this is the primary checkout, which is never a workspace' ;;
   bare) VIOLATION='this is a bare repository, which has no working tree to write in' ;;
+  git-internal)
+    [ "$WRITE" != 1 ] || VIOLATION='a write into a git directory (hooks, config, refs, worktrees) is never allowed' ;;
+  submodule)
+    if [ "$WRITE" = 1 ]; then
+      # Judge the submodule by its superproject (recursively, for nested ones). A blank reason keeps the
+      # child from taking break-glass: only this process decides that.
+      HOME_OPS_BREAK_GLASS='' "$0" --path "$SUPER" --write >/dev/null 2>&1
+      case $? in
+        0) ;;
+        3) VIOLATION='this submodule sits inside the primary checkout, which is never a workspace' ;;
+        *) die4 "cannot classify the superproject of the submodule at $DIR" ;;
+      esac
+    fi ;;
   worktree)
     if [ "$HOOK" = 1 ] && [ -n "$BRANCH" ]; then
       case $BRANCH in
@@ -172,6 +195,9 @@ if [ -z "$VIOLATION" ]; then print_result; exit 0; fi
 print_result
 printf '%s: %s.\n' "$PROG" "$VIOLATION" >&2
 printf 'Create a linked worktree and work there: git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main\n' >&2
+
+# A write into a git directory is not a break-glass matter: edit .git outside the agent session.
+if [ "$WRITE" = 1 ] && [ "$KIND" = git-internal ]; then exit 3; fi
 
 # --- break-glass: a human, with a reason, on the record -------------------------------------------
 reason=${HOME_OPS_BREAK_GLASS:-}

@@ -4,12 +4,16 @@
 # so a missing JSON tool cannot turn the guard off. Classification is delegated to worktree-preflight.
 #
 #   Edit | Write | NotebookEdit  deny when the target is in the primary checkout (or a bare repo);
+#                                deny a write into a git directory (hooks, config, refs), and into a
+#                                submodule of the primary checkout (worktree-preflight --write);
 #                                deny when the target cannot be determined (fail closed).
 #   Bash                         deny commands that set or use a bypass: HOME_OPS_BREAK_GLASS,
 #                                CLAUDE_ALLOW_MAIN_EDITS, --no-verify, core.hooksPath, SKIP=.
 #                                This is a string match on the command: it stops the honest and the
 #                                careless, not a determined obfuscation. Review and CI are the boundary.
-#   anything else                allowed.
+#   anything else                allowed, once the input has been read as a JSON object with a tool_name.
+#   unreadable input             denied: a missing tool_name, input that is not a JSON object, or a changed
+#                                event format must never switch the guard off.
 #
 # Always exits 0 with a decision on stdout. The settings.json command wrapper turns any other exit
 # (crash, missing file) into exit 2, which Claude Code treats as a block.
@@ -65,7 +69,50 @@ json_str() {
   done
 }
 
-json_str tool_name; TOOL=$JV
+# Shell string scanning is quadratic, so only inputs up to MAX_SCAN bytes get the balance check; a larger
+# input still has to be a '{...}' object that yields a tool_name. A truncated payload that large is not expected.
+MAX_SCAN=32768
+# balanced <input>: 0 when braces and brackets balance outside strings and every string is closed.
+# shellcheck disable=SC2295  # BR is meant to be a pattern
+balanced() {
+  BR='[][{}]'
+  rest=$INPUT depth=0
+  while [ -n "$rest" ]; do
+    chunk=${rest%%\"*}; rest=${rest#"$chunk"}
+    while :; do
+      case $chunk in
+        *[][{}]*)
+          pre=${chunk%%$BR*}; chunk=${chunk#"$pre"}; ch=${chunk%"${chunk#?}"}; chunk=${chunk#?}
+          case $ch in '{'|'[') depth=$((depth + 1)) ;; *) depth=$((depth - 1)); [ "$depth" -ge 0 ] || return 1 ;; esac ;;
+        *) break ;;
+      esac
+    done
+    case $rest in
+      \"*)
+        rest=${rest#\"}
+        while :; do
+          case $rest in
+            '') return 1 ;;
+            \\?*) rest=${rest#??} ;;
+            \\*) return 1 ;;
+            \"*) rest=${rest#\"}; break ;;
+            *) skip=${rest%%[\"\\]*}; rest=${rest#"$skip"} ;;
+          esac
+        done ;;
+    esac
+  done
+  [ "$depth" = 0 ]
+}
+
+gtrim=${INPUT#"${INPUT%%[![:space:]]*}"}
+gtrim=${gtrim%"${gtrim##*[![:space:]]}"}
+case $gtrim in
+  '{'*'}') [ "${#INPUT}" -gt "$MAX_SCAN" ] || balanced || decide 'worktree guard: the hook input is not valid JSON (unbalanced), so the call is blocked (fail closed).' ;;
+  *) decide 'worktree guard: the hook input is not a JSON object, so the call is blocked (fail closed).' ;;
+esac
+json_str tool_name; rc=$?
+[ "$rc" = 0 ] && [ -n "$JV" ] || decide 'worktree guard: could not read tool_name from the hook input, so the call is blocked (fail closed).'
+TOOL=$JV
 CWD=''; json_str cwd && CWD=$JV
 
 case $TOOL in
@@ -92,10 +139,10 @@ case $target in
 esac
 
 [ -x "$HERE/worktree-preflight" ] || decide 'worktree guard: worktree-preflight is missing or not executable, so the write is blocked (fail closed).'
-"$HERE/worktree-preflight" --path "$target" >/dev/null 2>&1
+"$HERE/worktree-preflight" --write --path "$target" >/dev/null 2>&1
 rc=$?
 case $rc in
   0) exit 0 ;;
-  3) decide "The primary checkout is not a workspace, so $TOOL on $target is blocked. Create a worktree and redo the write there: git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main. Do not set HOME_OPS_BREAK_GLASS or CLAUDE_ALLOW_MAIN_EDITS yourself." ;;
+  3) decide "$TOOL on $target is blocked: it is in the primary checkout (or a submodule of it) or inside a git directory, which is never a workspace. Create a worktree and redo the write there: git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main. Do not set HOME_OPS_BREAK_GLASS or CLAUDE_ALLOW_MAIN_EDITS yourself." ;;
   *) decide "worktree guard: the preflight could not classify $target (exit $rc), so the write is blocked (fail closed)." ;;
 esac

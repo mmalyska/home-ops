@@ -34,7 +34,26 @@ run_guard "$(mk Write file_path "$W/new.md")" X=1;           is_silent_allow && 
 run_guard "$(mk Edit file_path "$W/dir with space/x.md")" X=1; is_silent_allow && pass "path with spaces in a worktree: allow" || fail "spaces" "$GOUT"
 run_guard "$(mk Write file_path "$P/dir with space/x.md")" X=1; is_deny && pass "path with spaces in the primary: deny" || fail "spaces, primary"
 run_guard "$(mk Write file_path "/tmp/outside-any-repo-$$.md")" X=1; is_silent_allow && pass "outside any repository: allow" || fail "outside repo" "$GOUT"
-run_guard "$(mk Write file_path "$P/.git/hooks/x")" X=1;     is_silent_allow && pass "inside the git directory: allow (not a working-tree write)" || fail "git-internal"
+for g in "$P/.git/hooks/pre-commit" "$P/.git/config" "$P/.git/worktrees/one/HEAD" "$W/.git" "$P/.git/refs/heads/x"; do
+  for t in "Write file_path" "Edit file_path" "NotebookEdit notebook_path"; do
+    run_guard "$(mk $t "$g")" X=1; is_deny && pass "${t%% *} into a git directory ($g): deny" || fail "${t%% *} into $g" "$GOUT"
+  done
+done
+run_guard "$(CWD_FIX="$P" mk Write file_path ".git/hooks/pre-commit")" X=1; is_deny && pass "relative path into .git: deny" || fail "relative .git"
+run_guard "$(mk Write file_path "$P/.github/workflows/x.yml")" X=1; is_deny && pass ".github in the primary: deny (primary, not .git)" || fail ".github primary"
+run_guard "$(mk Write file_path "$W/.github/x.yml")" X=1; is_silent_allow && pass ".github in a worktree is not .git: allow" || fail ".github worktree" "$GOUT"
+run_guard '{"tool_name":"Read","tool_input":{"file_path":"'"$P"'/.git/config"}}' X=1; is_silent_allow && pass "Read of .git stays allowed" || fail "read .git"
+run_guard '{"tool_name":"Grep","tool_input":{"pattern":"x","path":"'"$P"'/.git"}}' X=1; is_silent_allow && pass "Grep of .git stays allowed" || fail "grep .git"
+SM="$(mk_repo "hsm-$RANDOM")"; SMO="${SM%/my repo}/origin.git"
+git -C "$P" submodule add "$SMO" vendor/sm >/dev/null 2>&1 && SMP=1 || SMP=0
+SW="$(mk_wt "$P" "feat/hsub-$RANDOM")"
+git -C "$SW" submodule add "$SMO" vendor/sm2 >/dev/null 2>&1
+if [ "$SMP" = 1 ] && [ -d "$P/vendor/sm" ]; then
+  run_guard "$(mk Write file_path "$P/vendor/sm/x.md")" X=1; is_deny && pass "Write into a submodule of the primary: deny" || fail "submodule under primary" "$GOUT"
+else fail "fixture: submodule under the primary not created"; fi
+if [ -d "$SW/vendor/sm2" ]; then
+  run_guard "$(mk Write file_path "$SW/vendor/sm2/x.md")" X=1; is_silent_allow && pass "Write into a submodule of a linked worktree: allow" || fail "submodule under worktree" "$GOUT"
+else fail "fixture: submodule under a worktree not created"; fi
 j="$(CWD_FIX="$P" mk Write file_path "$W/x.md")"; run_guard "$j" X=1; is_silent_allow && pass "cwd in the primary, target in a worktree: allow (the target decides)" || fail "target vs cwd"
 j="$(CWD_FIX="$W" mk Write file_path "$P/x.md")"; run_guard "$j" X=1; is_deny && pass "cwd in a worktree, absolute target in the primary: deny" || fail "worktree cwd, primary target"
 j="$(CWD_FIX="$P" mk Write file_path "rel/x.md")"; run_guard "$j" X=1; is_deny && pass "relative path resolved against a primary cwd: deny" || fail "relative path"
@@ -48,7 +67,17 @@ is_deny && pass "unsupported escape in the path: deny (fail closed)" || fail "un
 echo "-- malformed input fails closed"
 run_guard '{"tool_name":"Write","cwd":"/x","tool_input":{}}' X=1;      is_deny && pass "Write without file_path: deny" || fail "missing file_path"
 run_guard '{"tool_name":"Edit","tool_input":{"file_path":null}}' X=1;  is_deny && pass "null file_path: deny" || fail "null file_path"
-run_guard 'not json at all' X=1;                                       is_silent_allow && pass "garbage input names no tool: nothing to guard" || fail "garbage" "$GOUT"
+run_guard 'not json at all' X=1;                                       is_deny && pass "garbage input: deny (fail closed)" || fail "garbage" "$GOUT"
+run_guard '' X=1;                                                      is_deny && pass "empty input: deny" || fail "empty input" "$GOUT"
+run_guard '{"cwd":"/x","tool_input":{}}' X=1;                          is_deny && pass "JSON without tool_name: deny" || fail "no tool_name" "$GOUT"
+run_guard '{"tool_name":null}' X=1;                                    is_deny && pass "null tool_name: deny" || fail "null tool_name" "$GOUT"
+run_guard '{"tool_name":""}' X=1;                                      is_deny && pass "empty tool_name: deny" || fail "empty tool_name" "$GOUT"
+run_guard '{"tool_name":"Write","tool_input":{"file_path":"/x"}' X=1;  is_deny && pass "truncated JSON: deny" || fail "truncated" "$GOUT"
+run_guard '["tool_name","Read"]' X=1;                                  is_deny && pass "JSON array: deny" || fail "array" "$GOUT"
+big="$(head -c 60000 /dev/zero | tr '\0' a)"
+run_guard "$(POST=",\"content\":\"$big\"" mk Write file_path "$W/big.md")" X=1; is_silent_allow && pass "60 KB Write in a worktree: allow, input larger than the balance check" || fail "large input" "$GOUT"
+run_guard "$(POST=",\"content\":\"$big\"" mk Write file_path "$P/big.md")" X=1; is_deny && pass "60 KB Write in the primary: deny" || fail "large input, primary"
+run_guard '{"tool_name":"SomeNewTool","tool_input":{}}' X=1;           is_silent_allow && pass "readable but unhandled tool: allow" || fail "unhandled tool" "$GOUT"
 run_guard '{"tool_name":"Bash","tool_input":{}}' X=1;                  is_deny && pass "Bash without a readable command: deny" || fail "Bash no command"
 
 echo "-- other tools are not touched"
