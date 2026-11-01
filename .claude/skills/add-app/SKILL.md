@@ -1,0 +1,199 @@
+---
+name: add-app
+description: >
+  Step-by-step workflow for adding a new application to the home-ops cluster.
+  Use when creating a new ArgoCD app, writing app-config.yaml, Chart.yaml,
+  values.yaml, HTTPRoutes, ExternalSecrets, or any cluster/apps/ templates.
+when_to_use: >
+  Trigger phrases: "add app", "new application", "create app", "deploy X to cluster",
+  "add HTTPRoute", "write ExternalSecret", "add secret for app".
+---
+
+# Add App Skill
+
+Use this skill when adding a new application, creating HTTPRoutes, writing ExternalSecrets, or working with template patterns.
+
+## Adding a New Application
+
+1. Create directory `cluster/apps/{category}/{app-name}/`
+2. Create `app-config.yaml` with `enabled: "true"`, namespace, and sync policy
+3. Add `Chart.yaml` with Helm chart dependency (or `kustomization.yaml`)
+4. Add `values.yaml` with customizations
+5. If secrets needed: create `templates/credentials-externalsecret.yaml` for K8s Secret data fields, or add `SECRET_PROVIDER: cluster-secrets` plugin block for `<secret:key>` tokens in non-injectable fields
+6. Add any extra manifests in `templates/`
+6a. Set CPU/memory requests and a memory limit on every container (no CPU limit); sizing rules and where each app type takes them are in `docs/src/k8s/resource-sizing.md`. Without them the `ContainerMissingMemoryLimit` alert fires after 24h
+7. Commit — ArgoCD ApplicationSet will auto-discover the new app
+
+## Secrets — Step-by-Step
+
+### Adding a global token (non-injectable field, e.g. hostname in values.yaml)
+
+1. Add secret to Bitwarden Secrets Manager, note its UUID
+2. Add entry to `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
+3. Use `<secret:key>` token in template/values file
+4. Set `SECRET_PROVIDER: cluster-secrets` in `app-config.yaml`
+
+### Adding a per-app credential (K8s Secret data field)
+
+1. Add secret to Bitwarden Secrets Manager, note its UUID
+2. Create `templates/credentials-externalsecret.yaml` with the ExternalSecret
+3. Reference via `secretKeyRef` or ESO template expressions
+
+## ExternalSecret Pattern (Bitwarden)
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: my-app-secret
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: my-app-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: MY_KEY
+      remoteRef:
+        key: "<bitwarden-uuid>" #gitleaks:allow #MY_KEY_NAME
+```
+
+Mark UUID lines with `#gitleaks:allow #KEY_NAME` to suppress false positives.
+
+**ESO template expressions inside Helm `templates/`** — wrap `{{ }}` in Go raw string literals:
+
+```yaml
+MY_VALUE: "{{ `{{ .MY_KEY }}` }}"
+```
+
+## Reloading pods when a Secret changes (Stakater Reloader)
+
+Reloader (`cluster/apps/system/reloader`) runs in opt-in mode. Any workload that
+consumes an ExternalSecret-generated Secret via `env`/`envFrom` or a file mount
+(apps read both only at startup) needs this annotation on the Deployment /
+StatefulSet:
+
+```yaml
+secret.reloader.stakater.com/reload: "my-app-secret"   # comma-separate for several
+```
+
+Where it goes depends on the chart:
+
+| Chart | Key |
+|-------|-----|
+| bjw-s `app-template` | `controllers.<name>.annotations` |
+| `external-dns`, `headlamp`, `oauth2-proxy`, `nextcloud`, `litellm-helm` | `deploymentAnnotations` |
+| `coder` | `coder.annotations` |
+| `harbor` | `core.podAnnotations` (pod template, no Deployment-level key) |
+| raw manifests / local charts | `metadata.annotations` on the Deployment |
+
+Not needed for CNPG `s3Credentials` / barman secrets (read by the operator) or
+for secrets inlined via `<secret:key>` tokens.
+
+## HTTPRoute — Internal (AdGuard DNS, home network only)
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: myapp
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - myapp.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: myapp
+          port: 80
+```
+
+## HTTPRoute — External (Cloudflare DNS + Tunnel, internet-facing)
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: myapp
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-external
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - myapp.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: myapp
+          port: 80
+```
+
+## HTTPRoute — Both internal and external
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: myapp
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-external
+      namespace: envoy-gateway
+      sectionName: https
+    - name: envoy-internal
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - myapp.<secret:private-domain>
+  rules:
+    - backendRefs:
+        - name: myapp
+          port: 80
+```
+
+## DNS routing — annotation rules
+
+| Annotation value | Processed by | Used on |
+|-----------------|-------------|---------|
+| `dns-controller` | adguard-dns (envoy-internal routes) or cloudflare-dns (envoy-external routes) | HTTPRoutes |
+| `internal` | adguard-dns only | DNSEndpoints |
+| `external` | cloudflare-dns only | DNSEndpoints |
+
+HTTPRoutes always use `controller: dns-controller`. Which DNS backend processes it is determined by which gateway it attaches to.
+
+TLS is terminated at the gateway using the wildcard `cert-production` secret — no per-app Certificate resource needed unless a different domain is required.
+
+## TLS Certificate (cert-manager) — only when wildcard doesn't cover it
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: myapp-cert
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  secretName: myapp-cert
+  issuerRef:
+    name: lets-encrypt-dns01-production-cf
+    kind: ClusterIssuer
+  commonName: "myapp.<secret:private-domain>"
+  dnsNames:
+    - "myapp.<secret:private-domain>"
+```
+
+## Gotchas
+
+- **Native Gateway API support first.** Before writing `templates/httproute.yaml`, check the chart: `helm show values <repo>/<chart> --version <ver> | grep -iE "route|gateway|httproute"`. `rook-ceph-cluster` (`route.dashboard`) and bjw-s `app-template` v4+ (`route:`) have it; a hand-written route can conflict with a chart-managed one.
+- **Deployment strategy RollingUpdate to Recreate.** ArgoCD fails the server-side-apply dry run with `rollingUpdate: Forbidden` because the live object still has the field. Patch the live object first (consent-gated RUNTIME_MUTATION): `kubectl patch deployment <name> -n <ns> --type=json -p='[{"op":"remove","path":"/spec/strategy/rollingUpdate"},{"op":"replace","path":"/spec/strategy/type","value":"Recreate"}]'`, then sync.
+- **Removing an app.** Deleting `cluster/apps/<category>/<app>/` does not prune the ArgoCD `Application` (the ApplicationSets use `create-update`, deliberately). Removal is a separate live step: `kubectl delete application <name> -n argocd` (consent-gated). Then list what is left with `kubectl get all,pvc -n <namespace>`: StatefulSet PVCs and some CRs survive the cascade, and deleting a PVC or namespace is DESTRUCTIVE with its own consent. Long form with the incident history: `.claude/memory/reference_app_removal_procedure.md`.

@@ -38,4 +38,8 @@ fixture "$TMP/b"; printf '\nTopologies: SOLO or HANDOFF.\n' >> "$TMP/b/.agents/R
 assert_fails "list of topologies is detected" check_no_copy "$TMP/b"
 fixture "$TMP/c"; printf '\nLifecycle: Spec → Plan → Build → Test.\n' >> "$TMP/c/CLAUDE.md"
 assert_fails "spelled-out lifecycle is detected" check_no_copy "$TMP/c"
+fixture "$TMP/d"; printf '\nProfiles: QUICK, STANDARD and DEEP.\n' >> "$TMP/d/docs/src/contributing/ai-workflow.md"
+assert_fails "list of process levels on the public page is detected" check_no_copy "$TMP/d"
+fixture "$TMP/e"; printf '\nLifecycle: Spec → Plan → Build → Test.\n' >> "$TMP/e/docs/src/contributing/ai-workflow.md"
+assert_fails "spelled-out lifecycle on the public page is detected" check_no_copy "$TMP/e"
 finish

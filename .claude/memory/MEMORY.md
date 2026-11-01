@@ -6,10 +6,10 @@
 - [Always verify rendered manifests](feedback_verify_manifests.md) — helm template / kubectl kustomize after every values.yaml edit
 - [Check native Gateway API support first](feedback_check_native_gateway.md) — before writing manual HTTPRoute, check chart values
 - [Deployment strategy patch required](feedback_deployment_strategy_patch.md) — RollingUpdate→Recreate needs live object kubectl patch before ArgoCD sync
-- [Claude files belong in workspace .claude/](feedback_claude_files_in_workspace.md) — skills/config/artifacts go in /workspaces/home-ops/.claude/, not ~/.claude/ (ephemeral)
+- [Claude files belong in workspace .claude/](feedback_claude_files_in_workspace.md) — config/artifacts go in /workspaces/home-ops/.claude/, not ~/.claude/ (ephemeral); skills are edited in .agents/skills
 - [Cluster access permission rules](feedback_cluster_access_rules.md) — read-only free, mutating ops need user confirmation
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
-- [Always push and open PR after branch work](feedback_push_and_pr_after_branch.md) — push + gh pr create immediately after committing on a feature branch
+- [Push and PR only on instruction](feedback_push_and_pr_after_branch.md) — no standing authorization (D4); commit is allowed, push and gh pr create need an instruction
 - [Never write the private domain literally](feedback_no_domain_in_comments.md) — not in comments, not in memory files; grep before writing
 - [Grafana: no anonymous access, ever](feedback_grafana_no_anonymous_access.md) — user's explicit call, even though Grafana route is LAN-only
 

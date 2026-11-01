@@ -149,7 +149,7 @@ kustomize build cluster/apps/core/argocd | argocd-secret-replacer sops -f cluste
    `talosctl service etcd restart` is refused, so an etcd setting only takes effect at the node's next reboot.
    A changed node taint (`KubeNodeConfig` `taints`) on a worker that is already in the cluster is not applied by Talos:
    Kubernetes (NodeRestriction) forbids it. Run `kubectl taint` with admin credentials first, see the
-   `talos-node-taints` skill (`.claude/skills/talos-node-taints/SKILL.md`).
+   `talos-node-taints` skill (`.agents/skills/talos-node-taints/SKILL.md`).
 
 Examples:
 

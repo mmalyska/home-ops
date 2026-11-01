@@ -4,17 +4,17 @@ How AI coding harnesses attach to this repository. The rules themselves live in 
 
 ## What lives where
 
-| Path                            | Holds                                                                                                                   |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `AGENTS.md`                     | Canonical, harness-neutral project rules, always loaded                                                                 |
-| `CLAUDE.md`                     | Thin Claude Code adapter: imports `AGENTS.md`, memory location, Claude-only facts                                       |
-| `.agents/policy/permissions.md` | Per-tool command lists, read-only `exec` allowlist, merge-impact map                                                    |
-| `.agents/bin/`                  | `worktree-preflight` (worktree classifier), `claude-pretool-guard` (Claude hook), `check-plans` (plan convention check) |
-| `.agents/tests/`                | Bash tests for the instruction files and the guards; `bash .agents/tests/run.sh`                                        |
-| `.codex/rules/`                 | Codex execution-policy rules (forbid skipping git hooks)                                                                |
-| `.agents/skills`                | Link to the project skills (see below)                                                                                  |
-| `.claude/`                      | Claude Code data: `settings.json`, `skills/`, `memory/`, `statusline/`                                                  |
-| `.plans/`, `.archive/`          | Active plans, see `.plans/README.md`; finished plans (history, not instructions)                                        |
+| Path                            | Holds                                                                                                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md`                     | Canonical, harness-neutral project rules, always loaded                                                                                                             |
+| `CLAUDE.md`                     | Thin Claude Code adapter: imports `AGENTS.md`, memory location, Claude-only facts                                                                                   |
+| `.agents/policy/permissions.md` | Per-tool command lists, read-only `exec` allowlist, merge-impact map                                                                                                |
+| `.agents/bin/`                  | `worktree-preflight` (worktree classifier), `claude-pretool-guard` (Claude hook), `check-plans` (plan convention check), `sync-skills` (generates `.claude/skills`) |
+| `.agents/tests/`                | Bash tests for the instruction files and the guards; `bash .agents/tests/run.sh`                                                                                    |
+| `.codex/rules/`                 | Codex execution-policy rules (forbid skipping git hooks)                                                                                                            |
+| `.agents/skills`                | Canonical project skills, the only place to edit one (see below)                                                                                                    |
+| `.claude/`                      | Claude Code data: `settings.json`, `skills/` (generated mirror), `memory/`, `statusline/`                                                                           |
+| `.plans/`, `.archive/`          | Active plans, see `.plans/README.md`; finished plans (history, not instructions)                                                                                    |
 
 ## Workflow pin
 
@@ -25,13 +25,18 @@ The workflow (lifecycle, process levels, topologies, plan and handoff resources)
 
 To bump the pin: read the compatibility document of the new tag, re-run the scenarios below in each harness, and change this section in a separate PR.
 
-## Skills link
+## Skills
 
-`.agents/skills` is a transitional symlink to `../.claude/skills`, so a harness that discovers skills under `.agents/skills` finds the existing ones. `.agents/skills` is the target canonical location; the content has not moved and no skill was copied or edited.
+`.agents/skills/` is the canonical, real directory (Codex discovers skills there). `.claude/skills/` is the Claude Code adapter and is **generated**: a byte copy made by `.agents/bin/sync-skills`, with a `GENERATED` marker file. Never edit it by hand.
+
+- Edit a skill in `.agents/skills/<skill>/`, then run `.agents/bin/sync-skills` and commit both trees.
+- `.agents/bin/sync-skills --check` changes nothing and exits 1 on any difference (content, file mode, file list, marker, symlink). `test_skills_parity` runs it, so the `Agent instructions` CI job fails on a stale or hand-edited mirror.
+- The output is deterministic (no timestamp, host or user) and re-running it changes nothing.
+- Why a mirror and not a `.claude/skills` symlink: a symlink is only acceptable if Claude Code follows it (N6) and Windows checkouts keep it (N10). Neither was verified, so both stay NOT RUN in `.plans/hybrid-ai-workflow/evidence.md`, and the plan's fallback (T5.1) is used. This is a choice of strategy, not evidence that symlinks work or fail.
 
 ## Per-harness notes
 
-- **Claude Code**: loads `CLAUDE.md`, which imports `AGENTS.md`. Project skills come from `.claude/skills`. `.claude/settings.json` enforces the permission matrix.
+- **Claude Code**: loads `CLAUDE.md`, which imports `AGENTS.md`. Project skills come from `.claude/skills`, the generated mirror of `.agents/skills`. `.claude/settings.json` enforces the permission matrix.
 - **Codex**: reads `AGENTS.md` from the repository root. The project rule file `.codex/rules/home-ops.rules` forbids skipping git hooks. There is no repository-side write guard (see Worktree-first below). Permissions are instruction-level.
 - **OpenCode**: experimental, manual contract. Read `AGENTS.md`, run `.agents/bin/worktree-preflight` by hand before the first write. No installer and no parity claim. The git hook below still applies when it commits.
 

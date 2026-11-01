@@ -10,7 +10,7 @@ check_paths() {
   while IFS= read -r p; do
     [ -e "$root/$p" ] || { echo "missing path: $p"; bad=1; }
   done < <(grep -o '`[^` ]*`' "$root/.agents/policy/validation.md" | tr -d '`' \
-    | grep -E '^(provision|\.agents|\.github|\.taskfiles|\.claude/skills)/[A-Za-z0-9_./-]+$' | grep -vE '/$' | sort -u)
+    | grep -E '^(provision|\.agents|\.github|\.taskfiles|\.agents/skills)/[A-Za-z0-9_./-]+$' | grep -vE '/$' | sort -u)
   return $bad
 }
 # check_rows <root>: one heading per change type.
