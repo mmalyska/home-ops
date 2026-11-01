@@ -15,8 +15,8 @@ there; this page never restates them. The pin and the procedure to bump it are i
 [`.agents/README.md`](https://github.com/mmalyska/home-ops/blob/main/.agents/README.md).
 
 A process level never lowers a safety, permission, worktree or validation requirement, and no level authorizes another
-actor. A general guide for adopting the workflow in any repository is planned in `claude-plugins`; it does not exist yet,
-so it is not linked.
+actor. The general procedure for adapting another repository is the canonical
+[repository-adoption guide](https://github.com/mmalyska/claude-plugins/blob/ai-workflow-v0.1.0-preview.2/docs/workflow/repository-adoption-guide.md).
 
 ## 2. Where rules live
 
