@@ -84,6 +84,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** a reviewer can tick each old section against the new file; the file contains no harness tool names.
 - **Rollback:** delete `AGENTS.md`.
 - **Mutation consent:** none.
+- **Status:** done 2026-11-01 (`AGENTS.md`, 154 lines, 11.6 KB).
 
 ### T1.2 Write the adapter contract
 
@@ -95,6 +96,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** no instruction in this file that also appears in `AGENTS.md`.
 - **Rollback:** delete the file.
 - **Mutation consent:** none.
+- **Status:** done 2026-11-01.
 
 ### T1.3 Write the permission policy
 
@@ -106,6 +108,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** nothing in the file authorizes a mutation without consent; the merge entry says a merge may deploy.
 - **Rollback:** delete the file and revert T1.1's link.
 - **Mutation consent:** none (documentation only).
+- **Status:** done 2026-11-01.
 
 ### T1.4 Turn `CLAUDE.md` into a thin adapter
 
@@ -117,6 +120,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** diff shows every removed section moved to `AGENTS.md` or a policy file.
 - **Rollback:** `git revert`.
 - **Mutation consent:** none.
+- **Status:** done 2026-11-01 (`CLAUDE.md`, 18 lines).
 
 ### T1.5 Align `.claude/settings.json` with the matrix
 
@@ -128,6 +132,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** no previously blocked command became allowed; routine read commands still run without a prompt.
 - **Rollback:** `git revert`.
 - **Mutation consent:** none (configuration file). The owner reviews because it changes prompts.
+- **Status:** done 2026-11-01; owner review of the diff pending. `gh api` is not blanket-asked: a broad ask pattern would shadow the allowed GET forms, so mutating forms get specific ask patterns and every other form falls back to the default prompt.
 
 ### T1.6 Add the first tests and runner
 
@@ -138,6 +143,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** negative fixtures fail as expected; no network use.
 - **Rollback:** delete `.agents/tests/`.
 - **Mutation consent:** none.
+- **Status:** done 2026-11-01 (`bash .agents/tests/run.sh`, 5 tests).
 
 ### T1.7 Verify loading in both harnesses (owner-authorized)
 
@@ -149,6 +155,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Rollback:** none.
 - **Mutation consent:** none for the cluster. Needs the owner's go-ahead because it starts other harness sessions.
 - **Not run otherwise:** record NOT RUN with the reason; PR-1 may merge only if the owner accepts that.
+- **Status:** done 2026-11-01 for Claude Code 2.1.316 and Codex 0.164.0; results in evidence.md section 11. S2, S7 and S8 NOT RUN (allowed after merge by D12).
 
 ### T1.8 Transitional skills link for Codex
 
@@ -159,6 +166,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** `git diff --stat` shows one added symlink and the test; if Codex does not follow the directory link, record it in `evidence.md` and keep the link for documentation only until T5.1 chooses the mirror fallback.
 - **Rollback:** remove the symlink and the test.
 - **Mutation consent:** none; owner approval for the harness sessions (same as T1.7).
+- **Status:** done 2026-11-01; Codex follows the link (evidence.md section 11, N3).
 
 ## PR-2: harness-agnostic worktree-first
 
