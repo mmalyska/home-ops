@@ -32,7 +32,7 @@ To bump the pin: read the compatibility document of the new tag, re-run the scen
 - Edit a skill in `.agents/skills/<skill>/`, then run `.agents/bin/sync-skills` and commit both trees.
 - `.agents/bin/sync-skills --check` changes nothing and exits 1 on any difference (content, file mode, file list, marker, symlink). `test_skills_parity` runs it, so the `Agent instructions` CI job fails on a stale or hand-edited mirror.
 - The output is deterministic (no timestamp, host or user) and re-running it changes nothing.
-- Why a mirror and not a `.claude/skills` symlink: a symlink is only acceptable if Claude Code follows it (N6) and Windows checkouts keep it (N10). Neither was verified, so both stay NOT RUN in `.archive/.plans/hybrid-ai-workflow/evidence.md`, and the plan's fallback (T5.1) is used. This is a choice of strategy, not evidence that symlinks work or fail.
+- Why a mirror and not a `.claude/skills` symlink: a symlink is only acceptable if Claude Code follows it (N6) and Windows checkouts keep it (N10). Neither was verified, so both stay NOT RUN in the archived plan evidence (a historical record, not instructions), `.archive/.plans/hybrid-ai-workflow/evidence.md`, and the plan's fallback (T5.1) is used. This is a choice of strategy, not evidence that symlinks work or fail.
 
 ## Per-harness notes
 
@@ -63,7 +63,7 @@ Convention: branch `<type>/<slug>`, `type` one of `feat`, `fix`, `chore`, `docs`
 | Codex rule file                              | Technical, Codex only  | `git commit/push` with the skip flag as the first argument                                                                                                                                                                                        | Flag in another position, environment prefixes, `git -c core.hooksPath`                                                           |
 | CI and branch protection                     | Check at merge         | What reaches `main`                                                                                                                                                                                                                               | Uncommitted edits in a primary checkout. Branch protection is not verified (plan task T4.5)                                       |
 
-No layer stops a Codex edit in the primary checkout before it is committed. Codex hooks exist but the project hook file did not run in the spike (it needs a per-user trust approval, see `.archive/.plans/hybrid-ai-workflow/evidence.md` section 12). For Codex that write is instruction-only until the commit.
+No layer stops a Codex edit in the primary checkout before it is committed. Codex hooks exist but the project hook file did not run in the spike (it needs a per-user trust approval, see section 12 of the archived plan evidence, a historical record and not instructions: `.archive/.plans/hybrid-ai-workflow/evidence.md`). For Codex that write is instruction-only until the commit.
 
 `--write` judges a submodule by its superproject: under a linked worktree it is allowed, under the primary it is refused, and a superproject that cannot be classified is exit 4. The Claude hook balance-checks the event JSON only up to 32 KB (shell string scanning is quadratic); a larger input must still be a `{...}` object with a readable `tool_name`.
 
