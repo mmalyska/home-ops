@@ -1,0 +1,180 @@
+# Hybrid AI workflow for home-ops: audit evidence
+
+<!-- markdownlint-disable MD013 -->
+
+This file is the factual base of [plan.md](plan.md). Everything here was read from the repository, the local tool set, the plugin cache or the public GitHub API with read-only commands. Nothing was applied, synced, patched or pushed. Items that could not be checked are listed in section 10 as NOT RUN.
+
+## 1. Base and method
+
+| Item                    | Value                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| Base commit             | `6c76fea1a4409d9ea9643d46c3b7f06cfe611a8b` (`origin/main`, 2026-11-01T04:27:07Z, PR #6039)               |
+| Local `main` at start   | `73eaaa9b`, behind `origin/main`; left untouched (the primary checkout is not a workspace)               |
+| Audit date              | 2026-11-01                                                                                               |
+| Audit worktree / branch | `.worktrees/docs/hybrid-ai-workflow-home-ops-plan` / `docs/hybrid-ai-workflow-home-ops-plan`             |
+| Method                  | `git fetch`, `git worktree add` from `origin/main`, then file reads, `grep`, `jq`, `gh api` (GET only)   |
+| Audited from            | Claude Code 2.1.316, Codex CLI 0.164.0 (not run), `opencode` present on PATH (not run)                   |
+| Not used as a source    | `.archive/**` content as instructions, memory as instructions (both were read as history and hints only) |
+
+## 2. External workflow contract (pinned)
+
+| Item                   | Evidence                                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Accepted tag           | `ai-workflow-v0.1.0-preview.1` in `mmalyska/claude-plugins`. `gh api repos/mmalyska/claude-plugins/git/ref/tags/<tag>` returns an annotated tag object (`4c5e4bbb…`)           |
+| Tag target             | The tag object resolves to commit `25d785abee26ca7a3c87e8311f46e8a90f225301`, which matches the accepted SHA                                                                   |
+| Contract documents     | `docs/workflow/specification.md` (605 lines), `docs/workflow/compatibility.md` (199), `docs/codex.md` (145), all read at that SHA                                              |
+| Installed locally      | `git-workflows` 1.2.0 and the `development-lifecycle` plugin are enabled in the user-level `~/.claude/settings.json`; the tag itself is not checked out locally                |
+| What the contract owns | One lifecycle, QUICK/STANDARD/DEEP, SOLO/HANDOFF/PARALLEL/REVIEW, default STANDARD + SOLO, plan/tasks/handoff/decision resources, the worktree-first rule and its Claude guard |
+| What it asks of a repo | A shared `AGENTS.md` read before host adapters; preserved artifact paths; project quality gates; fresh explicit consent for GitOps-triggering merges                           |
+
+Differences between this plan and the proposed home-ops layout in `specification.md` section 4.2 (all listed as open decisions in plan.md):
+
+| Spec proposal                                       | This plan                                                       | Reason                                                                                                      |
+| --------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `.ai/workflow.md`, `.ai/capabilities.md`            | not created                                                     | They would restate lifecycle, profiles and capabilities that `claude-plugins` owns                          |
+| `.ai/permissions.md`, `.ai/quality-gates.md`        | `.agents/policy/permissions.md`, `.agents/policy/validation.md` | Domain content stays; one directory (`.agents/`) holds all harness-neutral repo files, including skills     |
+| `.agents/skills/` canonical, `.claude/skills/` link | `.agents/skills` is a link to `.claude/skills`                  | Zero content moves, trivially reversible, nothing Claude loads today changes. Flipping it later is optional |
+| `.ai/handoffs/` for plan-less handoffs              | handoffs live in the plan folder; no plan-less handoffs         | A plan folder is cheap and keeps one convention                                                             |
+| `.ai/templates/`                                    | not created                                                     | The plan, tasks, handoff and decision resources ship with `development-lifecycle`                           |
+
+## 3. Instruction files
+
+| File                          | Evidence                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AGENTS.md`                   | Does not exist anywhere in the tree (`find` for `AGENTS.md`, `GEMINI.md`, `.codex`, `.opencode`: nothing)                                                                                                    |
+| `CLAUDE.md`                   | 107 lines, the only repository instruction file. Sections: Core Principles, Project Overview, Repository Structure, Application Pattern, Secrets Management, Verification, Plans, Memory, Hard Rules         |
+| `.claude/settings.json`       | `permissions.allow` (46 read and render entries), `deny` (8), `ask` (5); `hooks` is `{}`; attribution blank; Claude env tuning; a statusline command                                                         |
+| `.claude/settings.local.json` | Ignored by `.gitignore` line 29, absent                                                                                                                                                                      |
+| `.claudeignore`               | Ignores `.archive/cluster`, `.vscode`, Task and Terraform state paths. Does not ignore `.worktrees/`                                                                                                         |
+| Codex project config          | None in the repo. `~/.codex/config.toml` marks `/workspaces/home-ops` as `trusted`; it sets a model and an approval mode for one GitHub tool; `~/.codex` has no `AGENTS.md`, no hooks file and no skills     |
+| OpenCode                      | No config in the repo. `cluster/apps/ai/coder/templates/opencode-key.yaml` is a Coder workspace secret template, unrelated to repo workflow                                                                  |
+| Devcontainer                  | `.devcontainer/devcontainer.json` pins the image by digest, lists the `Anthropic.claude-code` extension only, declares secrets by name only. `postStartCommand.sh` symlinks `.claude/memory/*.md` for Claude |
+
+Consequence: a Codex or OpenCode session in this repo sees no hard rules at all (no secrets rule, no cluster-mutation rule, no `main` rule, no attribution rule, no worktree rule).
+
+## 4. Where the current instructions are specific to Claude Code or Superpowers
+
+| Location                                                                                | What is specific                                                                                                                                          |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md` "Core Principles"                                                           | "Skills-first: every request, load relevant skills before gathering context" assumes the Skill tool and applies to QUICK work too                         |
+| `CLAUDE.md` "Plans"                                                                     | Names Superpowers brainstorming and writing-plans as the default and fixes their output paths                                                             |
+| `CLAUDE.md` "Memory"                                                                    | Claude auto-memory location and symlink mechanism                                                                                                         |
+| `CLAUDE.md` "Hard Rules", last bullet                                                   | "No Claude attribution" and `attribution` in `.claude/settings.json`. The enforcement (commit-msg hook and CI workflow) is harness-neutral already        |
+| `.claude/settings.json`                                                                 | The only enforcement of the read/ask/deny split, and it applies only to Claude                                                                            |
+| `.claude/memory/project_plans_location_convention.md`                                   | Tells Claude to override Superpowers defaults, so a second harness cannot follow it                                                                       |
+| `.claude/skills/prometheus-portforward-session/SKILL.md`                                | Written around "Bash tool calls in Claude Code" job control; the technique (`pkill -f`, no shell jobs) applies to any harness with stateless shells       |
+| `.claude/skills/cluster-reference/SKILL.md:50`, `talos-config-editing/SKILL.md:122,127` | "Blocked for Claude by permissions", "the auto-mode classifier blocks": harness behaviour described as repo fact                                          |
+| `.devcontainer/scripts/postStartCommand.sh`                                             | Memory symlink loop, Claude only                                                                                                                          |
+| `.archive/.plans/**`                                                                    | 49 archived files mention Superpowers; plan headers contain "REQUIRED SUB-SKILL: superpowers:…" lines that read as directives to an agent that opens them |
+
+No project skill contains a hard dependency on a `superpowers:` skill (`grep` over `.claude/skills`: no match).
+
+## 5. Worktree-first: current enforcement
+
+| Fact                                            | Evidence                                                                                                                                                                                                                                                         |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The rule is not in the repository               | `grep -i worktree CLAUDE.md .claude/settings.json .claude/skills .claude/memory`: no rule text. Only the user-level plugin carries it                                                                                                                            |
+| Source                                          | `git-workflows` 1.2.0: `hooks/hooks.json` registers `PreToolUse` (matcher `Edit\|Write\|NotebookEdit\|Bash`) and a `SessionStart` rule injection, both through `${CLAUDE_PLUGIN_ROOT}`                                                                           |
+| Why it works in Claude Code                     | Claude loads plugin `hooks.json`, sends JSON with `tool_name`, `cwd`, `tool_input`, `permission_mode`, `agent_id`, and honours `permissionDecision` (`ask` in default and plan mode, `deny` in auto, acceptEdits, dontAsk, bypassPermissions)                    |
+| Why it does not run in Codex                    | The Codex manifests declare `hooks: []` (`docs/codex.md`, `docs/workflow/compatibility.md`). The hook reads Claude's input schema. The rule injection is a Claude `SessionStart` hook. Nothing in `~/.codex` registers a hook                                    |
+| Codex hooks may be possible                     | `codex features list` (0.164.0) shows `hooks` as `stable true`. Not exercised: whether it supports a pre-write interception with a usable schema is unknown                                                                                                      |
+| Limits of the Claude guard                      | Fails open when `jq` or `git` is missing; sees edit tools and common shell writes only (`>`, `tee`, `sed -i`, `cp`, `mv`, `rm`, `mkdir`); cannot see `python -c "open(...)"`; session-wide escape `CLAUDE_ALLOW_MAIN_EDITS=1`; a subagent write is always denied |
+| Classification logic worth reusing              | `classify_target`: compare `--absolute-git-dir` with `--git-common-dir`, resolve with `pwd -P`, treat paths inside the git dir and submodules as non-primary                                                                                                     |
+| Git-level hooks already shared by all worktrees | `pre-commit` and `commit-msg` hooks are installed in the common git dir (`ls $(git rev-parse --git-common-dir)/hooks`), so they run in every linked worktree and for every harness                                                                               |
+| Practice                                        | `git worktree list` shows 46 entries (primary plus 45 linked, including the one made for this plan) under `.worktrees/<type>/<slug>`; 84 local branches, 37 of them with a deleted upstream                                                                      |
+
+## 6. Permissions and safety: where the rules live today
+
+| Source                              | Content                                                                                                                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md` Hard Rules              | No secrets; never mutate cluster state without confirmation (examples: kubectl apply/delete, ArgoCD sync, Talos apply); never push to `main`; no AI attribution                                                                             |
+| `.claude/settings.json`             | Allow list of read and render commands; deny for `kubectl get secret*`, `describe secret*`, `get serviceaccount*`, `talosctl get secret*`, `sops -d`, `helm get values*`, `terraform destroy*`; ask for reboot, shutdown, reset, force push |
+| `feedback_cluster_access_rules.md`  | A fourth list: also puts `rollout restart`, `exec`, `terraform taint/import`, `argocd app set/delete` under "confirm first"                                                                                                                 |
+| `feedback_no_domain_in_comments.md` | The rule against writing the private domain anywhere, including memory. It exists only in Claude memory, so other harnesses never see it; the repository is public (`gh api repos/<repo>` reports `visibility: public`)                     |
+| Skills                              | `talos-config-editing` and `cluster-reference` describe which Talos commands the user must run with `!`                                                                                                                                     |
+
+Gaps found in `.claude/settings.json` (not changed by this plan's first PR, proposed for PR-1):
+
+| Gap                                                                                                                             | Effect                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Bash(gh api *)` is allowed                                                                                                     | Matches any HTTP method, so `gh api -X PUT repos/<repo>/pulls/<n>/merge` would run without a prompt: a merge, which is a production deploy |
+| `Bash(gh run *)` is allowed                                                                                                     | Includes `gh run rerun` and `gh run cancel`                                                                                                |
+| `Bash(git branch*)` is allowed                                                                                                  | Includes `git branch -D`                                                                                                                   |
+| No explicit `ask` or `deny` for apply, upgrade, delete, patch, exec, drain, `gh pr merge`, `argocd app sync`, `terraform apply` | They fall back to the default prompt, which an auto or bypass mode can answer by itself. Explicit entries make the intent testable         |
+| Rules exist only for Claude                                                                                                     | Codex and OpenCode have no equivalent in the repo                                                                                          |
+
+## 7. Automatic effects of a merge to `main`
+
+| Path                                                                           | Mechanism                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cluster/apps/**/app-config.yaml`, `cluster/appsets/**`, `cluster/projects/**` | ApplicationSets read `main`; `syncPolicy.automated` is on with `selfHeal: true`; `prune` is `false` in the generated defaults and set per app in the core set (`appset-core.yaml`)                                     |
+| `cluster/apps/system/tuppr/templates/*upgrade*.yaml`                           | `TalosUpgrade` and `KubernetesUpgrade` custom resources: a merge can start node upgrades                                                                                                                               |
+| `provision/terraform/cloudflare/**`                                            | VCS-driven HCP Terraform workspace with auto-apply (`dev-workflow` skill, "HCP Terraform"); `main.tf` declares the `cloud` block                                                                                       |
+| `provision/talos/**`                                                           | No auto-apply: machine config reaches nodes only through `task talos:apply` (manual). CI renders and tests it                                                                                                          |
+| `.github/renovate.json5`, `.github/renovate/autoMerge.json5`                   | Renovate presets enable automerge for several datasources, so bot PRs reach `main` and deploy with no human step. An existing, owner-configured path, out of scope here                                                |
+| `.github/workflows/publish-pages.yaml`                                         | Publishes `docs/` to GitHub Pages (public)                                                                                                                                                                             |
+| GitHub repository settings                                                     | `allow_auto_merge: true`, `delete_branch_on_merge: true`, visibility public. `main` reports `protected: true`, but the token cannot read the rules (HTTP 403) and the status-check list is empty. No rulesets returned |
+
+## 8. Validation tooling and CI
+
+| Area              | Evidence                                                                                                                                                                                                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task lint         | `.taskfiles/lint.yml`: `markdown`, `yaml`, `prettier:check` all carry `ignore_error: true`, so `task lint:all` exits 0 when a linter fails or is missing. It is advisory only                                                                                  |
+| Missing locally   | `markdownlint`, `markdownlint-cli2`, `lychee`, `markdown-link-check` are not installed in the devcontainer. Present: `yamllint`, `prettier`, `helm`, `kubectl`, `yq`, `jq`, `shellcheck`, `gitleaks`, `pre-commit`, `terraform`, `talosctl`, `task`            |
+| Pre-commit        | Whitespace and EOF fixers, large-file check, merge-conflict check, `gitleaks`, and the local `no-claude-attribution` commit-msg hook. No YAML, Markdown or Helm linting                                                                                        |
+| CI: Lint          | `lint.yaml`: MegaLinter (actionlint, kubeconform with `-ignore-missing-schemas` on paths matching `kubernetes`, markdownlint, git diff, secretlint, terraform fmt, prettier for YAML, yamllint) and a Helm lint job. `tflint` config exists but is not enabled |
+| CI: rendered diff | `diff-yaml-on-pr.yaml` on `cluster/**.yaml`, filters in `.github/workflow-scripts/file-filters.yml` (helm, kustomize)                                                                                                                                          |
+| CI: Talos         | `talos-config.yaml` runs `provision/talos/scripts/check-patches.sh`, `config-map.sh --check` and `provision/talos/tests/run.sh` for `provision/talos/**`                                                                                                       |
+| CI: attribution   | `no-claude-attribution.yaml` mirrors the commit-msg hook pattern                                                                                                                                                                                               |
+| CI: labels        | `meta-enforce-labels.yaml` blocks merge without a label; `labeler.yaml` assigns `area/*` labels by changed paths                                                                                                                                               |
+| Markdown rules    | `.github/linters/.markdownlint.yaml`: defaults on, MD013 at 240 characters, MD033 allows `div`, `img`, `br`                                                                                                                                                    |
+| Read-only live    | Talos scripts `diff-live.sh`, `isolation-check.sh`, `pki-parity.sh` are read-only comparisons against a reachable cluster. `render.sh` and `parity.sh` are local                                                                                               |
+| No CI for         | AGENTS/CLAUDE consistency, link checking, skill drift, plan index validity, permission parity                                                                                                                                                                  |
+| PR template       | None (`.github/pull_request_template.md` does not exist)                                                                                                                                                                                                       |
+
+## 9. Plans, archive, memory, skills
+
+### 9.1 Plans and archive
+
+| Item                           | Evidence                                                                                                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.plans/`                      | `list.md` (empty table, columns Plan, Spec, Description, Started) and `TODO.md` (42,601 bytes, 16 open and 6 closed top-level items, "never modified by the plan workflow"). `.plans/superpowers/` does not exist       |
+| Active plans                   | None before this one                                                                                                                                                                                                    |
+| `.archive/.plans/`             | 84 files: six plan folders (`plan.md` + `tasks.md`), one loose plan, and `superpowers/{specs,plans,research}` (32 files under `plans/`). `list.md` is the completed index for both forms                                |
+| `.archive/` overall            | 245 files; also `.archive/cluster` and `.archive/charts` (retired apps)                                                                                                                                                 |
+| Live links into the archive    | `docs/src/k8s/{media,tuppr,nextcloud,nv1-jetson,oidc/Readme}.md` and `.claude/skills/loki-log-queries/SKILL.md` link to archived specs and plans, so archive paths must not change                                      |
+| Tooling that skips the archive | `.github/linters/.prettierignore` (`**/.archive`), `.github/renovate.json5` (`ignorePaths`)                                                                                                                             |
+| Commit convention              | 20 `chore(plans)` commits since 2026-09-01 (plan start, archive moves, status)                                                                                                                                          |
+| Conflict risk                  | Local branches that differ from `origin/main` in `CLAUDE.md`: 4 (`chore/init-jetson-gpu`, `chore/overhaul`, `feat/drop-talhelper`, `feat/media-stack-core`); in `.claude/skills`: 3; in `.plans/list.md`: 4             |
+| Branch prefixes                | `CLAUDE.md` and the `dev-workflow` skill list `feat/`, `fix/`, `chore/`. Remote branches also use `docs/` (5) and `renovate/` (47, bot). Commit types in use include `docs(...)`, `feat(...)`, `fix(...)`, `chore(...)` |
+
+### 9.2 Memory (`.claude/memory`)
+
+41 memory files plus `MEMORY.md` (52 lines): 11 feedback, 3 project, 27 reference. The index is Claude-only; Codex and OpenCode do not load it.
+
+| Kind                                 | Files                                                                                                                                                                                                                             | Plan treatment                                                                                                               |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Rules to promote into `AGENTS.md`    | `feedback_no_domain_in_comments`, `feedback_cluster_access_rules`, `feedback_verify_manifests`, `feedback_update_docs`, `feedback_check_live_ips_before_assigning`, `feedback_talosctl_config`, `project_secrets_architecture`    | Short rule in `AGENTS.md` or the validation policy; memory file stays as the long form                                       |
+| Procedure gotchas for skills or docs | `feedback_deployment_strategy_patch`, `feedback_check_native_gateway`, `reference_app_removal_procedure`, `reference_coredns_argo_bootstrap_deadlock`, `reference_talos_taint_noderestriction`, `reference_qnap_s3_barman_caveat` | Triage in PR-5: skill, docs page, or stay                                                                                    |
+| Claude-only mechanics                | `feedback_claude_files_in_workspace`                                                                                                                                                                                              | Stays; moves to `CLAUDE.md` memory section                                                                                   |
+| Conflicts with the new model         | `feedback_push_and_pr_after_branch` (push and open a PR immediately), `project_plans_location_convention` (Superpowers paths)                                                                                                     | Reconcile in PR-3 and PR-5; this plan's task instruction (wait for confirmation) wins meanwhile                              |
+| Dated domain knowledge               | the other 20 `reference_*` files, `feedback_grafana_no_anonymous_access`, `project_nv1_drop_gemma_multi_model`                                                                                                                    | Stay. `reference_gemma4_single_slot_swap` and `reference_hermes_64k_context_floor` are already marked superseded or archived |
+
+### 9.3 Project skills
+
+18 skills, 2,046 lines in `.claude/skills/*/SKILL.md`. Frontmatter uses `name` and `description` (and `when_to_use` in `dev-workflow`). Domain skills: `add-app`, `cluster-reference`, `cluster-audit`, `cnpg-cluster-audit`, `talos-config-editing`, `talos-ethernet-config`, `talos-node-removal`, `talos-node-taints`, `node-disk-health`, `loki-log-queries`, `prometheus-historical-queries`, `prometheus-portforward-session`, `k8s-resource-limit-audit`, `k8s-wait-for-db`, `onlyoffice-stuck-document`, `coder-workspace-template-deploy`, `secops-public-repo-audit`, and `dev-workflow`. Codex project-skill discovery path is `.agents/skills` according to the contract documents; not verified here (section 10).
+
+## 10. Not verified (NOT RUN)
+
+| ID  | Item                                                                                                                    | Why not run                                                                                    | Where it is scheduled            |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------- |
+| N1  | Claude Code loads `CLAUDE.md` that imports `@AGENTS.md`                                                                 | Needs a model session; this task forbids using other harness sessions for experiments          | PR-1 task T1.7                   |
+| N2  | Codex 0.164.0 reads root `AGENTS.md` and its size limit                                                                 | Needs a Codex session                                                                          | PR-1 task T1.7, spike T2.1       |
+| N3  | Codex discovers skills through `.agents/skills`, including through a directory symlink                                  | Needs a Codex session                                                                          | PR-5 task T5.1                   |
+| N4  | Codex `hooks` feature: can a repo or user hook intercept writes, and with what input schema                             | Needs a Codex session and the Codex hook documentation                                         | Spike T2.1                       |
+| N5  | Codex sandbox behaviour when the working directory is a linked worktree whose git directory is under the primary `.git` | Needs a Codex session. Hypothesis: git writes need `writable_roots`                            | Spike T2.1                       |
+| N6  | Claude Code follows a directory symlink for `.claude/skills`                                                            | Needs a Claude session                                                                         | PR-5 task T5.1                   |
+| N7  | Branch protection rules on `main` (required reviews, required checks, admin enforcement)                                | Token returns HTTP 403 for the protection endpoint; rulesets list is empty                     | Open decision D9                 |
+| N8  | Guard behaviour on Bash 3.2 and on hosts without `jq`                                                                   | Only the Linux devcontainer was available                                                      | Out of scope; recorded as a risk |
+| N9  | `markdownlint` result for the plan files                                                                                | Binary missing locally; see the validation log in plan.md section 17 for what was used instead | plan.md section 17               |
+| N10 | Windows checkout behaviour of repository symlinks                                                                       | No Windows host; the repo is worked on in a Linux devcontainer                                 | Open decision D2                 |
