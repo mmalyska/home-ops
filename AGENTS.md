@@ -109,7 +109,7 @@ kubectl kustomize .                              # Kustomize-based apps
 task lint:all                                   # yamllint, helmlint, prettier
 ```
 
-`task lint:*` always exits 0: read its output. For task command reference and CI/PR workflow use the `dev-workflow` skill. Report each check as PASS, FAIL, NOT RUN (with the reason) or N/A; never report an unrun check as PASS.
+`task lint:*` always exits 0: read its output. The per-change-type matrix (what to run locally, in CI and live) is in [`.agents/policy/validation.md`](.agents/policy/validation.md). For task command reference and CI/PR workflow use the `dev-workflow` skill. Report each check as PASS, FAIL, NOT RUN (with the reason) or N/A; never report an unrun check as PASS.
 
 ## Plans
 

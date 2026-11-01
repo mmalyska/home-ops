@@ -1,0 +1,53 @@
+---
+name: Agent instructions
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".plans/**"
+      - ".archive/.plans/**"
+      - ".github/pull_request_template.md"
+      - ".github/workflows/agent-instructions.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Instruction checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install tools
+        run: |
+          for tool in jq yq shellcheck; do
+            command -v "$tool" >/dev/null && continue
+            case "$tool" in
+              yq) sudo snap install yq ;;
+              *) sudo apt-get install -y -qq "$tool" ;;
+            esac
+          done
+          jq --version
+          yq --version
+          shellcheck --version | head -2
+
+      - name: Shellcheck
+        run: shellcheck .agents/bin/* .agents/tests/*.sh
+
+      - name: Instruction tests
+        run: bash .agents/tests/run.sh

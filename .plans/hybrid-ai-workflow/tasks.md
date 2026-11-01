@@ -311,6 +311,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** no new tool is introduced except the adaptation tests; `AGENTS.md` links here.
 - **Rollback:** delete the file and the link.
 - **Mutation consent:** none. Rows that list mutating live steps are documentation only.
+- **Status:** done 2026-11-01 (`.agents/policy/validation.md`, `test_validation_policy`, linked from `AGENTS.md`).
 
 ### T4.2 Add the PR template
 
@@ -322,6 +323,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** the template renders in a draft PR (owner-authorized; otherwise NOT RUN).
 - **Rollback:** delete the file.
 - **Mutation consent:** none.
+- **Status:** done 2026-11-01 (`.github/pull_request_template.md`); rendering in a draft PR NOT RUN until the PR is opened.
 
 ### T4.3 Add the CI workflow
 
@@ -333,6 +335,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** the job needs no secrets and mutates nothing.
 - **Rollback:** delete the workflow.
 - **Mutation consent:** pushing a test branch needs the owner's confirmation.
+- **Status:** done 2026-11-01 (`.github/workflows/agent-instructions.yaml`); actionlint NOT RUN locally (not installed, runs in Lint CI); failing-branch run NOT RUN (needs owner consent to push a test branch).
 
 ### T4.4 Decide on strict lint and local markdownlint
 
@@ -343,6 +346,7 @@ Design and rationale: [plan.md](plan.md). Evidence: [evidence.md](evidence.md). 
 - **Acceptance:** `AGENTS.md` and the dev-workflow skill describe the actual behaviour.
 - **Rollback:** `git revert`.
 - **Mutation consent:** none.
+- **Status:** decision recorded: `task lint:*` stays advisory (D6); documented in `validation.md`, `AGENTS.md` and the `dev-workflow` skill. No `.taskfiles/lint.yml` change.
 
 ### T4.5 Verify GitHub repository settings by hand (owner)
 
