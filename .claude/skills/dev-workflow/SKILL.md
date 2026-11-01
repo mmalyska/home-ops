@@ -34,7 +34,7 @@ task argocd:sync                      # Sync ArgoCD applications          # See 
 task terraform:plan:cloudflare
 task terraform:apply:cloudflare          # Local/manual only -- see note below
 
-# Lint / Format
+# Lint / Format (advisory: always exits 0, read the output; CI is the gate)
 task lint:all
 task format:all
 ```
@@ -78,5 +78,6 @@ Several apps depend on local charts via `repository: file://../../.../charts/<na
 
 - **Main branch**: `main` — all PRs target this branch
 - **Branch naming**: `feat/`, `fix/`, `chore/` prefixes
-- **CI on PRs**: MegaLinter (yamllint, markdownlint, prettier, kubeval, secretlint, actionlint, terraform fmt)
+- **Validation per change type**: `.agents/policy/validation.md`; PRs use `.github/pull_request_template.md`
+- **CI on PRs**: `Agent instructions` workflow (`bash .agents/tests/run.sh`, shellcheck) for instruction and plan paths; MegaLinter (yamllint, markdownlint, prettier, kubeval, secretlint, actionlint, terraform fmt)
 - **Labels required**: PRs must have a label — `meta-enforce-labels` blocks merge without one
