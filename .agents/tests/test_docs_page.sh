@@ -53,9 +53,21 @@ check_docs_workflow() { # root: read-only token, strict build, pull_request only
   return $bad
 }
 
+check_pinned_actions() { # root: every third-party "uses:" is a full 40-hex SHA; no @v*, @main or @master
+  local f="$1/.github/workflows/docs-build.yaml" bad=0 line ref
+  while IFS= read -r line; do
+    ref="${line##*@}"; ref="${ref%% *}"
+    printf '%s' "$ref" | grep -qE '^[0-9a-f]{40}$' || { echo "action not pinned to a full SHA: $line"; bad=1; }
+  done < <(grep -E '^[[:space:]]*(-[[:space:]]+)?uses:' "$f")
+  grep -qE '@(v[0-9]|main|master)' "$f" && { echo "mutable action reference in workflow"; bad=1; }
+  [ "$(grep -cE '^[[:space:]]*(-[[:space:]]+)?uses:' "$f")" -ge 1 ] || { echo "no uses: found, check is vacuous"; bad=1; }
+  return $bad
+}
+
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
 echo "-- real repository"
+assert_ok "docs-build actions are pinned to full SHAs" check_pinned_actions "$REPO_ROOT"
 assert_ok "nine sections in order" check_sections "$REPO_ROOT"
 assert_ok "nav entry Contributing / AI workflow resolves to the page" check_nav "$REPO_ROOT"
 assert_ok "workflow links use the pinned tag" check_pin "$REPO_ROOT"
@@ -80,4 +92,12 @@ fixture "$TMP/g"; sed -i 's/contents: read/contents: write/' "$TMP/g/.github/wor
 assert_fails "write permission is detected" check_docs_workflow "$TMP/g"
 fixture "$TMP/h"; printf '      - uses: actions/deploy-pages@v5\n' >> "$TMP/h/.github/workflows/docs-build.yaml"
 assert_fails "deploy step is detected" check_docs_workflow "$TMP/h"
+fixture "$TMP/i"; sed -i 's|setup-python@[0-9a-f]\{40\}|setup-python@v7|' "$TMP/i/.github/workflows/docs-build.yaml"
+assert_fails "action pinned to a version tag is detected" check_pinned_actions "$TMP/i"
+fixture "$TMP/j"; sed -i 's|checkout@[0-9a-f]\{40\}|checkout@main|' "$TMP/j/.github/workflows/docs-build.yaml"
+assert_fails "action pinned to main is detected" check_pinned_actions "$TMP/j"
+fixture "$TMP/k"; sed -i 's|checkout@[0-9a-f]\{40\}|checkout@master|' "$TMP/k/.github/workflows/docs-build.yaml"
+assert_fails "action pinned to master is detected" check_pinned_actions "$TMP/k"
+fixture "$TMP/l"; sed -i 's|checkout@[0-9a-f]\{40\}|checkout@3d3c42e|' "$TMP/l/.github/workflows/docs-build.yaml"
+assert_fails "abbreviated SHA is detected" check_pinned_actions "$TMP/l"
 finish
