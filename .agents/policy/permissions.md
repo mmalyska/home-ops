@@ -14,13 +14,13 @@ Reads that expose no secret value. Allowed.
 
 Claude patterns (`allow`):
 
-- Kubernetes: `Bash(kubectl get *)`, `Bash(kubectl describe *)`, `Bash(kubectl logs *)`, `Bash(kubectl top *)`, `Bash(kubectl diff *)`, `Bash(kubectl config *)`, `Bash(kubectl version*)`, `Bash(kubectl rollout status *)`, `Bash(kubectl rollout history *)`, `Bash(kubectl auth can-i *)`
+- Kubernetes: `Bash(kubectl get *)`, `Bash(kubectl describe *)`, `Bash(kubectl logs *)`, `Bash(kubectl top *)`, `Bash(kubectl diff *)`, `Bash(kubectl config current-context*)`, `Bash(kubectl config get-contexts*)`, `Bash(kubectl config get-clusters*)`, `Bash(kubectl config get-users*)`, `Bash(kubectl config view)`, `Bash(kubectl config view *)`, `Bash(kubectl version*)`, `Bash(kubectl rollout status *)`, `Bash(kubectl rollout history *)`, `Bash(kubectl auth can-i *)`
 - Talos: `Bash(talosctl get *)`, `Bash(talosctl health*)`, `Bash(talosctl logs *)`, `Bash(talosctl version*)`, `Bash(talosctl dmesg*)`, `Bash(talosctl ps*)`, `Bash(talosctl services*)`, `Bash(talosctl disks*)`, `Bash(talosctl memory*)`, `Bash(talosctl cpu*)`
 - Terraform: `Bash(terraform show*)`, `Bash(terraform state list*)`, `Bash(terraform state show*)`
 - ArgoCD: `Bash(argocd app list*)`, `Bash(argocd app get *)`, `Bash(argocd app diff *)`, `Bash(argocd proj list*)`
-- Helm: `Bash(helm list*)`, `Bash(helm status *)`, `Bash(helm get *)`, `Bash(helm show *)`, `Bash(helm repo *)`, `Bash(helm search *)`
+- Helm: `Bash(helm list*)`, `Bash(helm status *)`, `Bash(helm get *)`, `Bash(helm show *)`, `Bash(helm repo list*)`, `Bash(helm search *)`
 - Task: `Bash(task --list*)`
-- Git: `Bash(git status*)`, `Bash(git log *)`, `Bash(git diff *)`, `Bash(git branch)`, `Bash(git branch --list*)`, `Bash(git branch --show-current)`, `Bash(git branch -a*)`, `Bash(git branch -r*)`, `Bash(git branch -v*)`, `Bash(git branch -vv*)`
+- Git: `Bash(git status*)`, `Bash(git log *)`, `Bash(git diff *)`, `Bash(git branch)`, `Bash(git branch --list)`, `Bash(git branch --show-current)`, `Bash(git branch -a)`, `Bash(git branch -r)`, `Bash(git branch -v)`, `Bash(git branch -vv)`, `Bash(git branch -av)`, `Bash(git branch -avv)`, `Bash(git branch --all)`, `Bash(git branch --remotes)`
 - GitHub: `Bash(gh pr view*)`, `Bash(gh pr list*)`, `Bash(gh pr diff*)`, `Bash(gh pr checks*)`, `Bash(gh pr status*)`, `Bash(gh run view*)`, `Bash(gh run list*)`, `Bash(gh run watch*)`, `Bash(gh label list*)`, `Bash(gh api --method GET *)`, `Bash(gh api -X GET *)`
 
 Policy (all harnesses):
@@ -29,6 +29,7 @@ Policy (all harnesses):
 - `kubectl port-forward` and `kubectl exec` of an allowlisted command (below) are READ. Claude prompts for every `exec` and for `port-forward`, which is stricter than this policy.
 - `ceph`, CNPG plugin (`status`, `psql` read queries) and `bws secret list` are READ when they print no secret value.
 - `gh api` is READ only with an explicit GET method and no field or input flags. The allow patterns are prefix matches, so a later flag in the same command can change the method; the `ask` patterns under GITOPS_TRIGGER cover the known cases and every other form falls back to a prompt.
+- Allow patterns carry no trailing wildcard where extra options could change the meaning: `git branch` is allowed only in the exact listed forms (so `git branch -a -D <name>` is not allowed), and `kubectl config` only for its read subcommands. A forced refresh (`argocd app get|diff` with `--refresh` or `--hard-refresh`) is RUNTIME_MUTATION and is asked about even though `argocd app get *` is allowed, because `ask` outranks `allow`. Changing the kubectl context or kubeconfig, and changing the local Helm repositories, also need consent.
 - `helm get values` can print secret values: it is SECRET_ACCESS even though `helm get *` is allowed. The `deny` rule wins.
 
 ### Read-only `exec` allowlist
@@ -97,8 +98,9 @@ Changes to live state. Fresh consent per action naming target and effect.
 Claude patterns (`ask`):
 
 - GitHub: `Bash(gh workflow run*)`, `Bash(gh run rerun*)`
-- Kubernetes: `Bash(kubectl apply*)`, `Bash(kubectl create*)`, `Bash(kubectl delete*)`, `Bash(kubectl patch*)`, `Bash(kubectl replace*)`, `Bash(kubectl edit*)`, `Bash(kubectl set *)`, `Bash(kubectl annotate*)`, `Bash(kubectl label*)`, `Bash(kubectl taint*)`, `Bash(kubectl scale*)`, `Bash(kubectl exec*)`, `Bash(kubectl cp *)`, `Bash(kubectl drain*)`, `Bash(kubectl cordon*)`, `Bash(kubectl uncordon*)`, `Bash(kubectl rollout restart*)`, `Bash(kubectl rollout undo*)`, `Bash(kubectl rollout pause*)`, `Bash(kubectl rollout resume*)`
-- ArgoCD: `Bash(argocd app sync*)`, `Bash(argocd app set*)`, `Bash(argocd app patch*)`, `Bash(argocd app create*)`, `Bash(argocd app delete*)`, `Bash(argocd app rollback*)`
+- Kubernetes: `Bash(kubectl apply*)`, `Bash(kubectl create*)`, `Bash(kubectl delete*)`, `Bash(kubectl patch*)`, `Bash(kubectl replace*)`, `Bash(kubectl edit*)`, `Bash(kubectl set *)`, `Bash(kubectl annotate*)`, `Bash(kubectl label*)`, `Bash(kubectl taint*)`, `Bash(kubectl scale*)`, `Bash(kubectl exec*)`, `Bash(kubectl cp *)`, `Bash(kubectl drain*)`, `Bash(kubectl cordon*)`, `Bash(kubectl uncordon*)`, `Bash(kubectl rollout restart*)`, `Bash(kubectl rollout undo*)`, `Bash(kubectl rollout pause*)`, `Bash(kubectl rollout resume*)`, `Bash(kubectl config set*)`, `Bash(kubectl config use*)`, `Bash(kubectl config delete-*)`, `Bash(kubectl config rename-context*)`, `Bash(kubectl config unset*)`
+- ArgoCD: `Bash(argocd app sync*)`, `Bash(argocd app set*)`, `Bash(argocd app patch*)`, `Bash(argocd app create*)`, `Bash(argocd app delete*)`, `Bash(argocd app rollback*)`, `Bash(argocd app get *--refresh*)`, `Bash(argocd app get *--hard-refresh*)`, `Bash(argocd app diff *--refresh*)`, `Bash(argocd app diff *--hard-refresh*)`
+- Helm local configuration: `Bash(helm repo add*)`, `Bash(helm repo remove*)`, `Bash(helm repo update*)`, `Bash(helm repo index*)`
 - Talos: `Bash(talosctl apply-config*)`, `Bash(talosctl upgrade*)`, `Bash(talosctl patch*)`, `Bash(talosctl edit*)`, `Bash(talosctl bootstrap*)`, `Bash(talosctl reboot*)`, `Bash(talosctl shutdown*)`
 - Terraform: `Bash(terraform apply*)`, `Bash(terraform import*)`, `Bash(terraform state mv*)`, `Bash(terraform state rm*)`, `Bash(terraform taint*)`, `Bash(terraform refresh*)`
 - Bitwarden: `Bash(bws secret create*)`, `Bash(bws secret edit*)`, `Bash(bws secret delete*)`
