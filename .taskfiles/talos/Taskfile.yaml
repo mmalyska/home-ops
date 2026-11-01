@@ -6,7 +6,7 @@ vars:
   NODE_LIST:
     sh: yq '.nodes[].name' < {{.TALOS_DIR}}/nodes.yaml | tr '\n' ',' | sed 's/,$//'
   # renovate: datasource=github-releases depName=siderolabs/talos
-  TALOS_VERSION: "v1.14.4"
+  TALOS_VERSION: "v1.14.5"
   # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
   KUBERNETES_VERSION: "v1.36.5"
   TALOS_CONTROLLER:
