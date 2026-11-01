@@ -279,6 +279,8 @@ Each PR is small, independently revertible, docs/tooling only, with no cluster m
 | PR-6 | optional pilot                                                           | One small non-production change run through the whole lifecycle, evidence recorded                                                                                                                                   | PR-1 to PR-5     | none for docs-only               |
 | PR-7 | `chore(plans): archive hybrid-ai-workflow`                               | Move this plan to `.archive/.plans/` after Ship                                                                                                                                                                      | PR-6 or PR-5     | none                             |
 
+**PR-2 status (2026-11-01):** implemented on branch `feat/worktree-preflight` from `origin/main` `fb7a2d82`, awaiting owner review; not pushed. Results and the Codex spike are in evidence.md section 12.
+
 **PR-1 status (2026-11-01):** implemented on branch `feat/agents-md-adapter`, awaiting owner review; not pushed. Behavioural spikes S1, S3 to S6 and N1 to N3 are in evidence.md section 11.
 
 Order verified against the audit: PR-3 can run in parallel with PR-2 only as separate worktrees and a named integrator (topology PARALLEL, needs owner authorization); by default they are sequential. PR-4 comes after PR-2 and PR-3 because the CI job runs their tests. The validation text that PR-1 needs (the three existing commands) is carried over, so PR-1 is not blocked on PR-4. Merging any of these PRs is not a GitOps trigger by path, but merge is still the owner's decision; no PR here touches `cluster/`, `provision/` or `charts/`.

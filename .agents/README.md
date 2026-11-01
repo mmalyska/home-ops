@@ -4,15 +4,17 @@ How AI coding harnesses attach to this repository. The rules themselves live in 
 
 ## What lives where
 
-| Path                            | Holds                                                                             |
-| ------------------------------- | --------------------------------------------------------------------------------- |
-| `AGENTS.md`                     | Canonical, harness-neutral project rules, always loaded                           |
-| `CLAUDE.md`                     | Thin Claude Code adapter: imports `AGENTS.md`, memory location, Claude-only facts |
-| `.agents/policy/permissions.md` | Per-tool command lists, read-only `exec` allowlist, merge-impact map              |
-| `.agents/tests/`                | Bash tests for the instruction files; run with `bash .agents/tests/run.sh`        |
-| `.agents/skills`                | Link to the project skills (see below)                                            |
-| `.claude/`                      | Claude Code data: `settings.json`, `skills/`, `memory/`, `statusline/`            |
-| `.plans/`, `.archive/`          | Active plans; finished plans (history, not instructions)                          |
+| Path                            | Holds                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `AGENTS.md`                     | Canonical, harness-neutral project rules, always loaded                             |
+| `CLAUDE.md`                     | Thin Claude Code adapter: imports `AGENTS.md`, memory location, Claude-only facts   |
+| `.agents/policy/permissions.md` | Per-tool command lists, read-only `exec` allowlist, merge-impact map                |
+| `.agents/bin/`                  | `worktree-preflight` (worktree classifier) and `claude-pretool-guard` (Claude hook) |
+| `.agents/tests/`                | Bash tests for the instruction files and the guards; `bash .agents/tests/run.sh`    |
+| `.codex/rules/`                 | Codex execution-policy rules (forbid skipping git hooks)                            |
+| `.agents/skills`                | Link to the project skills (see below)                                              |
+| `.claude/`                      | Claude Code data: `settings.json`, `skills/`, `memory/`, `statusline/`              |
+| `.plans/`, `.archive/`          | Active plans; finished plans (history, not instructions)                            |
 
 ## Workflow pin
 
@@ -30,8 +32,42 @@ To bump the pin: read the compatibility document of the new tag, re-run the scen
 ## Per-harness notes
 
 - **Claude Code**: loads `CLAUDE.md`, which imports `AGENTS.md`. Project skills come from `.claude/skills`. `.claude/settings.json` enforces the permission matrix.
-- **Codex**: reads `AGENTS.md` from the repository root. No hook or execution-policy enforcement is claimed; permissions are instruction-level until the worktree spike records otherwise.
-- **OpenCode**: experimental, manual contract. Read `AGENTS.md`, run the worktree check by hand. No installer and no parity claim.
+- **Codex**: reads `AGENTS.md` from the repository root. The project rule file `.codex/rules/home-ops.rules` forbids skipping git hooks. There is no repository-side write guard (see Worktree-first below). Permissions are instruction-level.
+- **OpenCode**: experimental, manual contract. Read `AGENTS.md`, run `.agents/bin/worktree-preflight` by hand before the first write. No installer and no parity claim. The git hook below still applies when it commits.
+
+## Worktree-first
+
+The rule is in `AGENTS.md`. The logic is one script, `.agents/bin/worktree-preflight` (POSIX sh and git, no `jq`). `--path <p>` classifies a path (a file that does not exist yet is classified by its nearest parent), `--hook` also refuses the default branch, `--json` prints JSON.
+
+| Exit | Meaning                                                                                                                                        |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Linked worktree, submodule, inside a git directory, not a repository, or break-glass used                                                      |
+| 2    | Usage error                                                                                                                                    |
+| 3    | Primary checkout, bare repository, or (with `--hook`) the default branch                                                                       |
+| 4    | Could not classify: `git` missing, `git` failed inside a repository, or the audit log is unwritable. Treated as a refusal, never as permission |
+
+Convention: branch `<type>/<slug>`, `type` one of `feat`, `fix`, `chore`, `docs` (and `renovate` for the bot), worktree at `.worktrees/<type>/<slug>`, created from a fresh `origin/main`. Allowed without a worktree: reads, `git fetch`, `git worktree list/add/remove/prune`, `git status/log/diff`, and `git pull --ff-only` of the default branch in the primary checkout. `.worktrees/` is excluded locally through `.git/info/exclude` (one line, per clone; it cannot be committed and `.gitignore` is not used). `.claudeignore` is not honoured by Claude Code 2.1.316, so it is not used for this.
+
+### What enforces what
+
+| Layer                                        | Kind                   | Covers                                                                               | Does not cover                                                                                                                    |
+| -------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` rule and preflight               | Model instruction      | Every harness                                                                        | Anything the model does not follow                                                                                                |
+| Claude project hook (`claude-pretool-guard`) | Technical, Claude only | `Edit`, `Write`, `NotebookEdit` into the primary; `Bash` commands that name a bypass | Shell writes (`>`, `sed -i`, scripts): the user-level `git-workflows` plugin hook sees the common ones; obfuscated bypass strings |
+| `pre-commit` hook `worktree-first`           | Technical, commit time | `git commit` from any harness in the primary or on the default branch                | `git commit --no-verify`, `SKIP=`, `core.hooksPath`, a clone without `pre-commit install`                                         |
+| Codex rule file                              | Technical, Codex only  | `git commit/push` with the skip flag as the first argument                           | Flag in another position, environment prefixes, `git -c core.hooksPath`                                                           |
+| CI and branch protection                     | Check at merge         | What reaches `main`                                                                  | Uncommitted edits in a primary checkout. Branch protection is not verified (plan task T4.5)                                       |
+
+No layer stops a Codex edit in the primary checkout before it is committed. Codex hooks exist but the project hook file did not run in the spike (it needs a per-user trust approval, see `.plans/hybrid-ai-workflow/evidence.md` section 12). For Codex that write is instruction-only until the commit.
+
+### Break-glass
+
+Only a person uses it, with a reason, set before the session starts: `HOME_OPS_BREAK_GLASS="<why>"`. A non-empty reason turns a refusal into a pass with a warning and appends one line (time, user, path, kind and branch, reason) to `<git-common-dir>/break-glass.log`. An empty or blank reason does nothing. If the line cannot be written the bypass is refused. At commit time it additionally needs a controlling terminal, so a harness that runs commands without one cannot use it; commit by hand in a terminal. Agents never set it, and never set `CLAUDE_ALLOW_MAIN_EDITS` (the plugin's switch). The Claude hook denies Bash commands that do. This is a deterrent, not a lock: a determined actor can still change a file or an environment, which is why review and CI remain the boundary.
+
+### Dependencies outside this repository
+
+- A Codex session in a linked worktree cannot run `git add` or `git commit` under the default sandbox: git writes to `<repo>/.git/worktrees/<name>`, `.git/objects`, `.git/refs` and `.git/logs`, outside the working directory. The writable roots are per worktree and absolute, so they cannot be committed here; they belong in the owner's user configuration (`mmalyska/dotfiles`) or on the command line. Commits are also signed through an SSH agent whose socket the sandbox does not provide.
+- Trusting the Codex project hook, if one is ever added, is a per-user step in the same place.
 
 ## Behavioural scenarios
 

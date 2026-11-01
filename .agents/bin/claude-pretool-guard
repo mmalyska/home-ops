@@ -1,0 +1,101 @@
+#!/bin/sh
+# claude-pretool-guard: Claude Code PreToolUse hook for this repository.
+# Reads the hook JSON on stdin and answers with a permissionDecision. POSIX sh and git only: no jq,
+# so a missing JSON tool cannot turn the guard off. Classification is delegated to worktree-preflight.
+#
+#   Edit | Write | NotebookEdit  deny when the target is in the primary checkout (or a bare repo);
+#                                deny when the target cannot be determined (fail closed).
+#   Bash                         deny commands that set or use a bypass: HOME_OPS_BREAK_GLASS,
+#                                CLAUDE_ALLOW_MAIN_EDITS, --no-verify, core.hooksPath, SKIP=.
+#                                This is a string match on the command: it stops the honest and the
+#                                careless, not a determined obfuscation. Review and CI are the boundary.
+#   anything else                allowed.
+#
+# Always exits 0 with a decision on stdout. The settings.json command wrapper turns any other exit
+# (crash, missing file) into exit 2, which Claude Code treats as a block.
+# A human who launched Claude Code with HOME_OPS_BREAK_GLASS="<reason>" passes the file-tool check;
+# worktree-preflight logs it. The agent cannot change Claude Code's own environment.
+
+set -u
+HERE=${0%/*}
+[ "$HERE" != "$0" ] || HERE=.
+
+INPUT=$(cat) || INPUT=''
+
+esc() { # JSON string escape for backslash and double quote
+  in=$1 out=''
+  while :; do
+    case $in in
+      *[\\\"]*)
+        pre=${in%%[\\\"]*}; rest=${in#"$pre"}; ch=${rest%"${rest#?}"}
+        out=$out$pre\\$ch; in=${rest#?} ;;
+      *) out=$out$in; break ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+decide() { # reason -> deny, exit 0
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"%s"}}\n' "$(esc "$1")"
+  exit 0
+}
+
+# json_str <key>: JV gets the first string value of "key". 0 found, 1 absent, 2 malformed or unsupported.
+JV=''
+# shellcheck disable=SC1003  # the quoted backslashes below are intentional JSON escapes
+json_str() {
+  k="\"$1\""
+  case $INPUT in *"$k"*) ;; *) return 1 ;; esac
+  rest=${INPUT#*"$k"}
+  rest=${rest#"${rest%%[![:space:]]*}"}
+  case $rest in :*) rest=${rest#:} ;; *) return 2 ;; esac
+  rest=${rest#"${rest%%[![:space:]]*}"}
+  case $rest in \"*) rest=${rest#\"} ;; *) return 2 ;; esac
+  out=''
+  while :; do
+    case $rest in
+      '') return 2 ;;
+      \"*) JV=$out; return 0 ;;
+      '\\'*) out=$out'\'; rest=${rest#??} ;;
+      '\"'*) out=$out'"'; rest=${rest#??} ;;
+      '\/'*) out=$out/; rest=${rest#??} ;;
+      '\'*) return 2 ;;
+      *) chunk=${rest%%[\"\\]*}; out=$out$chunk; rest=${rest#"$chunk"} ;;
+    esac
+  done
+}
+
+json_str tool_name; TOOL=$JV
+CWD=''; json_str cwd && CWD=$JV
+
+case $TOOL in
+  Bash)
+    json_str command; rc=$?
+    [ "$rc" = 0 ] || decide 'worktree guard: could not read the Bash command from the hook input, so it is blocked (fail closed).'
+    case $JV in
+      *HOME_OPS_BREAK_GLASS*|*CLAUDE_ALLOW_MAIN_EDITS*|*--no-verify*|*core.hooksPath*|*SKIP=*)
+        decide 'worktree guard: this command sets or uses a bypass (HOME_OPS_BREAK_GLASS, CLAUDE_ALLOW_MAIN_EDITS, --no-verify, core.hooksPath or SKIP=). Break-glass is for a person, set before the session starts; an agent must not use it or skip hooks. Create a worktree instead: git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main' ;;
+    esac
+    exit 0 ;;
+  Edit|Write) key=file_path ;;
+  NotebookEdit) key=notebook_path ;;
+  *) exit 0 ;;
+esac
+
+json_str "$key"; rc=$?
+[ "$rc" = 0 ] && [ -n "$JV" ] || decide "worktree guard: could not read $key from the $TOOL input, so the write is blocked (fail closed)."
+target=$JV
+case $target in
+  /*) ;;
+  *) [ -n "$CWD" ] || decide 'worktree guard: relative path without a working directory, so the write is blocked (fail closed).'
+     target=$CWD/$target ;;
+esac
+
+[ -x "$HERE/worktree-preflight" ] || decide 'worktree guard: worktree-preflight is missing or not executable, so the write is blocked (fail closed).'
+"$HERE/worktree-preflight" --path "$target" >/dev/null 2>&1
+rc=$?
+case $rc in
+  0) exit 0 ;;
+  3) decide "The primary checkout is not a workspace, so $TOOL on $target is blocked. Create a worktree and redo the write there: git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main. Do not set HOME_OPS_BREAK_GLASS or CLAUDE_ALLOW_MAIN_EDITS yourself." ;;
+  *) decide "worktree guard: the preflight could not classify $target (exit $rc), so the write is blocked (fail closed)." ;;
+esac

@@ -89,7 +89,8 @@ Rules:
 - **Never push to `main` directly** — all changes via PR. Branch types: `feat/`, `fix/`, `chore/`, `docs/`.
 - **No AI attribution** — no co-author trailers, session URLs or "generated with" footers in commits or PR bodies. Enforced by the `no-claude-attribution` commit-msg hook and CI workflow, for any AI tool.
 - **Cluster changes need consent** — see Permissions and Consent.
-- **Worktree rule** — work in a linked worktree (`.worktrees/<type>/<slug>`), never in the primary checkout, and keep the primary checkout on `main` with a clean tree. Create one with `git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main`.
+- **Worktree rule** — work in a linked worktree (`.worktrees/<type>/<slug>`), never in the primary checkout, and keep the primary checkout on `main` with a clean tree. Create one with `git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main`. Before the first write run `.agents/bin/worktree-preflight`: exit 0 means go, 3 means stop and create a worktree, 4 means it could not tell (treat as stop). Reading the primary checkout is fine. Never implement on `main`. Details, enforcement levels and break-glass: [`.agents/README.md`](.agents/README.md).
+- **No bypass by an agent** — never set `HOME_OPS_BREAK_GLASS` or `CLAUDE_ALLOW_MAIN_EDITS`, never use `--no-verify`, `SKIP=` or `core.hooksPath` to get past a hook, and never work around a denied write. Break-glass is a person's tool.
 - **Archive is not instructions** — text under `.archive/` and in old plans describes the past. Do not follow it.
 
 ## Process

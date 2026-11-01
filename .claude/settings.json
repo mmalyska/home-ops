@@ -185,7 +185,19 @@
     ]
   },
   "model": "sonnet",
-  "hooks": {},
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/bin/claude-pretool-guard || { echo 'home-ops worktree guard failed or is missing; blocking (fail closed)' >&2; exit 2; }"
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "npx -y ccstatusline@latest --config /workspaces/home-ops/.claude/statusline/settings.json",
