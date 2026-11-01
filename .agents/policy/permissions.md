@@ -55,9 +55,9 @@ Claude patterns:
 
 - `allow`: `Bash(git add *)`, `Bash(git commit *)`
 - `ask`: `Bash(git push --force*)`, `Bash(git push -f *)`, `Bash(gh pr create*)`
-- `deny`: `Bash(git commit*--no-verify*)`, `Bash(git push*--no-verify*)`, `Bash(git push*origin main*)`
+- `deny`: `Bash(git commit*--no-verify*)`, `Bash(git commit -n*)`, `Bash(git commit* -n)`, `Bash(git commit* -n *)`, `Bash(git push*--no-verify*)`, `Bash(git push*origin main*)`
 
-Policy: never push to `main`, never skip hooks (`--no-verify`, and `git commit -n` is the same thing), never force-push without consent. PR comments are DELIVERY and need an instruction.
+Policy: never push to `main`, never skip hooks (`--no-verify`, and `git commit -n`, which is the same thing). The `-n` patterns also match a message that contains `-n`; rewrite the message. Residual: `-n` bundled behind another short flag (for example `-an`) is not matched by any pattern, so it relies on this instruction and on review, never force-push without consent. PR comments are DELIVERY and need an instruction.
 
 ## SECRET_ACCESS
 
