@@ -21,7 +21,7 @@ T4 -> T18 (ArgoCD account) -> ArgoCD checks in T7 and T8
 
 ## T1. Inventory the tools the new image needs
 
-- Status: done (`tools.md`, PR #6061; six questions for the owner are listed at its end). Blocked by: nothing (Homebrew is out, D12: record for each tool its pinned-release source).
+- Status: done (`tools.md`, PR #6061; the six open questions were decided on 2026-11-02, see its Decisions section). Blocked by: nothing (Homebrew is out, D12: record for each tool its pinned-release source).
 - Do: list every tool the home-ops devcontainer and `sandbox-devops` provide, and every tool the home-ops scripts, `Taskfile`, pre-commit config and `.envrc` call. The real tool list of the local devcontainer is `.github/.devcontainer/local-features/common/Brewfile` (direnv, egctl, gitleaks, go-task, helm, ipcalc, jq, kubectl, kustomize, prettier, stern, terraform, yamllint, yq, argocd, kubelogin, k9s, pre-commit, mkdocs, gh, helmfile, chezmoi, node as of 2026-11-02) plus the other local features. Read `.github/.devcontainer/local-features/*/install*.sh`, that Brewfile, `.devcontainer/scripts/*.sh`, `.taskfiles/`, `.pre-commit-config.yaml`, `.envrc` and `containers/apps/sandbox-devops/Dockerfile`. Then do the same for `claude-plugins`, `containers` and `argocd-secret-replacer` (read only, via `gh api` or a clone).
 - Output: `.plans/remote-dev-workspace/tools.md` with a table: tool, source today (feature, Dockerfile, Brewfile), version pin today, used by which repository, upstream publishes checksum (yes/no), has arm64 build (yes/no), Renovate datasource, install path in the image (must be outside `/home/vscode`, D34).
 - Check: every tool called by a script or Taskfile target appears in the table; no secret value or private domain appears in the file.
