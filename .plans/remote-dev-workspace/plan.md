@@ -6,7 +6,7 @@ topology: SOLO
 base_sha: 12666e7ed4c48b7caa03e6901a7905b77d809927
 branch: docs/remote-dev-workspace
 worktree: .worktrees/docs/remote-dev-workspace
-pr: not-opened
+pr: "#6059"
 started: 2026-11-02
 updated: 2026-11-02
 ---
