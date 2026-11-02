@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 owner: repository owner
 profile: STANDARD
 topology: SOLO
@@ -228,9 +228,9 @@ Per [`.agents/policy/validation.md`](../../.agents/policy/validation.md). For th
 
 ## Status
 
-Draft. PR #6059 stays a draft until the owner has reviewed this version.
+Approved by the owner on 2026-11-02, after two review rounds. The plan is the contract for the work below; merging the PR deploys nothing.
 
 - Q1 to Q23 are answered and recorded as decisions D1 to D39; no question is open.
 - The findings of the review of `80a33912` are addressed (table above). Where they changed a decision, the decision was revised: D14, D27, D29, D30 and D28, with D34 to D39 added and tasks T17 to T19 added. A second review of `887cdca4` added the ArgoCD revision protection and a stricter RBAC verification, and fixed the PVC naming cycle.
 - The checks done while writing are recorded in [talos-access.md](talos-access.md) and [evidence.md](evidence.md). What is still unknown is listed as live checks in T7 and T8, because it can only be confirmed on the running workspace.
-- No implementation has started. To move to `approved`: the owner reviews this plan and [tasks.md](tasks.md) and confirms.
+- No implementation has started. Each task in [tasks.md](tasks.md) is started on the owner's instruction, and every task that changes the cluster or an external service needs fresh consent when it runs.
