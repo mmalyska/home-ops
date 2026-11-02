@@ -38,16 +38,16 @@ argocd app sync coder
 
 ## T5. New Coder template and workspace
 
-- Status: todo. Blocked by: T3, T4, T12, T13, Q16, Q17.
+- Status: todo. Blocked by: T3, T4, T12, T13.
 - Do: add a new template in a new directory under `cluster/apps/ai/coder/workspace-template/` (D16; the `sandbox` template is not changed). Requirements:
   - image from T3 (digest-pinned); `arch` follows the image platform;
   - runs as `vscode`, non-root, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `seccompProfile: RuntimeDefault`;
   - memory request = limit = 3Gi; CPU limit 2; CPU request from T9 (start at 500m);
   - PVC default 20Gi (parameter), mounted at `/workspaces` (D14, D18);
   - SSH through the Coder agent only (D15): no sshd, no LoadBalancer Service, no `authorized_key` parameter;
-  - runs in the namespace from Q17, with the Coder provisioner RBAC for that namespace added to `templates/rbac-services.yaml`;
+  - runs in the namespace `dev-workspace` (D28), with a narrow Role for the Coder provisioner there added to `templates/rbac-services.yaml` (no access to `serviceaccounts.talos.dev`);
   - `emptyDir` with `medium: Memory` for the GPG home, sized small (for example 64Mi) and counted in the 3Gi limit;
-  - the Talos ServiceAccount Secret from T12/T13 mounted read-only; `TALOSCONFIG` and `KUBECONFIG` point at memory-backed paths, never at `~/.kube/config` or the repository tree;
+  - the Talos ServiceAccount Secret from T12/T13 mounted read-only, with `TALOSCONFIG` pointing at it (never at the repository tree); kubectl uses the pod's Kubernetes ServiceAccount (D26), so no `~/.kube/config` is created;
   - the BWS token and project reference read with `secret_key_ref` from the Secret named by a template parameter; no secret value in Terraform variables or state;
   - VolSync backup as in the current template (tool logins are accepted in the backup, D20);
   - a NetworkPolicy with ingress deny-all (D22); egress open.
@@ -73,7 +73,7 @@ coder create <workspace-name> --template <template-name>
 
 - Status: todo. Blocked by: T5, T6.
 - Do (owner at the keyboard): connect with VS Code through the Coder extension, run `claude` and `codex` interactive login (D20), clone the repositories, check GPG signing with a throwaway commit in a scratch repository (not on `main` of a real repo).
-- Check: `git log --show-signature -1` verifies in the scratch repository; `claude` and `codex` start; `kubectl get nodes` and `talosctl get members` work (these are READ-class); `env` is **not** printed (SECRET_ACCESS).
+- Check: `git log --show-signature -1` verifies in the scratch repository; `claude` and `codex` start; `kubectl get nodes` and `talosctl get members` work and `kubectl get secrets` is denied (READ-class checks); `argocd login --sso` completes through VS Code port forwarding and `argocd app list` works; `env` is **not** printed (SECRET_ACCESS).
 
 ## T8. Verify safety controls in the workspace
 
@@ -103,14 +103,14 @@ coder create <workspace-name> --template <template-name>
 ## T12. Spike: Talos ServiceAccount mechanics
 
 - Status: todo. Blocked by: nothing.
-- Do: find out what the Talos docs do not say, using read-only means first. (1) Read the existing `tuppr` and `talos-backup` wiring in the repository (`cluster/apps/system/talos-backup/`, the tuppr app) to see how the `talos.dev` `ServiceAccount` is declared and how the generated Secret is mounted and read. (2) Read the Talos source or release notes for v1.14 for: the Secret keys, credential lifetime and rotation, how `allowedRoles` and `allowedKubernetesNamespaces` interact, and whether `os:reader` may call the kubeconfig API. Do not print Secret values; key names only, and only if a read of them is permitted.
-- Output: `.plans/remote-dev-workspace/talos-access.md` with the findings, the exact YAML for a `ServiceAccount` with `os:reader`, how the pod gets `TALOSCONFIG`, and how kubeconfig is obtained or why it cannot be (feeds Q16).
+- Do: find out what the Talos docs do not say, using read-only means first. (1) Read the existing `tuppr` and `talos-backup` wiring in the repository (`cluster/apps/system/talos-backup/`, the tuppr app) to see how the `talos.dev` `ServiceAccount` is declared and how the generated Secret is mounted and read. (2) Read the Talos source or release notes for v1.14 for: the Secret keys, credential lifetime and rotation, how `allowedRoles` and `allowedKubernetesNamespaces` interact, and which `talosctl` commands `os:reader` allows (kubectl access no longer depends on Talos, D26). Do not print Secret values; key names only, and only if a read of them is permitted.
+- Output: `.plans/remote-dev-workspace/talos-access.md` with the findings, the exact YAML for a `ServiceAccount` with `os:reader`, how the pod gets `TALOSCONFIG`, and the list of `talosctl` read commands that work with `os:reader`.
 - Check: each claim cites the file or documentation page; anything not confirmed is marked unverified.
 
 ## T13. Talos machine config: allow the workspace namespace with `os:reader`
 
-- Status: todo. Blocked by: T12, Q16, Q17.
-- Do: edit `provision/talos/patches/controlplane/40-talos-api-access.yaml` to add `os:reader` to `allowedRoles` and the namespace from Q17 to `allowedKubernetesNamespaces`; update its header comment with the new escalation note (the namespace can request `os:admin` because that role is in the cluster-wide list). Update the exact-match assertion in `provision/talos/tests/test_render.sh` (it asserts the roles and namespaces lists) and regenerate the generated docs (`docs/src/talos/config-map.md`) with the repository tooling. Add the `ServiceAccount` for the workspace and the RBAC that prevents anything but GitOps from creating `serviceaccounts.talos.dev` in that namespace.
+- Status: todo. Blocked by: T12.
+- Do: edit `provision/talos/patches/controlplane/40-talos-api-access.yaml` to add `os:reader` to `allowedRoles` and the namespace `dev-workspace` to `allowedKubernetesNamespaces`; update its header comment with the new escalation note (the namespace can request `os:admin` because that role is in the cluster-wide list). Update the exact-match assertion in `provision/talos/tests/test_render.sh` (it asserts the roles and namespaces lists) and regenerate the generated docs (`docs/src/talos/config-map.md`) with the repository tooling. Add, as a new app or templates under `cluster/apps/` (use the `add-app` skill): the `dev-workspace` namespace with Pod Security `baseline`; the Talos `ServiceAccount` with `os:reader`; the Kubernetes ServiceAccount, a ClusterRole granting `get`, `list`, `watch` on all resources including CRDs and excluding Secrets, and its ClusterRoleBinding (D26, D27); and the RBAC that prevents anything but GitOps from creating `serviceaccounts.talos.dev` in that namespace. Verify the ClusterRole with `kubectl auth can-i --list --as=system:serviceaccount:dev-workspace:<name>` (READ-class) and confirm `get secrets` is denied.
 - Check (local): `bash provision/talos/tests/test_render.sh`, `bash .agents/tests/run.sh`, `task lint:all` read, `.agents/bin/check-plans`.
 - Check (live, consent-gated): the change is a rolling machine config apply on mc1 to mc3 and is a separate PR with its own impact statement and rollback (revert the patch and apply again).
 
