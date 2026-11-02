@@ -73,7 +73,7 @@ coder create <workspace-name> --template <template-name>
 
 - Status: todo. Blocked by: T5, T6.
 - Do (owner at the keyboard): connect with VS Code through the Coder extension, run `claude` and `codex` interactive login (D20), clone the repositories, check SSH signing with a throwaway commit in a scratch repository (not on `main` of a real repo).
-- Check: `git log --show-signature -1` verifies in the scratch repository; `claude` and `codex` start; `kubectl get nodes` and `talosctl get members` work and `kubectl get secrets` is denied (READ-class checks); `argocd login --sso` completes through VS Code port forwarding and `argocd app list` works; `env` is **not** printed (SECRET_ACCESS).
+- Check: VS Code connects through the Coder agent without sshd (`coder config-ssh`); `git log --show-signature -1` verifies in the scratch repository; `claude` and `codex` start; `kubectl get nodes` works through the in-cluster configuration with no kubeconfig file (if the `.envrc` `KUBECONFIG` export gets in the way, fix it in T14); `talosctl --nodes <control-plane ip> version` and `talosctl get` on a non-sensitive type work, a sensitive type and `talosctl kubeconfig` are denied, and the pod reaches `talos.default` (record which `talosctl get` types are sensitive); `kubectl get secrets` is denied (READ-class checks); `argocd login --sso` completes through VS Code port forwarding and `argocd app list` works; `env` is **not** printed (SECRET_ACCESS).
 
 ## T8. Verify safety controls in the workspace
 
