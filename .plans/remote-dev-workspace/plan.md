@@ -56,6 +56,7 @@ A single shared base image, built in `containers`, feeds both the Coder workspac
 | D27 | kubectl level     | Read-only on everything including CRDs, excluding Secrets. Kubernetes mutations stay on the local devcontainer and go through git and ArgoCD.                                                                                                                                                                             |
 | D28 | Namespace         | One dedicated namespace `dev-workspace` (placeholder name) with Pod Security `baseline`; the Coder provisioner gets a narrow Role there and no rights on `serviceaccounts.talos.dev`.                                                                                                                                     |
 | D29 | ArgoCD CLI        | Interactive SSO login; token on the home volume.                                                                                                                                                                                                                                                                          |
+| D30 | Dev secrets       | The dev workspace needs `TERRAFORM_TOKEN`, `GITHUB_TOKEN`, the GPG key and `BWS_ACCESS_TOKEN`. `SOPS_AGE_KEY` is deprecated and dropped.                                                                                                                                                                                  |
 | D22 | NetworkPolicy     | Ingress deny-all for the workspace pod; egress stays open.                                                                                                                                                                                                                                                                |
 | D23 | Node placement    | No pinning. Measured 2026-11-02: mc1 to mc3 at 24 to 25% CPU and 37 to 46% memory; nv1 is excluded by its GPU taint. Revisit after T9.                                                                                                                                                                                    |
 | D24 | arm64             | A Mac runs the devcontainer flavour locally, so the image is published for amd64 and arm64.                                                                                                                                                                                                                               |
@@ -98,7 +99,7 @@ See [evidence.md](evidence.md). In short:
 - Delivery: an `ExternalSecret` (store `bitwarden`) creates a Kubernetes Secret holding the machine token and the project reference. The pod receives them through `secret_key_ref`, the same pattern as `LITELLM_API_KEY`. No secret value passes through Terraform variables, so none reaches Terraform state.
 - At workspace start an entrypoint step runs the BWS CLI once and exports the project's secrets to the shell environment of the session (equivalent to `bws run`), failing soft with a clear message when the token is missing.
 - The GPG private key is stored in BWS as a secret value and imported at start into a memory-backed `emptyDir` used as `GNUPGHOME`, never into the home volume. It is re-created on every start.
-- Secret inventory for the dev workspace (names only): `GITHUB_TOKEN`, `TERRAFORM_TOKEN`, GPG signing key. The Cloudflare credentials Terraform uses and tokens for other repositories are not in the inventory; add them if a task needs them (Q18).
+- Secret inventory for the dev workspace (names only): `GITHUB_TOKEN`, `TERRAFORM_TOKEN`, GPG signing key, plus `BWS_ACCESS_TOKEN` itself, which is the scoped machine token delivered by the Kubernetes Secret and exported into the session so the `bws` CLI works (it is not stored in BWS). `SOPS_AGE_KEY` is deprecated and not part of the workspace (D30). How `.envrc` behaves with the scoped token is open question Q20.
 
 ### 3a. Cluster access (not BWS)
 
@@ -156,11 +157,13 @@ Resolved with the owner on 2026-11-02 (Q1 to Q15 from the first draft); the answ
 
 Open (to answer before status changes to approved):
 
-| #   | Question                                                                                                                                                                                                                                                                   | Needed for   |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Q16 | Resolved 2026-11-02: Kubernetes access mechanism and level, see D26 and D27.                                                                                                                                                                                               | T5, T12, T13 |
-| Q17 | Resolved 2026-11-02: namespace `dev-workspace`, see D28.                                                                                                                                                                                                                   | T5, T13      |
-| Q18 | Other secrets the dev workspace needs: Cloudflare credentials for Terraform in `provision/terraform/cloudflare`, tokens for `claude-plugins`, `containers` or other repositories, `BOT_APP_PRIVATE_KEY` (referenced by Taskfiles/workflows, probably CI-only)? Names only. | T4           |
+| #   | Question                                                                                                                                                           | Needed for   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Q16 | Resolved 2026-11-02: Kubernetes access mechanism and level, see D26 and D27.                                                                                       | T5, T12, T13 |
+| Q17 | Resolved 2026-11-02: namespace `dev-workspace`, see D28.                                                                                                           | T5, T13      |
+| Q18 | Resolved 2026-11-02: the dev workspace needs `TERRAFORM_TOKEN`, `BWS_ACCESS_TOKEN`, `GITHUB_TOKEN` and the GPG key; `SOPS_AGE_KEY` is dropped as deprecated (D30). | T4           |
+
+**Q20 (open).** The workspace exports `BWS_ACCESS_TOKEN`, but it is the token scoped to the new project. This repository's `.envrc` runs `bws secret list <project> -o env` against the existing home-ops project, which the scoped token cannot read, so `direnv` would fail or print an error on every `cd` in the workspace. Needed for T4, T5 and T6.
 
 ## Phases
 
@@ -179,4 +182,4 @@ Per [`.agents/policy/validation.md`](../../.agents/policy/validation.md). For th
 
 ## Status
 
-Draft. Spec written and committed (`4ac268a3`). Q1 to Q15 are resolved (2026-11-02) and recorded as decisions; the cluster-access design changed (D4, section 3a). Q16, Q17 and Q19 are resolved as D26 to D29; only Q18 (other secrets) is open, and the Talos ServiceAccount mechanics still need spike T12. No implementation has started.
+Draft. Spec written and committed (`4ac268a3`). Q1 to Q15 are resolved (2026-11-02) and recorded as decisions; the cluster-access design changed (D4, section 3a). Q16, Q17 and Q19 are resolved as D26 to D29; Q18 is resolved as D30; Q20 (`.envrc` with the scoped BWS token) is open, and the Talos ServiceAccount mechanics still need spike T12. No implementation has started.

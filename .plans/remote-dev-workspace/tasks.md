@@ -26,8 +26,8 @@ Common context: the goal is one always-on Coder workspace, on the Talos cluster,
 
 ## T4. Create the BWS project and the workspace token (owner action)
 
-- Status: todo. Blocked by: Q18.
-- Do (owner, in Bitwarden; the agent never reads values): create a project for the dev workspace type; add `GITHUB_TOKEN`, `TERRAFORM_TOKEN` and the GPG signing key, plus anything the answer to Q18 adds. Cluster access is **not** stored here (D4). Create a machine account with read-only access to that project only, and issue one access token. A Hermes sandbox type later gets its own, smaller project (D11).
+- Status: todo. Blocked by: Q20.
+- Do (owner, in Bitwarden; the agent never reads values): create a project for the dev workspace type; add `GITHUB_TOKEN`, `TERRAFORM_TOKEN` and the GPG signing key, (D30; `SOPS_AGE_KEY` is not included). `BWS_ACCESS_TOKEN` is the machine token you issue below and is delivered by the Kubernetes Secret, not stored in the project. Cluster access is **not** stored here (D4). Create a machine account with read-only access to that project only, and issue one access token. A Hermes sandbox type later gets its own, smaller project (D11).
 - Agent part: write the secret **names** (no values, no identifiers) into `docs/` and into the T5 template comments; add an `ExternalSecret` (store `bitwarden`) that creates the Kubernetes Secret with the access token and the project reference. Make the Secret name a template parameter so other workspace types reuse the pattern. The Bitwarden identifiers stay out of the repository: use the same mechanism other ExternalSecrets in `cluster/apps/ai/coder/templates/externalsecret.yaml` use for references.
 - Check: `kubectl kustomize` or `helm template` for `cluster/apps/ai/coder` renders the ExternalSecret with no identifier or value in the output committed to git; gitleaks passes. Live: the Secret exists after sync (consent-gated sync).
 
