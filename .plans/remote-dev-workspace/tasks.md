@@ -13,8 +13,8 @@ Common context: the goal is one always-on Coder workspace, on the Talos cluster,
 
 ## T2. Build the `dev-workstation` image in `containers`
 
-- Status: todo. Blocked by: T1.
-- Do: in `mmalyska/containers` add `apps/dev-workstation/` with `Dockerfile`, `README.md`, `metadata.json` and `ci/`, copying the layout and metadata rules of `apps/sandbox-devops`. Pinned Ubuntu LTS digest. Non-root user `vscode`, UID 1000, no sudo (D13, D17). No Homebrew (D12): install the tools from `tools.md` as pinned release downloads, resolving the architecture instead of hard-coding amd64, with Renovate annotations and checksums where upstream publishes them. The `talosctl` version must equal `TALOS_VERSION` in `.taskfiles/talos/Taskfile.yaml`, because `task talos:install` (which uses `sudo`) is skipped only on an exact match; add a Renovate rule or a CI check that keeps them equal. Install Claude Code and codex-cli. Add the `devcontainer.metadata` label; there is one tag (D19). Build linux/amd64 and linux/arm64 on native runners (D24).
+- Status: todo. Blocked by: T1, T15.
+- Do: in `mmalyska/containers` add `apps/dev-workstation/` with `Dockerfile`, `README.md`, `metadata.json` and `ci/`, copying the layout and metadata rules of `apps/sandbox-devops`. Pinned Ubuntu LTS digest. Non-root user `vscode`, UID 1000, no sudo (D13, D17). No Homebrew (D12): install the tools from `tools.md` as pinned release downloads, resolving the architecture instead of hard-coding amd64, with Renovate annotations and checksums where upstream publishes them. The `talosctl` version must equal `TALOS_VERSION` in `.taskfiles/talos/Taskfile.yaml`, because `task talos:install` (which uses `sudo`) is skipped only on an exact match; add a Renovate rule or a CI check that keeps them equal. Install Claude Code and codex-cli. Add the `devcontainer.metadata` label; there is one tag (D19). Build linux/amd64 and linux/arm64 with the native-runner pipeline from T15 (D24, D33).
 - Check: CI builds both platforms; `docker run --rm <image> <tool> --version` for every tool on both platforms (run in CI, not in the workspace); image size is recorded in the PR; Renovate dry run picks up the new annotations; no `sandbox-*` file is changed.
 - Rollback: delete the app directory; nothing consumes it yet.
 
@@ -27,7 +27,7 @@ Common context: the goal is one always-on Coder workspace, on the Talos cluster,
 ## T4. Create the BWS project and the workspace token (owner action)
 
 - Status: todo. Blocked by: nothing.
-- Do (owner, in Bitwarden; the agent never reads values): create a project for the dev workspace type; add `GITHUB_TOKEN`, `TERRAFORM_TOKEN` and the GPG signing key, (D30; `SOPS_AGE_KEY` is not included). `BWS_ACCESS_TOKEN` is the machine token you issue below and is delivered by the Kubernetes Secret, not stored in the project. Cluster access is **not** stored here (D4). Create a machine account with read-only access to that project only, and issue one access token. A Hermes sandbox type later gets its own, smaller project (D11).
+- Do (owner, in Bitwarden; the agent never reads values): create a project for the dev workspace type; add `GITHUB_TOKEN`, `TERRAFORM_TOKEN` and the SSH signing key (D32), (D30; `SOPS_AGE_KEY` is not included). `BWS_ACCESS_TOKEN` is the machine token you issue below and is delivered by the Kubernetes Secret, not stored in the project. Cluster access is **not** stored here (D4). Create a machine account with read-only access to that project only, and issue one access token. A Hermes sandbox type later gets its own, smaller project (D11).
 - Agent part: write the secret **names** (no values, no identifiers) into `docs/` and into the T5 template comments; add an `ExternalSecret` (store `bitwarden`) that creates the Kubernetes Secret with `BWS_ACCESS_TOKEN` and `BWS_PROJECT_ID` (D31), which the pod reads as environment variables. Make the Secret name a template parameter so other workspace types reuse the pattern. The Bitwarden identifiers stay out of the repository: use the same mechanism other ExternalSecrets in `cluster/apps/ai/coder/templates/externalsecret.yaml` use for references.
 - Check: `kubectl kustomize` or `helm template` for `cluster/apps/ai/coder` renders the ExternalSecret with no identifier or value in the output committed to git; gitleaks passes. Live: the Secret exists after sync (consent-gated sync).
 
@@ -46,7 +46,7 @@ argocd app sync coder
   - PVC default 20Gi (parameter), mounted at `/workspaces` (D14, D18);
   - SSH through the Coder agent only (D15): no sshd, no LoadBalancer Service, no `authorized_key` parameter;
   - runs in the namespace `dev-workspace` (D28), with a narrow Role for the Coder provisioner there added to `templates/rbac-services.yaml` (no access to `serviceaccounts.talos.dev`);
-  - `emptyDir` with `medium: Memory` for the GPG home, sized small (for example 64Mi) and counted in the 3Gi limit;
+  - `emptyDir` with `medium: Memory` for the SSH signing key (loaded into an in-pod ssh-agent, D32), sized small (for example 64Mi) and counted in the 3Gi limit;
   - the Talos ServiceAccount Secret from T13 mounted as a directory (no `subPath`, so the 6-hour certificate rotation reaches the pod) at `/var/run/secrets/talos.dev`, with `TALOSCONFIG=/var/run/secrets/talos.dev/config` (never a copy, never the repository tree); the config has no nodes list, so check in T6 which `task talos:*` targets and skills need `--nodes`; kubectl uses the pod's Kubernetes ServiceAccount (D26), so no `~/.kube/config` is created;
   - the BWS token and project reference read with `secret_key_ref` from the Secret named by a template parameter; no secret value in Terraform variables or state;
   - VolSync backup as in the current template (tool logins are accepted in the backup, D20);
@@ -72,7 +72,7 @@ coder create <workspace-name> --template <template-name>
 ## T7. First start and login
 
 - Status: todo. Blocked by: T5, T6.
-- Do (owner at the keyboard): connect with VS Code through the Coder extension, run `claude` and `codex` interactive login (D20), clone the repositories, check GPG signing with a throwaway commit in a scratch repository (not on `main` of a real repo).
+- Do (owner at the keyboard): connect with VS Code through the Coder extension, run `claude` and `codex` interactive login (D20), clone the repositories, check SSH signing with a throwaway commit in a scratch repository (not on `main` of a real repo).
 - Check: `git log --show-signature -1` verifies in the scratch repository; `claude` and `codex` start; `kubectl get nodes` and `talosctl get members` work and `kubectl get secrets` is denied (READ-class checks); `argocd login --sso` completes through VS Code port forwarding and `argocd app list` works; `env` is **not** printed (SECRET_ACCESS).
 
 ## T8. Verify safety controls in the workspace
@@ -91,7 +91,7 @@ coder create <workspace-name> --template <template-name>
 ## T10. Move devcontainers to the new image
 
 - Status: todo. Blocked by: T3, T6, T8.
-- Do: one PR per repository, `home-ops` first. Change `devcontainer.json` to `"image": "<new image>@<digest>"`, drop the `features` block and the local build, keep `runArgs`, `secrets` and lifecycle commands. For `home-ops` also remove `.github/.devcontainer/`, `.github/workflows/devcontainer-publish.yaml` and the Renovate rules that referenced them, and update `docs/`, `AGENTS.md` and the `dev-workflow` skill if they mention the old image. Keep the old image digest in the PR description as the rollback.
+- Do: one PR per repository that has a `.devcontainer` (home-ops, containers, github-workflows, homelab-portal, argocd-secret-replacer, and the two old ones willow-inference-server-dockerized and home-assistant if still wanted; claude-plugins has none), `home-ops` first. Change `devcontainer.json` to `"image": "<new image>@<digest>"`, drop the `features` block and the local build, keep `runArgs`, `secrets` and lifecycle commands. For `home-ops` also remove `.github/.devcontainer/`, `.github/workflows/devcontainer-publish.yaml` and the Renovate rules that referenced them, and update `docs/`, `AGENTS.md` and the `dev-workflow` skill if they mention the old image. Keep the old image digest in the PR description as the rollback.
 - Check: devcontainer rebuilds locally and the three lifecycle commands succeed; `task lint:all`, `bash .agents/tests/run.sh`; `.agents/bin/check-plans`.
 
 ## T11. Documentation and skills
@@ -122,5 +122,20 @@ task talos:apply-config
 ## T14. Make the BWS project in `.envrc` configurable
 
 - Status: todo. Blocked by: nothing (can land before the workspace exists; the local result must be identical).
-- Do: in `.envrc` change the line that runs `bws secret list <project> -o env` so the project comes from `BWS_PROJECT_ID`, defaulting to the project the file uses today (D31). Keep the exported variable set unchanged when `BWS_PROJECT_ID` is unset. Then list the other repositories with a similar `.envrc` (`gh search code` / read via `gh api`, read only): `containers`, `claude-plugins`, `argocd-secret-replacer` and others; open one small PR per repository that has one. Do not write the project identifier into plans, docs or PR text; reference it by name only.
+- Do: in `.envrc` change the line that runs `bws secret list <project> -o env` so the project comes from `BWS_PROJECT_ID`, defaulting to the project the file uses today (D31). Keep the exported variable set unchanged when `BWS_PROJECT_ID` is unset. Only `home-ops` has an `.envrc` (checked 2026-11-02, see evidence.md), so this is a single PR. Do not write the project identifier into plans, docs or PR text; reference it by name only.
 - Check: with `BWS_PROJECT_ID` unset, `direnv` loads the same variables as before (compare variable **names** before and after, never values); with it set to another project, the other project is read; `shellcheck` on `.envrc` as the repository does; `task lint:all` read; `bash .agents/tests/run.sh`.
+
+## T15. `containers`: native per-platform builds and a merged manifest
+
+- Status: todo. Blocked by: nothing (D33). Must land before T2.
+- Do: in `mmalyska/containers`, change `.github/workflows/action-image-build.yaml` so a channel with several platforms builds each platform on its native runner (`ubuntu-latest` for amd64, `ubuntu-24.04-arm` for arm64), runs the Goss test on each platform, pushes per-platform images and publishes a merged multi-arch manifest under the existing `:rolling` and `:<version>` tags. Today a mixed channel builds on `ubuntu-latest` with QEMU and tests amd64 only (evidence.md). Keep single-platform channels and the metadata schema (`metadata.rules.cue`) unchanged so every existing app keeps building. Update `CLAUDE.md` and the README of `containers`.
+- Check: a PR build of an existing multi-platform app (`argocd-secret-replacer` or `s3-bucket-cleaner`, both amd64 + arm64) builds and tests both platforms and a dry run shows the merged manifest; amd64-only apps (`nextcloud`, `vintagestory`, the `sandbox-*`) build exactly as before; no pushed tag changes name. Report each check as PASS, FAIL or NOT RUN.
+- Rollback: revert the workflow change; images already published keep working.
+- Consent: a merge in `containers` rebuilds and pushes images (GITOPS-style side effect on every image); ask before merging.
+
+## T16. `dotfiles`: workspace-only changes
+
+- Status: todo. Blocked by: T6 (the bootstrap spike decides the exact shape).
+- Do: in `mmalyska/dotfiles` (evidence.md has the layout): (1) let a host override `user.signingkey` for the workspace SSH signing key (D32) without changing the owner's own key elsewhere, for example a chezmoi data flag such as `is_remote_workspace` read in `home/dot_gitconfig.tmpl`; (2) add the list of repositories to clone as static data in `home/.chezmoidata/`, plus a `run_onchange` script under `.chezmoiscripts/` that clones missing repositories to `/workspaces/<repo>` only when the workspace flag is set, so the local devcontainer and Codespaces are unchanged (D21); (3) document or provide the non-interactive way to run `chezmoi init --apply` (the config template prompts for email, name, work machine and AI profile; use the prompt flags or a pre-written config). Follow the dotfiles repository's own plan and test conventions (`docs/plans`, `tests/ai`).
+- Check: the dotfiles test suite (`tests/ai`) passes; chezmoi applied with the flag unset produces byte-identical output to before for the existing fixtures; with the flag set the signing key and repository list appear.
+- Consent: a merge changes the dotfiles every machine of the owner applies; ask before merging.

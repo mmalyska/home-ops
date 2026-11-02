@@ -36,3 +36,24 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 - `memory.current` 1.6 GiB, `memory.peak` 2.1 GiB, no cgroup limit; the host exposes 24 CPUs. Includes page cache. Largest processes: a 524 MiB main thread (not identified by name), `claude` 355 MiB, `npm` 105 MiB.
 - Disk: `/workspaces` 2.8 GB, home 1.8 GB.
 - This is a floor, not a forecast: several repositories, `terraform`, `helm` and the VS Code remote server add to it. Task T9 replaces it with measurements from the Coder workspace.
+
+## Findings from the U1, U11 and U12 checks (2026-11-02, read-only via `gh`)
+
+### `mmalyska/containers` pipeline (U1)
+
+- Layout per app: `apps/<name>/{Dockerfile,metadata.json,README.md,ci/latest.sh,ci/goss.yaml}`. `metadata.rules.cue` validates `metadata.json`; accepted platforms are `linux/amd64` and `linux/arm64`. Test type `cli` runs `dgoss` against the built image with `tail -f /dev/null`.
+- Build workflow `.github/workflows/action-image-build.yaml`: a channel whose platforms are exactly `["linux/arm64"]` runs on a native `ubuntu-24.04-arm` runner; **any other channel, including a mixed amd64 + arm64 one, runs on `ubuntu-latest` and builds the foreign architecture under QEMU**. For a mixed channel the Goss test build and run use `linux/amd64` only, so **the arm64 image is built but not tested in CI**.
+- Tags are `ghcr.io/mmalyska/<app>:rolling` and `:<version>` for the `stable` channel; other channels get `<app>-<channel>`. The version comes from `ci/latest.sh` (`sandbox-devops` prints a constant). Labels passed by the workflow are additive, so a `LABEL devcontainer.metadata=...` in the Dockerfile is preserved.
+- PR validation builds changed apps without pushing and needs repository secrets that already exist (`BOT_APP_ID`, `BOT_APP_PRIVATE_KEY`).
+
+### `mmalyska/dotfiles` (U11)
+
+- chezmoi source under `home/` (`.chezmoiroot`). `home/.chezmoi.toml.tmpl` sets `is_devcontainer` when the user is `vscode` or `REMOTE_CONTAINERS`, `CODESPACES` or `DEVCONTAINER` is set. With `is_devcontainer`, `.chezmoiignore` skips the `linux`, `macos` and `windows` package scripts and runs `.chezmoiscripts/devcontainer/*` (today: a peon-ping install by `curl | bash` from the upstream `main` branch). User `vscode` (D13) therefore makes the workspace a devcontainer for chezmoi.
+- `home/.chezmoi.toml.tmpl` uses `promptStringOnce`, `promptBoolOnce` and `promptChoiceOnce` (email, name, work machine, AI profile, Claude, Codex, agent teams, OpenCode). A non-interactive bootstrap must pass answers by flag or pre-write the config; the test library keys the prompt flags by prompt text.
+- Static data lives in `home/.chezmoidata/*.yaml` (today `ai-workflow.yaml`); AI plugin install scripts run as `run_onchange_after_*` and need the `claude` and `codex` CLIs present.
+- **`home/dot_gitconfig.tmpl` configures SSH signing**: `gpg.format = ssh`, `commit.gpgsign = true`, one ed25519 public `signingkey`. This matches this session's git config. `.devcontainer/scripts/onCreateCommand.sh` in home-ops enables GPG signing only when a specific GPG key is present. The repository has its own plan, test and docs conventions (`docs/plans`, `tests/ai`).
+
+### Other repositories (U12)
+
+- Only `home-ops` has an `.envrc`. `claude-plugins`, `dotfiles`, `renovate-config`, `homeinfra` and the rest have neither `.envrc` nor `.devcontainer`.
+- `.devcontainer/` exists in: `home-ops`, `containers`, `github-workflows`, `homelab-portal`, `argocd-secret-replacer`, `willow-inference-server-dockerized`, `home-assistant` (contents not inspected; the last two have not been pushed to since 2023-2024).
