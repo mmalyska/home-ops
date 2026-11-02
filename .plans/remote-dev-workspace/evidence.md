@@ -68,3 +68,10 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 - `Taskfile.yml` (`task init`) runs `brew bundle` against `.github/.devcontainer/local-features/common/Brewfile` and has preconditions on `brew` and on that file. The Brewfile lists: direnv, egctl, gitleaks, go-task, helm, ipcalc, jq, kubectl, kustomize, prettier, stern, terraform (hashicorp tap), yamllint, yq, argocd, kubelogin, k9s, pre-commit, mkdocs, gh, helmfile, chezmoi, node. `.devcontainer/scripts/onCreateCommand.sh` runs `chezmoi` through `/home/linuxbrew/.linuxbrew/bin/`.
 - `.github/linters/.markdownlint.yaml`: `MD013` line length 240, tables and code blocks included. Other plan files carry `<!-- markdownlint-disable MD013 -->`.
 - PR #6059 at `80a33912`: seven checks listed by `gh pr checks`, all passing; the Lint job log contains 114 `MD013` errors (112 in the plan files).
+
+## Facts added after the second review (`887cdca4`, 2026-11-02)
+
+- `cluster/apps/core/argocd/kustomization.yaml` pins the ArgoCD install manifests at `v3.5.6`.
+- ArgoCD RBAC documentation (https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/): `application.sync.requireOverridePrivilegeForRevisionSync` in `argocd-cm`, new since v3.2, default `'false'`; with it on, passing a revision to a sync needs the `override` action. Application actions: get, create, update, delete, sync, action, override.
+- CI for PR #6059 at `887cdca4`: Enforce PR labels, Helm Lint, Instruction checks, Label Size, Labeler, Lint and No Claude attribution all pass; the Lint job log contains no `MD0xx` lines.
+- Local run of `bash .agents/tests/run.sh` in the worktree: 165 tests, 0 failed.
