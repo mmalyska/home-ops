@@ -72,6 +72,6 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 ## Facts added after the second review (`887cdca4`, 2026-11-02)
 
 - `cluster/apps/core/argocd/kustomization.yaml` pins the ArgoCD install manifests at `v3.5.6`.
-- ArgoCD RBAC documentation (https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/): `application.sync.requireOverridePrivilegeForRevisionSync` in `argocd-cm`, new since v3.2, default `'false'`; with it on, passing a revision to a sync needs the `override` action. Application actions: get, create, update, delete, sync, action, override.
+- [ArgoCD RBAC documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/): `application.sync.requireOverridePrivilegeForRevisionSync` in `argocd-cm`, new since v3.2, default `'false'`; with it on, passing a revision to a sync needs the `override` action. Application actions: get, create, update, delete, sync, action, override.
 - CI for PR #6059 at `887cdca4`: Enforce PR labels, Helm Lint, Instruction checks, Label Size, Labeler, Lint and No Claude attribution all pass; the Lint job log contains no `MD0xx` lines.
 - Local run of `bash .agents/tests/run.sh` in the worktree: 165 tests, 0 failed.
