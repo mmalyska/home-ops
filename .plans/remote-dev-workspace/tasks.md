@@ -151,13 +151,13 @@ task talos:apply-config
 
 ## T14. Make the BWS project in `.envrc` configurable
 
-- Status: todo. Blocked by: nothing (can land before the workspace exists; the local result must be identical).
+- Status: done (PR pending). Blocked by: nothing (can land before the workspace exists; the local result must be identical).
 - Do: in `.envrc` change the line that runs `bws secret list <project> -o env` so the project comes from `BWS_PROJECT_ID`, defaulting to the project the file uses today (D31). Keep the exported variable set unchanged when `BWS_PROJECT_ID` is unset. Only `home-ops` has an `.envrc` (checked 2026-11-02, see evidence.md), so this is a single PR. Do not write the project identifier into plans, docs or PR text; reference it by name only.
 - Check: with `BWS_PROJECT_ID` unset, `direnv` loads the same variables as before (compare variable **names** before and after, never values); with it set to another project, the other project is read; `shellcheck` on `.envrc` as the repository does; `task lint:all` read; `bash .agents/tests/run.sh`.
 
 ## T15. `containers`: native per-platform builds and a merged manifest
 
-- Status: todo. Blocked by: nothing (D33). Must land before T2.
+- Status: done (`mmalyska/containers` PR #760, merged; controlled push of `s3-bucket-cleaner` verified: native builds, Goss per platform, merged manifest, both tags on one digest). Not run in a real push: one platform failing, and a single-platform push with the new workflow (first scheduled rebuild of an amd64-only app will show it). Blocked by: nothing (D33). Must land before T2.
 - Do: in `mmalyska/containers`, change `.github/workflows/action-image-build.yaml` so a channel with several platforms builds each platform on its native runner (`ubuntu-latest` for amd64, `ubuntu-24.04-arm` for arm64), runs the Goss test on each platform, pushes per-platform images and publishes a merged multi-arch manifest under the existing `:rolling` and `:<version>` tags. Today a mixed channel builds on `ubuntu-latest` with QEMU and tests amd64 only (evidence.md). Keep single-platform channels and the metadata schema (`metadata.rules.cue`) unchanged so every existing app keeps building. Update `CLAUDE.md` and the README of `containers`.
 - Check: a PR build of an existing multi-platform app (`argocd-secret-replacer` or `s3-bucket-cleaner`, both amd64 + arm64) builds and tests both platforms and a dry run shows the merged manifest; amd64-only apps (`nextcloud`, `vintagestory`, the `sandbox-*`) build exactly as before; no pushed tag changes name. Report each check as PASS, FAIL or NOT RUN.
 - Rollback: revert the workflow change; images already published keep working.

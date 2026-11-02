@@ -70,6 +70,7 @@ Before running bootstrap:
   - `BWS_TOKEN` — Bitwarden Secrets Manager machine account token
   - `KUBECONFIG` — path to the kubeconfig file
   - `TALOSCONFIG` — path to `provision/talos/clusterconfig/talosconfig`
+  - `BWS_PROJECT_ID` — optional; the Bitwarden project that `.envrc` loads secrets from. Unset or empty keeps the project the file used before, so the local devcontainer is unchanged. A workspace of another type sets it to read its own project.
 - All secrets stored in Bitwarden Secrets Manager with their UUIDs referenced in
   `cluster/apps/core/argocd/resources/cluster-secrets-externalsecret.yaml`
 - Configuration committed and pushed to the `main` branch (ArgoCD reads from git)
