@@ -117,6 +117,32 @@ The owner accepted the proposed defaults for the six questions that this invento
 
 No question remains open for T2. A change to items 4 and 5 would be a change to the approved plan.
 
+## T2 result (2026-11-03)
+
+Built in `mmalyska/containers` `apps/dev-workstation/` (PRs #761 image, #764 and #768 Renovate config, #769 `re2js` override). Published digest: see T3 in `tasks.md`.
+
+| Item                    | Result                                                                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Platforms               | linux/amd64 and linux/arm64, native runners, Goss per platform before push (93 tests, 0 failed)                                                                                                        |
+| Size                    | 3.9 GB (amd64) and 3.8 GB (arm64) uncompressed; 1,386 MB and 1,330 MB compressed. Above the ~3 GB estimate; largest: `coder` (about 440 MB) and the Codex package (517 MB)                             |
+| Base                    | `ubuntu:24.04` pinned by digest; Renovate held on 24.x for this app                                                                                                                                    |
+| `browse-pvc`            | Pinned release zip with the sha256 from the krew index, installed as `kubectl-browse-pvc`; no krew (T17 removes the krew block from `onCreateCommand.sh`)                                              |
+| Python and npm tools    | Hashed requirements file and `package-lock.json` (`npm ci`); Renovate constraint for Python excluded from updates                                                                                      |
+| Checksums verified      | 24 tools against the upstream checksum file                                                                                                                                                            |
+| Checksums not available | `age`, `egctl`, `direnv`, `cue`, `shellcheck`: upstream publishes none, so the image has no integrity check for them                                                                                   |
+| Version equality        | Custom Renovate datasources plus a parity workflow keep `talosctl` and `cilium` equal to the `home-ops` pins                                                                                           |
+| goss                    | Held at exactly `v0.3.21` (same as CI and `Taskfile.yml`); 0.4.x renames the assets                                                                                                                    |
+| Dependabot (npm)        | `re2js` fixed by an override (2.8.7). `minimatch` and `katex` dismissed as not used: both come through `markdownlint-cli` 0.50.0 (latest), and the vulnerable code paths are not reachable in this use |
+| Label                   | `devcontainer.metadata` is `[{"remoteUser":"vscode","containerUser":"vscode"}]` on both platforms                                                                                                      |
+| Other apps              | No other app's `:rolling` tag changed (judged by package timestamps; no earlier digest snapshot)                                                                                                       |
+
+Not run or unproven:
+
+- `gitleaks` pre-commit hook build without `gcc` (T17).
+- Renovate lookups for GitHub releases and `pip-compile` hash regeneration on a real run.
+- Cache behaviour with `mode=min`: the first rebuild logged `blob not found` lines (cache over GitHub's 10 GB limit is the likely cause); none in the later runs. Watch item; if other apps' builds slow down, write the cache only on `main`.
+- `pr-validate` skips the build and still passes when an app's `latest.sh` fails (existing for every app).
+
 ## Release evidence (inspected tags)
 
 Assets were read from these tags on 2026-11-02 with `gh api repos/<owner>/<repo>/releases/latest` or `.../releases/tags/<tag>`; the tag shown is the one that was read. The URL pattern is `https://github.com/<owner>/<repo>/releases/tag/<tag>`.
