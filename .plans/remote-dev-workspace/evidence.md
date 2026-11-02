@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Evidence
 
 Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying on them; the live cluster was not queried except where stated.
@@ -57,3 +59,12 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 
 - Only `home-ops` has an `.envrc`. `claude-plugins`, `dotfiles`, `renovate-config`, `homeinfra` and the rest have neither `.envrc` nor `.devcontainer`.
 - `.devcontainer/` exists in: `home-ops`, `containers`, `github-workflows`, `homelab-portal`, `argocd-secret-replacer`, `willow-inference-server-dockerized`, `home-assistant` (contents not inspected; the last two have not been pushed to since 2023-2024).
+
+## Facts added after the review of `80a33912` (2026-11-02)
+
+- `cluster/apps/core/argocd/patches/argocd-rbac-cm.yaml` sets `policy.default` to empty and maps the group `ArgoCDAdmins` and the owner's user to `role:admin`. An SSO session of the owner is therefore admin.
+- `cluster/apps/ai/coder/templates/rbac-services.yaml`: the Coder provisioner ServiceAccount has a Role in `coder` that allows create, update, patch and delete on `services`, `externalsecrets` and `replicationsources`, plus a ClusterRole `coder-crd-reader` (get, list on CustomResourceDefinitions).
+- `cluster/apps/system/external-secrets/templates/secretstore.yaml`: the ClusterSecretStore `bitwarden` has one credential in the `external-secrets` namespace and no namespace `conditions`, so an `ExternalSecret` in any namespace can use it.
+- `Taskfile.yml` (`task init`) runs `brew bundle` against `.github/.devcontainer/local-features/common/Brewfile` and has preconditions on `brew` and on that file. The Brewfile lists: direnv, egctl, gitleaks, go-task, helm, ipcalc, jq, kubectl, kustomize, prettier, stern, terraform (hashicorp tap), yamllint, yq, argocd, kubelogin, k9s, pre-commit, mkdocs, gh, helmfile, chezmoi, node. `.devcontainer/scripts/onCreateCommand.sh` runs `chezmoi` through `/home/linuxbrew/.linuxbrew/bin/`.
+- `.github/linters/.markdownlint.yaml`: `MD013` line length 240, tables and code blocks included. Other plan files carry `<!-- markdownlint-disable MD013 -->`.
+- PR #6059 at `80a33912`: seven checks listed by `gh pr checks`, all passing; the Lint job log contains 114 `MD013` errors (112 in the plan files).

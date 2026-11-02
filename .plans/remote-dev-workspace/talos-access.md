@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Talos ServiceAccount mechanics (spike T12)
 
 Question: what does a `talos.dev/v1alpha1` `ServiceAccount` give a pod, how long does it last, and what can `os:reader` do? Read on 2026-11-02, read-only means only: repository files and the Talos source at tag `v1.14.4` (the version in `.taskfiles/talos/Taskfile.yaml` and the tuppr `TalosUpgrade`). No cluster object was read; the live cluster was not changed.
