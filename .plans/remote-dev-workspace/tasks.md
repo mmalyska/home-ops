@@ -151,7 +151,7 @@ task talos:apply-config
 
 ## T14. Make the BWS project in `.envrc` configurable
 
-- Status: done (PR pending). Blocked by: nothing (can land before the workspace exists; the local result must be identical).
+- Status: done (PR #6060). Blocked by: nothing (can land before the workspace exists; the local result must be identical).
 - Do: in `.envrc` change the line that runs `bws secret list <project> -o env` so the project comes from `BWS_PROJECT_ID`, defaulting to the project the file uses today (D31). Keep the exported variable set unchanged when `BWS_PROJECT_ID` is unset. Only `home-ops` has an `.envrc` (checked 2026-11-02, see evidence.md), so this is a single PR. Do not write the project identifier into plans, docs or PR text; reference it by name only.
 - Check: with `BWS_PROJECT_ID` unset, `direnv` loads the same variables as before (compare variable **names** before and after, never values); with it set to another project, the other project is read; `shellcheck` on `.envrc` as the repository does; `task lint:all` read; `bash .agents/tests/run.sh`.
 
