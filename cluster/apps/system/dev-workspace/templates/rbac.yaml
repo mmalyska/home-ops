@@ -1,0 +1,184 @@
+# Read-only access for the workspace ServiceAccounts (D26, D27). Explicit resource lists only: no wildcard
+# resources (a wildcard also matches nodes/proxy, pods/exec, serviceaccounts/token), no Secrets, and the only
+# subresource is pods/log. This is deliberately NOT a binding of the built-in `view` ClusterRole: `view`
+# aggregates every rule that an operator labels aggregate-to-view, so it grows when an operator is installed
+# or upgraded. Today it already carries 18 external-secrets generator kinds (webhooks, vaultdynamicsecrets,
+# githubaccesstokens, ...) whose specs can hold inline credentials. The list below is reviewed by hand.
+#
+# Built-in kinds mirror `view` minus the aggregated ones. CRD groups below are derived from the live CRDs;
+# groups left out on purpose: litellm.home-operations.com (virtual keys), generators.external-secrets.io
+# (inline credentials), traefik and hub.traefik.io (unused), keda.sh (trigger authentications),
+# talos.dev (credential objects), ceph.rook.io clients and object store users/accounts (key material),
+# rbac.authorization.k8s.io and certificates.k8s.io (negative checks in T19), anything with Secrets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dev-workspace-reader
+rules:
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - nodes
+      - persistentvolumes
+      - persistentvolumeclaims
+      - pods
+      - pods/log
+      - services
+      - endpoints
+      - serviceaccounts
+      - events
+      - limitranges
+      - resourcequotas
+      - replicationcontrollers
+      - configmaps
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, daemonsets, replicasets, statefulsets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch]
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, ingressclasses, networkpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [events.k8s.io]
+    resources: [events]
+    verbs: [get, list, watch]
+  - apiGroups: [node.k8s.io]
+    resources: [runtimeclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [scheduling.k8s.io]
+    resources: [priorityclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [storage.k8s.io]
+    resources: [storageclasses, volumeattachments, csidrivers, csinodes]
+    verbs: [get, list, watch]
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [get, list, watch]
+  - apiGroups: [metrics.k8s.io]
+    resources: [pods, nodes]
+    verbs: [get, list, watch]
+  # Argo CD: application definitions (sources and sync state, no repository credentials)
+  - apiGroups: [argoproj.io]
+    resources: [applications, applicationsets, appprojects]
+    verbs: [get, list, watch]
+  # CloudNativePG: clusters and backups (secrets are referenced by name only)
+  - apiGroups: [postgresql.cnpg.io]
+    resources: [clusters, backups, scheduledbackups, poolers, databases, imagecatalogs, clusterimagecatalogs]
+    verbs: [get, list, watch]
+  - apiGroups: [barmancloud.cnpg.io]
+    resources: [objectstores]
+    verbs: [get, list, watch]
+  # Cilium: policies, nodes, identities and address pools
+  - apiGroups: [cilium.io]
+    resources:
+      - ciliumnetworkpolicies
+      - ciliumclusterwidenetworkpolicies
+      - ciliumendpoints
+      - ciliumidentities
+      - ciliumnodes
+      - ciliumloadbalancerippools
+      - ciliuml2announcementpolicies
+      - ciliumcidrgroups
+    verbs: [get, list, watch]
+  # Gateway API and Envoy Gateway: routes, gateways and policies (secrets are referenced by name only)
+  - apiGroups: [gateway.networking.k8s.io]
+    resources: [gatewayclasses, gateways, httproutes, grpcroutes, referencegrants, backendtlspolicies, tcproutes, tlsroutes, udproutes]
+    verbs: [get, list, watch]
+  - apiGroups: [gateway.envoyproxy.io]
+    resources:
+      - envoyproxies
+      - clienttrafficpolicies
+      - backendtrafficpolicies
+      - securitypolicies
+      - envoyextensionpolicies
+      - envoypatchpolicies
+      - backends
+      - httproutefilters
+    verbs: [get, list, watch]
+  # External Secrets: store and secret definitions (they hold references, not values)
+  - apiGroups: [external-secrets.io]
+    resources: [externalsecrets, clusterexternalsecrets, secretstores, clustersecretstores, pushsecrets, clusterpushsecrets]
+    verbs: [get, list, watch]
+  # VolSync: backup definitions and status
+  - apiGroups: [volsync.backube]
+    resources: [replicationsources, replicationdestinations]
+    verbs: [get, list, watch]
+  # Prometheus Operator: rules and monitors
+  - apiGroups: [monitoring.coreos.com]
+    resources: [prometheusrules, servicemonitors, podmonitors, probes, prometheuses, alertmanagers]
+    verbs: [get, list, watch]
+  # Rook Ceph: cluster, pools and file systems
+  - apiGroups: [ceph.rook.io]
+    resources: [cephclusters, cephblockpools, cephfilesystems, cephfilesystemsubvolumegroups, cephobjectstores]
+    verbs: [get, list, watch]
+  # cert-manager: certificates and issuers
+  - apiGroups: [cert-manager.io]
+    resources: [certificates, certificaterequests, issuers, clusterissuers]
+    verbs: [get, list, watch]
+  - apiGroups: [acme.cert-manager.io]
+    resources: [challenges, orders]
+    verbs: [get, list, watch]
+  # CSI snapshots
+  - apiGroups: [snapshot.storage.k8s.io]
+    resources: [volumesnapshots, volumesnapshotcontents, volumesnapshotclasses]
+    verbs: [get, list, watch]
+  # tuppr upgrade plans
+  - apiGroups: [tuppr.home-operations.com]
+    resources: [talosupgrades, kubernetesupgrades]
+    verbs: [get, list, watch]
+  # external-dns records, Dragonfly instances
+  - apiGroups: [externaldns.k8s.io]
+    resources: [dnsendpoints]
+    verbs: [get, list, watch]
+  - apiGroups: [dragonflydb.io]
+    resources: [dragonflies]
+    verbs: [get, list, watch]
+---
+# The Coder provisioner may manage Deployments here and nothing else (D35). No PVC permission: the
+# template only references the existing claims by name, and a Deployment that mounts a claim needs no
+# permission on it. No externalsecrets, replicationsources, RBAC or serviceaccounts.talos.dev: those are
+# GitOps-owned, because the shared ClusterSecretStore has no namespace conditions. Read access to Pods
+# and events is added only if T5 shows the template's rollout wait needs it.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dev-workspace-provisioner
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [create, get, list, watch, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-workspace-provisioner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dev-workspace-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.provisioner.serviceAccount }}
+    namespace: {{ .Values.provisioner.namespace }}
+---
+# Ingress deny-all for every pod in the namespace (D22). Egress stays open: the Coder agent connects
+# out to the Coder server, and the workspace reaches the API server, Talos and the internet.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

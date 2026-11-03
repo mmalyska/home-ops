@@ -1,0 +1,11 @@
+- enabled: "true"
+  namespace: dev-workspace
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: baseline
+      pod-security.kubernetes.io/warn: baseline
+      pod-security.kubernetes.io/audit: baseline
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    prune: false

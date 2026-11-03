@@ -1,0 +1,94 @@
+{{- range .Values.workspaces }}
+---
+# Persistent volumes for the workspace. Owned by GitOps; the Coder template references them by name and
+# the provisioner has no PVC permission (D35, D39). Prune=false and Delete=false: deleting a workspace,
+# a template version or this app never deletes the data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}-home
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ $.Values.storage.storageClass }}
+  resources:
+    requests:
+      storage: {{ .home.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}-src
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ $.Values.storage.storageClass }}
+  resources:
+    requests:
+      storage: {{ .src.size }}
+---
+# Identity of the workspace pod for the Kubernetes API (read-only, see rbac.yaml).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .name }}
+---
+# Talos credential with the os:reader role. Talos creates a Secret with this name and key `config`
+# (talosconfig, client certificate valid 6 h and renewed by Talos). Only GitOps may create these
+# resources here: the namespace is allowed to request any role in the cluster-wide list, os:admin included.
+apiVersion: talos.dev/v1alpha1
+kind: ServiceAccount
+metadata:
+  name: {{ .name }}-talos
+spec:
+  roles:
+    - os:reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $.Release.Namespace }}-{{ .name }}-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dev-workspace-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ .name }}
+    namespace: {{ $.Release.Namespace }}
+{{- if and .bws .bws.accessTokenRef .bws.projectIdRef }}
+---
+# Scoped BWS machine token and project reference for the workspace, read by the pod as environment
+# variables (D31). The Bitwarden project and token are created by the owner (T4).
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ .name }}-bws
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: {{ .name }}-bws
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        BWS_ACCESS_TOKEN: '{{`{{ .BWS_ACCESS_TOKEN }}`}}'
+        BWS_PROJECT_ID: '{{`{{ .BWS_PROJECT_ID }}`}}'
+  data:
+    - secretKey: BWS_ACCESS_TOKEN
+      remoteRef:
+        key: {{ .bws.accessTokenRef | quote }}
+    - secretKey: BWS_PROJECT_ID
+      remoteRef:
+        key: {{ .bws.projectIdRef | quote }}
+{{- end }}
+{{- end }}

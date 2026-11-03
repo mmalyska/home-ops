@@ -188,7 +188,7 @@ task talos:apply-config
 
 ## T19. Namespace, RBAC and backup objects for the workspace (GitOps-owned)
 
-- Status: todo. Blocked by: T4 (names only), T13 for the Talos part to work. Can be reviewed before T13 is applied.
+- Status: in review (app `cluster/apps/system/dev-workspace`; T13 is merged and applied). Deviation from the text below, for the owner to confirm: the reader role is an explicit ClusterRole `dev-workspace-reader`, not a binding of the built-in `view` (which aggregates 18 external-secrets generator kinds that can hold inline credentials and grows when operators change). The BWS-token ExternalSecret renders only after the owner fills in the two Bitwarden references (T4). Live checks are not run: they need the consent-gated sync. Blocked by: T4 for the BWS references only.
 - Do: add an app (use the `add-app` skill) that owns everything the provisioner must not create (D35):
   - the `dev-workspace` namespace with Pod Security `baseline`;
   - the Talos `ServiceAccount` with `os:reader`, and RBAC that lets nothing but GitOps create `serviceaccounts.talos.dev` there;

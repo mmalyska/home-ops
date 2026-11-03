@@ -146,6 +146,7 @@ nav:
           - "nv1 Jetson (GPU)": k8s/nv1-jetson.md
           - "AI gateway (LiteLLM)": k8s/ai-gateway.md
           - "tuppr (upgrades)": k8s/tuppr.md
+          - "Dev workspace namespace": k8s/dev-workspace.md
           - "Media stack (usenet)": k8s/media.md
           - "Nextcloud": k8s/nextcloud.md
           - "Resource sizing": k8s/resource-sizing.md
