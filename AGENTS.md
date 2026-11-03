@@ -2,6 +2,69 @@
 
 Canonical, harness-neutral rules for this repository. Harness adapters (`CLAUDE.md`, `.agents/README.md`) import or point here and add only what is true for one harness.
 
+## Agent topology (standing user authorization)
+
+Unless I say otherwise in a task, use profile STANDARD and topology HANDOFF.
+This is my explicit standing authorization to use subagents within the scope
+below, subject to higher-priority instructions and host permissions.
+
+STANDARD, QUICK, DEEP, HANDOFF, SOLO, PARALLEL and REVIEW are workflow
+conventions, not built-in Codex or Claude settings.
+
+### Conductor (main agent)
+- Owns the lifecycle, decisions, integration and final report.
+- Does Spec and Plan itself and decides what to delegate.
+- Is the single named integrator. Reviews every subagent result before
+  accepting it and runs the final verification gates itself.
+- Reports which parts were delegated, which failed or were partial,
+  and which checks were not run.
+- Prefer the strongest available model for the conductor when the host
+  supports selecting it. Otherwise retain the configured model and
+  disclose the limitation; do not claim to have switched models.
+
+### Delegate to subagents
+Prefer the cheapest capable model when exposed tools and host rules permit
+model selection. Otherwise use the available configured model.
+
+Authorized scopes:
+- Read-only exploration, codebase search and fact gathering.
+- Mechanical or well-specified edits: renames, boilerplate, docs and config.
+- Writing tests for behavior the conductor has already specified.
+- First-pass code review, read-only, returning findings with path:line
+  references and supporting evidence.
+
+### Keep with the conductor (never delegate)
+- Architecture and design decisions, and ambiguous requirements.
+- Security-sensitive, destructive or irreversible changes.
+- Commit, push, PR, merge, release, and anything touching runtime or secrets.
+- Final review and sign-off. Subagent review does not replace it.
+
+Keeping an action with the conductor does not itself authorize that action.
+
+### Limits
+- Give each subagent a bounded task specifying files or read scope,
+  expected output, permitted side effects and completion criteria.
+- Delegation does not expand tool access, filesystem permissions or
+  user authorization.
+- HANDOFF means sequential delegation with the conductor retaining
+  overall ownership. Use a portable handoff recording scope, current
+  state, evidence, outstanding permissions and the next step.
+- Subagents that write run one at a time in the conductor's task worktree,
+  where the host supports sharing it.
+- Concurrent writers require topology PARALLEL, a separate branch/worktree
+  per writer and my explicit request.
+- Subagents never commit, push or open PRs.
+- If a task is too small to justify delegation, do it locally and say so.
+- Use only delegation tools exposed by the current host. Agent Markdown
+  files alone do not register Codex subagents.
+- If delegation is unavailable or prohibited by higher-priority instructions,
+  use local role passes and disclose that they are not independent agents.
+  Do not start another CLI or orchestrator to bypass a restriction.
+- "quick" or "deep" changes only the profile. The topology stays HANDOFF
+  unless I explicitly select SOLO, PARALLEL or REVIEW.
+- A current task instruction can narrow or revoke this standing authorization.
+- Mandatory security, worktree and project quality gates still apply.
+
 ## Project Overview
 
 Personal home-lab running self-hosted services (media, home automation, observability, AI tools) on a Talos Linux Kubernetes cluster, managed declaratively via GitOps with ArgoCD and Bitwarden secrets.
