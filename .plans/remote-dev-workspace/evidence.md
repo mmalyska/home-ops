@@ -75,3 +75,24 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 - [ArgoCD RBAC documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/): `application.sync.requireOverridePrivilegeForRevisionSync` in `argocd-cm`, new since v3.2, default `'false'`; with it on, passing a revision to a sync needs the `override` action. Application actions: get, create, update, delete, sync, action, override.
 - CI for PR #6059 at `887cdca4`: Enforce PR labels, Helm Lint, Instruction checks, Label Size, Labeler, Lint and No Claude attribution all pass; the Lint job log contains no `MD0xx` lines.
 - Local run of `bash .agents/tests/run.sh` in the worktree: 165 tests, 0 failed.
+
+## Measurements 2026-11-03 (read-only baselines; nothing was changed on the cluster)
+
+Taken with Prometheus queries through a port-forward and with `kubectl get`. The measurements that need a scratch pod or a running workspace are task T20 and are NOT RUN.
+
+| Item                                       | Value                                                                                                  | Source                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| Ceph OSD fill (osd.0 / osd.1 / osd.2)      | 41.0 / 40.9 / 41.1 % now; 41.1 / 41.0 / 41.1 % seven days ago (flat)                                   | `ceph_osd_stat_bytes_used / ceph_osd_stat_bytes`  |
+| Ceph cluster                               | 615 GB used of 1.5 TB raw                                                                              | `CephCluster` status                              |
+| Ceph client writes                         | about 27 GB over the last 24 h                                                                         | `increase(ceph_pool_wr_bytes[1d])`                |
+| SATA OSD disk writes (`sda` on mc1 to mc3) | 26.1 / 26.2 / 26.1 GB over the last 24 h each (three replicas of about 27 GB, consistent)              | `node_disk_written_bytes_total`                   |
+| Pool                                       | replicated size 3, `compression_mode: aggressive`, `lz4`                                               | `cluster/apps/core/rook-ceph/cluster/values.yaml` |
+| NVMe `/var` used, mc1 / mc2 / mc3 / nv1    | 66.6 / 69.4 / 77.1 / 50.3 % now; 63.0 / 65.9 / 74.3 / 47.4 % seven days ago                            | `node_filesystem_*{mountpoint="/var"}`            |
+| `/var` change in 7 days                    | +3.7 / +3.5 / +2.8 / +2.9 points (about 0.4 to 0.5 points a day, 2 to 2.7 GB a day)                    | same                                              |
+| `/var` free, mc1 / mc2 / mc3 / nv1         | 170 / 156 / 117 / 126 GB of 509.6 GB (nv1 253.6 GB)                                                    | same                                              |
+| etcd WAL fsync p99                         | 3.8 to 3.9 ms (last hour); 7-day maximum of 5-minute windows 3.9 to 4.4 ms                             | `etcd_disk_wal_fsync_duration_seconds_bucket`     |
+| StorageClasses                             | `ceph-block` (default, RBD, ext4, `Delete`, no `mountOptions`, expansion on), `ceph-filesystem`, `nfs` | `kubectl get sc`                                  |
+| Namespace `coder` Pod Security             | `baseline` enforce, audit and warn                                                                     | `kubectl get ns coder`                            |
+| Nodes                                      | mc1 to mc3 and nv1 on Talos v1.14.4, Kubernetes v1.36.5                                                | `kubectl get nodes`                               |
+
+Reading: the handoff's wear figures (71 / 68 / 76 % used, 0.14 %/day) correspond to the NVMe `/var`, not to the SATA OSDs, and `/var` grows faster than stated. The extrapolation is an estimate, not a forecast: at the current rate mc3 reaches 90 % used in about a month and a half to two months; the kubelet's default hard-eviction threshold for `nodefs` is 10 % free, so the cache `emptyDir`s (25 Gi in the table of D40, 4.9 % of the disk) would bring that date forward. Nothing here shows what is filling `/var`; T20 step 3 finds out. The SATA SMART wear attributes were not queried (the exporter metrics found were NVMe-oriented), so wear is judged from bytes written only.
