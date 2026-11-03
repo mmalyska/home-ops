@@ -1,15 +1,15 @@
 #!/bin/bash -i
-sudo git config --global --add safe.directory "${1}"
+git config --global --add safe.directory "${1}"
 if gpg --list-secret-keys F6F676C60A077962 &>/dev/null; then
-  sudo git config --global gpg.program gpg
-  sudo git config --global commit.gpgsign true
-  sudo git config --global user.signingkey F6F676C60A077962
+  git config --global gpg.program gpg
+  git config --global commit.gpgsign true
+  git config --global user.signingkey F6F676C60A077962
 fi
-sudo git config --global pull.rebase true
+git config --global pull.rebase true
 
 direnv allow
 
-/home/linuxbrew/.linuxbrew/bin/chezmoi init --apply mmalyska/dotfiles
+chezmoi init --apply mmalyska/dotfiles
 
 if [ -n "${CODESPACES}" ]; then
   sudo apt-get install -y --no-install-recommends wireguard-tools iputils-ping

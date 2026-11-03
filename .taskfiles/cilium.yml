@@ -20,13 +20,22 @@ tasks:
 
   install:cli:
     internal: true
-    desc: Install cilium cli
+    desc: Install cilium cli (skipped with a warning when cilium exists or sudo is missing)
     cmds:
-      - curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/{{ .CILIUM_VERSION }}/cilium-linux-{{ .CLI_ARCH }}.tar.gz{,.sha256sum}
-      - sha256sum --check cilium-linux-{{ .CLI_ARCH }}.tar.gz.sha256sum
-      - sudo tar xzvfC cilium-linux-{{ .CLI_ARCH }}.tar.gz /usr/local/bin
-      - rm cilium-linux-{{ .CLI_ARCH }}.tar.gz{,.sha256sum}
-    generates:
-      - /usr/local/bin/cilium
+      - |
+        set -eu
+        if command -v cilium >/dev/null 2>&1; then
+          echo "WARN: cilium $(cilium version --client 2>/dev/null | head -n1) is installed, pin is {{ .CILIUM_VERSION }}; skipping install"
+          exit 0
+        fi
+        if ! command -v sudo >/dev/null 2>&1; then
+          echo "WARN: cilium is not installed, pin is {{ .CILIUM_VERSION }}, and sudo is not available; skipping install"
+          exit 0
+        fi
+        work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
+        cd "$work"
+        curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/{{ .CILIUM_VERSION }}/cilium-linux-{{ .CLI_ARCH }}.tar.gz{,.sha256sum}
+        sha256sum --check cilium-linux-{{ .CLI_ARCH }}.tar.gz.sha256sum
+        sudo tar xzvfC cilium-linux-{{ .CLI_ARCH }}.tar.gz /usr/local/bin
     status:
       - "cilium version --client | grep -q 'cilium-cli: {{ .CILIUM_VERSION }}'"
