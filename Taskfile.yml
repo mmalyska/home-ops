@@ -9,7 +9,10 @@ vars:
   TALOS_DIR: "{{.PROJECT_DIR}}/provision/talos"
 
 env:
-  KUBECONFIG: "/home/vscode/.kube/config"
+  # Local flow (TALHELPER_* secrets present) or an existing kubeconfig: use ~/.kube/config.
+  # Otherwise (Coder workspace) leave KUBECONFIG alone so kubectl uses the in-cluster configuration.
+  KUBECONFIG:
+    sh: 'if [ -f "$HOME/.kube/config" ] || [ -n "${TALHELPER_OSCERT:-}" ]; then echo "$HOME/.kube/config"; else echo "${KUBECONFIG:-}"; fi'
 
 includes:
   bootstrap: .taskfiles/bootstrap

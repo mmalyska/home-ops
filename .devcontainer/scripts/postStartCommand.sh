@@ -18,7 +18,10 @@ if [ -n "${CODESPACES}" ] && [ -n "${WG_PRIVATE_KEY}" ]; then
   fi
 fi
 
-task talos:init
+# The Coder workspace has no TALHELPER_* secrets and reaches Talos through a mounted os:reader config.
+if [ -n "${TALHELPER_OSCERT}" ]; then
+  task talos:init
+fi
 
 # Symlink all Claude Code memory files from repo into the expected location.
 # New memory files should be created in .claude/memory/ in the repo (not in the ephemeral dir)
@@ -27,7 +30,7 @@ PROJECT_KEY="$(printf '%s' "${REPO_ROOT}" | sed 's/[^A-Za-z0-9]/-/g')"
 MEMORY_DIR="${HOME}/.claude/projects/${PROJECT_KEY}/memory"
 mkdir -p "${MEMORY_DIR}"
 for f in "${REPO_ROOT}"/.claude/memory/*.md; do
-  ln -sf "${f}" "${MEMORY_DIR}/$(basename "${f}")"
+  [ -e "${f}" ] && ln -sf "${f}" "${MEMORY_DIR}/$(basename "${f}")"
 done
 
 echo "Done!"
