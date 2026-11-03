@@ -12,13 +12,12 @@ workspaces:
       size: 5Gi
     src:
       size: 30Gi
-    # Fill in after T4 (the owner creates the BWS project and machine token): the Bitwarden secret
-    # references that hold BWS_ACCESS_TOKEN and BWS_PROJECT_ID. Until both are set no ExternalSecret
-    # is rendered. Keep each reference on one line with the gitleaks marker, as other apps do.
-    bws: {}
-    # bws:
-    #   accessTokenRef: "<bitwarden-secret-uuid>" #gitleaks:allow #BWS_ACCESS_TOKEN
-    #   projectIdRef: "<bitwarden-secret-uuid>" #gitleaks:allow #BWS_PROJECT_ID
+    # References to the Bitwarden secrets (in the project the bitwarden store reads) that hold the
+    # workspace's machine token and its project ID (T4). If either is removed no ExternalSecret is
+    # rendered. One line each with the gitleaks marker, as other apps do.
+    bws:
+      accessTokenRef: "f00d5aee-b4fa-454f-b204-b4f701085f96" #gitleaks:allow #BWS_ACCESS_TOKEN
+      projectIdRef: "f9ab7df3-81b9-4797-b31e-b4f7010b2311" #gitleaks:allow #BWS_PROJECT_ID
 
 storage:
   storageClass: ceph-block
