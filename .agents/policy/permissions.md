@@ -42,7 +42,7 @@ Render, lint, test, diff, plan. Allowed. Treat `plan` and `helm template` output
 
 Claude patterns (`allow`): `Bash(terraform plan*)`, `Bash(helm template *)`, `Bash(task lint:*)`, `Bash(helm lint *)`, `Bash(yamllint *)`
 
-Policy: `kubectl kustomize`, `terraform fmt/validate`, `prettier --check`, `shellcheck`, `pre-commit run`, `bash .agents/tests/run.sh`, `git diff --check`.
+Policy: `kubectl kustomize`, `terraform fmt/validate`, `prettier --check`, `shellcheck`, `pre-commit run`, `git diff --check`.
 
 ## REPO_WRITE
 

@@ -65,10 +65,9 @@ git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main
 | ---------------------------------- | ----------------------------------------------------------------- |
 | `AGENTS.md` rule and the preflight | Every harness; a model instruction                                |
 | Claude project hook                | Claude file tools and common bypass commands, as a technical stop |
-| `pre-commit` hook `worktree-first` | A commit from any harness in the primary checkout or on `main`    |
 | CI and review                      | What reaches `main`                                               |
 
-No layer stops a Codex edit in the primary checkout before it is committed. Break-glass (`HOME_OPS_BREAK_GLASS` with a
+There is no commit-time hook: a person may commit from the primary checkout. No layer stops a Codex edit in the primary checkout before it is committed. Break-glass (`HOME_OPS_BREAK_GLASS` with a
 reason) is for a person at a terminal. An agent never sets it, never uses `--no-verify`, and never works around a denied
 write.
 
@@ -126,7 +125,7 @@ reason. The note is text and authorizes nothing. The handoff shape and the topol
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The guard blocks a write                       | The target is in the primary checkout. Create a worktree and repeat the write there. Do not look for a way around the guard                                    |
 | A hook does not run in a new worktree          | Hooks are installed per clone: run `pre-commit install` once. Check with `.agents/bin/worktree-preflight`                                                      |
-| `@AGENTS.md` is not loaded                     | Claude Code only: `CLAUDE.md` must contain the line `@AGENTS.md`. `bash .agents/tests/run.sh` checks it. Other harnesses read `AGENTS.md` directly             |
+| `@AGENTS.md` is not loaded                     | Claude Code only: `CLAUDE.md` must contain the line `@AGENTS.md`. Other harnesses read `AGENTS.md` directly                                                    |
 | A skill is not discovered                      | Skills live in `.agents/skills/<name>/SKILL.md`. For Claude Code run `.agents/bin/sync-skills`; `sync-skills --check` shows the drift                          |
 | `pre-commit` blocks on attribution or gitleaks | Fix the cause: remove the attribution line or the secret. Never use `--no-verify`, `SKIP=` or `core.hooksPath`                                                 |
 | `check-plans` reports an error                 | Read the `ERROR <path>: <message>` line; the front matter and the index row must agree (see `.plans/README.md`)                                                |

@@ -79,5 +79,5 @@ Several apps depend on local charts via `repository: file://../../.../charts/<na
 - **Main branch**: `main` — all PRs target this branch
 - **Branch naming**: `feat/`, `fix/`, `chore/`, `docs/` prefixes; work in a linked worktree `.worktrees/<type>/<slug>` (`AGENTS.md`)
 - **Validation per change type**: `.agents/policy/validation.md`; PRs use `.github/pull_request_template.md`
-- **CI on PRs**: `Agent instructions` workflow (`bash .agents/tests/run.sh`, shellcheck) for instruction and plan paths; MegaLinter (yamllint, markdownlint, prettier, kubeval, secretlint, actionlint, terraform fmt)
+- **CI on PRs**: MegaLinter (yamllint, markdownlint, prettier, kubeval, secretlint, actionlint, terraform fmt)
 - **Labels required**: PRs must have a label — `meta-enforce-labels` blocks merge without one
