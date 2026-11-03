@@ -44,7 +44,7 @@ for f in "${REPO_ROOT}"/.claude/memory/*.md; do
 done
 ```
 
-The `[ -e ]` guard is new: without it a repository with no memory files links the literal glob. It is not yet in `postStartCommand.sh`; add it in T17. In a linked worktree `git rev-parse --show-toplevel` returns the worktree path, so the link goes to the key Claude Code uses for that worktree.
+The `[ -e ]` guard is new: without it a repository with no memory files links the literal glob. In a linked worktree `git rev-parse --show-toplevel` returns the worktree path, so the link goes to the key Claude Code uses for that worktree.
 
 ## Script changes for T17 (items 1 to 4 done on `chore/bootstrap-rework`, runtime NOT RUN)
 
