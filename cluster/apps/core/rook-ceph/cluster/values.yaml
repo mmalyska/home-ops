@@ -168,8 +168,11 @@ rook-ceph-cluster:
         requests:
           cpu: "50m"
           memory: "800M"
+        # The active mgr leaks slowly (~100 MiB/day, stepping up at the 6-hourly
+        # volsync snapshot times) and hit the old 1219M limit. 1610M (~1536 MiB)
+        # buys roughly four days between restarts; a mgr failover resets it.
         limits:
-          memory: "1219M"
+          memory: "1610M"
       mon:
         requests:
           cpu: "49m"
