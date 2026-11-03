@@ -2,7 +2,7 @@
 
 # Repository bootstrap in the workspace (T6)
 
-> **Status: static analysis only (2026-11-03).** The session had no container runtime (`docker`, `podman`, `nerdctl` and `devcontainer` are absent), so nothing below was run. Every finding is **predicted** from reading the scripts, the Taskfiles and `.envrc` against the image's `Dockerfile` and `mise.toml` (`mmalyska/containers`, `apps/dev-workstation/`, read with `gh api`). The T6 check "the spike runs to the end on amd64 and arm64" is **NOT RUN**. Run the commands in "Runtime verification" before relying on this file.
+> **Status (2026-11-03): static analysis plus one amd64 run.** The agent session has no container runtime, so the owner ran the three lifecycle scripts in a scratch container from the pinned image on linux/amd64 (clone of branch `chore/bootstrap-rework` at `2957b0ab`, no secrets, no cluster) and pasted the output. Rows marked "Predicted" below were not run. **arm64 is NOT RUN.** See "Runtime results (amd64)" at the end.
 
 ## Decision
 
@@ -72,4 +72,31 @@ docker run --rm -it -v <worktree>:/workspaces/home-ops -w /workspaces/home-ops \
 # repeat on linux/arm64 with --platform linux/arm64 if available
 ```
 
-Record, per script: exit code, first failing line, and whether the failure matches a row above.
+Record, per script: exit code, first failing line, and whether the failure matches a row above. The amd64 run is below; the arm64 run is still to do. Do not rely on the exit codes (note 20).
+
+## Runtime results (amd64, 2026-11-03)
+
+Scratch container from the pinned image, clone of the branch at `2957b0ab`, empty environment (no `BWS_ACCESS_TOKEN`, no `TALHELPER_*`, no `TERRAFORM_TOKEN`).
+
+| Check                                                                                                                                                                                               | Result                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Image index has linux/amd64 and linux/arm64                                                                                                                                                         | PASS                                                                                                                         |
+| `egctl`, `kubelogin` (v1.36.4), `ipcalc`, `envsubst`, `prettier`, `mkdocs`, `terraform`, `yq`, `jq`, `gitleaks` on `PATH`; `kubectl browse-pvc` works (row 11)                                      | PASS                                                                                                                         |
+| `task init` (tool presence check)                                                                                                                                                                   | PASS                                                                                                                         |
+| `onCreateCommand.sh` (chezmoi, plugin installs; krew block skipped)                                                                                                                                 | PASS, with notes 18 and 19                                                                                                   |
+| `updateContentCommand.sh`: `git gc`, `task init`, `task precommit:init`, `task cilium:init` (up to date)                                                                                            | PASS                                                                                                                         |
+| `updateContentCommand.sh`: `task terraform:upgrade:cloudflare`                                                                                                                                      | FAIL as expected without `TERRAFORM_TOKEN`; the script still exits 0 (note 20)                                               |
+| `postStartCommand.sh`: `task talos:init` skipped without `TALHELPER_OSCERT` (row 1)                                                                                                                 | PASS                                                                                                                         |
+| Memory symlinks under `~/.claude/projects/-workspaces-home-ops/memory` (row 10)                                                                                                                     | PASS                                                                                                                         |
+| No `~/.kube`, no `~/.krew`, `TALHELPER_*` count 0                                                                                                                                                   | PASS                                                                                                                         |
+| `.envrc` with a missing BWS token                                                                                                                                                                   | FAIL, fixed on the branch (note 21)                                                                                          |
+| Same run on arm64                                                                                                                                                                                   | NOT RUN                                                                                                                      |
+
+Notes from the run:
+
+18. **chezmoi prompts.** `chezmoi init --apply mmalyska/dotfiles` asks eight questions (git email and name, work machine, AI profile, agent teams, Claude and Codex plugins, OpenCode). The run had a TTY. The workspace bootstrap has none, so T16 must make the dotfiles template read its answers from environment variables or chezmoi data and pass `--no-tty`, or the first start can hang or fail.
+19. **The dotfiles do a lot.** The apply installs peon-ping (downloads sound packs, edits Claude hook settings), adds the Claude plugin marketplace, installs 12 plugins for Claude and Codex over the network, and prints an `ai-workflow` drift warning (marketplace commit differs from the accepted pin). All of it lands on the home volume. Decide in T16 whether the workspace wants any of it.
+20. **Exit codes are not signals.** Every script ends with `echo "Done!"`, so each exits 0 even when a step failed.
+21. **`.envrc` could dump the environment.** `export $(bws secret list ... | xargs)` becomes a bare `export` when `bws` fails, and a bare `export` prints every exported variable, which in the workspace includes `BWS_ACCESS_TOKEN`, `GITHUB_TOKEN` and `TERRAFORM_TOKEN`. All three lifecycle scripts run `direnv export`, so the values would reach the logs. Fixed on the branch: export only when `bws` succeeded and returned output, otherwise log one status line. Checked with a simulated failing `bws` and a canary variable (nothing printed).
+22. **`no context is set`** is printed by every `task` call because the `TALOS_CONTROLLER` variable runs `talosctl config info` and the scratch container has no talosconfig. The workspace sets `TALOSCONFIG` to the mounted Secret, so it should not appear there.
+23. **Home volume content after the run** (names only): `.claude`, `.claude.json`, `.codex`, `.config`, `.gitconfig`, `.local`, `.talos`, `.terraform.d`, shell dotfiles. T8 must check that no credentials file is created inside `.terraform.d` or `.talos`.
