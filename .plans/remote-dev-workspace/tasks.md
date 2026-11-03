@@ -4,38 +4,40 @@
 
 Each task can be executed without reading `plan.md`. A task that depends on an open question (Qn) is blocked until the owner answers it; the question text is in `plan.md`. Do all repository work in a linked worktree; run `.agents/bin/worktree-preflight` before the first write. Every command that changes cluster or external state needs fresh consent from the owner in the current session.
 
+Revised 2026-11-03 (image 1.0.0 adopted, storage design D40 to D47): T2 and T3 are done, T22 and T23 are new, T21 was dropped, and T5, T7, T8, T9, T17 and T19 changed. Task text refers to decisions in `plan.md`.
+
 Common context: the goal is one always-on Coder workspace, on the Talos cluster, for several repositories of the owner, built from one shared multi-arch image published from `mmalyska/containers`. Secrets come from one dedicated BWS project per workspace type. `sandbox-*` images and the `devops` workspace belong to Hermes and must not be changed.
 
 Dependency order (template preparation is separate from creating the first workspace):
 
 ```text
-T15 -> T2 -> T3 ----------------------------> T5 (template, no workspace)
-T1  -> T2                                      ^
-T13 (Talos config) -----------------------------+
-T19 (namespace, RBAC, backup objects) -----------+
-T4 (BWS project, owner) -------------------------+
-T2 -> T6 -> T16 ; T14 ; T17 ------------> T7 (first workspace + login) -> T8 -> T9
+T15, T1, T2, T3 (done: image 1.0.0 published) ---> T22, T23 (hardening and devcontainer tests)
+T22 ----------------------------------------------> T5 (template, no workspace)
+T13 (Talos config) -------------------------------> T5
+T19 (namespace, RBAC, PVC pairs, backups) --------> T5
+T4 (BWS project, owner) --------------------------> T5
+T2 -> T6 -> T16 ; T14 ; T17 ----------------------> T7 (first workspace + login) -> T8 -> T9
 T17 + T8 + T3 -----------------------------> T10 (migrate devcontainers)
 T4 -> T18 (ArgoCD account) -> ArgoCD checks in T7 and T8
 ```
 
 ## T1. Inventory the tools the new image needs
 
-- Status: done (`tools.md`, PR #6061; the six open questions were decided on 2026-11-02, see its Decisions section). Blocked by: nothing (Homebrew is out, D12: record for each tool its pinned-release source).
+- Status: done (`tools.md`, PR #6061; the six open questions were decided on 2026-11-02, see its Decisions section). Superseded in method on 2026-11-03: the tool list now lives in the image's `mise.toml` (D46) and `tools.md` records why each tool is there. Blocked by: nothing.
 - Do: list every tool the home-ops devcontainer and `sandbox-devops` provide, and every tool the home-ops scripts, `Taskfile`, pre-commit config and `.envrc` call. The real tool list of the local devcontainer is `.github/.devcontainer/local-features/common/Brewfile` (direnv, egctl, gitleaks, go-task, helm, ipcalc, jq, kubectl, kustomize, prettier, stern, terraform, yamllint, yq, argocd, kubelogin, k9s, pre-commit, mkdocs, gh, helmfile, chezmoi, node as of 2026-11-02) plus the other local features. Read `.github/.devcontainer/local-features/*/install*.sh`, that Brewfile, `.devcontainer/scripts/*.sh`, `.taskfiles/`, `.pre-commit-config.yaml`, `.envrc` and `containers/apps/sandbox-devops/Dockerfile`. Then do the same for `claude-plugins`, `containers` and `argocd-secret-replacer` (read only, via `gh api` or a clone).
 - Output: `.plans/remote-dev-workspace/tools.md` with a table: tool, source today (feature, Dockerfile, Brewfile), version pin today, used by which repository, upstream publishes checksum (yes/no), has arm64 build (yes/no), Renovate datasource, install path in the image (must be outside `/home/vscode`, D34).
 - Check: every tool called by a script or Taskfile target appears in the table; no secret value or private domain appears in the file.
 
 ## T2. Build the `dev-workstation` image in `containers`
 
-- Status: todo. Blocked by: T1, T15.
+- Status: done 2026-11-03 (`containers` PR #772, merge commit `b3804aa`; amd64 and arm64, Build and Goss passed on both; not yet run on this cluster). The text below is the original brief, kept for history; the delivered design is D46: one `mise.toml`, image tools read-only in `/opt/mise`, no lock files, no `home-ops` dependency, `talosctl` and `cilium` follow upstream. Blocked by: T1, T15.
 - Do: in `mmalyska/containers` add `apps/dev-workstation/` with `Dockerfile`, `README.md`, `metadata.json` and `ci/`, copying the layout and metadata rules of `apps/sandbox-devops`. Pinned Ubuntu LTS digest. Non-root user `vscode`, UID 1000, no sudo (D13, D17). No Homebrew (D12): install the tools from `tools.md` as pinned release downloads, resolving the architecture instead of hard-coding amd64, with Renovate annotations and checksums where upstream publishes them. **Install every tool under `/usr/local` or another system path, never under `/home/vscode`**: the workspace mounts a volume over the home directory and hides whatever the image put there (D34); put defaults in `/etc/skel`-style seed files instead. The `talosctl` version must equal `TALOS_VERSION` in `.taskfiles/talos/Taskfile.yaml`, because `task talos:install` (which uses `sudo`) is skipped only on an exact match; add a Renovate rule or a CI check that keeps them equal. Install Claude Code and codex-cli. Add the `devcontainer.metadata` label; there is one tag (D19). Build linux/amd64 and linux/arm64 with the native-runner pipeline from T15 (D24, D33).
 - Check: CI builds both platforms; `docker run --rm <image> <tool> --version` for every tool on both platforms (run in CI, not in the workspace); no file of the image is under `/home/vscode` except the seed files; image size is recorded in the PR; Renovate dry run picks up the new annotations; no `sandbox-*` file is changed.
 - Rollback: delete the app directory; nothing consumes it yet.
 
 ## T3. Publish and pin the image
 
-- Status: todo. Blocked by: T2.
+- Status: done for the image (`ghcr.io/mmalyska/dev-workstation:1.0.0@sha256:76a0c4f0359029fa9ce976a39b87d7770bb332c56336e7ea673d753a0dc30f98`, D46); the remaining step is adding the digest to the T5 and T10 PRs and re-checking it with `docker buildx imagetools inspect` before each. Blocked by: T2.
 - Do: after merge in `containers`, record the published tag and the digest of the multi-arch manifest. Add the image reference (digest-pinned) to the PRs of T5 and T10 only.
 - Check: `docker buildx imagetools inspect <image>` shows both platforms; the digest in the consuming PR matches.
 
@@ -53,12 +55,12 @@ argocd app sync <app-name>
 
 ## T5. New Coder template (prepare only, no workspace)
 
-- Status: todo. Blocked by: T3, T4, T13, T19. This task never creates a workspace; that is T7.
+- Status: todo. Blocked by: T3, T4, T13, T19, T22. This task never creates a workspace; that is T7.
 - Do: add a new template in a new directory under `cluster/apps/ai/coder/workspace-template/` (D16; the `sandbox` template is not changed). Requirements:
-  - image from T3 (digest-pinned); `arch` follows the image platform;
-  - runs as `vscode`, non-root, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `seccompProfile: RuntimeDefault`, `fsGroup: 1000`;
-  - memory request = limit = 3Gi; CPU limit 2; CPU request from T9 (start at 500m);
-  - the PVC `dev-workspace-data` (created and owned by GitOps in T19, D39) mounted twice with `subPath`: `home` at `/home/vscode` and `workspaces` at `/workspaces` (D34). The template only references the PVC by name; it does not create it and has no size parameter. The first-start step seeds an empty home from the image's seed files and fixes ownership; nothing in the image under `/home/vscode` is relied on;
+  - image from T3 (digest-pinned, never the bare tag); `arch` follows the image platform; PATH and `mise` behaviour as in D46 (scripts that need a repository's tool versions use `mise exec`);
+  - runs as `vscode`, non-root, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `seccompProfile: RuntimeDefault`, `fsGroup: 1000`, `fsGroupChangePolicy: OnRootMismatch`, and `readOnlyRootFilesystem: true` if T22 shows it works (D43);
+  - memory request = limit = 3Gi; CPU limit 2; CPU request from T9 (start at 500m); `ephemeral-storage` request and limit above the two `sizeLimit`s plus margin (D43);
+  - the two PVCs of the workspace (home and source, created and owned by GitOps in T19, D39, D41) mounted by name, without `subPath`: home at `/home/vscode` and source at `/workspaces`. The template only references them; it creates neither and has no size parameter. `/cache` and `/tmp` are `emptyDir`s with `sizeLimit` (about 20 Gi and 5 Gi). At workspace start the step `cp -rn /etc/skel/. "$HOME"/` fills an empty home (D45); nothing else is seeded and no ownership step is needed;
   - SSH through the Coder agent only (D15): no sshd, no LoadBalancer Service, no `authorized_key` parameter;
   - runs in the namespace `dev-workspace` (D28). The provisioner's Role there is created by T19 and allows only the workload objects the template needs (D35): it manages Deployments and has no PVC permission; the template creates no `ExternalSecret`, `ReplicationSource`, RBAC object or `serviceaccounts.talos.dev`;
   - `emptyDir` with `medium: Memory` for the SSH signing key (loaded into an in-pod ssh-agent, D32), sized small (for example 64Mi) and counted in the 3Gi limit;
@@ -94,7 +96,7 @@ coder create <workspace-name> --template <template-name>
 
 - Check:
   - VS Code connects through the Coder agent without sshd (`coder config-ssh`);
-  - persistence: write a marker file under `/home/vscode` and one under `/workspaces`, restart the workspace (consent-gated), and confirm both survive with owner `vscode`, and that the Claude and Codex logins survive;
+  - persistence: write a marker file under `/home/vscode` and one under `/workspaces`, and one under `/cache`, restart the workspace (consent-gated), and confirm the first two survive with owner `vscode`, that the Claude and Codex logins and a tool added with `mise use -g` survive, and that `/cache` is empty again (accepted, D40);
   - `git log --show-signature -1` verifies in the scratch repository; `claude` and `codex` start;
   - `kubectl get nodes` works through the in-cluster configuration with no kubeconfig file (if the `.envrc` `KUBECONFIG` export gets in the way, fix it in T14);
   - `talosctl --nodes <control-plane ip> version` and `talosctl get` on a non-sensitive type work, a sensitive type and `talosctl kubeconfig` are denied, and the pod reaches `talos.default` (record which `talosctl get` types are sensitive);
@@ -108,13 +110,13 @@ coder create <workspace-name> --template <template-name>
 - Do: confirm in the workspace that the repository's Claude permission file and `AGENTS.md` consent rules apply (open `home-ops`, check that `.claude/settings.json` is read and a denied command is denied, including the ArgoCD sync and prune ask rules), and that the worktree preflight returns 0 in a worktree and 3 in the primary checkout. Then check what is on the backed-up volume, by file name only (`find`, never print contents):
   - accepted on the volume (D20): the Claude and Codex login files;
   - must stay off the volume: the SSH signing key, the Talos credential, the BWS access token and project reference, `GITHUB_TOKEN`, `TERRAFORM_TOKEN`, the ArgoCD token, and any file a tool writes when it persists a login (for example `.git-credentials`, the `gh` hosts file, Terraform CLI credentials, an `~/.kube/config`); T6 supplies the final list of file names.
-- Do (restore test, consent-gated): restore the latest VolSync snapshot into a scratch volume, list file names, confirm the accepted login files are present, the must-not-persist names are absent, and `/home/vscode` and `/workspaces` content and ownership are intact. Delete the scratch volume afterwards (DESTRUCTIVE for that scratch volume only; name it first).
+- Do (restore test, consent-gated): restore the latest snapshot of each of the two PVCs (home, every 6 h; source, daily) into a scratch volume, list file names, confirm the accepted login files are present in the home restore, the must-not-persist names are absent, and `/home/vscode` and `/workspaces` content and ownership are intact. Neither restore targets the live claim (`restore.enabled: false` on the live release). Delete the scratch volumes afterwards (DESTRUCTIVE for those scratch volumes only; name them first).
 - Check: report each as PASS, FAIL or NOT RUN with the reason.
 
 ## T9. Measure and adjust resources
 
 - Status: todo. Blocked by: T7. Run for two weeks after first use.
-- Do: query Prometheus (use the `prometheus-historical-queries` skill) for the workspace pod: max and p95 of `container_memory_working_set_bytes`, CPU usage p95, throttling, restarts and OOM kills; and the PVC usage. Check node headroom on the node hosting the pod.
+- Do: query Prometheus (use the `prometheus-historical-queries` skill) for the workspace pod: max and p95 of `container_memory_working_set_bytes`, CPU usage p95, throttling, restarts and OOM kills; and the usage of both PVCs, of `/cache` and `/tmp` against their `sizeLimit`s (the pod's ephemeral-storage usage) and any eviction. Check node headroom on the node hosting the pod.
 - Output: a table in `plan.md` Status with measured values and the proposed new requests and limits; ask the owner before changing them.
 - Check: numbers come from queries, not estimates; the memory limit stays above the observed peak by a stated margin.
 
@@ -174,7 +176,7 @@ task talos:apply-config
 
 - Status: todo. Blocked by: T6 (its output lists the script changes).
 - Why: the local devcontainer and the Coder workspace must run the same lifecycle commands. Today they depend on things the new image drops: `task init` runs `brew bundle` against `.github/.devcontainer/local-features/common/Brewfile` (and the Taskfile precondition checks `command -v brew`), `.devcontainer/scripts/onCreateCommand.sh` calls `chezmoi` by its Homebrew path, several lines use `sudo` (including `sudo git config --global`, which writes root's configuration, not the user's), `task talos:install` uses `sudo`, and `postStartCommand.sh` hard-codes `/workspaces/home-ops`. Deleting `.github/.devcontainer/` (T10) would break all of them.
-- Do: in `home-ops`: make `task init` and its preconditions check that the tools are present (the image provides them) instead of installing them with Homebrew; call `chezmoi` through `PATH`; replace `sudo git config --global` with the unprivileged form; make `task talos:install` a no-op when the pinned `talosctl` already matches; make the memory-symlink loop use the current repository path; keep Codespaces-only branches working; keep a documented way to run the tool install for a machine without the image if still wanted. Land the change while the old image still works, so it can be verified on the current local devcontainer first.
+- Do: in `home-ops`: make `task init` and its preconditions check that the tools are present (the image provides them) instead of installing them with Homebrew; call `chezmoi` through `PATH`; replace `sudo git config --global` with the unprivileged form; make `task talos:install` and `task cilium:install` never call `sudo` when the tool already exists (D47): the image's `talosctl` and `cilium` follow upstream, so their versions will differ from `TALOS_VERSION` and `CILIUM_VERSION` after the next Renovate bump (1.14.5 and 0.20.2 are already proposed against pins of 1.14.4 and 0.20.1). Concretely: when `sudo` is not available, or the tool is present, print a one-line warning with the two versions and skip instead of failing; keep the real install for a machine that has `sudo` and no tool; change the `talos:generate` precondition (`.taskfiles/talos/Taskfile.yaml`, the `talosctl does not match` check) so a different client version warns instead of pointing at `task talos:install`, while keeping a hard failure where an exact match is needed for correctness (`talos:upgrade` and config generation); update `docs/src/k8s/tuppr.md`, which tells the reader to run `task talos:install`; do not reintroduce any dependency from `containers` on this repository; make the memory-symlink loop use the current repository path; keep Codespaces-only branches working; keep a documented way to run the tool install for a machine without the image if still wanted. Land the change while the old image still works, so it can be verified on the current local devcontainer first.
 - Check: a fresh local devcontainer start with the current image passes the three lifecycle commands; the same scripts pass in a scratch container from the T2 image; `task lint:all` read; `bash .agents/tests/run.sh`; `.agents/bin/check-plans`. Report each as PASS, FAIL or NOT RUN.
 
 ## T18. ArgoCD account for the workspace
@@ -192,7 +194,24 @@ task talos:apply-config
   - the Talos `ServiceAccount` with `os:reader`, and RBAC that lets nothing but GitOps create `serviceaccounts.talos.dev` there;
   - the Kubernetes ServiceAccount and read-only RBAC from D27 as explicit lists, no wildcard resources: the built-in `view` ClusterRole plus one reviewed ClusterRole for the cluster-scoped resources and the CRD groups the owner uses (derive the list from the live CRDs with a read-only `kubectl get crd`, justify each group, and review each resource type for credential-bearing fields). Subresources are granted only where named (`pods/log`);
   - the Coder provisioner's Role and RoleBinding in `dev-workspace`: manage Deployments; `get`, `list` and `watch` on Pods and events only if T5 shows the template's rollout wait needs them; no PVC permission, because the template only references the existing claim (D39); no `externalsecrets`, `replicationsources`, RBAC or `serviceaccounts.talos.dev`;
-  - the PVC `dev-workspace-data` (20Gi, `ceph-block`, D39), the BWS-token `ExternalSecret` (T4), the backup `ExternalSecret` and the VolSync `ReplicationSource` for that PVC, and the ingress deny-all NetworkPolicy (D22).
+  - the workspace list (D42): a values list, one entry per workspace, each rendering two PVCs (`<workspace>-home` about 5 Gi and `<workspace>-src` about 30 Gi, on `ceph-block`, D39, D41) and, with `charts/volsync` and `pvc.existingClaim`, two backups (home every 6 h, source daily; the chart default is 12 h, so both schedules are set explicitly; `restore.enabled: false` on live claims, section 2a of `plan.md`). Also the BWS-token `ExternalSecret` (T4), the backup `ExternalSecret`s and the ingress deny-all NetworkPolicy (D22). The provisioner still gets no PVC permission (D35);
 - Check (local): `helm template` or `kubectl kustomize`; `task lint:all` read; `.agents/bin/check-plans`.
-- Check (live; the sync is consent-gated, the checks are READ-class and read no secret): (1) review the effective rules, not only the source: `kubectl get clusterrole view -o yaml` (aggregated rules) and `kubectl auth can-i --list --as=system:serviceaccount:dev-workspace:<name>`; (2) concrete negative checks with `kubectl auth can-i --as=...`, each must answer `no`: `get`, `list`, `watch` on `secrets`; `get` on `nodes/proxy`, `pods/proxy`, `services/proxy`; `get` and `create` on `pods/exec`, `pods/attach`, `pods/portforward`; `create` on `serviceaccounts/token`; `update` and `patch` on `pods/ephemeralcontainers`; `get` on `certificatesigningrequests`; `impersonate`, `escalate`, `bind`; and `create`, `update`, `patch`, `delete` on each of `pods`, `deployments`, `configmaps`, `services`, `namespaces`, `roles`, `rolebindings`, `clusterroles`, `clusterrolebindings`, `serviceaccounts`, `customresourcedefinitions`, `externalsecrets` and `serviceaccounts.talos.dev`. A check on `*` alone is not evidence; (3) positive control: `yes` for `get`, `list` and `watch` on `pods`, `nodes`, `namespaces` and the chosen CRD resources; (4) the provisioner ServiceAccount answers `no` for `externalsecrets`, `replicationsources`, `roles`, `rolebindings` and `serviceaccounts.talos.dev` in `dev-workspace`, and `no` for `persistentvolumeclaims` as well, and `yes` only for the workload objects of D35.
+- Check (live; the sync is consent-gated, the checks are READ-class and read no secret): (1) review the effective rules, not only the source: `kubectl get clusterrole view -o yaml` (aggregated rules) and `kubectl auth can-i --list --as=system:serviceaccount:dev-workspace:<name>`; (2) concrete negative checks with `kubectl auth can-i --as=...`, each must answer `no`: `get`, `list`, `watch` on `secrets`; `get` on `nodes/proxy`, `pods/proxy`, `services/proxy`; `get` and `create` on `pods/exec`, `pods/attach`, `pods/portforward`; `create` on `serviceaccounts/token`; `update` and `patch` on `pods/ephemeralcontainers`; `get` on `certificatesigningrequests`; `impersonate`, `escalate`, `bind`; and `create`, `update`, `patch`, `delete` on each of `pods`, `deployments`, `configmaps`, `services`, `namespaces`, `roles`, `rolebindings`, `clusterroles`, `clusterrolebindings`, `serviceaccounts`, `customresourcedefinitions`, `externalsecrets` and `serviceaccounts.talos.dev`. A check on `*` alone is not evidence; (3) positive control: `yes` for `get`, `list` and `watch` on `pods`, `nodes`, `namespaces` and the chosen CRD resources; (4) both PVCs of the first workspace exist, are `Bound`, and are mounted by name; (5) the provisioner ServiceAccount answers `no` for `externalsecrets`, `replicationsources`, `roles`, `rolebindings` and `serviceaccounts.talos.dev` in `dev-workspace`, and `no` for `persistentvolumeclaims` as well, and `yes` only for the workload objects of D35.
 - Consent: a merge deploys the namespace and RBAC (ArgoCD sync); ask before merging and before syncing.
+
+## T21. Dev StorageClass (dropped)
+
+- Status: dropped by the owner on 2026-11-03 (D44). The workspace PVCs use `ceph-block`. The number is kept so references to T22 and T23 stay valid.
+
+## T22. Test the pod hardening on this image (D43)
+
+- Status: todo. Blocked by: consent for the scratch pod. Needs the pinned image only.
+- Do (consent-gated; scratch namespace labelled `pod-security.kubernetes.io/enforce: restricted`, then deleted): run the image with the pod settings of T5 plus `readOnlyRootFilesystem: true`, `emptyDir`s on `/tmp` and `/cache`, a PVC on the home path, and `fsGroup: 1000` with `fsGroupChangePolicy: OnRootMismatch`. Check: the pod is admitted at `restricted`; `cp -rn /etc/skel/. "$HOME"/` works on an empty home and a second run changes nothing; `mise use -g`, `mise install`, `git`, `npm ci`, `go build` and `terraform init` work; the Coder agent starts; list every path that needed to be writable. Record start time with a populated volume, to confirm `OnRootMismatch` avoids the walk.
+- Output: a report in `evidence.md`; the answer to Q24 (namespace level, `readOnlyRootFilesystem` kept or not).
+- Check: report each as PASS, FAIL or NOT RUN with the reason.
+
+## T23. Try the image in a local devcontainer (D46)
+
+- Status: todo. Blocked by: nothing for the image; the `home-ops` switch itself is T10.
+- Do: in a scratch directory outside this repository (not committed), write a `devcontainer.json` that references the pinned image with no `features` block, open it with the devcontainer CLI or VS Code, and check that the image label mounts the named volume `dev-workstation-cache` on `/cache` (the image says no test covers this), that `mise activate bash` makes a repository's `mise.toml` win, and that `GOMODCACHE`, `npm_config_cache` and `TF_PLUGIN_CACHE_DIR` resolve under `/cache`. Report anything that differs from the image notes.
+- Check: PASS, FAIL or NOT RUN with the reason; no change to the repository's own `.devcontainer`.
