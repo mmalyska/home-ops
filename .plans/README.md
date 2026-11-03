@@ -74,4 +74,4 @@ Archived plans are history, not instructions: see [`.archive/.plans/README.md`](
 .agents/bin/check-plans --front-matter .plans/<slug>/plan.md
 ```
 
-Output is `ERROR <path>: <message>` or `WARN <path>: <message>`, sorted, then a summary; exit 1 means at least one error. It reads files only. The tests are `.agents/tests/test_check_plans.sh`, run by `bash .agents/tests/run.sh`.
+Output is `ERROR <path>: <message>` or `WARN <path>: <message>`, sorted, then a summary; exit 1 means at least one error. It reads files only.
