@@ -79,7 +79,7 @@ coder templates push <template-name> --directory cluster/apps/ai/coder/workspace
 
 ## T6. Spike: repository bootstrap
 
-- Status: todo. Blocked by: T2 (a scratch build of the T2 Dockerfile is enough to start; the spike runs inside the image).
+- Status: static analysis done 2026-11-03 (`bootstrap.md`, predicted findings only); the runtime run in a scratch container is NOT RUN (no container runtime in the agent session). Blocked by: T2 (a scratch build of the T2 Dockerfile is enough to start; the spike runs inside the image).
 - Do: decide how the workspace runs each repository's setup. Option A: the image bootstrap calls the `onCreateCommand`, `updateContentCommand` and `postStartCommand` scripts named in the repository's `devcontainer.json` (note that file may contain comments, so parse it with a JSONC-aware tool). Option B: each repository gets a tool-agnostic `setup` entry point that `devcontainer.json` also calls. Try A on a copy of `home-ops` in a scratch container started from the T2 image and record what breaks (Codespaces-only branches, `NET_ADMIN`, hard-coded `/workspaces/home-ops` in `postStartCommand.sh`, `task` targets that expect the VPN, `task init` reading the Brewfile, the Homebrew path to `chezmoi`, `sudo` calls, the empty-home seed from D34).
 - Output: `.plans/remote-dev-workspace/bootstrap.md` with the chosen option, the list of script changes (which become T17), and the generalised memory-symlink loop for `.claude/memory`.
 - Check: the spike runs to the end on both amd64 and arm64 if arm64 is available; no step needs the cluster or secrets.
