@@ -4,7 +4,7 @@
 
 Each task can be executed without reading `plan.md`. A task that depends on an open question (Qn) is blocked until the owner answers it; the question text is in `plan.md`. Do all repository work in a linked worktree; run `.agents/bin/worktree-preflight` before the first write. Every command that changes cluster or external state needs fresh consent from the owner in the current session.
 
-Revised 2026-11-03 (image 1.0.0 adopted, storage design D40 to D48): T2 and T3 are done, T20 to T23 are new, and T5, T7, T8, T9, T17 and T19 changed. Task text refers to decisions in `plan.md`.
+Revised 2026-11-03 (image 1.0.0 adopted, storage design D40 to D47): T2 and T3 are done, T21 to T23 are new, and T5, T7, T8, T9, T17 and T19 changed. Task text refers to decisions in `plan.md`.
 
 Common context: the goal is one always-on Coder workspace, on the Talos cluster, for several repositories of the owner, built from one shared multi-arch image published from `mmalyska/containers`. Secrets come from one dedicated BWS project per workspace type. `sandbox-*` images and the `devops` workspace belong to Hermes and must not be changed.
 
@@ -12,7 +12,7 @@ Dependency order (template preparation is separate from creating the first works
 
 ```text
 T15, T1, T2, T3 (done: image 1.0.0 published) ---> T22, T23 (hardening and devcontainer tests)
-T20 (measurements, consent) --> sizes final ------> T21 (dev StorageClass) --> T19
+T21 (dev StorageClass) ---------------------------> T19
 T22 ----------------------------------------------> T5 (template, no workspace)
 T13 (Talos config) -------------------------------> T5
 T19 (namespace, RBAC, PVC pairs, backups) --------> T5
@@ -61,7 +61,7 @@ argocd app sync <app-name>
   - image from T3 (digest-pinned, never the bare tag); `arch` follows the image platform; PATH and `mise` behaviour as in D46 (scripts that need a repository's tool versions use `mise exec`);
   - runs as `vscode`, non-root, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `seccompProfile: RuntimeDefault`, `fsGroup: 1000`, `fsGroupChangePolicy: OnRootMismatch`, and `readOnlyRootFilesystem: true` if T22 shows it works (D43);
   - memory request = limit = 3Gi; CPU limit 2; CPU request from T9 (start at 500m); `ephemeral-storage` request and limit above the two `sizeLimit`s plus margin (D43);
-  - the two PVCs of the workspace (home and source, created and owned by GitOps in T19, D39, D41) mounted by name, without `subPath`: home at `/home/vscode` and source at `/workspaces`. The template only references them; it creates neither and has no size parameter. `/cache` and `/tmp` are `emptyDir`s with `sizeLimit` (about 20 Gi and 5 Gi, final sizes from T20). At workspace start the step `cp -rn /etc/skel/. "$HOME"/` fills an empty home (D45); nothing else is seeded and no ownership step is needed;
+  - the two PVCs of the workspace (home and source, created and owned by GitOps in T19, D39, D41) mounted by name, without `subPath`: home at `/home/vscode` and source at `/workspaces`. The template only references them; it creates neither and has no size parameter. `/cache` and `/tmp` are `emptyDir`s with `sizeLimit` (about 20 Gi and 5 Gi). At workspace start the step `cp -rn /etc/skel/. "$HOME"/` fills an empty home (D45); nothing else is seeded and no ownership step is needed;
   - SSH through the Coder agent only (D15): no sshd, no LoadBalancer Service, no `authorized_key` parameter;
   - runs in the namespace `dev-workspace` (D28). The provisioner's Role there is created by T19 and allows only the workload objects the template needs (D35): it manages Deployments and has no PVC permission; the template creates no `ExternalSecret`, `ReplicationSource`, RBAC object or `serviceaccounts.talos.dev`;
   - `emptyDir` with `medium: Memory` for the SSH signing key (loaded into an in-pod ssh-agent, D32), sized small (for example 64Mi) and counted in the 3Gi limit;
@@ -117,7 +117,7 @@ coder create <workspace-name> --template <template-name>
 ## T9. Measure and adjust resources
 
 - Status: todo. Blocked by: T7. Run for two weeks after first use.
-- Do: query Prometheus (use the `prometheus-historical-queries` skill) for the workspace pod: max and p95 of `container_memory_working_set_bytes`, CPU usage p95, throttling, restarts and OOM kills; and the usage of both PVCs, of `/cache` and `/tmp` against their `sizeLimit`s (`kubelet_volume_stats_*` or the pod's ephemeral-storage usage), any eviction, and etcd WAL fsync p99 on the hosting node. Check node headroom, including `/var`, on the node hosting the pod.
+- Do: query Prometheus (use the `prometheus-historical-queries` skill) for the workspace pod: max and p95 of `container_memory_working_set_bytes`, CPU usage p95, throttling, restarts and OOM kills; and the usage of both PVCs, of `/cache` and `/tmp` against their `sizeLimit`s (the pod's ephemeral-storage usage) and any eviction. Check node headroom on the node hosting the pod.
 - Output: a table in `plan.md` Status with measured values and the proposed new requests and limits; ask the owner before changing them.
 - Check: numbers come from queries, not estimates; the memory limit stays above the observed peak by a stated margin.
 
@@ -200,29 +200,17 @@ task talos:apply-config
 - Check (live; the sync is consent-gated, the checks are READ-class and read no secret): (1) review the effective rules, not only the source: `kubectl get clusterrole view -o yaml` (aggregated rules) and `kubectl auth can-i --list --as=system:serviceaccount:dev-workspace:<name>`; (2) concrete negative checks with `kubectl auth can-i --as=...`, each must answer `no`: `get`, `list`, `watch` on `secrets`; `get` on `nodes/proxy`, `pods/proxy`, `services/proxy`; `get` and `create` on `pods/exec`, `pods/attach`, `pods/portforward`; `create` on `serviceaccounts/token`; `update` and `patch` on `pods/ephemeralcontainers`; `get` on `certificatesigningrequests`; `impersonate`, `escalate`, `bind`; and `create`, `update`, `patch`, `delete` on each of `pods`, `deployments`, `configmaps`, `services`, `namespaces`, `roles`, `rolebindings`, `clusterroles`, `clusterrolebindings`, `serviceaccounts`, `customresourcedefinitions`, `externalsecrets` and `serviceaccounts.talos.dev`. A check on `*` alone is not evidence; (3) positive control: `yes` for `get`, `list` and `watch` on `pods`, `nodes`, `namespaces` and the chosen CRD resources; (4) both PVCs of the first workspace exist, are `Bound`, and are mounted by name; (5) the provisioner ServiceAccount answers `no` for `externalsecrets`, `replicationsources`, `roles`, `rolebindings` and `serviceaccounts.talos.dev` in `dev-workspace`, and `no` for `persistentvolumeclaims` as well, and `yes` only for the workload objects of D35.
 - Consent: a merge deploys the namespace and RBAC (ArgoCD sync); ask before merging and before syncing.
 
-## T20. Measure before committing the storage design (D48)
-
-- Status: todo. Blocked by: consent for each live step. The read-only baselines of 2026-11-03 are done and recorded in [evidence.md](evidence.md).
-- Why: the design in D40 is unmeasured. Its biggest risk is that `/cache` and `/tmp` share the NVMe `/var` with etcd, the Ceph mons and image layers (R10).
-- Do (consent-gated: needs a scratch pod, RUNTIME_MUTATION; name the namespace, node and image in the request; use the pinned image of D46; delete the scratch objects afterwards and name them first):
-  1. On one RBD volume and on one `emptyDir`, time `git status` on a large repository, `npm ci` and a Go build. Use `home-ops` or `containers` for git, and a repository with a real `package-lock.json` and a real Go module for the others. Run each three times, cold cache first, and report the median and the spread.
-  2. During a real build on the `emptyDir`, record etcd WAL fsync p99 and p99.9 on the hosting node (query `etcd_disk_wal_fsync_duration_seconds_bucket`), next to the baseline of about 3.9 ms (7-day maximum about 4.4 ms). If the p99 passes 10 ms, or rises by more than a stated margin, lower the workspace's limits or rethink cache placement; the decision goes to the owner (Q24).
-  3. Record free space on `/var` on each node, because `emptyDir` and image layers both use it, and find what is growing it (about 2 to 3 GB/day today, measured on 2026-11-03; mc3 is highest at 77 %): `crictl`-level image and container-log sizes through read-only `talosctl` commands, not a guess. `discard_unpacked_layers: false` keeps compressed and unpacked layers. An `emptyDir` over its `sizeLimit` evicts the pod, so size it with margin.
-  4. Record Ceph client writes per day (`ceph_pool_wr_bytes`) and per-OSD `node_disk_written_bytes_total` with and without the workspace running (baseline 27 GB/day client, about 26 GB/day per OSD). `node_modules` stays on Ceph because it lives inside each repository; if those writes matter, propose a fix (for example a per-repository `emptyDir` mount for `node_modules`, which the owner decides).
-- Output: a results table in `evidence.md`, each line PASS, FAIL or NOT RUN with the reason, and a proposal for the final `sizeLimit`s. Ask the owner (Q24) before changing D40.
-- Check: numbers come from queries and timings, not estimates.
-
 ## T21. Dev StorageClass (D44)
 
-- Status: todo. Blocked by: T20 for the `discard` decision; the class itself can be reviewed earlier.
-- Do: add a StorageClass for dev volumes next to the `ceph-block` definition in `cluster/apps/core/rook-ceph/` (a separate object; never edit `ceph-block`, its `parameters` are immutable and it is the cluster default). Same pool and parameters, `reclaimPolicy: Retain`, `allowVolumeExpansion: true`, not the default class. Add `mountOptions: [discard]` only if the test below says so. Test `discard` on a scratch PVC (consent-gated): write and delete a few GB, compare `rbd du` before and after, and note the delete latency; OSD-level discard is already on (`reference_ceph_osd_discard.md`), so a periodic `fstrim` is the alternative to compare. Document that a deleted PVC leaves a Released PV that must be deleted by hand (DESTRUCTIVE).
+- Status: todo. Blocked by: nothing.
+- Do: add a StorageClass for dev volumes next to the `ceph-block` definition in `cluster/apps/core/rook-ceph/` (a separate object; never edit `ceph-block`, its `parameters` are immutable and it is the cluster default). Same pool and parameters, `reclaimPolicy: Retain`, `allowVolumeExpansion: true`, not the default class. No `mountOptions`: discard and other disk tuning belong to the separate disk topic. Document that a deleted PVC leaves a Released PV that must be deleted by hand (DESTRUCTIVE).
 - Check (local): `helm template` for the rook-ceph cluster app, `task lint:all` read, `.agents/bin/check-plans`. A merge deploys; ask before merging and before any sync.
 
 ## T22. Test the pod hardening on this image (D43)
 
 - Status: todo. Blocked by: consent for the scratch pod. Needs the pinned image only.
 - Do (consent-gated; scratch namespace labelled `pod-security.kubernetes.io/enforce: restricted`, then deleted): run the image with the pod settings of T5 plus `readOnlyRootFilesystem: true`, `emptyDir`s on `/tmp` and `/cache`, a PVC on the home path, and `fsGroup: 1000` with `fsGroupChangePolicy: OnRootMismatch`. Check: the pod is admitted at `restricted`; `cp -rn /etc/skel/. "$HOME"/` works on an empty home and a second run changes nothing; `mise use -g`, `mise install`, `git`, `npm ci`, `go build` and `terraform init` work; the Coder agent starts; list every path that needed to be writable. Record start time with a populated volume, to confirm `OnRootMismatch` avoids the walk.
-- Output: a report in `evidence.md`; the answer to Q26 (namespace level, `readOnlyRootFilesystem` kept or not).
+- Output: a report in `evidence.md`; the answer to Q24 (namespace level, `readOnlyRootFilesystem` kept or not).
 - Check: report each as PASS, FAIL or NOT RUN with the reason.
 
 ## T23. Try the image in a local devcontainer (D46)
