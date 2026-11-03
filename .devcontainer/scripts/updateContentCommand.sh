@@ -7,7 +7,10 @@ task precommit:init
 task cilium:init
 if [ -z "${CODESPACES}" ]; then
   task terraform:upgrade:cloudflare
-  task talos:init
+  # The Coder workspace has no TALHELPER_* secrets (it uses a mounted os:reader config).
+  if [ -n "${TALHELPER_OSCERT}" ]; then
+    task talos:init
+  fi
 fi
 
 echo "Done!"

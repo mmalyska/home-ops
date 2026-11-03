@@ -9,7 +9,10 @@ vars:
   TALOS_DIR: "{{.PROJECT_DIR}}/provision/talos"
 
 env:
-  KUBECONFIG: "/home/vscode/.kube/config"
+  # Local flow (TALHELPER_* secrets present) or an existing kubeconfig: use ~/.kube/config.
+  # Otherwise (Coder workspace) leave KUBECONFIG alone so kubectl uses the in-cluster configuration.
+  KUBECONFIG:
+    sh: 'if [ -f "$HOME/.kube/config" ] || [ -n "${TALHELPER_OSCERT:-}" ]; then echo "$HOME/.kube/config"; else echo "${KUBECONFIG:-}"; fi'
 
 includes:
   bootstrap: .taskfiles/bootstrap
@@ -28,7 +31,22 @@ includes:
 tasks:
   default: task -l
   init:
-    desc: Initialize workstation dependencies with Brew
+    desc: Check that the workstation tools are present (the dev-workstation image provides them)
+    cmds:
+      - echo "All required tools are present."
+    preconditions:
+      - sh: |
+          missing=""
+          for t in direnv egctl gitleaks task helm ipcalc jq kubectl kustomize prettier stern terraform yamllint yq argocd kubelogin k9s pre-commit mkdocs gh helmfile chezmoi node; do
+            command -v "$t" >/dev/null 2>&1 || missing="$missing $t"
+          done
+          [ -z "$missing" ] || { echo "missing tools:$missing" >&2; exit 1; }
+        msg: |
+          Some required tools are missing (listed above). Use the dev-workstation image,
+          or on a machine without it run `task init:brew` (Homebrew).
+
+  init:brew:
+    desc: Install workstation tools with Homebrew, for a machine without the dev-workstation image
     cmds:
       - brew update
       - brew bundle upgrade --file=.github/.devcontainer/local-features/common/Brewfile {{.CLI_ARGS}}
@@ -38,5 +56,4 @@ tasks:
           Homebrew is not installed. Using MacOS, Linux or WSL?
           Head over to https://brew.sh to get up and running.
       - sh: test -f .github/.devcontainer/local-features/common/Brewfile
-        msg: |
-          Homebrew dependencies are not up to date. Run `task init` to update them.
+        msg: The Brewfile is missing.

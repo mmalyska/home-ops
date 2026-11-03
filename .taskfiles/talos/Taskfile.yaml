@@ -27,14 +27,33 @@ tasks:
 
   install:talos:
     internal: true
-    desc: Install talosctl
+    desc: Install talosctl (skipped with a warning when talosctl exists or sudo is missing)
     cmds:
-      - sudo rm -f /usr/local/bin/talosctl
-      - curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/{{ .TALOS_VERSION }}+g" | bash
-    generates:
-      - /usr/local/bin/talosctl
+      - |
+        set -eu
+        if command -v talosctl >/dev/null 2>&1; then
+          echo "WARN: talosctl $(talosctl version --client --short 2>/dev/null | grep -m1 '^Talos') is installed, pin is {{ .TALOS_VERSION }}; skipping install"
+          exit 0
+        fi
+        if ! command -v sudo >/dev/null 2>&1; then
+          echo "WARN: talosctl is not installed, pin is {{ .TALOS_VERSION }}, and sudo is not available; skipping install"
+          exit 0
+        fi
+        curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/{{ .TALOS_VERSION }}+g" | bash
     status:
       - talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+
+  client-version-warn:
+    internal: true
+    silent: true
+    desc: Warn when the talosctl client differs from the pinned Talos version
+    cmds:
+      - |
+        v="$(talosctl version --client --short 2>/dev/null | grep -m1 '^Talos')"
+        case "$v" in
+          *'Talos {{ .TALOS_VERSION }}') ;;
+          *) echo "WARN: talosctl client is '$v', pin is {{ .TALOS_VERSION }}; continuing" >&2 ;;
+        esac
 
   version:
     desc: Show Talos version on all nodes (task talos:version)
@@ -163,6 +182,7 @@ tasks:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
+      - task: client-version-warn
       - task: generate:talosconfig
       - for:
           var: NODE_LIST
@@ -274,6 +294,7 @@ tasks:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
+      - task: client-version-warn
       - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
     preconditions:
       - which envsubst
@@ -288,6 +309,7 @@ tasks:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
+      - task: client-version-warn
       - "{{.TALOS_DIR}}/scripts/pki-parity.sh {{.CLI_ARGS}}"
     preconditions:
       - which envsubst
