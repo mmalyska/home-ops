@@ -4,7 +4,7 @@
 
 Each task can be executed without reading `plan.md`. A task that depends on an open question (Qn) is blocked until the owner answers it; the question text is in `plan.md`. Do all repository work in a linked worktree; run `.agents/bin/worktree-preflight` before the first write. Every command that changes cluster or external state needs fresh consent from the owner in the current session.
 
-Revised 2026-11-03 (image 1.0.0 adopted, storage design D40 to D47): T2 and T3 are done, T21 to T23 are new, and T5, T7, T8, T9, T17 and T19 changed. Task text refers to decisions in `plan.md`.
+Revised 2026-11-03 (image 1.0.0 adopted, storage design D40 to D47): T2 and T3 are done, T22 and T23 are new, T21 was dropped, and T5, T7, T8, T9, T17 and T19 changed. Task text refers to decisions in `plan.md`.
 
 Common context: the goal is one always-on Coder workspace, on the Talos cluster, for several repositories of the owner, built from one shared multi-arch image published from `mmalyska/containers`. Secrets come from one dedicated BWS project per workspace type. `sandbox-*` images and the `devops` workspace belong to Hermes and must not be changed.
 
@@ -12,7 +12,6 @@ Dependency order (template preparation is separate from creating the first works
 
 ```text
 T15, T1, T2, T3 (done: image 1.0.0 published) ---> T22, T23 (hardening and devcontainer tests)
-T21 (dev StorageClass) ---------------------------> T19
 T22 ----------------------------------------------> T5 (template, no workspace)
 T13 (Talos config) -------------------------------> T5
 T19 (namespace, RBAC, PVC pairs, backups) --------> T5
@@ -111,7 +110,7 @@ coder create <workspace-name> --template <template-name>
 - Do: confirm in the workspace that the repository's Claude permission file and `AGENTS.md` consent rules apply (open `home-ops`, check that `.claude/settings.json` is read and a denied command is denied, including the ArgoCD sync and prune ask rules), and that the worktree preflight returns 0 in a worktree and 3 in the primary checkout. Then check what is on the backed-up volume, by file name only (`find`, never print contents):
   - accepted on the volume (D20): the Claude and Codex login files;
   - must stay off the volume: the SSH signing key, the Talos credential, the BWS access token and project reference, `GITHUB_TOKEN`, `TERRAFORM_TOKEN`, the ArgoCD token, and any file a tool writes when it persists a login (for example `.git-credentials`, the `gh` hosts file, Terraform CLI credentials, an `~/.kube/config`); T6 supplies the final list of file names.
-- Do (restore test, consent-gated): restore the latest snapshot of each of the two PVCs (home, every 6 h; source, daily) into a scratch volume, list file names, confirm the accepted login files are present in the home restore, the must-not-persist names are absent, and `/home/vscode` and `/workspaces` content and ownership are intact. Neither restore targets the live claim (`restore.enabled: false` on the live release). Delete the scratch volumes afterwards (DESTRUCTIVE for those scratch volumes only; name them first). With `Retain` (D44) the released PVs also need deleting by hand; name them too.
+- Do (restore test, consent-gated): restore the latest snapshot of each of the two PVCs (home, every 6 h; source, daily) into a scratch volume, list file names, confirm the accepted login files are present in the home restore, the must-not-persist names are absent, and `/home/vscode` and `/workspaces` content and ownership are intact. Neither restore targets the live claim (`restore.enabled: false` on the live release). Delete the scratch volumes afterwards (DESTRUCTIVE for those scratch volumes only; name them first).
 - Check: report each as PASS, FAIL or NOT RUN with the reason.
 
 ## T9. Measure and adjust resources
@@ -195,16 +194,14 @@ task talos:apply-config
   - the Talos `ServiceAccount` with `os:reader`, and RBAC that lets nothing but GitOps create `serviceaccounts.talos.dev` there;
   - the Kubernetes ServiceAccount and read-only RBAC from D27 as explicit lists, no wildcard resources: the built-in `view` ClusterRole plus one reviewed ClusterRole for the cluster-scoped resources and the CRD groups the owner uses (derive the list from the live CRDs with a read-only `kubectl get crd`, justify each group, and review each resource type for credential-bearing fields). Subresources are granted only where named (`pods/log`);
   - the Coder provisioner's Role and RoleBinding in `dev-workspace`: manage Deployments; `get`, `list` and `watch` on Pods and events only if T5 shows the template's rollout wait needs them; no PVC permission, because the template only references the existing claim (D39); no `externalsecrets`, `replicationsources`, RBAC or `serviceaccounts.talos.dev`;
-  - the workspace list (D42): a values list, one entry per workspace, each rendering two PVCs (`<workspace>-home` about 5 Gi and `<workspace>-src` about 30 Gi, on the T21 class or `ceph-block`, D39, D41) and, with `charts/volsync` and `pvc.existingClaim`, two backups (home every 6 h, source daily; the chart default is 12 h, so both schedules are set explicitly; `restore.enabled: false` on live claims, section 2a of `plan.md`). Also the BWS-token `ExternalSecret` (T4), the backup `ExternalSecret`s and the ingress deny-all NetworkPolicy (D22). The provisioner still gets no PVC permission (D35);
+  - the workspace list (D42): a values list, one entry per workspace, each rendering two PVCs (`<workspace>-home` about 5 Gi and `<workspace>-src` about 30 Gi, on `ceph-block`, D39, D41) and, with `charts/volsync` and `pvc.existingClaim`, two backups (home every 6 h, source daily; the chart default is 12 h, so both schedules are set explicitly; `restore.enabled: false` on live claims, section 2a of `plan.md`). Also the BWS-token `ExternalSecret` (T4), the backup `ExternalSecret`s and the ingress deny-all NetworkPolicy (D22). The provisioner still gets no PVC permission (D35);
 - Check (local): `helm template` or `kubectl kustomize`; `task lint:all` read; `.agents/bin/check-plans`.
 - Check (live; the sync is consent-gated, the checks are READ-class and read no secret): (1) review the effective rules, not only the source: `kubectl get clusterrole view -o yaml` (aggregated rules) and `kubectl auth can-i --list --as=system:serviceaccount:dev-workspace:<name>`; (2) concrete negative checks with `kubectl auth can-i --as=...`, each must answer `no`: `get`, `list`, `watch` on `secrets`; `get` on `nodes/proxy`, `pods/proxy`, `services/proxy`; `get` and `create` on `pods/exec`, `pods/attach`, `pods/portforward`; `create` on `serviceaccounts/token`; `update` and `patch` on `pods/ephemeralcontainers`; `get` on `certificatesigningrequests`; `impersonate`, `escalate`, `bind`; and `create`, `update`, `patch`, `delete` on each of `pods`, `deployments`, `configmaps`, `services`, `namespaces`, `roles`, `rolebindings`, `clusterroles`, `clusterrolebindings`, `serviceaccounts`, `customresourcedefinitions`, `externalsecrets` and `serviceaccounts.talos.dev`. A check on `*` alone is not evidence; (3) positive control: `yes` for `get`, `list` and `watch` on `pods`, `nodes`, `namespaces` and the chosen CRD resources; (4) both PVCs of the first workspace exist, are `Bound`, and are mounted by name; (5) the provisioner ServiceAccount answers `no` for `externalsecrets`, `replicationsources`, `roles`, `rolebindings` and `serviceaccounts.talos.dev` in `dev-workspace`, and `no` for `persistentvolumeclaims` as well, and `yes` only for the workload objects of D35.
 - Consent: a merge deploys the namespace and RBAC (ArgoCD sync); ask before merging and before syncing.
 
-## T21. Dev StorageClass (D44)
+## T21. Dev StorageClass (dropped)
 
-- Status: todo. Blocked by: nothing.
-- Do: add a StorageClass for dev volumes next to the `ceph-block` definition in `cluster/apps/core/rook-ceph/` (a separate object; never edit `ceph-block`, its `parameters` are immutable and it is the cluster default). Same pool and parameters, `reclaimPolicy: Retain`, `allowVolumeExpansion: true`, not the default class. No `mountOptions`: discard and other disk tuning belong to the separate disk topic. Document that a deleted PVC leaves a Released PV that must be deleted by hand (DESTRUCTIVE).
-- Check (local): `helm template` for the rook-ceph cluster app, `task lint:all` read, `.agents/bin/check-plans`. A merge deploys; ask before merging and before any sync.
+- Status: dropped by the owner on 2026-11-03 (D44). The workspace PVCs use `ceph-block`. The number is kept so references to T22 and T23 stay valid.
 
 ## T22. Test the pod hardening on this image (D43)
 
