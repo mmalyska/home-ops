@@ -65,3 +65,44 @@ kubectl auth can-i get pods --subresource=log $A                  # yes
 
 The same applies to `attach`, `portforward`, `ephemeralcontainers` and the `pods`, `services` and `nodes` `proxy`
 subresources. Cluster-scoped resources print a harmless "not namespace scoped" warning.
+
+## Argo CD account `dev-workspace`
+
+The workspace gets its own Argo CD local account (`argocd-cm`: `accounts.dev-workspace: apiKey`, so a token and no password
+login). SSO is not used from the workspace: the owner's identity and the `ArgoCDAdmins` group map to `role:admin` in
+`argocd-rbac-cm`, so an SSO session in the workspace would give a compromised workspace admin rights.
+
+| Capability                                                                        | Granted            | Why                                                                                |
+| --------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
+| Read applications, hard refresh                                                   | all applications   | `get` is the only permission a refresh needs (checked in the v3.5.7 source)        |
+| Sync, and prune as a sync option                                                  | the allowlist only | `sync` is the only permission a prune needs; the allowlist starts empty            |
+| Sync to another revision than `targetRevision`                                    | never              | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on |
+| Delete, create, update, actions, exec, repositories, clusters, projects, accounts | never              | not in the policy                                                                  |
+
+Responses mask live Secret values (`get` does not expose them).
+
+**Add an application to the allowlist** by a reviewed PR: one line in `argocd-rbac-cm`
+(`p, dev-workspace, applications, sync, <project>/<application>, allow`) and `argocd.argoproj.io/sync-options: Prune=false`
+on that application's PVCs and stateful owners (this stops Argo CD pruning those objects; it does not stop a destructive
+update or a deletion by another controller). Start with a disposable test application, then real ones. Initial
+exclusions: Argo CD itself, bootstrap and the ApplicationSets, access-control infrastructure, storage operators and the
+`dev-workspace` app.
+
+**Token.** The owner generates it (`argocd account generate-token --account dev-workspace`) and stores it, with the server
+address, in the dev BWS project as `ARGOCD_AUTH_TOKEN` and `ARGOCD_SERVER` (the address contains the private domain, so it is a
+secret value, not text in this repository). The agent never handles the token. Using it to sync or prune still needs the
+owner's consent for each action.
+
+**Checks after the sync of this change** (run by the owner, with the token, because they use the token):
+
+```sh
+argocd account can-i get applications '*/*'      # yes
+argocd account can-i sync applications '*/*'     # no   (allowlist empty)
+argocd account can-i override applications '*/*' # no
+argocd account can-i delete applications '*/*'   # no
+argocd account can-i create applications '*/*'   # no
+```
+
+The live `argocd-cm` must show `application.sync.requireOverridePrivilegeForRevisionSync: "true"`. After the first allowlist
+entry, `sync` answers `yes` for that application only. A test that a sync cannot select a non-`main` revision runs only
+against a disposable application in a scratch project, with consent.

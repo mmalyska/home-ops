@@ -11,6 +11,11 @@ data:
   users.session.duration: "24h"
   timeout.reconciliation: "1h"
   accounts.mmalyska: apiKey,login
+  # API key only, no password login: the token for the Coder dev workspace (T18). Policy in argocd-rbac-cm.
+  accounts.dev-workspace: apiKey
+  # A sync to a revision other than the application's targetRevision (an unmerged branch, an older commit)
+  # needs the `override` action, which no policy grants to dev-workspace. New since Argo CD v3.2.
+  application.sync.requireOverridePrivilegeForRevisionSync: "true"
   oidc.config: |
     name: Keycloak
     issuer: https://l.<secret:private-domain>/realms/home
