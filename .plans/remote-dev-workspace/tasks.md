@@ -86,7 +86,7 @@ coder templates push <template-name> --directory cluster/apps/ai/coder/workspace
 
 ## T7. Create the first workspace and log in
 
-- Status: in progress 2026-11-04 (workspace created; signing, kubectl, talosctl, volume hygiene, per-repository setup and the Argo CD read check pass, details in `evidence.md`; persistence across restarts passes for files, volumes, signing key, repositories, hooks, the Claude login and a user-installed `mise` tool, the template environment and the `.envrc` loader pass; open: the Codex login surviving a restart, and the Argo CD stage 2). Blocked by: T5, T6, T14, T16, T17. The ArgoCD checks also need T18.
+- Status: in progress 2026-11-04 (workspace created; signing, kubectl, talosctl, volume hygiene, per-repository setup and the Argo CD read check pass, details in `evidence.md`; persistence across restarts passes for files, volumes, signing key, repositories, hooks, the Claude login and a user-installed `mise` tool, the template environment and the `.envrc` loader pass; open: the Argo CD stage 2). Blocked by: T5, T6, T14, T16, T17. The ArgoCD checks also need T18.
 - Do (owner at the keyboard; creating a workspace is RUNTIME_MUTATION, ask first): create the workspace from the T5 template, connect with VS Code through the Coder extension, run `claude` and `codex` interactive login (D20), let the bootstrap clone the repositories, run the manual per-repository setup in each (`direnv allow`, `task precommit:init`; D48), check SSH signing with a throwaway commit in a scratch repository (not on `main` of a real repo).
 
 ```sh consent-gated
