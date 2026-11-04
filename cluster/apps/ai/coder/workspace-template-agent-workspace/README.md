@@ -31,8 +31,8 @@ equal `resticRefs` there. No BWS machine token or `bws` CLI loader is used here,
 
 The startup script starts `sshd` (from the image) as `vscode` on port 2222: key login only, no forwarding, host key on the home
 volume. Session environment comes from `~/.ssh/environment` (a symlink to a file in `/cache/sshd`, rewritten at every start).
-The image must contain `openssh-server` (`mmalyska/containers`, `dev-workstation`): bump the digest in `main.tf` to a build that
-has it. Until then the log reads "sshd is not in this image" and only the Coder agent works.
+The image must contain `openssh-server` (`mmalyska/containers`, `dev-workstation`, since #783); the digest in `main.tf` is a build
+that has it. With an older image the log reads "sshd is not in this image" and only the Coder agent works.
 
 ## Deploying
 
