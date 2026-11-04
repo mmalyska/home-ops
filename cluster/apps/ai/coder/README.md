@@ -34,6 +34,8 @@ A second template, `workspace-template-dev-workspace/`, runs the `dev-workstatio
 | `sandbox` (`workspace-template/`) | `sandbox-*:rolling` | `coder` | sshd on a fixed LB IP, or the Coder agent | one PVC per workspace, created by the template | Hermes and infrastructure work (`devops`) |
 | `dev-workspace` (`workspace-template-dev-workspace/`) | `dev-workstation`, pinned by digest | `dev-workspace` | Coder agent only (no sshd, no Service) | two PVCs (`-home` 5 Gi, `-src` 30 Gi) owned by GitOps in `cluster/apps/system/dev-workspace` | Always-on development of `home-ops` and other repositories |
 
+A third template, `workspace-template-agent-workspace/` (`agent-workspace`), is for AI agents: it creates its own PVCs, ServiceAccount, Talos credential, BWS Secret and backups in the `agent-workspaces` namespace (see [Agent workspaces namespace](../../../../docs/src/k8s/agent-workspaces.md)). `dev-workspace` stays the owner's personal workspace.
+
 The `dev-workspace` template creates one Deployment and nothing else; the PVCs, backups, RBAC, Talos credential and BWS-token Secret belong to the `dev-workspace` app. How to use it: [Remote development workspace](../../../../docs/src/k8s/remote-dev-workspace.md). Template details: its own README.
 
 **Resource limits per workspace**: 500m–1000m CPU, 1–2 Gi RAM, 20 Gi home PVC (ceph-block, RWO).

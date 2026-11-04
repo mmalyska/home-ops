@@ -1,0 +1,10 @@
+# Ingress deny-all for every pod in the namespace. Egress stays open: the Coder agent connects out to the Coder
+# server, and the workspace reaches the API server, Talos and the internet.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

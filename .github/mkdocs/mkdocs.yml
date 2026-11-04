@@ -148,6 +148,7 @@ nav:
           - "tuppr (upgrades)": k8s/tuppr.md
           - "Remote development workspace": k8s/remote-dev-workspace.md
           - "Dev workspace namespace": k8s/dev-workspace.md
+          - "Agent workspaces namespace": k8s/agent-workspaces.md
           - "Media stack (usenet)": k8s/media.md
           - "Nextcloud": k8s/nextcloud.md
           - "Resource sizing": k8s/resource-sizing.md
