@@ -93,7 +93,7 @@ exclusions: Argo CD itself, bootstrap and the ApplicationSets, access-control in
 
 **Token.** The owner generates it (`argocd account generate-token --account dev-workspace`) and stores it, with the server
 address, in the dev BWS project as `ARGOCD_AUTH_TOKEN` and `ARGOCD_SERVER` (the address contains the private domain, so it is a
-secret value, not text in this repository). The agent never handles the token. Using it to sync or prune still needs the
+secret value, not text in this repository). The token is in the environment of every process in the pod (the template exports the BWS project, see the template README), so an agent can read it; the permission rules and the argocd RBAC are the limit, not secrecy. Using it to sync or prune still needs the
 owner's consent for each action.
 
 **Checks after the sync of this change** (run by the owner, with the token, because they use the token):

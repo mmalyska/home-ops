@@ -30,6 +30,12 @@ allows Deployments only.
   `TALOSCONFIG` points at its `config`. Role `os:reader`; the config has no nodes list, so `talosctl` needs `--nodes`.
 - Kubernetes: the pod ServiceAccount token; `kubectl` uses the in-cluster configuration and no kubeconfig exists.
 - Agent environment: `REMOTE_WORKSPACE=1` (the dotfiles switch on the workspace behaviour), `TALOSCONFIG`, `SSH_AUTH_SOCK`, `ARGOCD_OPTS=--grpc-web` (Argo CD is behind the HTTP gateway) and `KUBECACHEDIR=/cache/kube` (kubectl's cache stays off the backed-up home volume). The remaining secrets (`GITHUB_TOKEN`, `TERRAFORM_TOKEN`, `ARGOCD_AUTH_TOKEN`, `ARGOCD_SERVER`) are not set by the template: `home-ops/.envrc` loads them from the workspace's BWS project through direnv, one `export` per secret from JSON, skipping `SSH_SIGNING_KEY`, any multi-line value and any invalid name. `bash .github/tests/envrc.sh` tests that rule.
+- BWS secrets: the container command exports every secret of the workspace's BWS project as an environment variable before the
+  Coder agent starts, so all processes in the pod inherit them (terminals, ssh, VS Code server, Claude Code, Codex and the
+  commands they run). This is not tied to any repository. Skipped: `SSH_SIGNING_KEY` (only in the ssh-agent), multi-line
+  values, invalid variable names and `PATH`, `HOME`, `PWD`, `SHELL`, `USER`, `LOGNAME`, `IFS`, `BASH_ENV`, `ENV`, `LD_*`, `CODER*`
+  and `BWS_*`. Nothing is written to disk. Secrets are read once at pod start; after a change in BWS, restart the workspace.
+  Any process of the same user can read them from `/proc/<pid>/environ`.
 
 ## Startup
 
@@ -46,8 +52,8 @@ environment sets `REMOTE_WORKSPACE=1`, so the dotfiles switch on the workspace s
 `/workspaces/<name>`. Later starts do not pull; run `chezmoi update` yourself. To redo the first step, delete
 `~/.local/share/chezmoi`.
 
-The GitHub token is read from the workspace's BWS project (secret `GITHUB_TOKEN`) into a shell variable and passed only to that
-command, so private repositories can be cloned. It is never printed or written to disk. If it is missing, public repositories
+The GitHub token (secret `GITHUB_TOKEN`) is in the environment like the other BWS secrets (see above), so private repositories
+can be cloned and `gh` works. `bootstrap.sh` still reads it from BWS itself, which keeps the first start working. It is never printed or written to disk. If it is missing, public repositories
 still clone.
 
 **This workspace does not run a repository's `.devcontainer` lifecycle scripts** (plan D48). It serves several repositories and
