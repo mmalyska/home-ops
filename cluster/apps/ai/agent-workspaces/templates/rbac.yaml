@@ -160,7 +160,7 @@ subjects:
     kind: Group
     name: system:serviceaccounts:{{ .Release.Namespace }}
 ---
-# What the Coder provisioner may do here: everything the agent-workspace template creates. Secrets are not in the
+# What the Coder provisioner may do here: everything the agent-workspace template creates (the SSH Service included). Secrets are not in the
 # list: the kubelet and Talos create them. The Talos and ExternalSecret rights are the sensitive ones and are
 # bounded by the ValidatingAdmissionPolicies in guardrails.yaml, not by this Role.
 apiVersion: rbac.authorization.k8s.io/v1
@@ -172,7 +172,7 @@ rules:
     resources: [deployments]
     verbs: [create, get, list, watch, update, patch, delete]
   - apiGroups: [""]
-    resources: [persistentvolumeclaims, serviceaccounts]
+    resources: [persistentvolumeclaims, serviceaccounts, services]
     verbs: [create, get, list, watch, update, patch, delete]
   - apiGroups: [talos.dev]
     resources: [serviceaccounts]

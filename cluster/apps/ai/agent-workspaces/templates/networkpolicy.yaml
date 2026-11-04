@@ -8,3 +8,31 @@ spec:
   podSelector: {}
   policyTypes:
     - Ingress
+{{- if .Values.sshClients }}
+---
+# SSH into the workspaces (port 2222, the agent-workspace template's sshd) from the listed client pods only. Each entry
+# is a namespace plus pod labels (both must match). The login still needs the workspace's authorized key.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ssh-from-agents
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: agent-workspace
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+{{- range .Values.sshClients }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .namespace }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .podLabels | nindent 14 }}
+{{- end }}
+      ports:
+        - protocol: TCP
+          port: 2222
+{{- end }}

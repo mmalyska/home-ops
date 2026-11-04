@@ -8,20 +8,14 @@
 # This workspace does not run a repository's .devcontainer lifecycle scripts (plan D48). Per-repository setup
 # (direnv allow, pre-commit hooks, terraform init) is done by hand for now; see the template README.
 #
-# A failure is logged and does not stop the workspace. The GitHub token is read from the workspace's BWS project into a
-# shell variable and handed only to the command that needs it (private repositories); it is never printed or written to disk.
+# A failure is logged and does not stop the workspace.
 set -u
 
 log() { echo "bootstrap: $*"; }
 
-# bws_value NAME: value of the secret NAME in the workspace's BWS project, empty when unavailable. Never printed.
-bws_value() {
-    [ -n "${BWS_ACCESS_TOKEN:-}" ] && [ -n "${BWS_PROJECT_ID:-}" ] || return 0
-    bws secret list "$BWS_PROJECT_ID" -o json 2>/dev/null \
-        | jq -r --arg k "$1" '.[] | select(.key == $k) | .value' 2>/dev/null | head -n1
-}
-
-tok="$(bws_value GITHUB_TOKEN)"
+# GITHUB_TOKEN is in the environment (delivered by External Secrets from its own Bitwarden secret). It is handed only to the
+# command that needs it (private repositories) and is never printed or written to disk.
+tok="${GITHUB_TOKEN:-}"
 with_token() { if [ -n "$tok" ]; then env GITHUB_TOKEN="$tok" "$@"; else "$@"; fi; }
 
 if [ ! -d "$HOME/.local/share/chezmoi/.git" ]; then

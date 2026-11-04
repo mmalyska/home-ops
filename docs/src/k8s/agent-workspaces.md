@@ -14,23 +14,60 @@ Two parts:
 
 Names use `<owner>-<workspace name>` (`mmalyska-hermes`), so any number of workspaces can exist side by side.
 
-| Object                                                      | Purpose                                                                      |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `Deployment` `ws-<id>`                                      | The pod (`dev-workstation` image, same hardening as the personal workspace)  |
-| PVC `<id>-home`, `<id>-src`                                 | Home (5 Gi, backed up every 6 h) and `/workspaces` (30 Gi, backed up daily)  |
-| `ServiceAccount` `<id>`                                     | Pod identity; read-only through the namespace-wide `agent-workspaces-reader` |
-| `serviceaccounts.talos.dev` `<id>-talos`                    | `os:reader` Talos credential; Talos creates the Secret with the same name    |
-| `ExternalSecret` `<id>-bws`                                 | `BWS_ACCESS_TOKEN` and `BWS_PROJECT_ID` from the workspace's own BWS project |
-| `ExternalSecret` and `ReplicationSource` `<id>-home`/`-src` | VolSync backups, one restic repository per volume                            |
+| Object                                                      | Purpose                                                                                   |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `Deployment` `ws-<id>`                                      | The pod (`dev-workstation` image, same hardening as the personal workspace)               |
+| PVC `<id>-home`, `<id>-src`                                 | Home (5 Gi, backed up every 6 h) and `/workspaces` (30 Gi, backed up daily)               |
+| `Service` `<id>-ssh`                                        | ClusterIP, port 22 to the pod's sshd on 2222; this is how the agent (hermes) logs in      |
+| `ServiceAccount` `<id>`                                     | Pod identity. Its token is mounted only when Kubernetes access is on                      |
+| `ExternalSecret` `<id>-env`                                 | `GITHUB_TOKEN` and the extra secrets as environment variables, each fetched by its own ID |
+| `ExternalSecret` `<id>-signing` (optional)                  | The commit signing key, as a file loaded into an in-pod ssh-agent                         |
+| `serviceaccounts.talos.dev` `<id>-talos` (optional)         | `os:reader` Talos credential; Talos creates the Secret with the same name                 |
+| `ExternalSecret` and `ReplicationSource` `<id>-home`/`-src` | VolSync backups, one restic repository per volume                                         |
+
+No BWS machine token goes into the pod. A token reads its whole project, and the free tier has a single shared project, so
+the pod gets exactly the secrets named in the parameters and cannot list the others.
+
+## Parameters (access is chosen per workspace)
+
+| Parameter                       | Meaning                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `github_token_ref`              | Bitwarden secret ID of this agent's `GITHUB_TOKEN`; required, so every agent has GitHub. Use one token per bot account, or share one |
+| `extra_secrets`                 | List of `NAME=<Bitwarden secret ID>`; each becomes an environment variable                                                           |
+| `signing_key_ref`               | Optional secret ID of an SSH key that signs the agent's commits                                                                      |
+| `authorized_key`                | Public key allowed to SSH in (user `vscode`, port 2222)                                                                              |
+| `kubernetes_access`             | Off by default. On: the pod token is mounted and `kubectl` reads the cluster (read-only role, no Secrets, no exec)                   |
+| `talos_access`                  | Off by default. On: an `os:reader` Talos credential is created and mounted                                                           |
+| `home_size`, `src_size`, `arch` | Sizes and platform                                                                                                                   |
 
 ## Create a workspace
 
-1. In Bitwarden create a machine token and a project for the workspace, and two secrets that hold the token and the
-   project ID (the same pattern as `dev-workspace`).
-2. PR: add the two secret IDs to `allowedBwsRefs` in `cluster/apps/ai/agent-workspaces/values.yaml`. Without it the API
-   server refuses the ExternalSecret. This is the only GitOps step per workspace.
-3. Create the workspace from the `agent-workspace` template and pass the two IDs as `bws_access_token_ref` and
-   `bws_project_id_ref`.
+1. In Bitwarden create the secrets the agent needs (its GitHub token, optionally a signing key and others).
+2. PR: add their IDs to `allowedBwsRefs` in `cluster/apps/ai/agent-workspaces/values.yaml`. The API server refuses any
+   other ID. This is the only GitOps step per workspace. The file holds placeholders for hermes until the real IDs exist.
+3. Create the workspace from the `agent-workspace` template with the parameters above.
+
+## How hermes connects
+
+Hermes runs in the `hermes-agent` namespace and uses SSH, as it does with the `sandbox` workspace today.
+
+- **Network.** The namespace has an ingress deny-all. `allow-ssh-from-agents` opens port 2222 of the workspace pods to the
+  pods listed in `sshClients` (values.yaml): the Hermes pod (`app=hermes-agent`) in `hermes-agent`. Nothing else reaches it.
+- **Key.** Hermes already holds a private key at `/opt/data/ssh/sandbox-devops.key`. Derive its public half and pass it as
+  the workspace's `authorized_key` (`ssh-keygen -y -f <key>`), or generate a new pair and store the private key for Hermes the
+  same way as the existing one.
+- **Target.** Point the profile's SSH terminal at `vscode@<id>-ssh.agent-workspaces.svc.cluster.local` (port 22) with that key.
+  The server host key is kept on the home volume, so `known_hosts` stays valid across restarts.
+- **Environment.** `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on) and `SSH_AUTH_SOCK` are handed to SSH
+  sessions through `~/.ssh/environment`, rebuilt at every start from a file in `/cache`.
+- **Image.** sshd comes from the `dev-workstation` image (`openssh-server`, added in `mmalyska/containers`). With an older
+  image the workspace still starts and the log says sshd is missing.
+
+## How you get in to fix something
+
+The Coder agent is a separate way in, independent of sshd and of the network policy: `coder ssh <owner>/<workspace>`,
+`coder config-ssh` with VS Code, or the web terminal. From your own workspace, `kubectl -n agent-workspaces get pods`
+and `logs` work (read-only). Hermes and you share the `vscode` user and the home volume.
 
 ## Guardrails
 
