@@ -37,7 +37,23 @@ allows Deployments only.
    into the memory volume, loads it into an `ssh-agent` on `/run/signing/agent.sock` (`SSH_AUTH_SOCK` is set for every
    session), and deletes the file. The key is never written to a volume and never printed.
 
-Repository bootstrap (clone, the repository's lifecycle scripts) and dotfiles are separate tasks (T6, T16).
+## Bootstrap (`bootstrap.sh`)
+
+A `coder_script` runs `bootstrap.sh` at every start. It does not block login, and a failing step is logged and skipped.
+
+1. Once per home volume (no `~/.local/share/chezmoi/.git` yet): `chezmoi init --apply --promptDefaults mmalyska/dotfiles`. The
+   agent environment sets `REMOTE_WORKSPACE=1`, so the dotfiles switch on the workspace signing key and clone the repository list
+   to `/workspaces/<name>`. Later starts do not pull; run `chezmoi update` yourself.
+2. For each `/workspaces/<repo>` with a `.devcontainer/devcontainer.json`: `onCreateCommand` and `updateContentCommand` once per
+   home volume (a marker under `~/.config/dev-workspace/` is written only after success, so a failure is retried at the next
+   start), and `postStartCommand` at every start. The file is JSONC, so `node` strips comments and trailing commas (respecting
+   strings); string, array and object command forms are supported, and `${containerWorkspaceFolder}` is substituted.
+
+The GitHub token is read from the workspace's BWS project (secret `GITHUB_TOKEN`) into a shell variable and passed only to the
+commands that run, so private repositories can be cloned. It is never printed or written to disk. If it is missing, public
+repositories still clone.
+
+To redo a once-per-volume step, delete its marker in `~/.config/dev-workspace/` (or `~/.local/share/chezmoi` for the dotfiles).
 
 ## Deploying
 
