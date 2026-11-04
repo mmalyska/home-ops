@@ -75,7 +75,7 @@ login). SSO is not used from the workspace: the owner's identity and the `ArgoCD
 | Capability                                                                        | Granted            | Why                                                                                |
 | --------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
 | Read applications, hard refresh                                                   | all applications   | `get` is the only permission a refresh needs (checked in the v3.5.7 source)        |
-| Sync, and prune as a sync option                                                  | the allowlist only | `sync` is the only permission a prune needs; the allowlist starts empty            |
+| Sync, and prune as a sync option                                                  | the allowlist only | `sync` is the only permission a prune needs; the allowlist holds only `sync-probe` |
 | Sync to another revision than `targetRevision`                                    | never              | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on |
 | Delete, create, update, actions, exec, repositories, clusters, projects, accounts | never              | not in the policy                                                                  |
 
@@ -84,7 +84,8 @@ Responses mask live Secret values (`get` does not expose them).
 **Add an application to the allowlist** by a reviewed PR: one line in `argocd-rbac-cm`
 (`p, dev-workspace, applications, sync, <project>/<application>, allow`) and `argocd.argoproj.io/sync-options: Prune=false`
 on that application's PVCs and stateful owners (this stops Argo CD pruning those objects; it does not stop a destructive
-update or a deletion by another controller). Start with a disposable test application, then real ones. Initial
+update or a deletion by another controller). The first entry is `default/sync-probe`, a disposable application of two
+ConfigMaps (`cluster/apps/default/sync-probe`); real applications follow, one reviewed PR each. Initial
 exclusions: Argo CD itself, bootstrap and the ApplicationSets, access-control infrastructure, storage operators and the
 `dev-workspace` app.
 
@@ -97,12 +98,19 @@ owner's consent for each action.
 
 ```sh
 argocd account can-i get applications '*/*'      # yes
-argocd account can-i sync applications '*/*'     # no   (allowlist empty)
+argocd account can-i sync applications 'default/sync-probe'  # yes
+argocd account can-i sync applications 'default/<any other>' # no
 argocd account can-i override applications '*/*' # no
 argocd account can-i delete applications '*/*'   # no
 argocd account can-i create applications '*/*'   # no
 ```
 
-The live `argocd-cm` must show `application.sync.requireOverridePrivilegeForRevisionSync: "true"`. After the first allowlist
-entry, `sync` answers `yes` for that application only. A test that a sync cannot select a non-`main` revision runs only
-against a disposable application in a scratch project, with consent.
+The live `argocd-cm` must show `application.sync.requireOverridePrivilegeForRevisionSync: "true"`.
+
+**Sync test on `sync-probe`** (each sync is a RUNTIME_MUTATION: the owner runs it, or consents per action):
+
+1. `argocd app sync sync-probe` succeeds.
+2. `argocd app sync <a real application>` is refused (`permission denied`).
+3. `argocd app sync sync-probe --revision <non-main branch>` is refused (needs `override`).
+4. Prune: a later PR removes `probe-prune-me` from git. Auto-sync leaves it in the cluster (`prune: false`), the app shows
+   `OutOfSync`; `argocd app sync sync-probe --prune` deletes it.
