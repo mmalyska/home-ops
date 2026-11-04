@@ -1,0 +1,8 @@
+- enabled: "true"
+  namespace: sync-probe
+  syncPolicy:
+    enabled: true
+    selfHeal: true
+    # Auto-sync never prunes. Removing an object from git leaves it behind until someone syncs the application with
+    # prune: that is exactly what the dev-workspace account's sync permission is tested with.
+    prune: false

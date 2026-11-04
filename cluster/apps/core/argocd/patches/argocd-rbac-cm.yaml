@@ -14,12 +14,15 @@ data:
     # Read, and refresh (a hard refresh needs only `get`): every application. Live Secret values are
     # masked in the responses.
     p, dev-workspace, applications, get, */*, allow
-    # Sync, and prune (a sync option, not a separate permission): only the allowlist below. It starts
-    # EMPTY. The owner adds one line per application by reviewed PR, in the form
+    # Sync, and prune (a sync option, not a separate permission): only the allowlist below. The owner adds
+    # one line per application by reviewed PR, in the form
     #   p, dev-workspace, applications, sync, <project>/<application>, allow
     # and puts argocd.argoproj.io/sync-options: Prune=false on that application's PVCs and stateful
     # owners. Never grant: override (selects another revision), delete, create, update, action/*, exec,
     # and anything on repositories, clusters, projects, accounts or certificates. Initial exclusions:
     # argocd itself, bootstrap and the ApplicationSets, access-control infrastructure, storage
     # operators and the dev-workspace app.
+    # First entry: the disposable test application (two ConfigMaps, no storage). Real applications come
+    # later, one reviewed PR each.
+    p, dev-workspace, applications, sync, default/sync-probe, allow
   # scopes: '[email]'
