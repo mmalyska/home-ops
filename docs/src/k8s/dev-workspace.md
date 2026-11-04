@@ -72,14 +72,14 @@ The workspace gets its own Argo CD local account (`argocd-cm`: `accounts.dev-wor
 login). SSO is not used from the workspace: the owner's identity and the `ArgoCDAdmins` group map to `role:admin` in
 `argocd-rbac-cm`, so an SSO session in the workspace would give a compromised workspace admin rights.
 
-| Capability                                                                        | Granted            | Why                                                                                |
-| --------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
-| Read applications, hard refresh                                                   | all applications   | `get` is the only permission a refresh needs (checked in the v3.5.7 source)        |
-| Sync, and prune as a sync option                                                  | the allowlist only | `sync` is the only permission a prune needs; the allowlist holds only `sync-probe` |
-| Sync to another revision than `targetRevision`                                    | never              | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on |
-| Read projects (`projects, get`)                                                   | all projects       | `argocd app get` fetches the project too; the response has no credentials          |
-| Delete, create, update, actions, exec, repositories, clusters, accounts           | never              | not in the policy                                                                  |
-| Create, update or delete projects                                                 | never              | not in the policy                                                                  |
+| Capability                                                              | Granted            | Why                                                                                |
+| ----------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
+| Read applications, hard refresh                                         | all applications   | `get` is the only permission a refresh needs (checked in the v3.5.7 source)        |
+| Sync, and prune as a sync option                                        | the allowlist only | `sync` is the only permission a prune needs; the allowlist holds only `sync-probe` |
+| Sync to another revision than `targetRevision`                          | never              | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on |
+| Read projects (`projects, get`)                                         | all projects       | `argocd app get` fetches the project too; the response has no credentials          |
+| Delete, create, update, actions, exec, repositories, clusters, accounts | never              | not in the policy                                                                  |
+| Create, update or delete projects                                       | never              | not in the policy                                                                  |
 
 Responses mask live Secret values (`get` does not expose them).
 
