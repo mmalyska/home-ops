@@ -128,7 +128,9 @@ Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`),
 | Manual per-repository setup in `home-ops` (D48) | PASS | `direnv allow` and `task precommit:init`: `pre-commit` and `commit-msg` hooks installed, the gitleaks environment built |
 | Argo CD account with the workspace token | PASS | `can-i get applications` yes, `can-i sync applications` no; the CLI prints a gRPC warning until `--grpc-web` is used |
 | Persistence across a restart (home and source files and their owner, `/cache` and `/tmp` reset, signing key reloaded from BWS, dotfiles source and four repositories, git hooks, direnv allow) | PASS | markers survived owned by `vscode:vscode`; `marker-cache` and `/tmp/sc` were gone; `/cache` held only `mise` and `Microsoft`, created since the restart; new pod on the same two PVCs, 0 restarts, started in about 17 s with the image cached |
-| Claude and Codex login, `mise use -g` tool surviving a restart | OPEN | neither was done before the restart (`codex login status`: not logged in; `mise ls -g` lists only the image tools); log in and add a tool now, test at the next restart |
+| Claude login and a user-installed `mise use -g` tool (`claude-squad`) surviving a restart (the template-update restart, new pod) | PASS | `~/.claude/.credentials.json` present and `claude` still logged in; the tool is in `~/.local/share/mise/installs` |
+| Template environment after `coder templates push` and an update (`ARGOCD_OPTS=--grpc-web`, `KUBECACHEDIR=/cache/kube`) | PASS | both set; `argocd account can-i get applications` prints `yes` without the gRPC warning; kubectl writes `discovery` and `http` to `/cache/kube` (the old `~/.kube/cache` was removed by hand) |
+| `.envrc` loader on the dev project (`.github/tests/envrc.sh`, 14 cases) | PASS | after `git pull` and `direnv allow` in the workspace: no `xargs` error; `ARGOCD_AUTH_TOKEN`, `ARGOCD_SERVER`, `GITHUB_TOKEN`, `TERRAFORM_TOKEN` exported; `SSH_SIGNING_KEY` not in the environment; `SOPS_AGE_KEY` no longer exported (removed from the project by the owner) |
 | Claude Code and Codex start | PASS | reported working by the owner before the restart |
 
 ### Findings
@@ -145,3 +147,5 @@ Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`),
 10. The `.envrc` `xargs` error is unchanged after the restart.
 
 Findings 1, 3 and 4 above are fixed in the PR that records these checks (`.envrc` reads the secrets as JSON and skips `SSH_SIGNING_KEY`; `ARGOCD_OPTS` and `KUBECACHEDIR` are set by the template; `bash .github/tests/envrc.sh`). Finding 2 is an owner action (remove `SOPS_AGE_KEY` from the dev BWS project). The template needs one more `coder templates push` to take effect.
+
+Operational note from the second round: a workspace checkout does not update itself. After a merge in `home-ops`, `git pull --ff-only` in `/workspaces/home-ops` brings the change, and direnv blocks a changed `.envrc` until the owner runs `direnv allow` (the intended direnv behaviour). The first `argocd` call of a session that runs before direnv has loaded `.envrc` fails with "server address unspecified" for the same reason.
