@@ -111,3 +111,32 @@ Question (Q24, D43): does the image run with `readOnlyRootFilesystem: true` in a
 **Answer to Q24 (for the owner to confirm, not decided here).** On this evidence `restricted` is accepted and `readOnlyRootFilesystem: true` works with the four writable mounts above. A reasonable end state is: namespace `dev-workspace` at `restricted` for enforce, warn and audit; `readOnlyRootFilesystem: true` kept; the template mounts exactly `/home/vscode` (PVC), `/workspaces` (PVC), `/cache` and `/tmp` (`emptyDir`s). The one open item is the Coder agent, which can only be tested with a real workspace in T7.
 
 Scratch objects: namespace `t22-scratch`, PVC `t22-home` and three pods. The pods were deleted after their logs were read; the namespace and PVC were deleted with the owner's consent on 2026-11-04 (the PV was released with them, none left).
+
+## T7: first workspace, checks so far (2026-11-04)
+
+Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`), workspace created by the owner with the defaults (`dev-workspace`, `dev-workspace-bws`, `amd64`). Image digest-pinned, pod on `mc1`. The owner ran the checks inside the workspace and pasted the output; the cluster-side facts were read with `kubectl` (no `describe`, because the agent token is a plain env value in the pod spec).
+
+| Check | Result | Detail |
+| ----- | ------ | ------ |
+| Bootstrap at first start | PASS | dotfiles applied; Claude and Codex plugins `fails=0`; `mmalyska/home-ops`, `containers`, `claude-plugins` and `dotfiles` cloned; `bootstrap: done` |
+| Pod hardening as in the template | PASS | uid 1000, `fsGroup` 1000 `OnRootMismatch`, read-only root, no privilege escalation, all capabilities dropped; memory 3 Gi, CPU 500m request and 2 limit, ephemeral-storage 30 Gi; mounts `/home/vscode`, `/workspaces`, `/cache`, `/tmp`, `/run/signing`, `/var/run/secrets/talos.dev`; 0 restarts |
+| Talos Secret renewed | PASS | the Talos ServiceAccount re-synced while the pod ran (event seen about 4 minutes after start) |
+| Signing key in the ssh-agent, `user.signingkey` set by the dotfiles | PASS | `ssh-add -l` lists one ED25519 key from `/run/signing`; `git log --show-signature` on a scratch commit: `Good "git" signature` (with a temporary allowed-signers file) |
+| `kubectl` through the pod ServiceAccount, no kubeconfig | PASS | four nodes listed; `~/.kube` contains only `cache` (no `config`); `get secrets -A` answers `no`; `get pods --subresource=exec` answers `no` |
+| `talosctl` with `os:reader` | PASS | `version` and `get members` work against `192.168.48.2`; `get machineconfig` is denied (`PermissionDenied`, so `machineconfig` is a sensitive type); `talosctl kubeconfig` is denied |
+| Nothing sensitive on the volume (names only) | PASS | no `~/.config/gh`, no `~/.terraform.d`, no `.git-credentials`; `~/.kube/cache` is kubectl's discovery cache |
+| Manual per-repository setup in `home-ops` (D48) | PASS | `direnv allow` and `task precommit:init`: `pre-commit` and `commit-msg` hooks installed, the gitleaks environment built |
+| Argo CD account with the workspace token | PASS | `can-i get applications` yes, `can-i sync applications` no; the CLI prints a gRPC warning until `--grpc-web` is used |
+| Persistence across a restart | NOT RUN | marker files written in home, source and cache (owner `vscode`); the restart is the owner's call |
+| Claude and Codex login, `mise use -g` tool surviving a restart | NOT RUN | needs the restart |
+| Claude Code and Codex start | NOT RUN | not reported yet |
+
+### Findings
+
+1. **`.envrc` breaks on the dev project.** `xargs: unmatched double quote` when direnv loads `home-ops/.envrc`: a multi-line secret (the SSH signing key) cannot be parsed by `export $(... | xargs)`. The variables before it were exported, `SSH_SIGNING_KEY` was not, and anything after the broken value would be dropped silently. If the key were single-line it would be exported into every direnv shell. The parsing line predates the workspace; the dev project is the first with a multi-line secret. Fix: read the secrets as JSON, skip `SSH_SIGNING_KEY` explicitly and any multi-line value, export key by key.
+2. **`SOPS_AGE_KEY` is in the dev BWS project and exported by `.envrc`.** D30 says the workspace does not get it. Owner action: remove it from that project.
+3. **Argo CD CLI needs `--grpc-web`** behind the Envoy gateway. Set `ARGOCD_OPTS=--grpc-web` in the template environment (non-secret).
+4. **kubectl's cache lands on the home volume** (`~/.kube/cache`, backed up). Set `KUBECACHEDIR=/cache/kube` in the template environment.
+5. One `FailedMount` event (ceph-csi "Aborted", source volume) before the container started: a transient RBD attach race that resolved itself. The first start also spent about 2 minutes pulling the image.
+6. peon-ping installs in the workspace although no audio relay is reachable from a pod; decision pending (skipping needs a `.chezmoiignore` change in `mmalyska/dotfiles`).
+7. The `ai-workflow` drift warning (marketplace newer than the accepted revision) is unchanged from the scratch-container run.
