@@ -42,6 +42,23 @@ Committing a change to `workspace-template/main.tf` has zero effect on already-r
    ```
    Confirm `STATUS` is `Started`, `HEALTHY` is `true`, and `OUTDATED` is `false` for every workspace.
 
+## The `dev-workspace` template
+
+A second template, `dev-workspace`, lives in the sibling directory `cluster/apps/ai/coder/workspace-template-dev-workspace/` (a sibling, so pushing `sandbox` never carries it). Same flow as above with these differences:
+
+- Push from that directory and name the template `dev-workspace`:
+  ```bash
+  coder templates push dev-workspace --directory cluster/apps/ai/coder/workspace-template-dev-workspace --yes
+  ```
+  Pushing starts nothing. It is a RUNTIME_MUTATION, so ask first.
+- The template creates one Deployment (`ws-<workspace>`) in the namespace `dev-workspace`. The PVCs (`<workspace>-home`, `<workspace>-src`), backups, RBAC, Talos credential and the BWS-token Secret are owned by GitOps (`cluster/apps/system/dev-workspace`), so a template change never touches the data and deleting a workspace keeps the volumes. A new object the pod needs is a change to that app, not to `main.tf`.
+- Redeploy with `coder update <owner>/<workspace>` as above. The pod restarts, so `/cache` and `/tmp` are empty afterwards (accepted); `/home/vscode` and `/workspaces` survive.
+- A new image is a digest bump in `main.tf` (Renovate proposes it), then push and update. Always pin the digest, never the bare tag.
+- A workspace checkout does not update itself: after a merge run `git pull --ff-only` in the workspace, and `direnv allow` if `.envrc` changed.
+- Verify with `coder list` and `kubectl get pods -n dev-workspace` (read-only). `lost+found` in `/workspaces` is the ext4 root, and a ceph-csi `FailedMount` "Pod UUID already exists" at start is benign.
+
+Usage guide for the workspace itself: `docs/src/k8s/remote-dev-workspace.md`.
+
 ## When to Use
 
-After merging any change to `cluster/apps/ai/coder/workspace-template/main.tf` that should apply to already-running workspaces.
+After merging any change to `cluster/apps/ai/coder/workspace-template/main.tf` or `workspace-template-dev-workspace/main.tf` that should apply to already-running workspaces.

@@ -55,7 +55,7 @@ argocd app sync <app-name>
 
 ## T5. New Coder template (prepare only, no workspace)
 
-- Status: in review (directory `cluster/apps/ai/coder/workspace-template-dev-workspace/`, a sibling of `workspace-template/` so a push of the `sandbox` template does not carry it; `terraform fmt` and `validate` pass; not pushed to Coder, no workspace created). Open until T7: the agent start, the signing-key load (secret name `SSH_SIGNING_KEY` in the BWS project), the memory and Talos mount points under a read-only root, and whether the rollout wait needs Pod read access. This task never creates a workspace; that is T7.
+- Status: done (PRs #6086 and #6087, merged; directory `cluster/apps/ai/coder/workspace-template-dev-workspace/`, a sibling of `workspace-template/` so a push of the `sandbox` template does not carry it; template pushed to Coder). The agent start, signing-key load, read-only-root mount points and Talos mount were checked in T7 (`evidence.md`). This task never creates a workspace; that is T7.
 - Do: add a new template in a new directory under `cluster/apps/ai/coder/workspace-template/` (D16; the `sandbox` template is not changed). Requirements:
   - image from T3 (digest-pinned, never the bare tag); `arch` follows the image platform; PATH and `mise` behaviour as in D46 (scripts that need a repository's tool versions use `mise exec`);
   - runs as `vscode`, non-root, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `seccompProfile: RuntimeDefault`, `fsGroup: 1000`, `fsGroupChangePolicy: OnRootMismatch`, and `readOnlyRootFilesystem: true` if T22 shows it works (D43);
@@ -128,7 +128,7 @@ coder create <workspace-name> --template <template-name>
 
 ## T11. Documentation and skills
 
-- Status: todo. Blocked by: T5.
+- Status: done 2026-11-04 (this PR: `cluster/apps/ai/coder/README.md` template table, `docs/src/k8s/remote-dev-workspace.md` with its nav entry, `coder-workspace-template-deploy` skill section for `dev-workspace`, skills synced; the `.claude/memory/` step found nothing non-obvious to add). Blocked by: T5.
 - Do (docs, after the work they describe): document the workspace in `cluster/apps/ai/coder/README.md` (the table currently lists only `devops`), add a docs page for the remote workspace (what it is, how to connect, secret names, break-glass using the local devcontainer), update `.agents/skills/coder-workspace-template-deploy/SKILL.md` for the new template, run `.agents/bin/sync-skills`, and update the Coder row in `docs/` if one exists. Add or update memory files in `.claude/memory/` only for non-obvious findings, and commit them on the branch.
 - Check: `task lint:all` read; `bash .agents/tests/run.sh`; links resolve.
 
@@ -141,7 +141,7 @@ coder create <workspace-name> --template <template-name>
 
 ## T13. Talos machine config: allow the workspace namespace with `os:reader`
 
-- Status: in review (PR open: patch, render test and config map done and checked locally; the live apply is not done and is consent-gated). Blocked by: nothing (T12 done). Use the reference YAML in [talos-access.md](talos-access.md); the Secret name equals the resource name.
+- Status: done (PR #6076, merged and applied). Blocked by: nothing (T12 done). Use the reference YAML in [talos-access.md](talos-access.md); the Secret name equals the resource name.
 - Do: edit `provision/talos/patches/controlplane/40-talos-api-access.yaml` to add `os:reader` to `allowedRoles` and the namespace `dev-workspace` to `allowedKubernetesNamespaces`; update its header comment with the new escalation note (the namespace can request `os:admin` because that role is in the cluster-wide list). Update the exact-match assertion in `provision/talos/tests/test_render.sh` (it asserts the roles and namespaces lists) and regenerate the generated docs (`docs/src/talos/config-map.md`) with the repository tooling. This is a separate PR from T19.
 - Check (local): `bash provision/talos/tests/test_render.sh`, `bash .agents/tests/run.sh`, `task lint:all` read, `.agents/bin/check-plans`.
 - Check (live, consent-gated): the change is a rolling machine config apply on mc1 to mc3 with its own impact statement and rollback (revert the patch and apply again).
@@ -167,7 +167,7 @@ task talos:apply-config
 
 ## T16. `dotfiles`: workspace-only changes
 
-- Status: in review (`mmalyska/dotfiles` PR #7: flag, signing key, repository clones, non-interactive init; the template now sets `REMOTE_WORKSPACE=1` and runs the bootstrap). Blocked by: nothing (T6 done). Inputs from the T6 run in `bootstrap.md` notes 18 and 19: the dotfiles must take their chezmoi answers without a TTY, and the owner decides whether the workspace gets the peon-ping and plugin installs.
+- Status: done (`mmalyska/dotfiles` PRs #7 and #8, merged: flag, signing key, repository clones, non-interactive init; the template sets `REMOTE_WORKSPACE=1` and runs the bootstrap). Blocked by: nothing (T6 done). Inputs from the T6 run in `bootstrap.md` notes 18 and 19: the dotfiles must take their chezmoi answers without a TTY, and the owner decides whether the workspace gets the peon-ping and plugin installs.
 - Do: in `mmalyska/dotfiles` (evidence.md has the layout): (1) let a host override `user.signingkey` for the workspace SSH signing key (D32) without changing the owner's own key elsewhere, for example a chezmoi data flag such as `is_remote_workspace` read in `home/dot_gitconfig.tmpl`; (2) add the list of repositories to clone as static data in `home/.chezmoidata/`, plus a `run_onchange` script under `.chezmoiscripts/` that clones missing repositories to `/workspaces/<repo>` only when the workspace flag is set, so the local devcontainer and Codespaces are unchanged (D21); (3) document or provide the non-interactive way to run `chezmoi init --apply` (the config template prompts for email, name, work machine and AI profile; use the prompt flags or a pre-written config). Follow the dotfiles repository's own plan and test conventions (`docs/plans`, `tests/ai`).
 - Check: the dotfiles test suite (`tests/ai`) passes; chezmoi applied with the flag unset produces byte-identical output to before for the existing fixtures; with the flag set the signing key and repository list appear.
 - Consent: a merge changes the dotfiles every machine of the owner applies; ask before merging.
@@ -189,7 +189,7 @@ task talos:apply-config
 
 ## T19. Namespace, RBAC and backup objects for the workspace (GitOps-owned)
 
-- Status: in review (app `cluster/apps/system/dev-workspace`; T13 is merged and applied). Deviation from the text below, for the owner to confirm: the reader role is an explicit ClusterRole `dev-workspace-reader`, not a binding of the built-in `view` (which aggregates 18 external-secrets generator kinds that can hold inline credentials and grows when operators change). The BWS-token ExternalSecret renders only after the owner fills in the two Bitwarden references (T4). Live checks are not run: they need the consent-gated sync. Blocked by: T4 for the BWS references only.
+- Status: done (app `cluster/apps/system/dev-workspace`, PR #6076, merged and synced; the workspace runs on it, see T7). Deviation from the text below: the reader role is an explicit ClusterRole `dev-workspace-reader`, not a binding of the built-in `view` (which aggregates 18 external-secrets generator kinds that can hold inline credentials and grows when operators change). Blocked by: T4 for the BWS references only.
 - Do: add an app (use the `add-app` skill) that owns everything the provisioner must not create (D35):
   - the `dev-workspace` namespace with Pod Security `baseline`;
   - the Talos `ServiceAccount` with `os:reader`, and RBAC that lets nothing but GitOps create `serviceaccounts.talos.dev` there;

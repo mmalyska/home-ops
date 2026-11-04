@@ -27,7 +27,14 @@ It needs RBAC for every resource type it manages — see `templates/rbac-service
 
 The dotnet, node, mobile and researcher workspaces (192.168.48.52-55) were removed on 2026-10-21; create them again with the command below if needed.
 
-A second template, `workspace-template-dev-workspace/`, runs the `dev-workstation` image in the `dev-workspace` namespace (see its README); everything below describes the `sandbox` template.
+A second template, `workspace-template-dev-workspace/`, runs the `dev-workstation` image in the `dev-workspace` namespace; everything below describes the `sandbox` template.
+
+| Template | Image | Namespace | Access | Storage | Use case |
+|----------|-------|-----------|--------|---------|----------|
+| `sandbox` (`workspace-template/`) | `sandbox-*:rolling` | `coder` | sshd on a fixed LB IP, or the Coder agent | one PVC per workspace, created by the template | Hermes and infrastructure work (`devops`) |
+| `dev-workspace` (`workspace-template-dev-workspace/`) | `dev-workstation`, pinned by digest | `dev-workspace` | Coder agent only (no sshd, no Service) | two PVCs (`-home` 5 Gi, `-src` 30 Gi) owned by GitOps in `cluster/apps/system/dev-workspace` | Always-on development of `home-ops` and other repositories |
+
+The `dev-workspace` template creates one Deployment and nothing else; the PVCs, backups, RBAC, Talos credential and BWS-token Secret belong to the `dev-workspace` app. How to use it: [Remote development workspace](../../../../docs/src/k8s/remote-dev-workspace.md). Template details: its own README.
 
 **Resource limits per workspace**: 500m–1000m CPU, 1–2 Gi RAM, 20 Gi home PVC (ceph-block, RWO).
 
