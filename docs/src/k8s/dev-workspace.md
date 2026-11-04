@@ -77,7 +77,9 @@ login). SSO is not used from the workspace: the owner's identity and the `ArgoCD
 | Read applications, hard refresh                                                   | all applications   | `get` is the only permission a refresh needs (checked in the v3.5.7 source)        |
 | Sync, and prune as a sync option                                                  | the allowlist only | `sync` is the only permission a prune needs; the allowlist holds only `sync-probe` |
 | Sync to another revision than `targetRevision`                                    | never              | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on |
-| Delete, create, update, actions, exec, repositories, clusters, projects, accounts | never              | not in the policy                                                                  |
+| Read projects (`projects, get`)                                                   | all projects       | `argocd app get` fetches the project too; the response has no credentials          |
+| Delete, create, update, actions, exec, repositories, clusters, accounts           | never              | not in the policy                                                                  |
+| Create, update or delete projects                                                 | never              | not in the policy                                                                  |
 
 Responses mask live Secret values (`get` does not expose them).
 
@@ -98,6 +100,8 @@ owner's consent for each action.
 
 ```sh
 argocd account can-i get applications '*/*'      # yes
+argocd account can-i get projects '*'            # yes (also `argocd app get <name>` works)
+argocd account can-i create projects '*'         # no
 argocd account can-i sync applications 'default/sync-probe'  # yes
 argocd account can-i sync applications 'default/<any other>' # no
 argocd account can-i override applications '*/*' # no
