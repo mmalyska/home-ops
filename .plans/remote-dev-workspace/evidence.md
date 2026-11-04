@@ -166,3 +166,43 @@ PR #6092 merged; the `sync-probe` Application (two ConfigMaps, `prune: false`) a
 | `projects, get` grant (#6096 merged, `argocd` app synced to `462a44e0`; live `argocd-rbac-cm` read with `kubectl`) | PASS | `can-i get projects '*'` yes, `can-i create projects '*'` no, `argocd app get sync-probe` prints the application (Synced, Healthy; `probe-prune-me` Pruned, `probe-keep` Synced) |
 
 The first attempt at the revision check failed only because the placeholder `<non-main branch>` was typed literally (shell syntax error); it was rerun with a real branch.
+
+## T8: safety controls and restore test (2026-11-04)
+
+Run by the agent from the local devcontainer with the owner's consent for each mutation (scratch objects in the namespace `dev-workspace`, names starting `t8-`), and, for the in-workspace checks, one read-only `coder ssh` call and one call that created and removed a temporary worktree. Output was file names, owners and modes only; no file content was read.
+
+### Restore test
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| Home restore into a scratch PVC (`ReplicationDestination`, `copyMethod: Direct`, latest snapshot from 18:17Z) | PASS | mover result `Successful`, 57 s |
+| Accepted login files present (D20): `.claude/.credentials.json`, `.claude.json`, `.codex/auth.json` | PASS | all three `PRESENT` |
+| Must-not-persist names absent: `.git-credentials`, `gh` hosts file, Terraform CLI credentials, `.kube`, `.ssh` private keys, `.bws` | PASS | all `absent` |
+| `~/.config/bws` absent | **FAIL** | present, with a `state/` directory holding one 1.9 KB state file (mode 660); not read. Fixed in #6108, see below |
+| Other credential-like names on the home volume (names only) | note | `~/.vscode-server/cli/agent-host-token` (36 bytes, mode 660, the VS Code server's own token), a Go telemetry `upload.token`, TLS certificate bundles under `mise` installs, tokenizer data files. Only the VS Code server token is a credential; it is not on the plan's list and is documented |
+| Home ownership and content | PASS | 10069 files; the only entries not owned by uid 1000 are the volume root and `lost+found` (ext4 root, `fsGroup`) |
+| Src restore, first attempt (snapshot from 09:22Z) | PASS (mechanism), no content | `Successful`, volume holds only `lost+found`: the PVC was created at 09:22:04Z and the only scheduled backup ran 18 s later, before the workspace pod started (16:57Z) |
+| Src restore after a one-off backup (`ReplicationSource` `t8-src-backup`, `copyMethod: Snapshot`, 15 s) | PASS | `Successful`; four repositories with a `.git` directory (`claude-plugins`, `containers`, `dotfiles`, `home-ops`), `AGENTS.md`, `marker-src`; 2152 files; none owned by anyone but uid 1000 (root volume root and `lost+found` excluded); no `.git-credentials`, `.env`, `*.pem`, `id_*` or `*.tfstate` names |
+| Scratch objects deleted | PASS | pods, `ReplicationDestination`s, `ReplicationSource`, scratch PVCs and the one-off cache PVC removed; `dev-workspace-home`, `dev-workspace-src`, their cache PVCs, both `ReplicationSource`s and the workspace pod were unchanged |
+
+Side effect to know about: the one-off backup wrote an extra snapshot lineage into the live src restic repository. The cleanup does not remove it (only `restic forget` would, and it was not run). The scheduled src backup next runs at 03:47Z.
+
+### In-workspace checks
+
+| Check | Result | Evidence |
+| ----- | ------ | -------- |
+| `.claude/settings.json` and `.agents/policy` in the workspace checkout equal `origin/main` | PASS | empty `git diff --stat` after `git fetch` (the checkout was 4 commits behind) |
+| Argo CD sync and refresh rules present and in `ask` | PASS | `argocd app sync*`, `task argocd:sync*`, `argocd app get/diff *--refresh*` and `*--hard-refresh*` |
+| `worktree-preflight` in the primary checkout | PASS | exit 3, `kind=primary` |
+| `worktree-preflight` in a linked worktree | PASS | exit 0, `kind=worktree`, in a temporary worktree and branch that were removed afterwards |
+| Claude session in auto mode: `argocd app sync sync-probe` | blocked, not by the rule | denied by the auto-mode classifier ("Shared Cluster Mutation"); the `ask` rule did not produce a prompt |
+| Claude session in auto mode: `kubectl delete pod t8-nonexistent -n default` | **FAIL** for the `ask` rule | ran without a prompt although `kubectl delete*` is an `ask` rule; refused by Kubernetes RBAC (`Forbidden`, the `dev-workspace` ServiceAccount cannot delete pods) |
+| Claude session in auto mode: Write in the primary checkout | PASS | denied by the `PreToolUse:Write` worktree guard; no file created |
+| Claude session in auto mode: `git status -sb` | PASS | ran |
+| The same `ask` rules in `default` mode | NOT RUN | needs an interactive session in `default` mode; the owner has not run it yet |
+
+Finding, accepted by the owner on 2026-11-04: in auto mode the repository's `ask` rules are decided by the classifier and are not a human gate. The read-only Kubernetes ServiceAccount (D26, D27) held and is the boundary that matters in the workspace.
+
+### The `bws` state file
+
+`bws` keeps its login state in `~/.config/bws/state` and keys its config file by the access token's identifier. The template now sets `BWS_CONFIG_FILE` to `/cache/bws/config` and the loader sets `state-dir` to `/cache/bws/state` before its first `bws` call (#6108). Checked locally: `bws config state-dir` writes the config where `BWS_CONFIG_FILE` points and a second run succeeds (scratch directory, no token call). Not yet checked: the state landing on `/cache` in a running workspace (needs the template pushed and a workspace update), and the existing file on the home volume, which stays in existing snapshots until their retention expires.
