@@ -92,6 +92,10 @@ resource "coder_agent" "main" {
     # Tells mmalyska/dotfiles it runs in a remote workspace (workspace signing key, repository clones). The
     # Coder agent also sets CODER=true; this does not depend on that.
     REMOTE_WORKSPACE = "1"
+    # Argo CD sits behind the Envoy HTTP gateway, which does not pass raw gRPC: without this the CLI warns on every call.
+    ARGOCD_OPTS = "--grpc-web"
+    # kubectl's discovery cache goes to the rebuildable /cache, not to ~/.kube on the backed-up home volume.
+    KUBECACHEDIR = "/cache/kube"
   }
 
   startup_script = <<-EOT

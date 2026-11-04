@@ -143,3 +143,5 @@ Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`),
 8. `lost+found` is in `/workspaces` (the ext4 root of the source volume): the one top-level entry not owned by `vscode` seen in T22 was most likely this.
 9. The `FailedMount` event (ceph-csi `Aborted ... an operation with the given Pod UUID already exists`) recurred on the second start, on the home volume this time: ceph-csi serialises the two concurrent mounts and kubelet retries; benign.
 10. The `.envrc` `xargs` error is unchanged after the restart.
+
+Findings 1, 3 and 4 above are fixed in the PR that records these checks (`.envrc` reads the secrets as JSON and skips `SSH_SIGNING_KEY`; `ARGOCD_OPTS` and `KUBECACHEDIR` are set by the template; `bash .github/tests/envrc.sh`). Finding 2 is an owner action (remove `SOPS_AGE_KEY` from the dev BWS project). The template needs one more `coder templates push` to take effect.

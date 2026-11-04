@@ -29,6 +29,7 @@ allows Deployments only.
 - Talos: the `<name>-talos` Secret is mounted as a directory at `/var/run/secrets/talos.dev` (renewed by Talos) and
   `TALOSCONFIG` points at its `config`. Role `os:reader`; the config has no nodes list, so `talosctl` needs `--nodes`.
 - Kubernetes: the pod ServiceAccount token; `kubectl` uses the in-cluster configuration and no kubeconfig exists.
+- Agent environment: `REMOTE_WORKSPACE=1` (the dotfiles switch on the workspace behaviour), `TALOSCONFIG`, `SSH_AUTH_SOCK`, `ARGOCD_OPTS=--grpc-web` (Argo CD is behind the HTTP gateway) and `KUBECACHEDIR=/cache/kube` (kubectl's cache stays off the backed-up home volume). The remaining secrets (`GITHUB_TOKEN`, `TERRAFORM_TOKEN`, `ARGOCD_AUTH_TOKEN`, `ARGOCD_SERVER`) are not set by the template: `home-ops/.envrc` loads them from the workspace's BWS project through direnv, one `export` per secret from JSON, skipping `SSH_SIGNING_KEY`, any multi-line value and any invalid name. `bash .github/tests/envrc.sh` tests that rule.
 
 ## Startup
 
