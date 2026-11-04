@@ -110,4 +110,4 @@ Question (Q24, D43): does the image run with `readOnlyRootFilesystem: true` in a
 
 **Answer to Q24 (for the owner to confirm, not decided here).** On this evidence `restricted` is accepted and `readOnlyRootFilesystem: true` works with the four writable mounts above. A reasonable end state is: namespace `dev-workspace` at `restricted` for enforce, warn and audit; `readOnlyRootFilesystem: true` kept; the template mounts exactly `/home/vscode` (PVC), `/workspaces` (PVC), `/cache` and `/tmp` (`emptyDir`s). The one open item is the Coder agent, which can only be tested with a real workspace in T7.
 
-Scratch objects: namespace `t22-scratch`, PVC `t22-home`; the three pods were deleted after their logs were read.
+Scratch objects: namespace `t22-scratch`, PVC `t22-home` and three pods. The pods were deleted after their logs were read; the namespace and PVC were deleted with the owner's consent on 2026-11-04 (the PV was released with them, none left).
