@@ -149,3 +149,18 @@ Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`),
 Findings 1, 3 and 4 above are fixed in the PR that records these checks (`.envrc` reads the secrets as JSON and skips `SSH_SIGNING_KEY`; `ARGOCD_OPTS` and `KUBECACHEDIR` are set by the template; `bash .github/tests/envrc.sh`). Finding 2 is an owner action (remove `SOPS_AGE_KEY` from the dev BWS project). The template needs one more `coder templates push` to take effect.
 
 Operational note from the second round: a workspace checkout does not update itself. After a merge in `home-ops`, `git pull --ff-only` in `/workspaces/home-ops` brings the change, and direnv blocks a changed `.envrc` until the owner runs `direnv allow` (the intended direnv behaviour). The first `argocd` call of a session that runs before direnv has loaded `.envrc` fails with "server address unspecified" for the same reason.
+
+## T18 stage 2: sync allowlist with the disposable `sync-probe` app (2026-11-04)
+
+PR #6092 merged; the `sync-probe` Application (two ConfigMaps, `prune: false`) appeared after the ApplicationSet refresh, and the `argocd` app was synced to `419319a9`, which put `p, dev-workspace, applications, sync, default/sync-probe, allow` in the live `argocd-rbac-cm` (read with `kubectl`). The owner ran the checks in the workspace with the account token and pasted the output.
+
+| Check | Result | Detail |
+| ----- | ------ | ------ |
+| `can-i sync applications default/sync-probe` | PASS | `yes` |
+| `can-i sync` on another application, `override`, `delete`, `create` | PASS | all `no` |
+| `argocd app sync sync-probe` | PASS | both ConfigMaps Synced at `419319a9`, phase Succeeded |
+| `argocd app sync coder` (a real application) | PASS (refused) | `PermissionDenied: applications, sync, ai/coder, sub: dev-workspace` |
+| `argocd app sync sync-probe --revision <non-main branch>` | PASS (refused) | `PermissionDenied: applications, override, default/sync-probe, sub: dev-workspace`; `requireOverridePrivilegeForRevisionSync` works |
+| Prune with `--prune` after removing `probe-prune-me` from git | NOT RUN | needs a follow-up PR |
+
+The first attempt at the revision check failed only because the placeholder `<non-main branch>` was typed literally (shell syntax error); it was rerun with a real branch.
