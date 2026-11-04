@@ -39,21 +39,29 @@ allows Deployments only.
 
 ## Bootstrap (`bootstrap.sh`)
 
-A `coder_script` runs `bootstrap.sh` at every start. It does not block login, and a failing step is logged and skipped.
+A `coder_script` runs `bootstrap.sh` at every start. It does not block login, and a failure is logged and skipped. Once per home
+volume (no `~/.local/share/chezmoi/.git` yet) it runs `chezmoi init --apply --promptDefaults mmalyska/dotfiles`. The agent
+environment sets `REMOTE_WORKSPACE=1`, so the dotfiles switch on the workspace signing key and clone the repository list to
+`/workspaces/<name>`. Later starts do not pull; run `chezmoi update` yourself. To redo the first step, delete
+`~/.local/share/chezmoi`.
 
-1. Once per home volume (no `~/.local/share/chezmoi/.git` yet): `chezmoi init --apply --promptDefaults mmalyska/dotfiles`. The
-   agent environment sets `REMOTE_WORKSPACE=1`, so the dotfiles switch on the workspace signing key and clone the repository list
-   to `/workspaces/<name>`. Later starts do not pull; run `chezmoi update` yourself.
-2. For each `/workspaces/<repo>` with a `.devcontainer/devcontainer.json`: `onCreateCommand` and `updateContentCommand` once per
-   home volume (a marker under `~/.config/dev-workspace/` is written only after success, so a failure is retried at the next
-   start), and `postStartCommand` at every start. The file is JSONC, so `node` strips comments and trailing commas (respecting
-   strings); string, array and object command forms are supported, and `${containerWorkspaceFolder}` is substituted.
+The GitHub token is read from the workspace's BWS project (secret `GITHUB_TOKEN`) into a shell variable and passed only to that
+command, so private repositories can be cloned. It is never printed or written to disk. If it is missing, public repositories
+still clone.
 
-The GitHub token is read from the workspace's BWS project (secret `GITHUB_TOKEN`) into a shell variable and passed only to the
-commands that run, so private repositories can be cloned. It is never printed or written to disk. If it is missing, public
-repositories still clone.
+**This workspace does not run a repository's `.devcontainer` lifecycle scripts** (plan D48). It serves several repositories and
+is not meant to be backwards compatible with the devcontainer flow. For now the per-repository setup is manual, once per
+repository after the clone:
 
-To redo a once-per-volume step, delete its marker in `~/.config/dev-workspace/` (or `~/.local/share/chezmoi` for the dotfiles).
+```sh
+cd /workspaces/<repo>
+direnv allow             # load the repository's .envrc
+task precommit:init      # install the pre-commit hooks (secret scan, attribution check); do not skip this
+task terraform:upgrade:cloudflare   # only where the repository needs it (home-ops)
+```
+
+Claude memory stays in the repository: a hook in that repository (separate change) stops Claude writing memory outside it, so
+no symlinks are needed here. Automating the manual steps is a later task.
 
 ## Deploying
 

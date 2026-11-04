@@ -128,9 +128,9 @@ resource "coder_agent" "main" {
   EOT
 }
 
-# Bootstrap at every start (bootstrap.sh): dotfiles once per home volume, then each repository's devcontainer
-# lifecycle commands. It does not block login, and a failing step is logged and skipped. The script is read from the
-# template directory, so `coder templates push` uploads it with main.tf.
+# Bootstrap at every start (bootstrap.sh): applies the dotfiles once per home volume (they clone the repositories).
+# A repository's .devcontainer scripts are not run (plan D48). It does not block login, and a failure is logged and
+# skipped. The script is read from the template directory, so `coder templates push` uploads it with main.tf.
 resource "coder_script" "bootstrap" {
   agent_id           = coder_agent.main.id
   display_name       = "Bootstrap"
