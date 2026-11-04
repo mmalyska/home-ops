@@ -43,7 +43,7 @@ T4 -> T18 (ArgoCD account) -> ArgoCD checks in T7 and T8
 
 ## T4. Create the BWS project and the workspace token (owner action)
 
-- Status: todo. Blocked by: nothing for the base set; the ArgoCD token waits for T18.
+- Status: owner part done 2026-11-03 for the BWS-token and project references (the two cluster-project secrets exist and are referenced in the T19 app); the ArgoCD token waits for T18. Blocked by: nothing for the base set; the ArgoCD token waits for T18.
 - Do (owner, in Bitwarden; the agent never reads values): create a project for the dev workspace type; add `GITHUB_TOKEN`, `TERRAFORM_TOKEN` and the SSH signing key (D32, D30; `SOPS_AGE_KEY` is not included). When T18 is done, also add the ArgoCD account token and the ArgoCD server address (the address contains the private domain, so it is delivered as a secret value, not written into the repository). Register the matching public key on GitHub as a signing key. `BWS_ACCESS_TOKEN` is the machine token you issue below and is delivered by the Kubernetes Secret, not stored in the project. Cluster access is **not** stored here (D4). Create a machine account with read-only access to that project only, and issue one access token. A Hermes sandbox type later gets its own, smaller project (D11).
 - Agent part: write the secret **names** (no values, no identifiers) into `docs/` and into the T5 template comments; add an `ExternalSecret` (store `bitwarden`) in `dev-workspace`, owned by GitOps (D35, in the T19 app), that creates the Kubernetes Secret with `BWS_ACCESS_TOKEN` and `BWS_PROJECT_ID` (D31), which the pod reads as environment variables. Make the Secret name a template parameter so other workspace types reuse the pattern. The Bitwarden identifiers stay out of plans, docs and PR text; manifests use the same reference mechanism other ExternalSecrets in the repository use.
 - Check: `kubectl kustomize` or `helm template` renders the ExternalSecret with no identifier or value in anything but the manifest reference fields; gitleaks passes. Live: the Secret exists after sync (consent-gated sync).
@@ -188,7 +188,7 @@ task talos:apply-config
 
 ## T19. Namespace, RBAC and backup objects for the workspace (GitOps-owned)
 
-- Status: todo. Blocked by: T4 (names only), T13 for the Talos part to work. Can be reviewed before T13 is applied.
+- Status: in review (app `cluster/apps/system/dev-workspace`; T13 is merged and applied). Deviation from the text below, for the owner to confirm: the reader role is an explicit ClusterRole `dev-workspace-reader`, not a binding of the built-in `view` (which aggregates 18 external-secrets generator kinds that can hold inline credentials and grows when operators change). The BWS-token ExternalSecret renders only after the owner fills in the two Bitwarden references (T4). Live checks are not run: they need the consent-gated sync. Blocked by: T4 for the BWS references only.
 - Do: add an app (use the `add-app` skill) that owns everything the provisioner must not create (D35):
   - the `dev-workspace` namespace with Pod Security `baseline`;
   - the Talos `ServiceAccount` with `os:reader`, and RBAC that lets nothing but GitOps create `serviceaccounts.talos.dev` there;

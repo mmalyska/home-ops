@@ -1,0 +1,19 @@
+---
+apiVersion: v2
+name: dev-workspace
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+# Each workspace in values.yaml (`workspaces`) needs two backups, so two aliased copies of the local
+# volsync chart per workspace: `<workspace>-home` and `<workspace>-src` (nameOverride must equal the
+# PVC name; it also names the restic repository path). Adding a workspace means one entry in
+# `workspaces` and two dependencies here plus their values blocks.
+dependencies:
+  - name: volsync
+    alias: volsync-dev-workspace-home
+    version: "1.0.0"
+    repository: "file://../../../../charts/volsync/"
+  - name: volsync
+    alias: volsync-dev-workspace-src
+    version: "1.0.0"
+    repository: "file://../../../../charts/volsync/"

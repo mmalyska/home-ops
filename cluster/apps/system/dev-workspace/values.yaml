@@ -1,0 +1,78 @@
+---
+# GitOps-owned list of workspaces (D42). Each entry renders, in this namespace:
+#   - PVC <name>-home (logins and config, backed up every 6 h) and PVC <name>-src (source code, backed up daily)
+#   - a Kubernetes ServiceAccount <name> bound to the read-only ClusterRole dev-workspace-reader
+#   - a Talos ServiceAccount <name>-talos (role os:reader); Talos creates the Secret of the same name
+#   - optionally the BWS token ExternalSecret (set `bws`), which creates the Secret <name>-bws
+# The Coder template only references these objects by name; the provisioner cannot create them (D35).
+# Backups need two aliased volsync dependencies per workspace in Chart.yaml and two blocks below.
+workspaces:
+  - name: dev-workspace
+    home:
+      size: 5Gi
+    src:
+      size: 30Gi
+    # References to the Bitwarden secrets (in the project the bitwarden store reads) that hold the
+    # workspace's machine token and its project ID (T4). If either is removed no ExternalSecret is
+    # rendered. One line each with the gitleaks marker, as other apps do.
+    bws:
+      accessTokenRef: "f00d5aee-b4fa-454f-b204-b4f701085f96" #gitleaks:allow #BWS_ACCESS_TOKEN
+      projectIdRef: "f9ab7df3-81b9-4797-b31e-b4f7010b2311" #gitleaks:allow #BWS_PROJECT_ID
+
+storage:
+  storageClass: ceph-block
+  volumeSnapshotClass: csi-ceph-blockpool
+
+# Subject of the Coder provisioner's Role in this namespace (D35).
+provisioner:
+  serviceAccount: coder
+  namespace: coder
+
+# Backups. `restore.enabled: false` because the claims are created by this app (existingClaim) and
+# hold live data: the chart's restore-once ReplicationDestination would restore over the volume.
+# Restore tests use a scratch PVC (T8).
+volsync-dev-workspace-home:
+  nameOverride: dev-workspace-home
+  pvc:
+    existingClaim: dev-workspace-home
+    capacity: 5Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    backup:
+      schedule: "17 */6 * * *" # every 6 h
+      pruneIntervalDays: 14
+      retain:
+        hourly: 8
+        daily: 7
+        weekly: 4
+        monthly: 2
+    restore:
+      enabled: false
+
+volsync-dev-workspace-src:
+  nameOverride: dev-workspace-src
+  pvc:
+    existingClaim: dev-workspace-src
+    capacity: 30Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
+  volsync:
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    backup:
+      schedule: "47 3 * * *" # daily
+      pruneIntervalDays: 14
+      retain:
+        hourly: 1
+        daily: 14
+        weekly: 4
+        monthly: 2
+    restore:
+      enabled: false
