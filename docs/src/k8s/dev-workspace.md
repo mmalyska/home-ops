@@ -49,3 +49,19 @@ Read-only, with `kubectl auth can-i --as=system:serviceaccount:dev-workspace:dev
 `create` on `serviceaccounts/token`, and every write verb on pods, deployments, configmaps, roles, clusterroles,
 `externalsecrets` and `serviceaccounts.talos.dev` answer `no`. For the provisioner, `no` on `persistentvolumeclaims`,
 `externalsecrets`, `replicationsources`, `roles` and `serviceaccounts.talos.dev` in `dev-workspace`.
+
+**Subresources need `--subresource`.** `kubectl auth can-i get pods/exec` does not ask about the `exec` subresource: it
+reads `exec` as the name of a pod, and a rule on `pods` allows any name, so it answers `yes` and looks like a leak. Use
+the flag:
+
+```sh
+A=--as=system:serviceaccount:dev-workspace:dev-workspace
+kubectl auth can-i get pods --subresource=exec $A                 # no
+kubectl auth can-i create pods --subresource=exec $A              # no
+kubectl auth can-i get nodes --subresource=proxy $A               # no
+kubectl auth can-i create serviceaccounts --subresource=token $A  # no
+kubectl auth can-i get pods --subresource=log $A                  # yes
+```
+
+The same applies to `attach`, `portforward`, `ephemeralcontainers` and the `pods`, `services` and `nodes` `proxy`
+subresources. Cluster-scoped resources print a harmless "not namespace scoped" warning.
