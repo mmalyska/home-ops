@@ -205,7 +205,7 @@ task talos:apply-config
 
 ## T22. Test the pod hardening on this image (D43)
 
-- Status: todo. Blocked by: consent for the scratch pod. Needs the pinned image only.
+- Status: done 2026-11-04 (report in `evidence.md`; Coder agent start NOT RUN, `OnRootMismatch` benefit inconclusive; scratch namespace `t22-scratch` and PVC `t22-home` deleted with consent on 2026-11-04). Needs the pinned image only.
 - Do (consent-gated; scratch namespace labelled `pod-security.kubernetes.io/enforce: restricted`, then deleted): run the image with the pod settings of T5 plus `readOnlyRootFilesystem: true`, `emptyDir`s on `/tmp` and `/cache`, a PVC on the home path, and `fsGroup: 1000` with `fsGroupChangePolicy: OnRootMismatch`. Check: the pod is admitted at `restricted`; `cp -rn /etc/skel/. "$HOME"/` works on an empty home and a second run changes nothing; `mise use -g`, `mise install`, `git`, `npm ci`, `go build` and `terraform init` work; the Coder agent starts; list every path that needed to be writable. Record start time with a populated volume, to confirm `OnRootMismatch` avoids the walk.
 - Output: a report in `evidence.md`; the answer to Q24 (namespace level, `readOnlyRootFilesystem` kept or not).
 - Check: report each as PASS, FAIL or NOT RUN with the reason.

@@ -205,7 +205,7 @@ Q1 to Q23 were answered by the owner on 2026-11-02; each answer is a decision ab
 
 **Q23 (resolved, D38).** Which ArgoCD apps may the workspace account refresh, sync and prune? A named allowlist that starts empty, with the exclusions and `Prune=false` rules of D38. The owner adds app names later by reviewed PRs.
 
-**Q24 (open, T22).** Which Pod Security level does the namespace end at, and is `readOnlyRootFilesystem` kept? Decided by the T22 test report.
+**Q24 (open, awaits the owner).** Which Pod Security level does the namespace end at, and is `readOnlyRootFilesystem` kept? The T22 test (2026-11-04, `evidence.md`) shows `restricted` is admitted and `readOnlyRootFilesystem: true` works with `/home/vscode`, `/workspaces`, `/cache` and `/tmp` writable; the Coder agent is untested. Proposed answer: `restricted`, read-only root kept.
 
 Facts that are not questions but must be confirmed on the running workspace are listed in T7 and T8 (live checks): pod to `talos.default` reachability, sensitive `talosctl get` types, Coder agent SSH without sshd, kubectl falling back to the in-cluster configuration, home and workspace persistence after a pod restart, and the ArgoCD token's allowed and denied actions.
 
