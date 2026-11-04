@@ -56,8 +56,14 @@ Hermes runs in the `hermes-agent` namespace and uses SSH, as it does with the `s
 - **Key.** Hermes already holds a private key at `/opt/data/ssh/sandbox-devops.key`. Derive its public half and pass it as
   the workspace's `authorized_key` (`ssh-keygen -y -f <key>`), or generate a new pair and store the private key for Hermes the
   same way as the existing one.
-- **Target.** Point the profile's SSH terminal at `vscode@<id>-ssh.agent-workspaces.svc.cluster.local` (port 22) with that key.
-  The server host key is kept on the home volume, so `known_hosts` stays valid across restarts.
+- **Target.** Hermes selects its SSH terminal with `terminal.backend: ssh` in the profile's `config.yaml` and reads the target
+  from the profile's `.env` ([Hermes docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools)):
+  `TERMINAL_SSH_HOST=<id>-ssh.agent-workspaces.svc.cluster.local`, `TERMINAL_SSH_USER=vscode`, `TERMINAL_SSH_PORT=22`,
+  `TERMINAL_SSH_KEY=/opt/data/ssh/<key>`; set `terminal.cwd` to `/workspaces`. One profile has one SSH target, so one workspace
+  per profile. The server host key is kept on the home volume, so `known_hosts` stays valid across restarts. The Hermes docs do
+  not say whether the backend checks host keys; check that on the first connection.
+- **Shell.** Hermes runs commands non-interactively (no TTY). Tools come from `/usr/local/bin` shims, so no shell init is needed.
+
 - **Environment.** `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on) and `SSH_AUTH_SOCK` are handed to SSH
   sessions through `~/.ssh/environment`, rebuilt at every start from a file in `/cache`.
 - **Image.** sshd comes from the `dev-workstation` image (`openssh-server`, added in `mmalyska/containers`). With an older
