@@ -127,9 +127,9 @@ Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`),
 | Nothing sensitive on the volume (names only) | PASS | no `~/.config/gh`, no `~/.terraform.d`, no `.git-credentials`; `~/.kube/cache` is kubectl's discovery cache |
 | Manual per-repository setup in `home-ops` (D48) | PASS | `direnv allow` and `task precommit:init`: `pre-commit` and `commit-msg` hooks installed, the gitleaks environment built |
 | Argo CD account with the workspace token | PASS | `can-i get applications` yes, `can-i sync applications` no; the CLI prints a gRPC warning until `--grpc-web` is used |
-| Persistence across a restart | NOT RUN | marker files written in home, source and cache (owner `vscode`); the restart is the owner's call |
-| Claude and Codex login, `mise use -g` tool surviving a restart | NOT RUN | needs the restart |
-| Claude Code and Codex start | NOT RUN | not reported yet |
+| Persistence across a restart (home and source files and their owner, `/cache` and `/tmp` reset, signing key reloaded from BWS, dotfiles source and four repositories, git hooks, direnv allow) | PASS | markers survived owned by `vscode:vscode`; `marker-cache` and `/tmp/sc` were gone; `/cache` held only `mise` and `Microsoft`, created since the restart; new pod on the same two PVCs, 0 restarts, started in about 17 s with the image cached |
+| Claude and Codex login, `mise use -g` tool surviving a restart | OPEN | neither was done before the restart (`codex login status`: not logged in; `mise ls -g` lists only the image tools); log in and add a tool now, test at the next restart |
+| Claude Code and Codex start | PASS | reported working by the owner before the restart |
 
 ### Findings
 
@@ -140,3 +140,6 @@ Template `dev-workspace` (version pushed 2026-11-04 12:59, home-ops `0bd51a75`),
 5. One `FailedMount` event (ceph-csi "Aborted", source volume) before the container started: a transient RBD attach race that resolved itself. The first start also spent about 2 minutes pulling the image.
 6. peon-ping installs in the workspace although no audio relay is reachable from a pod; decision pending (skipping needs a `.chezmoiignore` change in `mmalyska/dotfiles`).
 7. The `ai-workflow` drift warning (marketplace newer than the accepted revision) is unchanged from the scratch-container run.
+8. `lost+found` is in `/workspaces` (the ext4 root of the source volume): the one top-level entry not owned by `vscode` seen in T22 was most likely this.
+9. The `FailedMount` event (ceph-csi `Aborted ... an operation with the given Pod UUID already exists`) recurred on the second start, on the home volume this time: ceph-csi serialises the two concurrent mounts and kubelet retries; benign.
+10. The `.envrc` `xargs` error is unchanged after the restart.
