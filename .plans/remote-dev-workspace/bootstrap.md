@@ -2,6 +2,8 @@
 
 # Repository bootstrap in the workspace (T6)
 
+> **Superseded in part (2026-11-04, D48).** The owner decided that the Coder workspace does not run a repository's `.devcontainer` lifecycle scripts. The "Decision" below (option A) and the workspace-specific rows of the table (1, 2, 7, 8, 17) no longer drive any work. The runtime findings (notes 18 to 23) still hold; the `.envrc` and tool findings still matter for the local devcontainer on the new image (T10) and for `.envrc` loaded by direnv in the workspace. Kept as a record.
+
 > **Status (2026-11-03): static analysis plus one amd64 run.** The agent session has no container runtime, so the owner ran the three lifecycle scripts in a scratch container from the pinned image on linux/amd64 (clone of branch `chore/bootstrap-rework` at `2957b0ab`, no secrets, no cluster) and pasted the output. Rows marked "Predicted" below were not run. **arm64 is NOT RUN.** See "Runtime results (amd64)" at the end.
 
 ## Decision
