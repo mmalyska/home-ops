@@ -161,6 +161,7 @@ PR #6092 merged; the `sync-probe` Application (two ConfigMaps, `prune: false`) a
 | `argocd app sync sync-probe` | PASS | both ConfigMaps Synced at `419319a9`, phase Succeeded |
 | `argocd app sync coder` (a real application) | PASS (refused) | `PermissionDenied: applications, sync, ai/coder, sub: dev-workspace` |
 | `argocd app sync sync-probe --revision <non-main branch>` | PASS (refused) | `PermissionDenied: applications, override, default/sync-probe, sub: dev-workspace`; `requireOverridePrivilegeForRevisionSync` works |
-| Prune with `--prune` after removing `probe-prune-me` from git | NOT RUN | needs a follow-up PR |
+| Prune with `--prune` after removing `probe-prune-me` from git (#6094 merged, `sync-probe` hard-refreshed by the agent with the owner's consent) | PASS | auto-sync left the object: `OutOfSync`, `ignored (requires pruning)`; `argocd app sync sync-probe` without `--prune` succeeded, the object stayed (the CLI exits non-zero with `1 resources require pruning`); `argocd app sync sync-probe --prune` pruned `probe-prune-me`, app `Synced`, `kubectl get cm` lists only `probe-keep` and `kube-root-ca.crt` |
+| `argocd app get sync-probe` | FAIL (expected, not granted) | `PermissionDenied: projects, get, default`: the CLI reads the project too. Sync, prune and the operation result still work. Use `kubectl get application -n argocd <name>` or the sync output for status; granting `projects, get` is the owner's decision |
 
 The first attempt at the revision check failed only because the placeholder `<non-main branch>` was typed literally (shell syntax error); it was rerun with a real branch.
