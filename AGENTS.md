@@ -1,6 +1,6 @@
 # Agent Instructions
 
-Canonical, harness-neutral rules for this repository. Harness adapters (`CLAUDE.md`, `.agents/README.md`) import or point here and add only what is true for one harness.
+Canonical, harness-neutral rules for this repository. Harness adapters (`.agents/README.md`) point here, and harness-specific facts are in the per-harness sections at the end of this file.
 
 ## Agent topology (standing user authorization)
 
@@ -208,3 +208,20 @@ The skills live in `.agents/skills/`; that is the only place to edit one. `.clau
 After any non-trivial change, update the docs that describe it (this file, `docs/`, the README or the relevant skill) in the same PR.
 
 Dated findings kept by an agent harness (for example `.claude/memory/`, indexed in `.claude/memory/MEMORY.md`) are notes to read when they apply and to verify against code and live state, not rules; a rule has a home in this file or under `.agents/`.
+
+## Claude Code
+
+Facts that are true only for Claude Code. Claude Code reads this file natively when no `CLAUDE.md` exists in the working directory or above it (v2.1.277 or later); do not add a `CLAUDE.md` here, it would stop this file loading by default.
+
+
+- `.claude/settings.json` is the Claude enforcement of the permission matrix in `.agents/policy/permissions.md`. Change them together.
+- The `git-workflows` plugin hook that guards the primary checkout is a backstop. The worktree rule in `AGENTS.md` does not depend on it.
+- A command that the permission rules block or ask about can be run by the user with the `!` prefix in the prompt, so its output lands in the session.
+- `.claude/skills/` is generated from `.agents/skills/` by `.agents/bin/sync-skills`. Edit a skill in `.agents/skills/`, run the script and commit both; never edit `.claude/skills/` by hand.
+- The statusline is configured in `.claude/statusline/settings.json`.
+
+### Memory
+
+Memory files and the `MEMORY.md` index live in `.claude/memory/` (git-tracked). `~/.claude/projects/-workspaces-home-ops/memory/` only holds symlinks into it, and anything written there directly is lost on a devcontainer rebuild.
+
+Future memory edits go to `.claude/memory/` directly and get committed on the branch I'm working on.
