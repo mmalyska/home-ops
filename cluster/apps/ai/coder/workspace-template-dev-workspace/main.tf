@@ -73,6 +73,30 @@ locals {
     "app.kubernetes.io/managed-by" = "coder"
   }
 
+  # Runs before the Coder agent starts, so every process in the pod (agent, terminals, ssh sessions, VS Code server,
+  # Claude Code, Codex and the commands they run) inherits the workspace's BWS secrets as environment variables. Nothing
+  # is written to disk. Secrets are read once per pod start: rotate one in BWS and restart the workspace to pick it up.
+  # Skipped on purpose: SSH_SIGNING_KEY (it lives only in the ssh-agent), multi-line values, keys that are not valid
+  # variable names, and names that would break the pod (PATH, HOME, LD_*, CODER_*, BWS_*). A failure is logged and does
+  # not stop the agent. The value is never printed.
+  bws_env_loader = <<-EOT
+    if [ -n "$${BWS_ACCESS_TOKEN:-}" ] && [ -n "$${BWS_PROJECT_ID:-}" ]; then
+      if bws_json="$(timeout 30 bws secret list "$BWS_PROJECT_ID" -o json 2>/dev/null)" \
+          && printf '%s' "$bws_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        while IFS= read -r -d '' bws_entry; do
+          export "$${bws_entry%%=*}=$${bws_entry#*=}"
+        done < <(printf '%s' "$bws_json" | jq -j '.[]
+          | select(.key | test("^[A-Za-z_][A-Za-z0-9_]*$"))
+          | select(.key | test("^(SSH_SIGNING_KEY|PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|LD_.*|CODER.*|BWS_.*)$") | not)
+          | select(.value | contains("\n") | not)
+          | .key + "=" + .value + "\u0000"')
+      else
+        echo "bws env: could not read secrets from the BWS project; continuing without them" >&2
+      fi
+      unset bws_json bws_entry
+    fi
+  EOT
+
   # Mount paths. /run/signing is a memory-backed emptyDir: the SSH signing key never touches a disk.
   signing_dir = "/run/signing"
   talos_dir   = "/var/run/secrets/talos.dev"
@@ -194,7 +218,7 @@ resource "kubernetes_deployment_v1" "workspace" {
         container {
           name    = "workspace"
           image   = local.image
-          command = ["bash", "-c", coder_agent.main.init_script]
+          command = ["bash", "-c", "${local.bws_env_loader}\n${coder_agent.main.init_script}"]
 
           security_context {
             allow_privilege_escalation = false
