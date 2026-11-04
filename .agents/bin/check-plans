@@ -219,7 +219,7 @@ fi
 if [ -f AGENTS.md ]; then
   grep -qE 'Archive is not instructions' AGENTS.md || err AGENTS.md "must carry the line 'Archive is not instructions'"
 fi
-for f in AGENTS.md CLAUDE.md .agents/README.md; do
+for f in AGENTS.md .agents/README.md; do
   [ -f "$f" ] || continue
   if grep -nE '^[[:space:]]*@[^[:space:]]*\.archive' "$f" >/dev/null; then err "$f" "imports a file under .archive/ as an instruction"; fi
 done

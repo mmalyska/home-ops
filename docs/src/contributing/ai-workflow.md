@@ -23,7 +23,6 @@ actor. The general procedure for adapting another repository is the canonical
 | Where                                                                              | Holds                                                                          |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [`AGENTS.md`](https://github.com/mmalyska/home-ops/blob/main/AGENTS.md)            | The shared, harness-neutral rules. Canonical; every harness reads it           |
-| [`CLAUDE.md`](https://github.com/mmalyska/home-ops/blob/main/CLAUDE.md)            | Thin Claude Code adapter: imports `AGENTS.md`, adds Claude-only facts          |
 | [`.agents/`](https://github.com/mmalyska/home-ops/tree/main/.agents)               | Adapter contract, policy files, scripts and the instruction tests              |
 | [`.agents/skills/`](https://github.com/mmalyska/home-ops/tree/main/.agents/skills) | The project skills (domain procedures), canonical and the only place to edit   |
 | [`.plans/`](https://github.com/mmalyska/home-ops/tree/main/.plans)                 | Active plans; finished plans move to `.archive/.plans/`                        |
@@ -38,7 +37,7 @@ instructions.
 
 | Harness     | What is verified                                                                                                                             | What is not                                                                                                                                          |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code | Loads `CLAUDE.md` and the `@AGENTS.md` import (N1). Project skills are visible. Permission rules and a write guard are technical enforcement | A directory symlink for `.claude/skills` (N6): not needed, the mirror is used                                                                        |
+| Claude Code | Reads `AGENTS.md` natively when no `CLAUDE.md` exists (v2.1.277 or later). Project skills are visible. Permission rules and a write guard are technical enforcement | A directory symlink for `.claude/skills` (N6): not needed, the mirror is used                                                                        |
 | Codex       | Reads `AGENTS.md` (N2) and discovers skills in `.agents/skills` (N3). A project rule file forbids skipping git hooks                         | Write guard in the primary checkout (instruction only); hook trust (N4); sandbox git writes in a linked worktree need user-level writable roots (N5) |
 | OpenCode    | Nothing. Placeholder: read `AGENTS.md`, run the preflight by hand before the first write. No parity claim                                    | Everything                                                                                                                                           |
 
@@ -125,7 +124,7 @@ reason. The note is text and authorizes nothing. The handoff shape and the topol
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The guard blocks a write                       | The target is in the primary checkout. Create a worktree and repeat the write there. Do not look for a way around the guard                                    |
 | A hook does not run in a new worktree          | Hooks are installed per clone: run `pre-commit install` once. Check with `.agents/bin/worktree-preflight`                                                      |
-| `@AGENTS.md` is not loaded                     | Claude Code only: `CLAUDE.md` must contain the line `@AGENTS.md`. Other harnesses read `AGENTS.md` directly                                                    |
+| `AGENTS.md` is not loaded                      | Claude Code only: needs v2.1.277 or later, and no `CLAUDE.md` in the working directory or above it. On older versions add a `CLAUDE.md` containing the line `@AGENTS.md` |
 | A skill is not discovered                      | Skills live in `.agents/skills/<name>/SKILL.md`. For Claude Code run `.agents/bin/sync-skills`; `sync-skills --check` shows the drift                          |
 | `pre-commit` blocks on attribution or gitleaks | Fix the cause: remove the attribution line or the secret. Never use `--no-verify`, `SKIP=` or `core.hooksPath`                                                 |
 | `check-plans` reports an error                 | Read the `ERROR <path>: <message>` line; the front matter and the index row must agree (see `.plans/README.md`)                                                |

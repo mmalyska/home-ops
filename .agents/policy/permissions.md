@@ -89,7 +89,7 @@ The impact statement names: which paths change, which Applications will sync (pr
 | `.github/renovate*`                                                                                  | Renovate automerge policy                                                            |
 | `.github/workflows/**`, `docs/**`                                                                    | CI behaviour and public docs publication                                             |
 | `provision/talos/**`                                                                                 | None automatically (manual `task talos:apply`)                                       |
-| `AGENTS.md`, `CLAUDE.md`, `.agents/**`, `.claude/**`, `.plans/**`                                    | None                                                                                 |
+| `AGENTS.md`, `.agents/**`, `.claude/**`, `.plans/**`                                    | None                                                                                 |
 
 ## RUNTIME_MUTATION
 
