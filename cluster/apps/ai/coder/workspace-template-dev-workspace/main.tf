@@ -89,6 +89,9 @@ resource "coder_agent" "main" {
     TALOSCONFIG = "${local.talos_dir}/config"
     # The in-pod ssh-agent that holds the signing key (D32).
     SSH_AUTH_SOCK = "${local.signing_dir}/agent.sock"
+    # Tells mmalyska/dotfiles it runs in a remote workspace (workspace signing key, repository clones). The
+    # Coder agent also sets CODER=true; this does not depend on that.
+    REMOTE_WORKSPACE = "1"
   }
 
   startup_script = <<-EOT
@@ -123,6 +126,19 @@ resource "coder_agent" "main" {
       echo "BWS_ACCESS_TOKEN or BWS_PROJECT_ID is not set: no signing key loaded"
     fi
   EOT
+}
+
+# Bootstrap at every start (bootstrap.sh): applies the dotfiles once per home volume (they clone the repositories).
+# A repository's .devcontainer scripts are not run (plan D48). It does not block login, and a failure is logged and
+# skipped. The script is read from the template directory, so `coder templates push` uploads it with main.tf.
+resource "coder_script" "bootstrap" {
+  agent_id           = coder_agent.main.id
+  display_name       = "Bootstrap"
+  icon               = "/icon/code.svg"
+  run_on_start       = true
+  start_blocks_login = false
+  timeout            = 3600
+  script             = file("${path.module}/bootstrap.sh")
 }
 
 resource "kubernetes_deployment_v1" "workspace" {
