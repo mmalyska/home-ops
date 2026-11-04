@@ -20,4 +20,7 @@ resticRefs:
   - "07d70a7a-a6d9-4b0b-af1f-b40a00d649a9" #gitleaks:allow #VOLSYNC_RESTIC_PASSWORD
   - "adb66319-d083-4379-afd5-b40a00d66963" #gitleaks:allow #VOLSYNC_RESTIC_AWS_ACCESS_KEY_ID
   - "70ebd8f2-8270-46d8-8953-b40a00d6854f" #gitleaks:allow #VOLSYNC_RESTIC_AWS_SECRET_ACCESS_KEY
-allowedBwsRefs: []
+allowedBwsRefs:
+  # Shared with dev-workspace for now (the same BWS machine token and project).
+  - "f00d5aee-b4fa-454f-b204-b4f701085f96" #gitleaks:allow #BWS_ACCESS_TOKEN
+  - "f9ab7df3-81b9-4797-b31e-b4f7010b2311" #gitleaks:allow #BWS_PROJECT_ID
