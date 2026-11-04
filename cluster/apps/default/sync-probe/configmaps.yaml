@@ -7,10 +7,5 @@ metadata:
   name: probe-keep
 data:
   purpose: stays in git; a sync leaves it alone
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: probe-prune-me
-data:
-  purpose: removed from git in a later change to test that a sync with prune deletes it and auto-sync does not
+# probe-prune-me was removed from git on purpose: the live object stays (auto-sync has prune: false) until a sync with
+# --prune deletes it. That is the prune test of the dev-workspace account's sync permission.
