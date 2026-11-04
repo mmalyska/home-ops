@@ -75,3 +75,39 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 - [ArgoCD RBAC documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/): `application.sync.requireOverridePrivilegeForRevisionSync` in `argocd-cm`, new since v3.2, default `'false'`; with it on, passing a revision to a sync needs the `override` action. Application actions: get, create, update, delete, sync, action, override.
 - CI for PR #6059 at `887cdca4`: Enforce PR labels, Helm Lint, Instruction checks, Label Size, Labeler, Lint and No Claude attribution all pass; the Lint job log contains no `MD0xx` lines.
 - Local run of `bash .agents/tests/run.sh` in the worktree: 165 tests, 0 failed.
+
+## T22: pod hardening test on the pinned image (2026-11-04)
+
+Question (Q24, D43): does the image run with `readOnlyRootFilesystem: true` in a namespace enforcing Pod Security `restricted`, and does `fsGroup` with `OnRootMismatch` behave?
+
+**Setup.** Scratch namespace `t22-scratch` labelled `pod-security.kubernetes.io/enforce`, `warn` and `audit` = `restricted`; a 5 Gi `ceph-block` PVC at `/home/vscode`; `emptyDir` at `/tmp` (5 Gi limit), `/cache` (20 Gi limit) and `/workspaces` (5 Gi limit, a stand-in for the source PVC). Pod settings: user and group 1000, `runAsNonRoot`, `fsGroup` 1000, `seccompProfile: RuntimeDefault`, `allowPrivilegeEscalation: false`, all capabilities dropped, `readOnlyRootFilesystem: true`, no service account token, memory limit 3 Gi, `ephemeral-storage` request 1 Gi and limit 30 Gi. Image `ghcr.io/mmalyska/dev-workstation:1.0.0` at the pinned digest, amd64, on `mc3`. The tests ran from the pod command and were read from the pod log (no `kubectl exec`).
+
+| Check | Result | Detail |
+| ----- | ------ | ------ |
+| Pod admitted at `restricted` | PASS | no warning from the `warn` mode, pod ran to completion |
+| `cp -rn /etc/skel/. "$HOME"/` on an empty home | PASS | home went from 1 entry to 4; exit 0 |
+| Second `cp -rn` changes nothing | PASS | hash of all files identical before and after |
+| `git init` and an empty commit | PASS | |
+| `mise use -g shfmt@3.8.0`, then `mise exec -- shfmt --version` | PASS | installs into the home volume |
+| `mise trust`, `mise install` (repository `mise.toml` with `jq 1.7.1`), `mise exec -- jq --version` | PASS | |
+| `npm install --package-lock-only` and `npm ci` | PASS | cache under `/cache/npm` |
+| `go mod init`, `go get` (a module from the network), `go build`, run the binary | PASS | module cache under `/cache/go/mod` |
+| `terraform init` with the `hashicorp/null` provider | PASS | plugin cache `/cache` |
+| Coder agent starts | NOT RUN | needs a Coder server and agent token; the scratch pod had neither. The agent normally downloads its binary into `/tmp`, which is writable, but that is not tested |
+| `OnRootMismatch` avoids the ownership walk | INCONCLUSIVE | see below |
+
+**Paths that needed to be writable:** `/home/vscode`, `/tmp`, `/cache`, `/workspaces`. Everything else was read-only and nothing failed: `/`, `/etc`, `/usr`, `/usr/local`, `/opt`, `/opt/mise`, `/var`, `/var/tmp`, `/var/log`, `/run`, `/home`, `/root`. After the full run `/cache` held 79 MB and `/tmp` 6 MB.
+
+**`fsGroupChangePolicy`.** With a populated home (10,128 files, a fresh volume) the same pod started on the same node in about 6 s with `OnRootMismatch` and about 5 s with `Always` (kubelet start to container start). Both are noise at this size: the root of the volume was already group 1000 and setgid, and ten thousand empty files are walked in well under a second, so this test cannot show a difference. It shows only that `OnRootMismatch` does no harm. Leave the setting in (D43) for the large source volume; do not read this result as a measurement of the benefit.
+
+**Observations.**
+
+- A fresh volume's root is `root:vscode`, mode 2775 (setgid). With `fsGroup` 1000 the `vscode` user can write there; files it creates are owned by `vscode:vscode`. One entry at the top level of the new volume was not owned by `vscode` (the setup counted it but did not name it; most likely the ext4 `lost+found`, not verified).
+- The first `cp -n` prints a GNU coreutils warning ("behavior of -n is non-portable, use --update=none"). It is harmless; the seeding command in the template (D45) could use `--update=none` once the image's coreutils is known to support it.
+- Egress was open, as in the design, so every download above worked.
+
+**Not covered.** The source PVC (the test used an `emptyDir` for `/workspaces`), the Coder agent, a restore, arm64, and any behaviour under a node with disk pressure.
+
+**Answer to Q24 (for the owner to confirm, not decided here).** On this evidence `restricted` is accepted and `readOnlyRootFilesystem: true` works with the four writable mounts above. A reasonable end state is: namespace `dev-workspace` at `restricted` for enforce, warn and audit; `readOnlyRootFilesystem: true` kept; the template mounts exactly `/home/vscode` (PVC), `/workspaces` (PVC), `/cache` and `/tmp` (`emptyDir`s). The one open item is the Coder agent, which can only be tested with a real workspace in T7.
+
+Scratch objects: namespace `t22-scratch`, PVC `t22-home`; the three pods were deleted after their logs were read.
