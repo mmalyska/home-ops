@@ -27,33 +27,37 @@ tasks:
 
   install:talos:
     internal: true
-    desc: Install talosctl (skipped with a warning when talosctl exists or sudo is missing)
+    desc: Install talosctl when it is missing or older than TALOS_VERSION (a newer one is left alone)
     cmds:
       - |
-        set -eu
-        if command -v talosctl >/dev/null 2>&1; then
-          echo "WARN: talosctl $(talosctl version --client --short 2>/dev/null | grep -m1 '^Talos') is installed, pin is {{ .TALOS_VERSION }}; skipping install"
-          exit 0
-        fi
+        set -euo pipefail
         if ! command -v sudo >/dev/null 2>&1; then
-          echo "WARN: talosctl is not installed, pin is {{ .TALOS_VERSION }}, and sudo is not available; skipping install"
-          exit 0
+          echo "ERROR: talosctl is missing or older than {{ .TALOS_VERSION }} and sudo is not available; install talosctl {{ .TALOS_VERSION }} or newer" >&2
+          exit 1
         fi
         curl -sL https://talos.dev/install | sed "s+siderolabs/talos/releases/latest/download+siderolabs/talos/releases/download/{{ .TALOS_VERSION }}+g" | bash
     status:
-      - talosctl version --client --short | grep -q 'Talos {{ .TALOS_VERSION }}'
+      # Up to date when the installed client is the pin or newer.
+      - |
+        need="{{ .TALOS_VERSION }}"; need="${need#v}"
+        have="$(talosctl version --client --short 2>/dev/null | sed -n 's/^Talos v\{0,1\}//p' | head -n1)"
+        [ -n "$have" ] && [ "$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -n1)" = "$need" ]
 
-  client-version-warn:
-    internal: true
+  check-client:
+    desc: Fail when the talosctl client is older than TALOS_VERSION (task talos:check-client); a newer client passes
     silent: true
-    desc: Warn when the talosctl client differs from the pinned Talos version
     cmds:
       - |
-        v="$(talosctl version --client --short 2>/dev/null | grep -m1 '^Talos')"
-        case "$v" in
-          *'Talos {{ .TALOS_VERSION }}') ;;
-          *) echo "WARN: talosctl client is '$v', pin is {{ .TALOS_VERSION }}; continuing" >&2 ;;
-        esac
+        need="{{ .TALOS_VERSION }}"; need="${need#v}"
+        have="$(talosctl version --client --short 2>/dev/null | sed -n 's/^Talos v\{0,1\}//p' | head -n1)"
+        if [ -z "$have" ]; then
+          echo "ERROR: talosctl is missing or not working; {{ .TALOS_VERSION }} or newer is required (task talos:install)" >&2
+          exit 1
+        fi
+        if [ "$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -n1)" != "$need" ]; then
+          echo "ERROR: talosctl $have is older than the required {{ .TALOS_VERSION }} (TALOS_VERSION in .taskfiles/talos/Taskfile.yaml); upgrade it (task talos:install)" >&2
+          exit 1
+        fi
 
   version:
     desc: Show Talos version on all nodes (task talos:version)
@@ -182,7 +186,7 @@ tasks:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
-      - task: client-version-warn
+      - task: check-client
       - task: generate:talosconfig
       - for:
           var: NODE_LIST
@@ -294,7 +298,7 @@ tasks:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
-      - task: client-version-warn
+      - task: check-client
       - "{{.TALOS_DIR}}/scripts/diff-live.sh {{.CLI_ARGS}}"
     preconditions:
       - which envsubst
@@ -309,7 +313,7 @@ tasks:
       TALOS_VERSION: "{{.TALOS_VERSION}}"
       KUBERNETES_VERSION: "{{.KUBERNETES_VERSION}}"
     cmds:
-      - task: client-version-warn
+      - task: check-client
       - "{{.TALOS_DIR}}/scripts/pki-parity.sh {{.CLI_ARGS}}"
     preconditions:
       - which envsubst

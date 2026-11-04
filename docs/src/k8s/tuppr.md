@@ -253,7 +253,7 @@ process`), then `Pending` / `PrePulling`.
   `installer.image` was `custom-installer-jp7:v1.14.2` against `v1.14.4` in git. A dry run (`talosctl apply-config
 --dry-run -m auto`) showed that line only and "without a reboot"; `task talos:apply N=nv1` (or the same
   `talosctl apply-config ... -m auto` on the rendered `home-nv1.yaml`) cleared it, and `task talos:diff` was then clean on
-  all four nodes. `task talos:generate` warns when the local `talosctl` differs from the pinned `TALOS_VERSION`; render with a client at the target version (the `dev-workstation` image follows upstream; `task talos:install` only installs on a machine with `sudo` and no `talosctl`).
+  all four nodes. `task talos:generate` (and `talos:diff`, `talos:pki-parity`) fails only when the local `talosctl` is older than the pinned `TALOS_VERSION`; a newer client passes (`task talos:check-client` runs just that check). The `dev-workstation` image follows upstream releases, so it is normally newer. `task talos:install` installs only when `talosctl` is missing or older than the pin and `sudo` is available; the same rule applies to `task cilium:install`.
 - **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
   minutes, longer than the node's own reboot because of the stale boot entry.
 - **nv1 and kexec:** nv1 has `kernel.kexec_load_disabled=1` (see "nv1 and kexec" below), which avoids the stale-UKI
