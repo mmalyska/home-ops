@@ -27,6 +27,8 @@ It needs RBAC for every resource type it manages — see `templates/rbac-service
 
 The dotnet, node, mobile and researcher workspaces (192.168.48.52-55) were removed on 2026-10-21; create them again with the command below if needed.
 
+A second template, `workspace-template-dev-workspace/`, runs the `dev-workstation` image in the `dev-workspace` namespace (see its README); everything below describes the `sandbox` template.
+
 **Resource limits per workspace**: 500m–1000m CPU, 1–2 Gi RAM, 20 Gi home PVC (ceph-block, RWO).
 
 **Backup**: VolSync restic ReplicationSource runs every 6 h, retains 6 daily / 4 weekly / 2 monthly snapshots.
