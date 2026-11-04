@@ -41,6 +41,8 @@ Then use VS Code Remote-SSH or the Coder extension, or `coder ssh <owner>/<works
 
 Commit and push work you care about: the source volume is backed up once a day. Claude and Codex logins live on the home volume
 and are in its backup (accepted); every other credential is delivered by environment or memory and never written to a volume.
+The `bws` CLI's login state and config are kept on `/cache` (`BWS_CONFIG_FILE=/cache/bws/config`), so they are not backed up.
+The VS Code server's own token (`~/.vscode-server/cli/agent-host-token`) does sit on the home volume and is backed up.
 
 ## First use of a repository
 

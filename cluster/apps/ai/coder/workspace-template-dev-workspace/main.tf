@@ -79,8 +79,17 @@ locals {
   # Skipped on purpose: SSH_SIGNING_KEY (it lives only in the ssh-agent), multi-line values, keys that are not valid
   # variable names, and names that would break the pod (PATH, HOME, LD_*, CODER_*, BWS_*). A failure is logged and does
   # not stop the agent. The value is never printed.
+  #
+  # The bws CLI caches its login state in a state directory (default ~/.config/bws/state on the home volume) and keys its
+  # config file by the access token's identifier. Both go to the rebuildable /cache instead (BWS_CONFIG_FILE is set on the
+  # container), so no BWS state reaches the home volume or its backup. The config is written here, before the first bws call.
+  bws_dir = "/cache/bws"
+
   bws_env_loader = <<-EOT
     if [ -n "$${BWS_ACCESS_TOKEN:-}" ] && [ -n "$${BWS_PROJECT_ID:-}" ]; then
+      mkdir -p "${local.bws_dir}" && chmod 700 "${local.bws_dir}" \
+        && bws config state-dir "${local.bws_dir}/state" >/dev/null 2>&1 \
+        || echo "bws state: could not move the state directory to ${local.bws_dir}; bws may write under ~/.config/bws" >&2
       if bws_json="$(timeout 30 bws secret list "$BWS_PROJECT_ID" -o json 2>/dev/null)" \
           && printf '%s' "$bws_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
         while IFS= read -r -d '' bws_entry; do
@@ -235,6 +244,12 @@ resource "kubernetes_deployment_v1" "workspace" {
           env {
             name  = "CODER_AGENT_TOKEN"
             value = coder_agent.main.token
+          }
+          # bws config and state live on /cache, not on the backed-up home volume (see bws_dir). Set on the container, so the
+          # loader, the agent and every session inherit it.
+          env {
+            name  = "BWS_CONFIG_FILE"
+            value = "${local.bws_dir}/config"
           }
           # The scoped BWS machine token and its project (D31). Read from a Secret; no secret value
           # passes through Terraform variables or state.
