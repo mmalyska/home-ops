@@ -40,10 +40,8 @@ metadata:
   name: agent-workspaces-allowed-bws-refs
   namespace: {{ .Release.Namespace }}
 data:
-  refs: |
-{{- range concat .Values.resticRefs .Values.allowedBwsRefs }}
-    {{ . }}
-{{- end }}
+  # Comma separated: the policy splits on ',' (a newline escape inside a YAML string does not reach CEL intact).
+  refs: {{ join "," (concat .Values.resticRefs .Values.allowedBwsRefs) | quote }}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
@@ -65,7 +63,7 @@ spec:
       message: "ExternalSecrets in this namespace may only use the ClusterSecretStore bitwarden"
     - expression: "!has(object.spec.dataFrom) && has(object.spec.data) && size(object.spec.data) > 0"
       message: "ExternalSecrets in this namespace must list their keys in spec.data (no dataFrom, no generators)"
-    - expression: "object.spec.data.all(d, !has(d.remoteRef.property) && !has(d.remoteRef.version) && d.remoteRef.key in params.data.refs.split('\n'))"
+    - expression: "object.spec.data.all(d, !has(d.remoteRef.property) && !has(d.remoteRef.version) && d.remoteRef.key in params.data.refs.split(','))"
       message: "ExternalSecret references a Bitwarden secret that is not allowed; add it to resticRefs or allowedBwsRefs in cluster/apps/ai/agent-workspaces/values.yaml"
 ---
 apiVersion: admissionregistration.k8s.io/v1
