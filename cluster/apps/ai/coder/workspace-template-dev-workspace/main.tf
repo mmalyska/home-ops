@@ -11,7 +11,7 @@ terraform {
   }
 }
 
-# Dev workspace on the dev-workstation image (plan: .plans/remote-dev-workspace).
+# Dev workspace on the dev-workstation image (plan: .archive/.plans/remote-dev-workspace).
 #
 # This template only creates the Deployment. Everything else it needs is created and owned by GitOps in
 # cluster/apps/system/dev-workspace and is referenced by name: the two PVCs, the Kubernetes and Talos

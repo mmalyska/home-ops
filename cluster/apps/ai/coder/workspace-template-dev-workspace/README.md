@@ -1,7 +1,7 @@
 # dev-workspace Coder template
 
 A long-lived development workspace on the `dev-workstation` image (`ghcr.io/mmalyska/dev-workstation`, pinned by digest in
-`main.tf`). Plan: `.plans/remote-dev-workspace/`. The `sandbox` template in `../workspace-template/` is not touched.
+`main.tf`). Plan: `.archive/.plans/remote-dev-workspace/`. The `sandbox` template in `../workspace-template/` is not touched.
 
 Access is through the Coder agent only (no sshd, no Service, no `authorized_keys`): `coder config-ssh`, then VS Code with the
 Coder extension.

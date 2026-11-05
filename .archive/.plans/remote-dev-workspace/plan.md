@@ -1,12 +1,12 @@
 ---
-status: draft
+status: shipped
 owner: repository owner
 profile: STANDARD
 topology: SOLO
 base_sha: 12666e7ed4c48b7caa03e6901a7905b77d809927
 branch: docs/dev-workstation-image-storage
 worktree: .worktrees/docs/dev-workstation-image-storage
-pr: "#6059, #6071"
+pr: "#6059, #6060, #6061, #6071, #6074, #6075, #6076, #6083, #6084, #6085, #6086, #6087, #6088, #6089, #6090, #6091, #6092, #6093, #6095, #6097, #6098, #6100, #6108, #6114, #6116, #6117, #6118, #6120, #6122, #6123, #6126"
 started: 2026-11-02
 updated: 2026-11-05
 ---

@@ -1,5 +1,5 @@
 # Disposable application used to test the Argo CD sync permission of the dev-workspace account (home-ops plan
-# .plans/remote-dev-workspace, T18 stage 2). It holds two ConfigMaps and no storage, no Secret and no workload, so
+# .archive/.plans/remote-dev-workspace, T18 stage 2). It holds two ConfigMaps and no storage, no Secret and no workload, so
 # nothing can be hurt by a sync, a prune or a sync to the wrong revision. Delete the directory when no longer needed.
 apiVersion: v1
 kind: ConfigMap
