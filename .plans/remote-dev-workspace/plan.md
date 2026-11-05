@@ -206,7 +206,7 @@ Q1 to Q23 were answered by the owner on 2026-11-02; each answer is a decision ab
 
 **Q23 (resolved, D38).** Which ArgoCD apps may the workspace account refresh, sync and prune? A named allowlist that starts empty, with the exclusions and `Prune=false` rules of D38. The owner adds app names later by reviewed PRs.
 
-**Q24 (open, awaits the owner).** Which Pod Security level does the namespace end at, and is `readOnlyRootFilesystem` kept? The T22 test (2026-11-04, `evidence.md`) shows `restricted` is admitted and `readOnlyRootFilesystem: true` works with `/home/vscode`, `/workspaces`, `/cache` and `/tmp` writable; the Coder agent is untested. Proposed answer: `restricted`, read-only root kept.
+**Q24 (answered by the owner 2026-11-05: keep `baseline` as it is; D28 stands, no change to the live pod settings; the proposal below was not adopted).** Which Pod Security level does the namespace end at, and is `readOnlyRootFilesystem` kept? The T22 test (2026-11-04, `evidence.md`) shows `restricted` is admitted and `readOnlyRootFilesystem: true` works with `/home/vscode`, `/workspaces`, `/cache` and `/tmp` writable; the Coder agent is untested. Proposed answer: `restricted`, read-only root kept.
 
 Facts that are not questions but must be confirmed on the running workspace are listed in T7 and T8 (live checks): pod to `talos.default` reachability, sensitive `talosctl get` types, Coder agent SSH without sshd, kubectl falling back to the in-cluster configuration, home and workspace persistence after a pod restart, and the ArgoCD token's allowed and denied actions.
 
@@ -260,7 +260,7 @@ Per [`.agents/policy/validation.md`](../../.agents/policy/validation.md). For th
 
 Revised 2026-11-03 from the owner's handoff: image `dev-workstation` 1.0.0 adopted (D46), storage design replaced (D40 to D45), `containers` independent of `home-ops` (D47). Disk wear and capacity are out of scope here (TODO list). The status is `draft` until the owner reviews this revision, because D43 is a proposal and Q24 is open. Decisions D1 to D39 that this revision does not name are unchanged.
 
-- Q1 to Q23 are answered and recorded as D1 to D39. Q24 is open.
+- Q1 to Q23 are answered and recorded as D1 to D39. Q24 was answered on 2026-11-05: the namespace stays at `baseline`.
 - Done since the approval: T1 (PR #6061), T2 and T3 (image published, `containers` PR #772), T14 (PR #6060), T15 (`containers` PR #760), T12.
 - Checked against the repository and cluster on 2026-11-03: see "Revision notes" below for what in the handoff matched and what did not.
 - No implementation of the workspace has started. Each task in [tasks.md](tasks.md) is started on the owner's instruction, and every task that changes the cluster or an external service needs fresh consent when it runs.
