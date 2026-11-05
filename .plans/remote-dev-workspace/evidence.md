@@ -104,8 +104,13 @@ Container started by the owner from the PR branch (#6123), `home-ops` at `/works
 | `task init` without `brew` | PASS | "All required tools are present."; `task --list` works |
 | Git hooks installed (`task precommit:init` in `updateContentCommand`) | PASS | `commit-msg` and `pre-commit` in `.git/hooks` |
 | Rebuild with bad values in `devcontainer.env` | FAIL, cause found | `bws returned no secrets`; `task terraform:upgrade:cloudflare` failed with `unauthorized`; `talos:init` skipped; `task cilium:install:cli` up to date; `postStartCommand` ran |
-| Rebuild after the values were corrected | PASS, reported by the owner | The owner reports it worked after removing the comments; the log of this rebuild was not read by the agent |
-| `onCreateCommand` (`chezmoi init --apply`) | NOT CONFIRMED | Not in the log excerpt the agent received |
+| Rebuild after the values were corrected | PASS | Checked from the results in the container, pasted by the owner; the log of this rebuild was not read by the agent |
+| Secrets from BWS through `.envrc` | PASS | direnv exports the `TALHELPER_*` names; `TALHELPER_OSCERT` is set |
+| `task talos:init` | PASS | `provision/talos/clusterconfig/talosconfig` exists |
+| `task terraform:upgrade:cloudflare` | PASS | `provision/terraform/cloudflare/.terraform/` holds `environment`, `providers` and `terraform.tfstate` |
+| `onCreateCommand` (`chezmoi init --apply`) | PASS | `chezmoi managed` lists 13 entries |
+| `postStartCommand` (memory symlinks) | PASS | 42 entries in the Claude memory directory |
+| `GITHUB_TOKEN` | PASS | set in the shell |
 
 Cause of the failure: not the image. The lines in `devcontainer.env` had a comment after the value, as the old sample laid them out (`NAME=    # comment`). Docker's `--env-file` keeps that text as part of the value, so the variables looked set and the services rejected them. The sample now puts each comment on its own line and states the format.
 
