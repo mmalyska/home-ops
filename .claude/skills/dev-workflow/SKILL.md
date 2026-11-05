@@ -43,7 +43,7 @@ Bootstrap sequence and design decisions: `@docs/src/k8s/bootstrap.md`.
 
 ## Development Environment
 
-Uses a devcontainer (`ghcr.io/mmalyska/home-ops-devcontainer:main`). On container start:
+Uses a devcontainer on the shared `dev-workstation` image (`ghcr.io/mmalyska/dev-workstation`, pinned by digest in `.devcontainer/devcontainer.json`, built in `mmalyska/containers`; tools are pinned with mise in that repository). The image has no Homebrew and no sudo. On container start:
 1. `.envrc` is sourced via direnv (sets `KUBECONFIG`, `TALOSCONFIG`, BWS secrets)
 2. Pre-commit hooks are initialized
 3. Task subtasks are initialized

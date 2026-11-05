@@ -47,11 +47,11 @@ For provisioning the following tools are used:
 
 ### 🧠 Devcontainer
 
-For fast setup I use devcontainer to have same environment across different devices. See more inside `.devcontainer` and at [Devcontainers](https://containers.dev/)
+For fast setup I use devcontainer to have same environment across different devices. It runs the shared `dev-workstation` image (built in [`mmalyska/containers`](https://github.com/mmalyska/containers), tools pinned with [mise](https://mise.jdx.dev/)), the same image as the always-on [remote workspace](docs/src/k8s/remote-dev-workspace.md). See more inside `.devcontainer` and at [Devcontainers](https://containers.dev/)
 
 ### 🔧 Tools
 
-1. Install the **most recent versions** of the following command-line tools on your workstation, if you are using [Homebrew](https://brew.sh/) on macOS or Linux skip to steps 3 and 4.
+1. The devcontainer already has the tools below. Outside it, install the **most recent versions** of the following command-line tools on your workstation (the pinned list is `apps/dev-workstation/mise.toml` in `mmalyska/containers`).
 
    - Required:
      [go-task](https://github.com/go-task/task),
@@ -78,13 +78,7 @@ For fast setup I use devcontainer to have same environment across different devi
 
 2. This guide heavily relies on [go-task](https://github.com/go-task/task) as a framework for setting things up. It is advised to learn and understand the commands it is running under the hood.
 
-3. Install [go-task](https://github.com/go-task/task) via Brew
-
-   ```sh
-   brew install go-task/tap/go-task
-   ```
-
-4. Install workstation dependencies via Brew
+3. Check that the workstation tools are present (it lists any that are missing)
 
    ```sh
    task init

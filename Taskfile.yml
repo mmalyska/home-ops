@@ -42,18 +42,5 @@ tasks:
           done
           [ -z "$missing" ] || { echo "missing tools:$missing" >&2; exit 1; }
         msg: |
-          Some required tools are missing (listed above). Use the dev-workstation image,
-          or on a machine without it run `task init:brew` (Homebrew).
-
-  init:brew:
-    desc: Install workstation tools with Homebrew, for a machine without the dev-workstation image
-    cmds:
-      - brew update
-      - brew bundle upgrade --file=.github/.devcontainer/local-features/common/Brewfile {{.CLI_ARGS}}
-    preconditions:
-      - sh: command -v brew
-        msg: |
-          Homebrew is not installed. Using MacOS, Linux or WSL?
-          Head over to https://brew.sh to get up and running.
-      - sh: test -f .github/.devcontainer/local-features/common/Brewfile
-        msg: The Brewfile is missing.
+          Some required tools are missing (listed above). Use the dev-workstation image (the devcontainer),
+          or install them with mise from the list in apps/dev-workstation/mise.toml of mmalyska/containers.

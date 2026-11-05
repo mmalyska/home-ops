@@ -2,7 +2,7 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
   "name": "home-ops",
-  "image": "ghcr.io/mmalyska/home-ops-devcontainer:main@sha256:c6f98cd582ba9f7d31ea43f59bc432f6d6caeae516cef18b3aadff3526ccd232",
+  "image": "ghcr.io/mmalyska/dev-workstation:1.0.0@sha256:76a0c4f0359029fa9ce976a39b87d7770bb332c56336e7ea673d753a0dc30f98",
   "secrets": {
     "TERRAFORM_TOKEN": {
       "description": "Token to access terraform cloud."
@@ -29,13 +29,7 @@
   "containerUser": "vscode",
   "customizations": {
     "vscode": {
-      // Set *default* container specific settings.json values on container create.
-      "settings": {
-        "vs-kubernetes": {
-          "vscode-kubernetes.kubectl-path": "/home/linuxbrew/.linuxbrew/bin/kubectl",
-          "vscode-kubernetes.helm-path": "/home/linuxbrew/.linuxbrew/bin/helm"
-        }
-      },
+      // kubectl and helm come from the image (mise), found on PATH; no tool paths are set here.
       "extensions": [
         "HashiCorp.terraform",
         "britesnow.vscode-toggle-quotes",
