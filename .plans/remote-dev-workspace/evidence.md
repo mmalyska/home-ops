@@ -116,6 +116,20 @@ Cause of the failure: not the image. The lines in `devcontainer.env` had a comme
 
 Three facts for the next person. A fresh container volume starts from the comment-only sample, so the order is clone, fill in the file, rebuild. The scripts have no `set -e`, and `updateContentCommand` printed `Done!` after the Terraform failure, so `Done!` proves nothing. `task` prints `no context is set` when no talosconfig exists (from `talosctl config info`, reproduced with an empty `TALOSCONFIG` path, exit 1); it does not stop the task.
 
+## T10: the other repositories (2026-11-05)
+
+Each repository was opened by the owner with "Clone GitHub Pull Request in Container Volume" and rebuilt; the owner pasted the output. All pin `ghcr.io/mmalyska/dev-workstation:1.0.0@sha256:71335a56…`. Design rules in D49.
+
+| Repository | PR | Devcontainer | Result |
+| ---------- | -- | ------------ | ------ |
+| `github-workflows` | #33 | features `docker-in-docker`, `act`; `containerUser: root` | First build FAIL: no Docker daemon (the entrypoint needs `sudo` when not root; the image has none). After `containerUser: root`: PASS, Docker server 29.9.3-1 reachable as `vscode`, `act` 0.2.97, Go 1.27.3. No `act` run tried |
+| `containers` | #785 | features `docker-in-docker`; `containerUser: root`; local Homebrew Dockerfile removed | PASS: Docker 29.9.3-1, buildx v0.38.2, task 3.54.0, cue v0.17.1, Go 1.27.3; `task test` for `s3-bucket-cleaner` built the image. Its `dgoss` step needs `CLI=true` for a `cli` app (the command given first left it out); the rerun result was not reported before the merge |
+| `homelab-portal` | #120 | features `common-utils` (`sudoers: false`), `node` 24, `java` 17 Temurin, NordcomInc `android-sdk:2` (platform 35, build-tools 35.0.0); `overrideFeatureInstallOrder` common-utils, java, android-sdk; `MISE_DISABLE_TOOLS=node`; own image build and publish workflow removed; env sample comments moved off the value lines | PASS: Node v24.22.2, Yarn 1.22.22, OpenJDK 17.0.21, platform 35 and build-tools 35.0.0 under `/usr/local/lib/android`; `yarn lint` (0 errors, 2 old warnings), `yarn typecheck`, `yarn format:check`; `sudo -n true` refused for `vscode`. No local Android build tried |
+| `argocd-secret-replacer` | #155 | features `dotnet` 10.0, `sops`; `age` from the image | PASS: .NET SDK 10.0.403, sops 3.13.3, age v1.3.2; `dotnet build`; unit tests 17 of 17. `sops` E2E tests not run (need an age key) |
+| `willow-inference-server-dockerized`, `home-assistant` | none | unchanged | Not moved (owner's list, both inactive) |
+
+Feature choice for the Android SDK: the CASL0 feature installs without `sudo` but is small and unchanged since January 2024; the owner preferred the maintained NordcomInc feature, which calls `sudo` and so needs `common-utils` first and Java ordered before it (its `sdkmanager` needs Java at install time).
+
 ## T22: pod hardening test on the pinned image (2026-11-04)
 
 Question (Q24, D43): does the image run with `readOnlyRootFilesystem: true` in a namespace enforcing Pod Security `restricted`, and does `fsGroup` with `OnRootMismatch` behave?
