@@ -30,10 +30,10 @@ allows Deployments only.
   `TALOSCONFIG` points at its `config`. Role `os:reader`; the config has no nodes list, so `talosctl` needs `--nodes`.
 - Kubernetes: the pod ServiceAccount token; `kubectl` uses the in-cluster configuration and no kubeconfig exists.
 - Agent environment: `REMOTE_WORKSPACE=1` (the dotfiles switch on the workspace behaviour), `TALOSCONFIG`, `SSH_AUTH_SOCK`, `ARGOCD_OPTS=--grpc-web` (Argo CD is behind the HTTP gateway) and `KUBECACHEDIR=/cache/kube` (kubectl's cache stays off the backed-up home volume). The remaining secrets (`GITHUB_TOKEN`, `TERRAFORM_TOKEN`, `ARGOCD_AUTH_TOKEN`, `ARGOCD_SERVER`) are not set by the template: `home-ops/.envrc` loads them from the workspace's BWS project through direnv, one `export` per secret from JSON, skipping `SSH_SIGNING_KEY`, any multi-line value and any invalid name. `bash .github/tests/envrc.sh` tests that rule.
-- BWS state: the `bws` CLI caches its login in a state directory and keys its config file by the access token's identifier. The
-  container sets `BWS_CONFIG_FILE=/cache/bws/config`, and the container command runs `bws config state-dir /cache/bws/state`
-  before the first `bws` call, so neither file reaches the home volume or its backup. Both are empty after a pod replacement and
-  the next `bws` call logs in again. T8 found the state file on the home volume before this change.
+- BWS state: the `bws` CLI caches its login in `~/.config/bws/state`. The container command makes that path a symlink to
+  `/cache/bws/state` before the first `bws` call, so the state does not reach the home volume or its backup. It is empty after a
+  pod replacement and the next `bws` call logs in again. No `BWS_CONFIG_FILE` is set: a config file without server settings makes
+  every `bws` call fail (#6108 did that). T8 found the state file on the home volume before the first fix.
 - BWS secrets: the container command exports every secret of the workspace's BWS project as an environment variable before the
   Coder agent starts, so all processes in the pod inherit them (terminals, ssh, VS Code server, Claude Code, Codex and the
   commands they run). This is not tied to any repository. Skipped: `SSH_SIGNING_KEY` (only in the ssh-agent), multi-line

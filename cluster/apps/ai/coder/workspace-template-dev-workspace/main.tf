@@ -80,16 +80,18 @@ locals {
   # variable names, and names that would break the pod (PATH, HOME, LD_*, CODER_*, BWS_*). A failure is logged and does
   # not stop the agent. The value is never printed.
   #
-  # The bws CLI caches its login state in a state directory (default ~/.config/bws/state on the home volume) and keys its
-  # config file by the access token's identifier. Both go to the rebuildable /cache instead (BWS_CONFIG_FILE is set on the
-  # container), so no BWS state reaches the home volume or its backup. The config is written here, before the first bws call.
+  # The bws CLI caches its login state in ~/.config/bws/state on the home volume. The loader makes that path a symlink to
+  # the rebuildable /cache, so no BWS state reaches the home volume or its backup. A config file is not used: once one
+  # exists, bws stops applying its default server settings and every call fails. A real state directory left by an earlier
+  # template version is removed first; it only holds login state, and the next bws call logs in again.
   bws_dir = "/cache/bws"
 
   bws_env_loader = <<-EOT
     if [ -n "$${BWS_ACCESS_TOKEN:-}" ] && [ -n "$${BWS_PROJECT_ID:-}" ]; then
-      mkdir -p "${local.bws_dir}" && chmod 700 "${local.bws_dir}" \
-        && bws config state-dir "${local.bws_dir}/state" >/dev/null 2>&1 \
-        || echo "bws state: could not move the state directory to ${local.bws_dir}; bws may write under ~/.config/bws" >&2
+      mkdir -p "${local.bws_dir}/state" "$HOME/.config/bws" && chmod 700 "${local.bws_dir}" "${local.bws_dir}/state" \
+        && { [ -L "$HOME/.config/bws/state" ] || rm -rf "$HOME/.config/bws/state"; } \
+        && ln -sfn "${local.bws_dir}/state" "$HOME/.config/bws/state" \
+        || echo "bws state: could not link ~/.config/bws/state to ${local.bws_dir}/state; bws may write to the home volume" >&2
       if bws_json="$(timeout 30 bws secret list "$BWS_PROJECT_ID" -o json 2>/dev/null)" \
           && printf '%s' "$bws_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
         while IFS= read -r -d '' bws_entry; do
@@ -244,12 +246,6 @@ resource "kubernetes_deployment_v1" "workspace" {
           env {
             name  = "CODER_AGENT_TOKEN"
             value = coder_agent.main.token
-          }
-          # bws config and state live on /cache, not on the backed-up home volume (see bws_dir). Set on the container, so the
-          # loader, the agent and every session inherit it.
-          env {
-            name  = "BWS_CONFIG_FILE"
-            value = "${local.bws_dir}/config"
           }
           # The scoped BWS machine token and its project (D31). Read from a Secret; no secret value
           # passes through Terraform variables or state.
