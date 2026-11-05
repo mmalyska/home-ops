@@ -14,37 +14,38 @@ Two parts:
 
 Names use `<owner>-<workspace name>` (`mmalyska-hermes`), so any number of workspaces can exist side by side.
 
-| Object                                                      | Purpose                                                                                   |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `Deployment` `ws-<id>`                                      | The pod (`dev-workstation` image, same hardening as the personal workspace)               |
-| PVC `<id>-home`, `<id>-src`                                 | Home (5 Gi, backed up every 6 h) and `/workspaces` (30 Gi, backed up daily)               |
-| `Service` `<id>-ssh`                                        | ClusterIP, port 22 to the pod's sshd on 2222; this is how the agent (hermes) logs in      |
-| `ServiceAccount` `<id>`                                     | Pod identity. Its token is mounted only when Kubernetes access is on                      |
-| `ExternalSecret` `<id>-env`                                 | `GITHUB_TOKEN` and the extra secrets as environment variables, each fetched by its own ID |
-| `ExternalSecret` `<id>-signing` (optional)                  | The commit signing key, as a file loaded into an in-pod ssh-agent                         |
-| `serviceaccounts.talos.dev` `<id>-talos` (optional)         | `os:reader` Talos credential; Talos creates the Secret with the same name                 |
-| `ExternalSecret` and `ReplicationSource` `<id>-home`/`-src` | VolSync backups, one restic repository per volume                                         |
+| Object                                                      | Purpose                                                                                                |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `Deployment` `ws-<id>`                                      | The pod (`dev-workstation` image, same hardening as the personal workspace)                            |
+| PVC `<id>-home`, `<id>-src`                                 | Home (5 Gi, backed up every 6 h) and `/workspaces` (30 Gi, backed up daily)                            |
+| `Service` `<id>-ssh`                                        | ClusterIP, port 22 to the pod's sshd on 2222; this is how the agent (hermes) logs in                   |
+| `ServiceAccount` `<id>`                                     | Pod identity. Its token is mounted only when Kubernetes access is on                                   |
+| `ExternalSecret` `<id>-env` (when there is a secret)        | The optional `GITHUB_TOKEN` and the extra secrets as environment variables, each fetched by its own ID |
+| `ExternalSecret` `<id>-signing` (optional)                  | The commit signing key, as a file loaded into an in-pod ssh-agent                                      |
+| `serviceaccounts.talos.dev` `<id>-talos` (optional)         | `os:reader` Talos credential; Talos creates the Secret with the same name                              |
+| `ExternalSecret` and `ReplicationSource` `<id>-home`/`-src` | VolSync backups, one restic repository per volume                                                      |
 
 No BWS machine token goes into the pod. A token reads its whole project, and the free tier has a single shared project, so
 the pod gets exactly the secrets named in the parameters and cannot list the others.
 
 ## Parameters (access is chosen per workspace)
 
-| Parameter                       | Meaning                                                                                                                              |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `github_token_ref`              | Bitwarden secret ID of this agent's `GITHUB_TOKEN`; required, so every agent has GitHub. Use one token per bot account, or share one |
-| `extra_secrets`                 | List of `NAME=<Bitwarden secret ID>`; each becomes an environment variable                                                           |
-| `signing_key_ref`               | Optional secret ID of an SSH key that signs the agent's commits                                                                      |
-| `authorized_key`                | Public key allowed to SSH in (user `vscode`, port 2222)                                                                              |
-| `kubernetes_access`             | Off by default. On: the pod token is mounted and `kubectl` reads the cluster (read-only role, no Secrets, no exec)                   |
-| `talos_access`                  | Off by default. On: an `os:reader` Talos credential is created and mounted                                                           |
-| `home_size`, `src_size`, `arch` | Sizes and platform                                                                                                                   |
+| Parameter                       | Meaning                                                                                                                                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `github_token_ref`              | Optional Bitwarden secret ID of a `GITHUB_TOKEN` that works against `api.github.com`. Empty means no GitHub credential (GitHub App authentication and signed commits are still to be designed) |
+| `extra_secrets`                 | List of `NAME=<Bitwarden secret ID>`; each becomes an environment variable                                                                                                                     |
+| `signing_key_ref`               | Optional secret ID of an SSH key that signs the agent's commits                                                                                                                                |
+| `authorized_key`                | Public key allowed to SSH in (user `vscode`, port 2222)                                                                                                                                        |
+| `kubernetes_access`             | Off by default. On: the pod token is mounted and `kubectl` reads the cluster (read-only role, no Secrets, no exec)                                                                             |
+| `talos_access`                  | Off by default. On: an `os:reader` Talos credential is created and mounted                                                                                                                     |
+| `home_size`, `src_size`, `arch` | Sizes and platform                                                                                                                                                                             |
 
 ## Create a workspace
 
-1. In Bitwarden create the secrets the agent needs (its GitHub token, optionally a signing key and others).
-2. PR: add their IDs to `allowedBwsRefs` in `cluster/apps/ai/agent-workspaces/values.yaml`. The API server refuses any
-   other ID. This is the only GitOps step per workspace. The file holds placeholders for hermes until the real IDs exist.
+1. Only if the agent needs secrets: create them in Bitwarden (in the project the cluster `bitwarden` store reads) and add their IDs
+   to `allowedBwsRefs` in `cluster/apps/ai/agent-workspaces/values.yaml` by PR. The API server refuses any other ID. A workspace
+   without secrets needs no GitOps step.
+2. Generate an SSH key pair for the agent (`ssh-keygen -t ed25519`); the public half is the `authorized_key` parameter.
 3. Create the workspace from the `agent-workspace` template with the parameters above.
 
 ## How hermes connects
@@ -64,7 +65,7 @@ Hermes runs in the `hermes-agent` namespace and uses SSH, as it does with the `s
   not say whether the backend checks host keys; check that on the first connection.
 - **Shell.** Hermes runs commands non-interactively (no TTY). Tools come from `/usr/local/bin` shims, so no shell init is needed.
 
-- **Environment.** `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on) and `SSH_AUTH_SOCK` are handed to SSH
+- **Environment.** The optional `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on) and `SSH_AUTH_SOCK` are handed to SSH
   sessions through `~/.ssh/environment`, rebuilt at every start from a file in `/cache`.
 - **Image.** sshd comes from the `dev-workstation` image (`openssh-server`, added in `mmalyska/containers`). With an older
   image the workspace still starts and the log says sshd is missing.

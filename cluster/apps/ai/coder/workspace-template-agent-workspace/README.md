@@ -1,8 +1,9 @@
 # agent-workspace Coder template
 
 Workspaces for AI agents on the `dev-workstation` image, in the namespace `agent-workspaces`. The sibling template
-`../workspace-template-dev-workspace/` is the owner's personal workspace and is unchanged. The pod, startup and bootstrap
-are the same as there (see its README); this file lists the differences.
+`../workspace-template-dev-workspace/` is the owner's personal workspace and is unchanged. The pod and the startup script
+are the same as there (see its README); this file lists the differences. There is no bootstrap step: the dotfiles are not
+applied and no repository is cloned, so an agent keeps its own git identity and clones what it needs.
 
 ## Creates (per workspace, named `<owner>-<workspace>`)
 
@@ -13,16 +14,16 @@ and bounds it: `cluster/apps/ai/agent-workspaces`. Full description: `docs/src/k
 
 ## Parameters
 
-| Parameter               | Default   | Meaning                                                                                     |
-| ----------------------- | --------- | ------------------------------------------------------------------------------------------- |
-| `github_token_ref`      | none      | Bitwarden secret ID of `GITHUB_TOKEN`; must be allowlisted                                  |
-| `extra_secrets`         | `[]`      | `NAME=<Bitwarden secret ID>` entries, each an environment variable; IDs must be allowlisted |
-| `signing_key_ref`       | empty     | Optional secret ID of the commit signing key                                                |
-| `authorized_key`        | none      | Public key allowed to SSH in on 2222 (user `vscode`)                                        |
-| `kubernetes_access`     | `false`   | Mount the pod ServiceAccount token (read-only cluster access)                               |
-| `talos_access`          | `false`   | Create and mount an `os:reader` Talos credential                                            |
-| `home_size`, `src_size` | 5Gi, 30Gi | PVC sizes                                                                                   |
-| `arch`                  | `amd64`   | Node architecture and agent platform                                                        |
+| Parameter               | Default   | Meaning                                                                                                   |
+| ----------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `github_token_ref`      | empty     | Optional Bitwarden secret ID of a `GITHUB_TOKEN` that works against `api.github.com`; must be allowlisted |
+| `extra_secrets`         | `[]`      | `NAME=<Bitwarden secret ID>` entries, each an environment variable; IDs must be allowlisted               |
+| `signing_key_ref`       | empty     | Optional secret ID of the commit signing key                                                              |
+| `authorized_key`        | none      | Public key allowed to SSH in on 2222 (user `vscode`)                                                      |
+| `kubernetes_access`     | `false`   | Mount the pod ServiceAccount token (read-only cluster access)                                             |
+| `talos_access`          | `false`   | Create and mount an `os:reader` Talos credential                                                          |
+| `home_size`, `src_size` | 5Gi, 30Gi | PVC sizes                                                                                                 |
+| `arch`                  | `amd64`   | Node architecture and agent platform                                                                      |
 
 Allowlist: `allowedBwsRefs` in `cluster/apps/ai/agent-workspaces/values.yaml`. The four restic references in `main.tf` must
 equal `resticRefs` there. No BWS machine token or `bws` CLI loader is used here, unlike the personal template.
