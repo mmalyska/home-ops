@@ -53,7 +53,7 @@ A second template, `dev-workspace`, lives in the sibling directory `cluster/apps
   Pushing starts nothing. It is a RUNTIME_MUTATION, so ask first.
 - The template creates one Deployment (`ws-<workspace>`) in the namespace `dev-workspace`. The PVCs (`<workspace>-home`, `<workspace>-src`), backups, RBAC, Talos credential and the BWS-token Secret are owned by GitOps (`cluster/apps/system/dev-workspace`), so a template change never touches the data and deleting a workspace keeps the volumes. A new object the pod needs is a change to that app, not to `main.tf`.
 - Redeploy with `coder update <owner>/<workspace>` as above. The pod restarts, so `/cache` and `/tmp` are empty afterwards (accepted); `/home/vscode` and `/workspaces` survive.
-- A new image is a digest bump in `main.tf` (Renovate proposes it), then push and update. Always pin the digest, never the bare tag.
+- A new image is a digest bump in `main.tf`, then push and update. Always pin the digest, never the bare tag. Renovate does not track the templates' `main.tf`; it bumps the image only in `.devcontainer/devcontainer.json`. When it does, copy that digest into the `dev-workspace` and `agent-workspace` templates by hand. Before bumping, check that the digest is a multi-arch index (`linux/amd64`, `linux/arm64`); without Docker, read it anonymously from `ghcr.io/v2/mmalyska/dev-workstation/manifests/<digest>` with a pull token from `ghcr.io/token`.
 - A workspace checkout does not update itself: after a merge run `git pull --ff-only` in the workspace, and `direnv allow` if `.envrc` changed.
 - Verify with `coder list` and `kubectl get pods -n dev-workspace` (read-only). `lost+found` in `/workspaces` is the ext4 root, and a ceph-csi `FailedMount` "Pod UUID already exists" at start is benign.
 

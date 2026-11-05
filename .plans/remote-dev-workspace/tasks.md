@@ -37,7 +37,7 @@ T4 -> T18 (ArgoCD account) -> ArgoCD checks in T7 and T8
 
 ## T3. Publish and pin the image
 
-- Status: done for the image (`ghcr.io/mmalyska/dev-workstation:1.0.0@sha256:76a0c4f0359029fa9ce976a39b87d7770bb332c56336e7ea673d753a0dc30f98`, D46); the remaining step is adding the digest to the T5 and T10 PRs and re-checking it with `docker buildx imagetools inspect` before each. Blocked by: T2.
+- Status: done for the image (`ghcr.io/mmalyska/dev-workstation:1.0.0@sha256:76a0c4f0359029fa9ce976a39b87d7770bb332c56336e7ea673d753a0dc30f98`, D46); the digest went into T5 (#6086) and T10 (#6123). Since 2026-11-05 the repositories and both Coder templates pin the newer `1.0.0` digest `sha256:71335a56…`; its index was checked for `linux/amd64` and `linux/arm64` by an anonymous registry read (#6126). Done. Blocked by: T2.
 - Do: after merge in `containers`, record the published tag and the digest of the multi-arch manifest. Add the image reference (digest-pinned) to the PRs of T5 and T10 only.
 - Check: `docker buildx imagetools inspect <image>` shows both platforms; the digest in the consuming PR matches.
 
