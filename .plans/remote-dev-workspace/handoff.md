@@ -33,7 +33,7 @@ The status lines of T5, T13, T16 and T19 in `tasks.md` still say "in review"; th
 2. **DONE 2026-11-05 (Q24 answered: keep `baseline`, no PR).** **Q24** (waited for the owner): Pod Security level and `readOnlyRootFilesystem`. `evidence.md` (T22) shows `restricted` is admitted and the read-only root works. Needs the owner's answer, then a small PR (namespace label) if they choose `restricted`.
 3. **DONE 2026-11-04 (T11, #6098).** **T11 docs and skills**: `cluster/apps/ai/coder/README.md` table, a docs page for the remote workspace, update `.agents/skills/coder-workspace-template-deploy/SKILL.md` for the new template, then `.agents/bin/sync-skills`. Part of the Argo CD section already lives in `docs/src/k8s/dev-workspace.md`.
 4. **T23** local devcontainer test of the image (scratch directory outside the repository, not committed), then **T10** (one PR per repository, `home-ops` first, rollback digest in the PR text).
-5. **T9** measure resources after about two weeks of use (Prometheus, `prometheus-historical-queries` skill); ask before changing limits.
+5. **DONE 2026-11-05 (T9, values accepted).** **T9** measure resources after about two weeks of use (Prometheus, `prometheus-historical-queries` skill); ask before changing limits.
 6. Later: add real applications to the Argo CD allowlist, one reviewed PR each, with `Prune=false` on PVCs and stateful owners; exclusions in D38. The `sync-probe` app can stay as a test target or be removed (removal is a separate live step, see the `add-app` skill).
 
 ## Decisions and facts a new session must not re-derive

@@ -86,7 +86,7 @@ coder templates push <template-name> --directory cluster/apps/ai/coder/workspace
 
 ## T7. Create the first workspace and log in
 
-- Status: in progress 2026-11-04 (workspace created; signing, kubectl, talosctl, volume hygiene, per-repository setup and the Argo CD read check pass, details in `evidence.md`; persistence across restarts passes for files, volumes, signing key, repositories, hooks, the Claude login and a user-installed `mise` tool, the template environment and the `.envrc` loader pass; open: the Argo CD stage 2). Blocked by: T5, T6, T14, T16, T17. The ArgoCD checks also need T18.
+- Status: done 2026-11-05 (close-out in `evidence.md`, "T7 close-out": the T19 `can-i` lists, the provisioner Role, the PVC mounts and VS Code through the Coder agent pass; Argo CD stage 2 passed in T18). Earlier status, 2026-11-04: workspace created; signing, kubectl, talosctl, volume hygiene, per-repository setup and the Argo CD read check pass, details in `evidence.md`; persistence across restarts passes for files, volumes, signing key, repositories, hooks, the Claude login and a user-installed `mise` tool, the template environment and the `.envrc` loader pass; open: the Argo CD stage 2). Blocked by: T5, T6, T14, T16, T17. The ArgoCD checks also need T18.
 - Do (owner at the keyboard; creating a workspace is RUNTIME_MUTATION, ask first): create the workspace from the T5 template, connect with VS Code through the Coder extension, run `claude` and `codex` interactive login (D20), let the bootstrap clone the repositories, run the manual per-repository setup in each (`direnv allow`, `task precommit:init`; D48), check SSH signing with a throwaway commit in a scratch repository (not on `main` of a real repo).
 
 ```sh consent-gated
@@ -115,7 +115,7 @@ coder create <workspace-name> --template <template-name>
 
 ## T9. Measure and adjust resources
 
-- Status: preliminary run 2026-11-05 on about 25 h of data (table in `plan.md` Status, "T9 preliminary measurement"): no change proposed; the home volume (53 % of 5 Gi) is the item to watch. Open: repeat after about two weeks of real use (about 2026-11-18) and ask the owner before changing any limit. Blocked by: T7.
+- Status: done 2026-11-05. Measured on about 25 h of data instead of two weeks (table in `plan.md` Status, "T9 measurement"); the owner accepted the current values and closed the task: memory 3 Gi, CPU request 500m and limit 2, `emptyDir` limits and PVC sizes unchanged. Watch item, not a task: the home volume was 53 % of 5 Gi after one day. Blocked by: T7.
 - Do: query Prometheus (use the `prometheus-historical-queries` skill) for the workspace pod: max and p95 of `container_memory_working_set_bytes`, CPU usage p95, throttling, restarts and OOM kills; and the usage of both PVCs, of `/cache` and `/tmp` against their `sizeLimit`s (the pod's ephemeral-storage usage) and any eviction. Check node headroom on the node hosting the pod.
 - Output: a table in `plan.md` Status with measured values and the proposed new requests and limits; ask the owner before changing them.
 - Check: numbers come from queries, not estimates; the memory limit stays above the observed peak by a stated margin.

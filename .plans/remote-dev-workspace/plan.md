@@ -111,7 +111,7 @@ See [evidence.md](evidence.md). In short:
 - One workspace to start with, defined as an entry of the GitOps-owned workspace list (D42). Repositories live under `/workspaces/<repo>`, which keeps every path assumed by existing scripts and every Claude project directory key identical to the local devcontainer. Storage is in section 2a.
 - Pod runs as the non-root `vscode` user, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `RuntimeDefault` seccomp, `fsGroup` 1000 with `fsGroupChangePolicy: OnRootMismatch`, and `readOnlyRootFilesystem: true` if T22 shows it works (D13, D17, D43). The namespace stays at `baseline` until T22 shows `restricted` is accepted.
 - SSH goes through Coder's built-in agent tunnel (`coder config-ssh`), which removes sshd, the root requirement, the per-workspace LoadBalancer IP and the `authorized_key` parameter (D15).
-- Resources: memory 3 Gi request and limit, CPU limit 2, CPU request from T9. `ephemeral-storage` is set from the `sizeLimit`s plus margin (D43).
+- Resources: memory 3 Gi request and limit, CPU limit 2, CPU request 500m (T9, accepted 2026-11-05). `ephemeral-storage` is set from the `sizeLimit`s plus margin (D43).
 - The pod runs in its own namespace `dev-workspace` (D28), has an ingress deny-all NetworkPolicy (D22), and takes its secret reference as a parameter (D11).
 - Backups: per workspace, one `ReplicationSource` for the home PVC (every 6 h) and one for the source PVC (daily), plus the restic `ExternalSecret`, all owned by GitOps in `dev-workspace`, not created by the provisioner (D35). See Risks R2 and R8.
 
@@ -265,9 +265,9 @@ Revised 2026-11-03 from the owner's handoff: image `dev-workstation` 1.0.0 adopt
 - Checked against the repository and cluster on 2026-11-03: see "Revision notes" below for what in the handoff matched and what did not.
 - No implementation of the workspace has started. Each task in [tasks.md](tasks.md) is started on the owner's instruction, and every task that changes the cluster or an external service needs fresh consent when it runs.
 
-### T9 preliminary measurement (2026-11-05, about 25 h of data, 8 pod instances)
+### T9 measurement (2026-11-05, about 25 h of data, 8 pod instances)
 
-Prometheus held about 25 hours of workspace series (the workspace was created on 2026-11-04) instead of the planned two weeks, and `src` holds only 0.1 GiB so far, so heavy repository work has not run yet. Treat the values as a first look; T9 stays open for the full run. All values are from queries over the pod `ws-dev-workspace-*`, container `workspace`, on node mc1.
+Prometheus held about 25 hours of workspace series (the workspace was created on 2026-11-04) instead of the planned two weeks, and `src` holds only 0.1 GiB so far, so heavy repository work has not run yet. The owner accepted the values below on 2026-11-05 and closed T9 with no change to requests or limits. All values are from queries over the pod `ws-dev-workspace-*`, container `workspace`, on node mc1.
 
 | Measure                  | Value                                                 | Now set                      |
 | ------------------------ | ----------------------------------------------------- | ---------------------------- |
@@ -281,7 +281,7 @@ Prometheus held about 25 hours of workspace series (the workspace was created on
 | `/cache` and `/tmp`      | 0.66 GiB and 0.06 GiB used (pod ephemeral 0.73 GiB)   | limits 20 Gi and 5 Gi, pod 30 Gi |
 | Node mc1                 | CPU 24 % and memory 42 % used; requests 58 % and 58 % | allocatable 5.95 cores, 28.5 GiB |
 
-Proposal, no change yet (needs the owner's decision): keep memory 3 Gi (limit is 1.07 GiB, 55 %, above the observed peak, and the peak includes reclaimable cache; RSS peak is 1.30 GiB), keep CPU request 500m (p95 is 0.24) and limit 2 (throttling is low), keep both `emptyDir` limits. The home volume is the one to watch: 53 % of 5 Gi after one day, mostly tool installs on the volume (the split was not measured). Re-measure after about two weeks, with real build and test work, before any change.
+Accepted by the owner, no change: keep memory 3 Gi (limit is 1.07 GiB, 55 %, above the observed peak, and the peak includes reclaimable cache; RSS peak is 1.30 GiB), keep CPU request 500m (p95 is 0.24) and limit 2 (throttling is low), keep both `emptyDir` limits. The home volume is the one to watch: 53 % of 5 Gi after one day, mostly tool installs on the volume (the split was not measured). A later look at memory and the home volume is optional, not a task.
 
 ## Revision notes (2026-11-03)
 

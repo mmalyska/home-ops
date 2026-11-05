@@ -150,6 +150,20 @@ Findings 1, 3 and 4 above are fixed in the PR that records these checks (`.envrc
 
 Operational note from the second round: a workspace checkout does not update itself. After a merge in `home-ops`, `git pull --ff-only` in `/workspaces/home-ops` brings the change, and direnv blocks a changed `.envrc` until the owner runs `direnv allow` (the intended direnv behaviour). The first `argocd` call of a session that runs before direnv has loaded `.envrc` fails with "server address unspecified" for the same reason.
 
+## T7 close-out (2026-11-05)
+
+Authorization checks of T19, run by the agent from the devcontainer with `kubectl auth can-i --as=...` (READ-class, no secret read, no forbidden read attempted). Each verb and resource was asked separately, subresources with `--subresource`.
+
+| Check | Result | Detail |
+| ----- | ------ | ------ |
+| Workspace ServiceAccount, negative list and positive controls | PASS | 82 checks, 0 unexpected. `no`: `get`, `list`, `watch` on `secrets`; `get` on `nodes/proxy`, `pods/proxy`, `services/proxy`; `get` and `create` on `pods/exec`, `pods/attach`, `pods/portforward`; `create` on `serviceaccounts/token`; `update` and `patch` on `pods/ephemeralcontainers`; `get` on `certificatesigningrequests`; `impersonate`, `escalate`, `bind`; `create`, `update`, `patch`, `delete` on `pods`, `deployments`, `configmaps`, `services`, `namespaces`, `roles`, `rolebindings`, `clusterroles`, `clusterrolebindings`, `serviceaccounts`, `customresourcedefinitions`, `externalsecrets`, `serviceaccounts.talos.dev`. `yes`: `get`, `list`, `watch` on `pods`, `nodes`, `namespaces`; `get`, `list` on `applications.argoproj.io` |
+| Provisioner ServiceAccount `coder/coder` in `dev-workspace` | PASS | 24 of 24 probes `no` (`create`, `get`, `delete` on `externalsecrets`, `replicationsources`, `replicationdestinations`, `roles`, `rolebindings`, `serviceaccounts.talos.dev`, `persistentvolumeclaims`, `secrets`); the Role `dev-workspace-provisioner` grants `deployments` only, bound to that ServiceAccount; `create` on `pods`, `services`, `configmaps` and `serviceaccounts` answers `no` |
+| Both PVCs `Bound` and mounted by name | PASS | `dev-workspace-home` 5 Gi and `dev-workspace-src` 30 Gi, both volumes of the pod; the two `volsync-src-*-cache` PVCs are the backup caches |
+| VS Code connects through the Coder agent (`coder config-ssh`, no sshd) | PASS (owner) | confirmed by the owner 2026-11-05 |
+| Argo CD stage 2 | PASS | see "T18 stage 2" below |
+
+Findings closed: 2 (`SOPS_AGE_KEY` removed from the dev BWS project, confirmed by the owner) and 6 (peon-ping stays installed, accepted by the owner, no `dotfiles` change).
+
 ## T18 stage 2: sync allowlist with the disposable `sync-probe` app (2026-11-04)
 
 PR #6092 merged; the `sync-probe` Application (two ConfigMaps, `prune: false`) appeared after the ApplicationSet refresh, and the `argocd` app was synced to `419319a9`, which put `p, dev-workspace, applications, sync, default/sync-probe, allow` in the live `argocd-rbac-cm` (read with `kubectl`). The owner ran the checks in the workspace with the account token and pasted the output.
