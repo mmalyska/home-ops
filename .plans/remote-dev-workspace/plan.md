@@ -111,7 +111,7 @@ See [evidence.md](evidence.md). In short:
 - One workspace to start with, defined as an entry of the GitOps-owned workspace list (D42). Repositories live under `/workspaces/<repo>`, which keeps every path assumed by existing scripts and every Claude project directory key identical to the local devcontainer. Storage is in section 2a.
 - Pod runs as the non-root `vscode` user, no sudo, `allowPrivilegeEscalation: false`, all capabilities dropped, `RuntimeDefault` seccomp, `fsGroup` 1000 with `fsGroupChangePolicy: OnRootMismatch`, and `readOnlyRootFilesystem: true` if T22 shows it works (D13, D17, D43). The namespace stays at `baseline` until T22 shows `restricted` is accepted.
 - SSH goes through Coder's built-in agent tunnel (`coder config-ssh`), which removes sshd, the root requirement, the per-workspace LoadBalancer IP and the `authorized_key` parameter (D15).
-- Resources: memory 3 Gi request and limit, CPU limit 2, CPU request from T9. `ephemeral-storage` is set from the `sizeLimit`s plus margin (D43).
+- Resources: memory 3 Gi request and limit, CPU limit 2, CPU request 500m (T9, accepted 2026-11-05). `ephemeral-storage` is set from the `sizeLimit`s plus margin (D43).
 - The pod runs in its own namespace `dev-workspace` (D28), has an ingress deny-all NetworkPolicy (D22), and takes its secret reference as a parameter (D11).
 - Backups: per workspace, one `ReplicationSource` for the home PVC (every 6 h) and one for the source PVC (daily), plus the restic `ExternalSecret`, all owned by GitOps in `dev-workspace`, not created by the provisioner (D35). See Risks R2 and R8.
 
@@ -206,7 +206,7 @@ Q1 to Q23 were answered by the owner on 2026-11-02; each answer is a decision ab
 
 **Q23 (resolved, D38).** Which ArgoCD apps may the workspace account refresh, sync and prune? A named allowlist that starts empty, with the exclusions and `Prune=false` rules of D38. The owner adds app names later by reviewed PRs.
 
-**Q24 (open, awaits the owner).** Which Pod Security level does the namespace end at, and is `readOnlyRootFilesystem` kept? The T22 test (2026-11-04, `evidence.md`) shows `restricted` is admitted and `readOnlyRootFilesystem: true` works with `/home/vscode`, `/workspaces`, `/cache` and `/tmp` writable; the Coder agent is untested. Proposed answer: `restricted`, read-only root kept.
+**Q24 (answered by the owner 2026-11-05: keep `baseline` as it is; D28 stands, no change to the live pod settings; the proposal below was not adopted).** Which Pod Security level does the namespace end at, and is `readOnlyRootFilesystem` kept? The T22 test (2026-11-04, `evidence.md`) shows `restricted` is admitted and `readOnlyRootFilesystem: true` works with `/home/vscode`, `/workspaces`, `/cache` and `/tmp` writable; the Coder agent is untested. Proposed answer: `restricted`, read-only root kept.
 
 Facts that are not questions but must be confirmed on the running workspace are listed in T7 and T8 (live checks): pod to `talos.default` reachability, sensitive `talosctl get` types, Coder agent SSH without sshd, kubectl falling back to the in-cluster configuration, home and workspace persistence after a pod restart, and the ArgoCD token's allowed and denied actions.
 
@@ -260,10 +260,28 @@ Per [`.agents/policy/validation.md`](../../.agents/policy/validation.md). For th
 
 Revised 2026-11-03 from the owner's handoff: image `dev-workstation` 1.0.0 adopted (D46), storage design replaced (D40 to D45), `containers` independent of `home-ops` (D47). Disk wear and capacity are out of scope here (TODO list). The status is `draft` until the owner reviews this revision, because D43 is a proposal and Q24 is open. Decisions D1 to D39 that this revision does not name are unchanged.
 
-- Q1 to Q23 are answered and recorded as D1 to D39. Q24 is open.
+- Q1 to Q23 are answered and recorded as D1 to D39. Q24 was answered on 2026-11-05: the namespace stays at `baseline`.
 - Done since the approval: T1 (PR #6061), T2 and T3 (image published, `containers` PR #772), T14 (PR #6060), T15 (`containers` PR #760), T12.
 - Checked against the repository and cluster on 2026-11-03: see "Revision notes" below for what in the handoff matched and what did not.
 - No implementation of the workspace has started. Each task in [tasks.md](tasks.md) is started on the owner's instruction, and every task that changes the cluster or an external service needs fresh consent when it runs.
+
+### T9 measurement (2026-11-05, about 25 h of data, 8 pod instances)
+
+Prometheus held about 25 hours of workspace series (the workspace was created on 2026-11-04) instead of the planned two weeks, and `src` holds only 0.1 GiB so far, so heavy repository work has not run yet. The owner accepted the values below on 2026-11-05 and closed T9 with no change to requests or limits. All values are from queries over the pod `ws-dev-workspace-*`, container `workspace`, on node mc1.
+
+| Measure                  | Value                                                 | Now set                      |
+| ------------------------ | ----------------------------------------------------- | ---------------------------- |
+| Memory working set       | max 1.93 GiB, p95 1.49, median 1.02                   | request and limit 3 Gi       |
+| Memory RSS / page cache  | RSS max 1.30 GiB; cache max 2.01 GiB (reclaimable)    |                              |
+| CPU (5 min rate)         | max 0.92 cores, p95 0.24, median 0.01                 | request 500m, limit 2        |
+| CPU throttling           | 1 % of periods overall; worst 5 min window 21 %       | limit 2                      |
+| Restarts, OOM, evictions | 0 restarts; no OOMKilled; no eviction                 |                              |
+| PVC `dev-workspace-home` | 2.59 of 4.84 GiB used (53 %), inodes 4.1 %            | 5 Gi                         |
+| PVC `dev-workspace-src`  | 0.10 of 29.4 GiB used, inodes 0.6 %                   | 30 Gi                        |
+| `/cache` and `/tmp`      | 0.66 GiB and 0.06 GiB used (pod ephemeral 0.73 GiB)   | limits 20 Gi and 5 Gi, pod 30 Gi |
+| Node mc1                 | CPU 24 % and memory 42 % used; requests 58 % and 58 % | allocatable 5.95 cores, 28.5 GiB |
+
+Accepted by the owner, no change: keep memory 3 Gi (limit is 1.07 GiB, 55 %, above the observed peak, and the peak includes reclaimable cache; RSS peak is 1.30 GiB), keep CPU request 500m (p95 is 0.24) and limit 2 (throttling is low), keep both `emptyDir` limits. The home volume is the one to watch: 53 % of 5 Gi after one day, mostly tool installs on the volume (the split was not measured). A later look at memory and the home volume is optional, not a task.
 
 ## Revision notes (2026-11-03)
 
