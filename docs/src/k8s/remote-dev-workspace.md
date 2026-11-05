@@ -70,9 +70,8 @@ Names only; values live in the dev BWS project and nothing here names the projec
 
 ## Cluster access
 
-- **Kubernetes**: read-only through the pod ServiceAccount (plus the ApplicationSet refresh below). No Secrets, no proxy.
-  `exec` only in the namespaces listed in `execNamespaces` (`cluster/apps/system/dev-workspace/values.yaml`); exec reads what
-  the pod holds, and each one needs the owner's consent. `kubectl` uses the in-cluster configuration and no kubeconfig exists.
+- **Kubernetes**: read-only through the pod ServiceAccount (plus the ApplicationSet refresh below). No Secrets, no exec, no
+  proxy. `kubectl` uses the in-cluster configuration and no kubeconfig exists.
 - **Talos**: `os:reader` only. The config has no nodes list, so pass `--nodes`. Mutating Talos work (`apply-config`, `upgrade`)
   stays on the local devcontainer. A wider role in this pod would also be reachable through the Coder provisioner, which can
   create a Deployment here that mounts the credential's Secret.

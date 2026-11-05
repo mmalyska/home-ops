@@ -13,7 +13,6 @@ that the Coder provisioner must not create. Plan: `.plans/remote-dev-workspace/`
 | `ReplicationSource` and restic `ExternalSecret` per PVC                 | VolSync backups from `charts/volsync`, one restic repository per PVC                                          |
 | `ServiceAccount` `<workspace>` and `ClusterRole` `dev-workspace-reader` | Read-only Kubernetes access (explicit lists, no Secrets, no wildcard)                                         |
 | `serviceaccounts.talos.dev` `<workspace>-talos`                         | Talos credential (roles from `talosRoles`, `os:reader` by default); Talos creates a Secret with the same name |
-| `Role`/`RoleBinding` in each `execNamespaces` entry                     | `pods/exec` (create, get) for the workspace ServiceAccounts there only                                        |
 | `Role`/`RoleBinding` and a policy in `argocd`                           | Annotate (refresh) ApplicationSets; spec changes refused                                                      |
 | `ExternalSecret` `<workspace>-bws` (off until configured)               | `BWS_ACCESS_TOKEN` and `BWS_PROJECT_ID` for the workspace                                                     |
 | `Role` `dev-workspace-provisioner`                                      | The Coder provisioner may manage Deployments here and nothing else                                            |
@@ -47,7 +46,7 @@ by name instead. Add a CRD group only after reading its fields for credentials.
 ## Checks after the first sync
 
 Read-only, with `kubectl auth can-i --as=system:serviceaccount:dev-workspace:dev-workspace`: `get`, `list`, `watch` on
-`pods`, `nodes`, `namespaces` answer `yes`; `get`, `list`, `watch` on `secrets`, `get` on `pods/exec` in `dev-workspace` or any namespace outside `execNamespaces`, `nodes/proxy`,
+`pods`, `nodes`, `namespaces` answer `yes`; `get`, `list`, `watch` on `secrets`, `get` on `pods/exec`, `nodes/proxy`,
 `create` on `serviceaccounts/token`, and every write verb on pods, deployments, configmaps, roles, clusterroles,
 `externalsecrets` and `serviceaccounts.talos.dev` answer `no`. For the provisioner, `no` on `persistentvolumeclaims`,
 `externalsecrets`, `replicationsources`, `roles` and `serviceaccounts.talos.dev` in `dev-workspace`.
@@ -58,10 +57,8 @@ the flag:
 
 ```sh
 A=--as=system:serviceaccount:dev-workspace:dev-workspace
-kubectl auth can-i get pods --subresource=exec $A                 # no (here)
-kubectl auth can-i create pods --subresource=exec $A              # no (here)
-kubectl auth can-i create pods --subresource=exec -n kube-system $A # no
-kubectl auth can-i create pods --subresource=exec -n hermes-agent $A # yes (execNamespaces)
+kubectl auth can-i get pods --subresource=exec $A                 # no
+kubectl auth can-i create pods --subresource=exec $A              # no
 kubectl auth can-i get nodes --subresource=proxy $A               # no
 kubectl auth can-i create serviceaccounts --subresource=token $A  # no
 kubectl auth can-i get pods --subresource=log $A                  # yes
