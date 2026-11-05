@@ -1,7 +1,7 @@
 # Dev workspace namespace
 
 The `dev-workspace` app (`cluster/apps/system/dev-workspace`) owns everything a Coder development workspace needs
-that the Coder provisioner must not create. Plan: `.plans/remote-dev-workspace/`.
+that the Coder provisioner must not create. Plan: `.archive/.plans/remote-dev-workspace/`.
 
 ## What it creates
 

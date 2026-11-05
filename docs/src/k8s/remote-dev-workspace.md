@@ -2,7 +2,7 @@
 
 An always-on development environment on the cluster, run by Coder. It is for working on `home-ops` and the owner's other
 repositories from anywhere on the LAN or VPN. It does not replace the local devcontainer, which stays as the break-glass
-environment. Plan: `.plans/remote-dev-workspace/`.
+environment. Plan: `.archive/.plans/remote-dev-workspace/`.
 
 | Part                           | Where                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------ |
