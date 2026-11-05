@@ -213,6 +213,6 @@ task talos:apply-config
 
 ## T23. Try the image in a local devcontainer (D46)
 
-- Status: todo. Blocked by: nothing for the image; the `home-ops` switch itself is T10.
+- Status: done 2026-11-05 (results in `evidence.md`, "T23": `/cache` mounted from the image label, cache variables under `/cache`, a repository `mise.toml` wins, user and layout; PASS on amd64 on the owner's Docker host, arm64 not tested). The `home-ops` switch itself is T10.
 - Do: in a scratch directory outside this repository (not committed), write a `devcontainer.json` that references the pinned image with no `features` block, open it with the devcontainer CLI or VS Code, and check that the image label mounts the named volume `dev-workstation-cache` on `/cache` (the image says no test covers this), that `mise activate bash` makes a repository's `mise.toml` win, and that `GOMODCACHE`, `npm_config_cache` and `TF_PLUGIN_CACHE_DIR` resolve under `/cache`. Report anything that differs from the image notes.
 - Check: PASS, FAIL or NOT RUN with the reason; no change to the repository's own `.devcontainer`.

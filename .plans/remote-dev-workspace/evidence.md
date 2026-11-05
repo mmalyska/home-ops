@@ -76,6 +76,22 @@ Facts the plan rests on, read on 2026-11-02 at `base_sha`. Verify before relying
 - CI for PR #6059 at `887cdca4`: Enforce PR labels, Helm Lint, Instruction checks, Label Size, Labeler, Lint and No Claude attribution all pass; the Lint job log contains no `MD0xx` lines.
 - Local run of `bash .agents/tests/run.sh` in the worktree: 165 tests, 0 failed.
 
+## T23: the image in a local devcontainer (2026-11-05)
+
+Scratch folder outside any repository on the owner's Docker host, a `devcontainer.json` with only the `image` (the pinned digest, no `features` block), opened with VS Code "Reopen in Container". The checks ran inside the container as `vscode`; the owner pasted the output. Nothing was committed and the repository's own `.devcontainer` is unchanged.
+
+The agent also read the image config from the registry first (anonymous, no runtime): the digest is a multi-arch index (linux/amd64 and linux/arm64), user `1000:1000`, workdir `/workspaces`, and the label `devcontainer.metadata` holds `remoteUser` and `containerUser` `vscode` and the mount `source=dev-workstation-cache,target=/cache,type=volume`.
+
+| Check | Result | Detail |
+| ----- | ------ | ------ |
+| The image label mounts the named volume on `/cache` | PASS | `/cache` is a mount point on the Docker volume path `dev-workstation-cache/_data` (ext4); `docker volume ls` on the host lists `dev-workstation-cache`; the label alone did it, with no `mounts` in `devcontainer.json` |
+| `/cache` writable by `vscode` | PASS | a test file was created and removed |
+| `XDG_CACHE_HOME`, `GOMODCACHE`, `npm_config_cache`, `TF_PLUGIN_CACHE_DIR` resolve under `/cache` | PASS | `/cache`, `/cache/go/mod`, `/cache/npm`, `/cache` |
+| A repository `mise.toml` wins after `mise activate bash` | PASS | outside the repository `jq-1.8.2` (the image's pin), inside a directory whose `mise.toml` pins `jq = "1.6"` it prints `jq-1.6` |
+| User and layout | PASS | user `vscode`, uid 1000; `/opt/mise` present |
+
+Differences from the image notes: none. Not covered: arm64 (no arm64 host), a `home-ops` checkout inside the container (that is T10), and `mise activate` working in a login shell without the dotfiles (the check ran `bash -ic` for the outside value).
+
 ## T22: pod hardening test on the pinned image (2026-11-04)
 
 Question (Q24, D43): does the image run with `readOnlyRootFilesystem: true` in a namespace enforcing Pod Security `restricted`, and does `fsGroup` with `OnRootMismatch` behave?

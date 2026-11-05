@@ -244,7 +244,7 @@ CI at `887cdca4`: all seven checks passed, and the `Lint` job log has no markdow
 ## Phases
 
 1. **Inventory and spikes** (T1, T6, T12): tool list, pipeline in `containers`, bootstrap approach, Talos ServiceAccount mechanics.
-1. **Image** (T15, T2, T3): `dev-workstation` in `containers`, multi-arch, published (done 2026-11-03, D46). Remaining: run it on the cluster (T22) and in a local devcontainer (T23).
+1. **Image** (T15, T2, T3): `dev-workstation` in `containers`, multi-arch, published (done 2026-11-03, D46). Run on the cluster (T22, 2026-11-04) and in a local devcontainer (T23, 2026-11-05).
 1. **Secrets, cluster access and dotfiles** (T4, T13, T14, T16, T17, T18, T19): BWS project and token (owner), ExternalSecret; Talos machine config change for `os:reader` and the namespace; the workspace list.
 1. **Workspace** (T22, T23, T5, T7, T8): hardening test, local devcontainer test, template, workspace, first login, verification.
 1. **Migrate** (T10): home-ops devcontainer, then other repositories.
