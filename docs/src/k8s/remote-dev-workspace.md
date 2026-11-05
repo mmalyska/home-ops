@@ -73,9 +73,9 @@ Names only; values live in the dev BWS project and nothing here names the projec
 - **Kubernetes**: read-only through the pod ServiceAccount (plus the ApplicationSet refresh below). No Secrets, no proxy.
   `exec` only in the namespaces listed in `execNamespaces` (`cluster/apps/system/dev-workspace/values.yaml`); exec reads what
   the pod holds, and each one needs the owner's consent. `kubectl` uses the in-cluster configuration and no kubeconfig exists.
-- **Talos**: `os:admin` for this workspace (`talosRoles` in `cluster/apps/system/dev-workspace/values.yaml`), so it can apply
-  machine config. Anything running in the pod, agents included, can reach full Talos control of the control planes; every
-  mutating command (`apply-config`, `upgrade`) needs the owner's consent. The config has no nodes list, so pass `--nodes`.
+- **Talos**: `os:reader` only. The config has no nodes list, so pass `--nodes`. Mutating Talos work (`apply-config`, `upgrade`)
+  stays on the local devcontainer. A wider role in this pod would also be reachable through the Coder provisioner, which can
+  create a Deployment here that mounts the credential's Secret.
 - **ApplicationSets**: may be annotated to refresh (a new `app-config.yaml` is picked up at once). A policy refuses any change to
   an ApplicationSet's spec made from the workspace.
 - **Argo CD**: read everything; hard refresh; sync and prune only for applications on the allowlist.
