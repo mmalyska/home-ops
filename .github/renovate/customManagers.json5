@@ -10,6 +10,13 @@
       "registryUrlTemplate": "https://ghcr.io",
       "datasourceTemplate": "docker",
       "autoReplaceStringTemplate": "{{indentation}}tag: {{newValue}}\n{{indentation}}distroless: true\n{{indentation}}digest: {{#if newDigest}}{{{newDigest}}}{{else}}{{{currentDigest}}}{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "description": "Coder workspace templates: the digest-pinned image in main.tf (a Terraform local, which the terraform manager does not read)",
+      "fileMatch": ["^cluster/apps/ai/coder/workspace-template[^/]*/main\\.tf$"],
+      "matchStrings": ["image\\s*=\\s*\"(?<depName>[^\":]+):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""],
+      "datasourceTemplate": "docker"
     }
   ]
 }

@@ -60,6 +60,11 @@
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "matchFileNames": ["cluster/**", "!cluster/core/**"],
       "ignoreTests": false
+    },
+    {
+      "description": "Coder workspace templates: never auto merge. A merge does not reach the workspaces; the template push and coder update are manual runtime steps (skill coder-workspace-template-deploy)",
+      "matchFileNames": ["cluster/apps/ai/coder/workspace-template*/main.tf"],
+      "automerge": false
     }
   ]
 }
