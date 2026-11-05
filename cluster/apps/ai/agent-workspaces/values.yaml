@@ -22,9 +22,8 @@ resticRefs:
   - "adb66319-d083-4379-afd5-b40a00d66963" #gitleaks:allow #VOLSYNC_RESTIC_AWS_ACCESS_KEY_ID
   - "70ebd8f2-8270-46d8-8953-b40a00d6854f" #gitleaks:allow #VOLSYNC_RESTIC_AWS_SECRET_ACCESS_KEY
 allowedBwsRefs:
-  # PLACEHOLDERS for the hermes workspace: replace with the Bitwarden secret IDs once they exist.
-  - "00000000-0000-0000-0000-000000000001" # PLACEHOLDER hermes GITHUB_TOKEN (bot account)
-  - "00000000-0000-0000-0000-000000000002" # PLACEHOLDER hermes SSH_SIGNING_KEY
+  - "9eebf1ba-9c20-403b-9bb2-b4f900ccf919" #gitleaks:allow #HERMES_MAIN_GITHUB_TOKEN (main hermes profile, wider permissions)
+  - "ccc3c108-164f-44ed-a4a8-b4f900cd74ab" #gitleaks:allow #HERMES_WORKER_GITHUB_TOKEN (worker hermes profile, restricted permissions)
 
 # Pods that may open SSH (port 2222) to the workspaces. Hermes logs in here with the key whose public half is the
 # workspace's `authorized_key` parameter.
