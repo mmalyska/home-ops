@@ -1,0 +1,57 @@
+# Lets the workspace ServiceAccount refresh ApplicationSets (annotation argocd.argoproj.io/application-set-refresh), which
+# is how a new app-config.yaml is picked up without waiting for the poll. `patch` cannot be limited to an annotation by RBAC,
+# and an ApplicationSet spec can deploy anything to the cluster, so the policy below refuses every update that changes
+# the spec made by this ServiceAccount.
+{{- range .Values.workspaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $.Release.Namespace }}-{{ .name }}-appset-refresh
+  namespace: argocd
+rules:
+  - apiGroups: [argoproj.io]
+    resources: [applicationsets]
+    verbs: [get, list, watch, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $.Release.Namespace }}-{{ .name }}-appset-refresh
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $.Release.Namespace }}-{{ .name }}-appset-refresh
+subjects:
+  - kind: ServiceAccount
+    name: {{ .name }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: {{ .Release.Namespace }}-appset-refresh-only
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [argoproj.io]
+        apiVersions: ["*"]
+        operations: [UPDATE]
+        resources: [applicationsets]
+  matchConditions:
+    - name: from-workspace-serviceaccounts
+      expression: "request.userInfo.username.startsWith('system:serviceaccount:{{ .Release.Namespace }}:')"
+  validations:
+    - expression: "object.spec == oldObject.spec"
+      message: "A workspace ServiceAccount may only annotate an ApplicationSet (refresh); it cannot change its spec"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: {{ .Release.Namespace }}-appset-refresh-only
+spec:
+  policyName: {{ .Release.Namespace }}-appset-refresh-only
+  validationActions: [Deny]

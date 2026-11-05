@@ -39,7 +39,7 @@ kind: ServiceAccount
 metadata:
   name: {{ .name }}
 ---
-# Talos credential with the os:reader role. Talos creates a Secret with this name and key `config`
+# Talos credential with the roles of the workspace entry (`talosRoles`, os:reader by default). Talos creates a Secret with this name and key `config`
 # (talosconfig, client certificate valid 6 h and renewed by Talos). Only GitOps may create these
 # resources here: the namespace is allowed to request any role in the cluster-wide list, os:admin included.
 apiVersion: talos.dev/v1alpha1
@@ -48,7 +48,9 @@ metadata:
   name: {{ .name }}-talos
 spec:
   roles:
-    - os:reader
+{{- range (.talosRoles | default (list "os:reader")) }}
+    - {{ . }}
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

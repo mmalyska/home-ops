@@ -8,6 +8,10 @@
 # Backups need two aliased volsync dependencies per workspace in Chart.yaml and two blocks below.
 workspaces:
   - name: dev-workspace
+    # Talos roles of the workspace credential (default os:reader). The owner's workspace may apply machine config, so it
+    # holds os:admin: anything running in that pod, agents included, can reach full Talos control of the control planes.
+    # Every mutating command still needs the owner's consent (AGENTS.md, .claude/settings.json).
+    talosRoles: [os:admin]
     home:
       size: 5Gi
     src:
