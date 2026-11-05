@@ -32,8 +32,9 @@ data "coder_workspace_owner" "me" {}
 data "coder_parameter" "github_token_ref" {
   name         = "github_token_ref"
   display_name = "GitHub token (Bitwarden secret ID)"
-  description  = "Bitwarden secret ID of this agent's GITHUB_TOKEN (its bot account). Must be listed in allowedBwsRefs in cluster/apps/ai/agent-workspaces/values.yaml, or the cluster refuses the ExternalSecret."
+  description  = "Optional. Bitwarden secret ID of a GITHUB_TOKEN for this workspace (a token that works against api.github.com, for example a fine-grained personal access token). Must be listed in allowedBwsRefs in cluster/apps/ai/agent-workspaces/values.yaml. Empty means no GitHub credential."
   type         = "string"
+  default      = ""
   mutable      = false
   order        = 1
 }
@@ -134,17 +135,19 @@ locals {
   talos_access      = data.coder_parameter.talos_access.value == "true"
   signing           = data.coder_parameter.signing_key_ref.value != ""
 
-  # Environment secrets: GITHUB_TOKEN plus the NAME=<id> entries of the extra_secrets parameter.
+  # Environment secrets: the optional GITHUB_TOKEN plus the NAME=<id> entries of the extra_secrets parameter.
   extra_entries = jsondecode(data.coder_parameter.extra_secrets.value)
   extra_valid   = [for e in local.extra_entries : can(regex("^[A-Za-z_][A-Za-z0-9_]*=[^=\\s]+$", e))]
   extra_secrets = { for e in local.extra_entries : split("=", e)[0] => split("=", e)[1] if can(regex("^[A-Za-z_][A-Za-z0-9_]*=[^=\\s]+$", e)) }
-  env_secrets   = merge(local.extra_secrets, { GITHUB_TOKEN = data.coder_parameter.github_token_ref.value })
+  github_token  = data.coder_parameter.github_token_ref.value != ""
+  env_secrets   = merge(local.extra_secrets, local.github_token ? { GITHUB_TOKEN = data.coder_parameter.github_token_ref.value } : {})
   env_names     = sort(keys(local.env_secrets))
-  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|REMOTE_WORKSPACE|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY)$"
+  has_env       = length(local.env_secrets) > 0
+  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY)$"
 
   # Variables copied for SSH sessions. sshd gives a login a fresh environment, so the startup script writes these
   # (when set) to a file that sshd reads (PermitUserEnvironment).
-  ssh_env_names = concat(local.env_names, ["TALOSCONFIG", "KUBECACHEDIR", "REMOTE_WORKSPACE", "SSH_AUTH_SOCK"])
+  ssh_env_names = concat(local.env_names, ["TALOSCONFIG", "KUBECACHEDIR", "SSH_AUTH_SOCK"])
 
   # Backed-up volumes: PVC suffix, size, schedule and retention. The restic repository path is agent-workspaces-<ws>-<suffix>.
   volumes = {
@@ -186,9 +189,6 @@ resource "coder_agent" "main" {
     {
       # The in-pod ssh-agent that holds the signing key.
       SSH_AUTH_SOCK = "${local.signing_dir}/agent.sock"
-      # Tells mmalyska/dotfiles it runs in a remote workspace (workspace signing key, repository clones). The
-      # Coder agent also sets CODER=true; this does not depend on that.
-      REMOTE_WORKSPACE = "1"
       # kubectl's discovery cache goes to the rebuildable /cache, not to ~/.kube on the backed-up home volume.
       KUBECACHEDIR = "/cache/kube"
     },
@@ -265,19 +265,6 @@ resource "coder_agent" "main" {
   EOT
 }
 
-# Bootstrap at every start (bootstrap.sh): applies the dotfiles once per home volume (they clone the repositories).
-# A repository's .devcontainer scripts are not run (plan D48). It does not block login, and a failure is logged and
-# skipped. The script is read from the template directory, so `coder templates push` uploads it with main.tf.
-resource "coder_script" "bootstrap" {
-  agent_id           = coder_agent.main.id
-  display_name       = "Bootstrap"
-  icon               = "/icon/code.svg"
-  run_on_start       = true
-  start_blocks_login = false
-  timeout            = 3600
-  script             = file("${path.module}/bootstrap.sh")
-}
-
 resource "kubernetes_persistent_volume_claim_v1" "volume" {
   for_each = local.volumes
 
@@ -332,6 +319,9 @@ resource "kubernetes_manifest" "talos" {
 # Environment secrets, fetched one by one by Bitwarden secret ID (no BWS token in the pod). The Secret keys become the
 # variable names. Every ID must be allowlisted (ValidatingAdmissionPolicy agent-workspaces-externalsecret-allowlist).
 resource "kubernetes_manifest" "env" {
+  # An ExternalSecret needs at least one key (the cluster policy refuses an empty one).
+  count = local.has_env ? 1 : 0
+
   manifest = {
     apiVersion = "external-secrets.io/v1"
     kind       = "ExternalSecret"
@@ -551,11 +541,14 @@ resource "kubernetes_deployment_v1" "workspace" {
             name  = "AUTHORIZED_KEY"
             value = data.coder_parameter.authorized_key.value
           }
-          # GITHUB_TOKEN and the extra secrets, from the Secret that External Secrets fills (no value passes through
+          # The optional GITHUB_TOKEN and the extra secrets, from the Secret that External Secrets fills (no value passes through
           # Terraform variables or state).
-          env_from {
-            secret_ref {
-              name = "${local.ws}-env"
+          dynamic "env_from" {
+            for_each = local.has_env ? [1] : []
+            content {
+              secret_ref {
+                name = "${local.ws}-env"
+              }
             }
           }
           port {
