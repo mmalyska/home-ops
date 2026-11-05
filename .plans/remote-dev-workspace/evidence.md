@@ -92,6 +92,21 @@ The agent also read the image config from the registry first (anonymous, no runt
 
 Differences from the image notes: none. Not covered: arm64 (no arm64 host), a `home-ops` checkout inside the container (that is T10), and `mise activate` working in a login shell without the dotfiles (the check ran `bash -ic` for the outside value).
 
+## T10: `home-ops` on the image in a local devcontainer (2026-11-05)
+
+Container started by the owner from the PR branch (#6123), `home-ops` at `/workspaces/home-ops`. The checks ran inside it as `vscode`; the owner pasted the output.
+
+| Check | Result | Detail |
+| ----- | ------ | ------ |
+| Tools come from the image | PASS | `mise` on `PATH`; `task`, `kubectl`, `chezmoi` under `/opt/mise/installs/` |
+| No Homebrew | PASS | `/home/linuxbrew` does not exist |
+| Cache | PASS | `/cache` exists, owned by `vscode`; `XDG_CACHE_HOME` is `/cache` |
+| `task init` without `brew` | PASS | "All required tools are present."; `task --list` works |
+| Git hooks installed (`task precommit:init` in `updateContentCommand`) | PASS | `commit-msg` and `pre-commit` in `.git/hooks` |
+| Fresh rebuild and the three lifecycle commands | PARTIAL | The container came up, and the hooks show that `updateContentCommand` got at least that far. The scripts do not use `set -e` and the creation log was not read, so `chezmoi init --apply`, `task cilium:init`, `task terraform:upgrade:cloudflare` and `postStartCommand` are not confirmed |
+
+`task` prints `no context is set` before `task init` output. It comes from `talosctl config info` when the Talos tasks load and no talosconfig exists (reproduced with an empty `TALOSCONFIG` path, exit 1). It did not stop `task init`. It also means this container had no talosconfig when the check ran, so `task talos:init` is not confirmed either.
+
 ## T22: pod hardening test on the pinned image (2026-11-04)
 
 Question (Q24, D43): does the image run with `readOnlyRootFilesystem: true` in a namespace enforcing Pod Security `restricted`, and does `fsGroup` with `OnRootMismatch` behave?
