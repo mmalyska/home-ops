@@ -23,6 +23,19 @@ workspaces:
       accessTokenRef: "f00d5aee-b4fa-454f-b204-b4f701085f96" #gitleaks:allow #BWS_ACCESS_TOKEN
       projectIdRef: "f9ab7df3-81b9-4797-b31e-b4f7010b2311" #gitleaks:allow #BWS_PROJECT_ID
 
+# Namespaces where the workspace ServiceAccounts may exec into pods (pods/exec). Exec reads whatever the pod holds
+# (environment, mounted tokens), so the list is explicit; kube-system, argocd, coder, external-secrets, cert-manager,
+# identity, cnpg, tuppr and talos-backup are left out on purpose. Each exec still needs the owner's consent.
+execNamespaces:
+  - agent-workspaces
+  - hermes-agent
+  - ai
+  - llm
+  - honcho
+  - media
+  - default
+  - nextcloud
+
 storage:
   storageClass: ceph-block
   volumeSnapshotClass: csi-ceph-blockpool
