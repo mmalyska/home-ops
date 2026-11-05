@@ -13,7 +13,6 @@ that the Coder provisioner must not create. Plan: `.plans/remote-dev-workspace/`
 | `ReplicationSource` and restic `ExternalSecret` per PVC                 | VolSync backups from `charts/volsync`, one restic repository per PVC                                          |
 | `ServiceAccount` `<workspace>` and `ClusterRole` `dev-workspace-reader` | Read-only Kubernetes access (explicit lists, no Secrets, no wildcard)                                         |
 | `serviceaccounts.talos.dev` `<workspace>-talos`                         | Talos credential (roles from `talosRoles`, `os:reader` by default); Talos creates a Secret with the same name |
-| `Role`/`RoleBinding` and a policy in `argocd`                           | Annotate (refresh) ApplicationSets; spec changes refused                                                      |
 | `ExternalSecret` `<workspace>-bws` (off until configured)               | `BWS_ACCESS_TOKEN` and `BWS_PROJECT_ID` for the workspace                                                     |
 | `Role` `dev-workspace-provisioner`                                      | The Coder provisioner may manage Deployments here and nothing else                                            |
 | `NetworkPolicy` `default-deny-ingress`                                  | Ingress deny-all; egress stays open                                                                           |
