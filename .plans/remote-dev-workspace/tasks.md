@@ -115,7 +115,7 @@ coder create <workspace-name> --template <template-name>
 
 ## T9. Measure and adjust resources
 
-- Status: todo. Blocked by: T7. Run for two weeks after first use.
+- Status: preliminary run 2026-11-05 on about 25 h of data (table in `plan.md` Status, "T9 preliminary measurement"): no change proposed; the home volume (53 % of 5 Gi) is the item to watch. Open: repeat after about two weeks of real use (about 2026-11-18) and ask the owner before changing any limit. Blocked by: T7.
 - Do: query Prometheus (use the `prometheus-historical-queries` skill) for the workspace pod: max and p95 of `container_memory_working_set_bytes`, CPU usage p95, throttling, restarts and OOM kills; and the usage of both PVCs, of `/cache` and `/tmp` against their `sizeLimit`s (the pod's ephemeral-storage usage) and any eviction. Check node headroom on the node hosting the pod.
 - Output: a table in `plan.md` Status with measured values and the proposed new requests and limits; ask the owner before changing them.
 - Check: numbers come from queries, not estimates; the memory limit stays above the observed peak by a stated margin.

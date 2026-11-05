@@ -265,6 +265,24 @@ Revised 2026-11-03 from the owner's handoff: image `dev-workstation` 1.0.0 adopt
 - Checked against the repository and cluster on 2026-11-03: see "Revision notes" below for what in the handoff matched and what did not.
 - No implementation of the workspace has started. Each task in [tasks.md](tasks.md) is started on the owner's instruction, and every task that changes the cluster or an external service needs fresh consent when it runs.
 
+### T9 preliminary measurement (2026-11-05, about 25 h of data, 8 pod instances)
+
+Prometheus held about 25 hours of workspace series (the workspace was created on 2026-11-04) instead of the planned two weeks, and `src` holds only 0.1 GiB so far, so heavy repository work has not run yet. Treat the values as a first look; T9 stays open for the full run. All values are from queries over the pod `ws-dev-workspace-*`, container `workspace`, on node mc1.
+
+| Measure                  | Value                                                 | Now set                      |
+| ------------------------ | ----------------------------------------------------- | ---------------------------- |
+| Memory working set       | max 1.93 GiB, p95 1.49, median 1.02                   | request and limit 3 Gi       |
+| Memory RSS / page cache  | RSS max 1.30 GiB; cache max 2.01 GiB (reclaimable)    |                              |
+| CPU (5 min rate)         | max 0.92 cores, p95 0.24, median 0.01                 | request 500m, limit 2        |
+| CPU throttling           | 1 % of periods overall; worst 5 min window 21 %       | limit 2                      |
+| Restarts, OOM, evictions | 0 restarts; no OOMKilled; no eviction                 |                              |
+| PVC `dev-workspace-home` | 2.59 of 4.84 GiB used (53 %), inodes 4.1 %            | 5 Gi                         |
+| PVC `dev-workspace-src`  | 0.10 of 29.4 GiB used, inodes 0.6 %                   | 30 Gi                        |
+| `/cache` and `/tmp`      | 0.66 GiB and 0.06 GiB used (pod ephemeral 0.73 GiB)   | limits 20 Gi and 5 Gi, pod 30 Gi |
+| Node mc1                 | CPU 24 % and memory 42 % used; requests 58 % and 58 % | allocatable 5.95 cores, 28.5 GiB |
+
+Proposal, no change yet (needs the owner's decision): keep memory 3 Gi (limit is 1.07 GiB, 55 %, above the observed peak, and the peak includes reclaimable cache; RSS peak is 1.30 GiB), keep CPU request 500m (p95 is 0.24) and limit 2 (throttling is low), keep both `emptyDir` limits. The home volume is the one to watch: 53 % of 5 Gi after one day, mostly tool installs on the volume (the split was not measured). Re-measure after about two weeks, with real build and test work, before any change.
+
 ## Revision notes (2026-11-03)
 
 What was checked against the repository and cluster, and what the owner should know:
