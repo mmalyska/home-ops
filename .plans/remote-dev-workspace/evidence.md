@@ -103,9 +103,13 @@ Container started by the owner from the PR branch (#6123), `home-ops` at `/works
 | Cache | PASS | `/cache` exists, owned by `vscode`; `XDG_CACHE_HOME` is `/cache` |
 | `task init` without `brew` | PASS | "All required tools are present."; `task --list` works |
 | Git hooks installed (`task precommit:init` in `updateContentCommand`) | PASS | `commit-msg` and `pre-commit` in `.git/hooks` |
-| Fresh rebuild and the three lifecycle commands | PARTIAL | The container came up, and the hooks show that `updateContentCommand` got at least that far. The scripts do not use `set -e` and the creation log was not read, so `chezmoi init --apply`, `task cilium:init`, `task terraform:upgrade:cloudflare` and `postStartCommand` are not confirmed |
+| Rebuild with bad values in `devcontainer.env` | FAIL, cause found | `bws returned no secrets`; `task terraform:upgrade:cloudflare` failed with `unauthorized`; `talos:init` skipped; `task cilium:install:cli` up to date; `postStartCommand` ran |
+| Rebuild after the values were corrected | PASS, reported by the owner | The owner reports it worked after removing the comments; the log of this rebuild was not read by the agent |
+| `onCreateCommand` (`chezmoi init --apply`) | NOT CONFIRMED | Not in the log excerpt the agent received |
 
-`task` prints `no context is set` before `task init` output. It comes from `talosctl config info` when the Talos tasks load and no talosconfig exists (reproduced with an empty `TALOSCONFIG` path, exit 1). It did not stop `task init`. It also means this container had no talosconfig when the check ran, so `task talos:init` is not confirmed either.
+Cause of the failure: not the image. The lines in `devcontainer.env` had a comment after the value, as the old sample laid them out (`NAME=    # comment`). Docker's `--env-file` keeps that text as part of the value, so the variables looked set and the services rejected them. The sample now puts each comment on its own line and states the format.
+
+Three facts for the next person. A fresh container volume starts from the comment-only sample, so the order is clone, fill in the file, rebuild. The scripts have no `set -e`, and `updateContentCommand` printed `Done!` after the Terraform failure, so `Done!` proves nothing. `task` prints `no context is set` when no talosconfig exists (from `talosctl config info`, reproduced with an empty `TALOSCONFIG` path, exit 1); it does not stop the task.
 
 ## T22: pod hardening test on the pinned image (2026-11-04)
 
