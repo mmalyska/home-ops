@@ -57,6 +57,14 @@ A second template, `dev-workspace`, lives in the sibling directory `cluster/apps
 - A workspace checkout does not update itself: after a merge run `git pull --ff-only` in the workspace, and `direnv allow` if `.envrc` changed.
 - Verify with `coder list` and `kubectl get pods -n dev-workspace` (read-only). `lost+found` in `/workspaces` is the ext4 root, and a ceph-csi `FailedMount` "Pod UUID already exists" at start is benign.
 
+## The `agent-workspace` template
+
+Third template, for AI agents, in `cluster/apps/ai/coder/workspace-template-agent-workspace/`. Push with
+`coder templates push agent-workspace --directory <that dir> --yes` (RUNTIME_MUTATION, ask first). Unlike `dev-workspace`
+it creates its own PVCs, ServiceAccount, Talos credential, ExternalSecrets and ReplicationSources in `agent-workspaces`,
+so a workspace delete removes the volumes. A new Bitwarden reference needs a PR to `allowedBwsRefs` in
+`cluster/apps/ai/agent-workspaces/values.yaml` first. `dev-workspace` and its running workspace stay untouched.
+
 Usage guide for the workspace itself: `docs/src/k8s/remote-dev-workspace.md`.
 
 ## When to Use

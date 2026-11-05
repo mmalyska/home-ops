@@ -1,4 +1,4 @@
-# What:   Let the talos-backup, tuppr and dev-workspace namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles)
+# What:   Let the talos-backup, tuppr, dev-workspace and agent-workspaces namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles)
 # Why:    talos-backup takes etcd snapshots and tuppr upgrades nodes through the Kubernetes-to-Talos API bridge. The document
 #         enables the bridge by existing. It has one roles list and one namespaces list; talos-backup only gains os:admin if its
 #         ServiceAccount's roles change (today os:etcd:backup only). Secret tuppr/tuppr-talosconfig now holds an os:admin Talos
@@ -7,7 +7,9 @@
 #         os:reader credential for the Coder workspace (talosctl version, health, logs, get on non-sensitive types). The two lists
 #         are independent gates, so a ServiceAccount (serviceaccounts.talos.dev) created in dev-workspace could ask for os:admin,
 #         because that role is in the cluster-wide list: only GitOps may create those resources in that namespace (no Coder
-#         provisioner permission, no workspace RBAC for them)
+#         provisioner permission, no workspace RBAC for them). agent-workspaces is different: the Coder provisioner creates the
+#         Talos ServiceAccounts there, so a ValidatingAdmissionPolicy (cluster/apps/ai/agent-workspaces, guardrails.yaml) refuses
+#         any role but os:reader. Keep that policy in place for as long as the namespace is listed
 # Nodes:  control plane
 # Apply:  live
 apiVersion: v1alpha1
@@ -20,3 +22,4 @@ allowedKubernetesNamespaces:
   - talos-backup
   - tuppr
   - dev-workspace
+  - agent-workspaces

@@ -1,0 +1,34 @@
+---
+# Namespace for development workspaces that run AI agents (and anything else created from the Coder
+# `agent-workspace` template). The Coder provisioner creates the workspaces' objects itself; this app owns the
+# namespace, what the provisioner may do in it, and the guardrails around that.
+
+# Subject of the Coder provisioner's Role in this namespace.
+provisioner:
+  serviceAccount: coder
+  namespace: coder
+
+# Bitwarden secret IDs an ExternalSecret in this namespace may read (ValidatingAdmissionPolicy
+# agent-workspaces-externalsecret-allowlist). Anything else is refused by the API server, so a workspace
+# cannot read an arbitrary secret from the shared Bitwarden project. No BWS machine token goes into a workspace:
+# each secret is fetched by its own ID.
+#
+# resticRefs: the shared VolSync repository credentials; keep equal to the restic references in the template and
+# charts/volsync. allowedBwsRefs: the secrets agents may receive (GitHub tokens, signing keys, extra secrets), added
+# in the PR that prepares a workspace; the owner creates them in Bitwarden (references, not values).
+resticRefs:
+  - "39b92426-09c4-4a74-8285-b40a00d62b4d" #gitleaks:allow #VOLSYNC_RESTIC_REPOSITORY_TEMPLATE
+  - "07d70a7a-a6d9-4b0b-af1f-b40a00d649a9" #gitleaks:allow #VOLSYNC_RESTIC_PASSWORD
+  - "adb66319-d083-4379-afd5-b40a00d66963" #gitleaks:allow #VOLSYNC_RESTIC_AWS_ACCESS_KEY_ID
+  - "70ebd8f2-8270-46d8-8953-b40a00d6854f" #gitleaks:allow #VOLSYNC_RESTIC_AWS_SECRET_ACCESS_KEY
+allowedBwsRefs:
+  # PLACEHOLDERS for the hermes workspace: replace with the Bitwarden secret IDs once they exist.
+  - "00000000-0000-0000-0000-000000000001" # PLACEHOLDER hermes GITHUB_TOKEN (bot account)
+  - "00000000-0000-0000-0000-000000000002" # PLACEHOLDER hermes SSH_SIGNING_KEY
+
+# Pods that may open SSH (port 2222) to the workspaces. Hermes logs in here with the key whose public half is the
+# workspace's `authorized_key` parameter.
+sshClients:
+  - namespace: hermes-agent
+    podLabels:
+      app: hermes-agent

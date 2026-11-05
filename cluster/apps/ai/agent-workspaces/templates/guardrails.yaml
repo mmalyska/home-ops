@@ -1,0 +1,85 @@
+# Limits on what the Coder provisioner can ask for in this namespace. The Role in rbac.yaml lets it create Talos
+# ServiceAccounts and ExternalSecrets, and both reach beyond the namespace: the Talos API access config accepts any
+# role in its cluster-wide list (os:admin included), and the shared Bitwarden ClusterSecretStore has no namespace
+# restriction. Kubernetes RBAC cannot look inside a spec, so these policies do.
+#
+# A Talos credential may only have the os:reader role.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: agent-workspaces-talos-reader-only
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [talos.dev]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [serviceaccounts]
+  validations:
+    - expression: "has(object.spec.roles) && size(object.spec.roles) > 0 && object.spec.roles.all(r, r == 'os:reader')"
+      message: "Talos ServiceAccounts in this namespace may only have the os:reader role"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: agent-workspaces-talos-reader-only
+spec:
+  policyName: agent-workspaces-talos-reader-only
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: {{ .Release.Namespace }}
+---
+# An ExternalSecret may only read from the Bitwarden store, only by explicit key (no dataFrom, no generators) and
+# only the references listed in the ConfigMap below (values.yaml: resticRefs and allowedBwsRefs).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-workspaces-allowed-bws-refs
+  namespace: {{ .Release.Namespace }}
+data:
+  refs: |
+{{- range concat .Values.resticRefs .Values.allowedBwsRefs }}
+    {{ . }}
+{{- end }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: agent-workspaces-externalsecret-allowlist
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: v1
+    kind: ConfigMap
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [external-secrets.io]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [externalsecrets]
+  validations:
+    - expression: "object.spec.secretStoreRef.kind == 'ClusterSecretStore' && object.spec.secretStoreRef.name == 'bitwarden'"
+      message: "ExternalSecrets in this namespace may only use the ClusterSecretStore bitwarden"
+    - expression: "!has(object.spec.dataFrom) && has(object.spec.data) && size(object.spec.data) > 0"
+      message: "ExternalSecrets in this namespace must list their keys in spec.data (no dataFrom, no generators)"
+    - expression: "object.spec.data.all(d, !has(d.remoteRef.property) && !has(d.remoteRef.version) && d.remoteRef.key in params.data.refs.split('\n'))"
+      message: "ExternalSecret references a Bitwarden secret that is not allowed; add it to resticRefs or allowedBwsRefs in cluster/apps/ai/agent-workspaces/values.yaml"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: agent-workspaces-externalsecret-allowlist
+spec:
+  policyName: agent-workspaces-externalsecret-allowlist
+  validationActions: [Deny]
+  paramRef:
+    name: agent-workspaces-allowed-bws-refs
+    namespace: {{ .Release.Namespace }}
+    parameterNotFoundAction: Deny
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: {{ .Release.Namespace }}

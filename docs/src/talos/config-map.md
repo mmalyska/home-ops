@@ -46,7 +46,7 @@ controlplane, 192.168.48.2
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml.tpl` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
 | `provision/talos/patches/controlplane/38-flannel-delete.yaml` | Remove the KubeFlannelCNIConfig document that talosctl gen config adds | live | KubeFlannelCNIConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup, tuppr and dev-workspace namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles) | live | KubeTalosAPIAccessConfig |  |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup, tuppr, dev-workspace and agent-workspaces namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles) | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -100,7 +100,7 @@ controlplane, 192.168.48.3
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml.tpl` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
 | `provision/talos/patches/controlplane/38-flannel-delete.yaml` | Remove the KubeFlannelCNIConfig document that talosctl gen config adds | live | KubeFlannelCNIConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup, tuppr and dev-workspace namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles) | live | KubeTalosAPIAccessConfig |  |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup, tuppr, dev-workspace and agent-workspaces namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles) | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
@@ -154,7 +154,7 @@ controlplane, 192.168.48.4
 | `provision/talos/patches/controlplane/32-kube-proxy-disabled.yaml.tpl` | kube-proxy is not deployed | live | KubeProxyConfig |  |
 | `provision/talos/patches/controlplane/37-coredns-disabled.yaml` | Talos does not deploy CoreDNS | live | KubeCoreDNSConfig |  |
 | `provision/talos/patches/controlplane/38-flannel-delete.yaml` | Remove the KubeFlannelCNIConfig document that talosctl gen config adds | live | KubeFlannelCNIConfig |  |
-| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup, tuppr and dev-workspace namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles) | live | KubeTalosAPIAccessConfig |  |
+| `provision/talos/patches/controlplane/40-talos-api-access.yaml` | Let the talos-backup, tuppr, dev-workspace and agent-workspaces namespaces call the Talos API (os:etcd:backup, os:admin and os:reader roles) | live | KubeTalosAPIAccessConfig |  |
 | `provision/talos/patches/controlplane/50-udev-render-device.yaml` | GPU render nodes (/dev/dri/renderD*) belong to group 44 and are group read-write | live | UdevRulesConfig |  |
 | `provision/talos/patches/controlplane/60-node-labels.yaml` | Labels node-role.kubernetes.io/control-plane and daytona-sandbox-c=true on the control-plane nodes; no taint, so ordinary pods may run on them | live | KubeNodeConfig | shares KubeNodeConfig with provision/talos/patches/all/70-node-labels.yaml |
 | `provision/talos/patches/controlplane/70-sysctls.yaml` | inotify limits, 64 MiB socket buffers and 1024 hugepages | live | SysctlConfig |  |
