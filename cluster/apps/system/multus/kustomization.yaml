@@ -6,7 +6,7 @@ metadata:
 resources:
   # Upstream ships the manifest in the repo (deployments/), not as a release asset
   # renovate-raw: datasource=github-tags depName=k8snetworkplumbingwg/multus-cni
-  - https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.3.1/deployments/multus-daemonset-thick.yml
+  - https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.3.2/deployments/multus-daemonset-thick.yml
   # Talos ships only bridge/firewall/flannel/host-local/loopback/portmap in /opt/cni/bin;
   # this installs macvlan + static (needed by the macvlan NetworkAttachmentDefinitions).
   - cni-plugins.yaml
