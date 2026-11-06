@@ -10,7 +10,7 @@ Order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 →
 - [ ] **0.2 Tokens.** Make sure `HERMES_MAIN_GITHUB_TOKEN` belongs to `rudi-the-brain` and `HERMES_WORKER_GITHUB_TOKEN` to `agent-rosie`. Both should be classic PATs with scopes `repo` and `workflow`: fine-grained tokens cannot reach repositories where the account is only a collaborator, and pushing to or merging a PR that changes `.github/workflows/**` needs `workflow`. T6 verifies this.
 - [ ] **0.3 Bitwarden items** in the project the `bitwarden` store reads: `HERMES_MAIN_SIGNING_KEY`, `HERMES_WORKER_SIGNING_KEY` (SSH private keys for signing), `HERMES_MAIN_WS_SSH_KEY`, `HERMES_WORKER_WS_SSH_KEY` (new ed25519 pairs that Hermes uses to log in to the workspaces; keep their public halves for T5). Give the conductor the four IDs for the allowlist PR, and the two public keys.
 - [ ] **0.4 Discord.** Create `#hermes-renovate` and let the bot read, post, create threads and send messages in threads. Give the conductor the channel ID (it is not a secret).
-- [ ] **0.5 Private repositories:** rulesets on private repositories need GitHub Pro. If the account does not have it, T6b skips `homeinfra` (or any other private repository) and Hermes does not auto-merge there: the triage skill treats a repository without the ruleset as denylisted.
+- [x] **0.5 Private repositories:** none left (`homeinfra` archived by the owner on 2026-11-06). Rulesets on private repositories would need GitHub Pro. If a private repository is added later, G5 keeps Hermes from auto-merging there until it has the ruleset.
 
 ## 1. Gateway alias `main-cheap` (D3)
 
