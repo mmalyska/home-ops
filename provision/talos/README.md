@@ -161,7 +161,7 @@ Examples:
 
 1. Add the node to `nodes.yaml` (name, ip, type: `controlplane` or `worker`).
 2. Create `patches/node/<name>/08-hostname.yaml` (`HostnameConfig`), `10-link.yaml` (`LinkConfig`: address, route, MTU) and, on a control plane, `11-vip.yaml` (`Layer2VIPConfig`). Leave out any `DHCPv4Config`: with no document the link runs no DHCP.
-3. Add a per-node install image only if the node needs its own installer (see below). A per-node `UnattendedInstallConfig` patch must repeat `provisioning.diskSelector.match` (a node with another disk needs its own selector); see "Install settings and reinstalling a node".
+3. Add a per-node install image only if the node needs its own installer (see below). The disk selector comes from `patches/all/30-install.yaml`, so a per-node `UnattendedInstallConfig` patch does not repeat it (a node with another disk needs its own selector in that patch); see "Install settings and reinstalling a node".
 4. `scripts/check-patches.sh`, then `task talos:generate`.
 
 ### Nodes with their own installer image
@@ -180,9 +180,6 @@ apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 installer:
   image: ghcr.io/mmalyska/custom-installer-jp7:${TALOS_VERSION}
-provisioning:
-  diskSelector:
-    match: disk.dev_path == "/dev/nvme0n1"
 ```
 
 The repo uses the plain Talos version as the tag (`custom-installer-jp7:v1.14.2`; the JetPack 7 installer has its own
@@ -199,9 +196,11 @@ image can leave the node with networking up but `apid` never starting: reachable
 fixable only over the console. See `.archive/.plans/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
 `.archive/.plans/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
 
-The disk selector is repeated in this file on purpose: `talosctl machineconfig patch` drops `provisioning.diskSelector.match`
-when a later patch merges into the document, so it must be in the last file applied for the node (see the header of the
-file).
+The disk selector is not repeated in this file. Before Talos 1.14.5 (siderolabs/talos#14584) `talosctl machineconfig patch`
+dropped `provisioning.diskSelector.match` when a later patch merged into the document, so it had to be in the last file
+applied for the node; it now lives once in `patches/all/30-install.yaml`. The `talosctl` that renders the config must be
+1.14.5 or newer (`task talos:check-client`), otherwise `talosctl validate` fails with "provisioning.diskSelector.match is
+required".
 
 #### nv1 boots the wrong UKI after an upgrade (Jetson UEFI)
 
