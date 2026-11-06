@@ -68,6 +68,10 @@ Several apps depend on local charts via `repository: file://../../.../charts/<na
 
 **Rule:** any change to a local `file://` chart's content requires bumping its `Chart.yaml` `version` *and* the matching `version:` in every parent chart's `dependencies:` entry that references it, or the change silently won't apply in the cluster. Always verify with `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'` (or the relevant field) after a sync that should have changed a local-chart-sourced value — don't trust ArgoCD's Synced/Healthy status alone for these.
 
+### Removing a field ArgoCD cannot prune (`ApplyOutOfSyncOnly=true`)
+
+When an app has `ApplyOutOfSyncOnly=true` and a field was added by the `argocd-controller` `Update` field manager, deleting that field from git does not remove it from the live object: the app still shows Synced. Seen on the Rook `CephCluster` `spec.monitoring.interval` (2026-10-23). Fix: remove the field live with `kubectl patch <kind> <name> --type json -p '[{"op":"remove","path":"..."}]'` (needs consent), keep git without the field, and check the live object afterwards. Operators may also have written related state elsewhere (Rook set `mgr/prometheus/scrape_interval`), so revert that too.
+
 ## CI/CD
 
 - **Renovate**: Automated dependency updates (Helm charts, container images, Talos/K8s versions)
