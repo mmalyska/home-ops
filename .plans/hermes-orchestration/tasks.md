@@ -2,7 +2,7 @@
 
 Each task can be carried out without reading `plan.md`, but the decisions (D*, C*) and gates (G*) it cites are defined there. Every command in a `consent-gated` block needs the owner's fresh consent in the session, naming the action, the target and the effect. Bitwarden items are named by reference only; never write their IDs anywhere except the `#gitleaks:allow` values lines that already follow that pattern.
 
-Order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14. Tasks 1 and 2 are independent and may swap.
+Order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 6b → 14. Tasks 1 and 2 are independent and may swap. 6b (CODEOWNERS, rulesets, Renovate automerge off) comes right before the ramp: from then on nothing merges without an approval, so Hermes has to be ready to triage. During the 3 report-only days the owner merges by hand, or bypasses.
 
 ## 0. Owner prerequisites (owner, outside the repository)
 
@@ -10,7 +10,7 @@ Order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 →
 - [ ] **0.2 Tokens.** Make sure `HERMES_MAIN_GITHUB_TOKEN` belongs to `rudi-the-brain` and `HERMES_WORKER_GITHUB_TOKEN` to `agent-rosie`. Both should be classic PATs with scopes `repo` and `workflow`: fine-grained tokens cannot reach repositories where the account is only a collaborator, and pushing to or merging a PR that changes `.github/workflows/**` needs `workflow`. T6 verifies this.
 - [ ] **0.3 Bitwarden items** in the project the `bitwarden` store reads: `HERMES_MAIN_SIGNING_KEY`, `HERMES_WORKER_SIGNING_KEY` (SSH private keys for signing), `HERMES_MAIN_WS_SSH_KEY`, `HERMES_WORKER_WS_SSH_KEY` (new ed25519 pairs that Hermes uses to log in to the workspaces; keep their public halves for T5). Give the conductor the four IDs for the allowlist PR, and the two public keys.
 - [ ] **0.4 Discord.** Create `#hermes-renovate` and let the bot read, post, create threads and send messages in threads. Give the conductor the channel ID (it is not a secret).
-- [ ] **0.5 PR #6133** (rudi as code owner): merge or close it. Nothing in this plan depends on it, but T6 records whether any repository requires a code-owner review.
+- [ ] **0.5 Private repositories:** rulesets on private repositories need GitHub Pro. If the account does not have it, T6b skips `homeinfra` (or any other private repository) and Hermes does not auto-merge there: the triage skill treats a repository without the ruleset as denylisted.
 
 ## 1. Gateway alias `main-cheap` (D3)
 
@@ -30,7 +30,7 @@ Files: `cluster/apps/ai/litellm/templates/models/main-cheap.yaml` (new, a copy o
 
 File: `.github/renovate/groups.json5`, the Hermes rule.
 
-- [ ] Replace `versioning: loose` with `semver-coerced` and add `allowedVersions: "/^v0\\./"` (or the `allowedVersions.json5` equivalent), so `v0.x` sorts correctly and the old CalVer tags are never proposed again. Keep `automergeSchedule` and `platformAutomerge: false`. Hermes is on the G2 denylist (C6), so it is never auto-merged by Hermes either.
+- [ ] Replace `versioning: loose` with `semver-coerced` and add `allowedVersions: "/^v0\\./"` (or the `allowedVersions.json5` equivalent), so `v0.x` sorts correctly and the old CalVer tags are never proposed again. Leave the rule's automerge settings for now; 6b removes them along with every other automerge rule (D13). Hermes is on the G2 denylist (C6), so the owner always merges its upgrades.
 - [ ] Check: `npx --yes --package renovate -- renovate-config-validator .github/renovate.json5` passes (LOCAL_CHECK).
 
 ## 3. Template: git identity and signing (D10)
@@ -38,7 +38,7 @@ File: `.github/renovate/groups.json5`, the Hermes rule.
 Files: `cluster/apps/ai/coder/workspace-template-agent-workspace/main.tf`, its `README.md`, `docs/src/k8s/agent-workspaces.md`.
 
 - [ ] Add parameters `git_user_name` and `git_user_email` (both optional, default empty; email validated as an email or a GitHub noreply address).
-- [ ] At every start the startup script writes `~/.gitconfig` (or `~/.config/git/config`) from scratch: `user.name`, `user.email`; and when the signing key is loaded, `gpg.format ssh`, `user.signingkey` set to `key::<public key>` derived from the loaded key (`ssh-add -L`), `commit.gpgsign true`, `tag.gpgsign true`, plus `gpg.ssh.allowedSignersFile` with the identity's own entry. When `GITHUB_TOKEN` is set, run `gh auth setup-git` (HTTPS with the token, no SSH authentication key). Rewriting at start means the template, not the agent, owns these settings; the agent may add others with `git config --global`, and those are lost at restart.
+- [ ] At every start the startup script writes `~/.gitconfig` (or `~/.config/git/config`) from scratch: `user.name`, `user.email`; and when the signing key is loaded, `gpg.format ssh`, `user.signingkey` set to `key::<public key>` derived from the loaded key (`ssh-add -L`), `commit.gpgsign true`, `tag.gpgsign true`, plus `gpg.ssh.allowedSignersFile` with the identity's own entry. When `GITHUB_TOKEN` is set, run `gh auth setup-git` (git's credential helper becomes `gh auth git-credential`, which hands git the same `GITHUB_TOKEN` as `gh`; there is no SSH authentication key). Also set `url."https://github.com/".insteadOf git@github.com:` and `ssh://git@github.com/`, so an SSH-style remote is rewritten to HTTPS. Rewriting at start means the template, not the agent, owns these settings; the agent may add others with `git config --global`, and those are lost at restart.
 - [ ] The push in T5 is a separate consent. This task only edits and renders: `terraform fmt -check` and `terraform validate` in the template directory (LOCAL_CHECK).
 
 ## 4. Hermes upgrade to v0.23.0
@@ -83,8 +83,25 @@ Files: `cluster/apps/ai/agent-workspaces/values.yaml` (`allowedBwsRefs` += the t
 In each workspace (`coder ssh`, the owner's own access):
 
 - [ ] `gh auth status` shows the right account. `gh api user` works. `gh repo list mmalyska --limit 100` lists all repositories (proves the collaborator invitations).
-- [ ] For each repository: `gh api repos/mmalyska/<repo>/rulesets` and the branch protection, read with the main token (the owner's devcontainer token gets a 403 here). Record in `evidence.md`, section "Merge requirements": required reviews, code-owner review, required checks and allowed merge methods. If a repository needs an approving review, the policy file (T11) has to say whether rudi approves before merging. That is an owner decision: stop and ask.
+- [ ] For each repository: `gh api repos/mmalyska/<repo>/rulesets` and the branch protection, read with the main token (the owner's devcontainer token gets a 403 here). Record in `evidence.md`, section "Merge requirements": the existing rules, required checks and allowed merge methods, before T6b changes them.
 - [ ] Scratch write, consent-gated: in `mmalyska/dotfiles` (not GitOps), each account pushes a branch `hermes/identity-check-<account>` with an empty signed commit. GitHub shows "Verified". Delete the branches afterwards.
+
+## 6b. CODEOWNERS and rulesets in every repository (D12)
+
+- [ ] For each non-archived repository: a PR that sets `.github/CODEOWNERS` to `* @rudi-the-brain @mmalyska` (home-ops: replace the commented line; keep the header link). The owner merges each one. In home-ops it deploys nothing (path `.github/`).
+- [ ] After the CODEOWNERS PR is merged, a default-branch ruleset named `default-branch` (enforcement `active`, target `~DEFAULT_BRANCH`). Rules: `pull_request` with `required_approving_review_count: 1`, `require_code_owner_review: true`, `require_last_push_approval: true`, `dismiss_stale_reviews_on_push: true`; `non_fast_forward`; `deletion`. Keep any required status checks that the repository already has (T6 record), as `required_status_checks`. Bypass: `RepositoryRole` admin, `bypass_mode: always`. Creating it is an external mutation that the owner runs or consents to, per repository:
+
+  ```sh consent-gated
+  gh api -X POST repos/mmalyska/<repo>/rulesets --input ruleset-<repo>.json
+  ```
+
+- [ ] Check per repository with the main token: `gh api repos/mmalyska/<repo>/rules/branches/<default>` lists the rules. On a throwaway PR in `dotfiles`, rosie's approval leaves the PR blocked, rudi's approval unblocks it, and a later push by rosie blocks it again.
+- [ ] Renovate automerge off (D13), in the same round as the CODEOWNERS PRs:
+  - `mmalyska/renovate-config`: in every `automerge-*` preset, set `automerge: false` or remove it, so repositories that extend them stop asking. Add a short note that merging is Hermes's job (docs link).
+  - home-ops: in `.github/renovate/autoMerge.json5`, remove the automerge rules, keeping the "never automerge" Coder template rule as a comment-level reminder or deleting it. In `groups.json5`, remove `automergeSchedule`/`platformAutomerge` from the Hermes and AzerothCore rules and the `automerge: false` overrides that become pointless. In `.github/renovate.json5`, remove the `automerge-github-actions` and `automerge-terraform-providers` extends.
+  - Every other repository: `grep -rn automerge` in its Renovate config, and the same change wherever it is set.
+  - Check: `renovate-config-validator` on each changed config, and after the next Renovate run no PR shows "Automerge: Enabled" in its body.
+- [ ] Rulesets live in GitHub, not in git: record the JSON used in `docs/src/k8s/hermes.md` (or the Hermes README) so they can be re-applied.
 
 ## 7. Hermes chart: workspace keys, profile environment, cleanup (C1, C9)
 
