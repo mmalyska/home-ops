@@ -57,12 +57,24 @@ The first cell is a link `[<slug>](<slug>/plan.md)`; Profile/Topology is written
 - `pr` lifecycle: a plan is written with `pr: not-opened` and the index `PR` cell `—`. After the PR is opened, set `pr` to the number or URL in `plan.md` and the same text in the index, in the same branch. `check-plans` rejects an empty or free-text `pr` and any index cell that differs.
 - Legacy: plans written before this convention stay where they are. The paths that are accepted without a row are listed in [`.agents/policy/plans-legacy.txt`](../.agents/policy/plans-legacy.txt). `.plans/superpowers/`, if it reappears on a branch, only warns and each file there needs an index row.
 
+## Extract knowledge before archiving
+
+Archived text is history that agents are told not to follow, so anything still useful must leave it first. Before a plan or TODO item is archived, read it for:
+
+- **A finding or method that a later task will need** (measurements, causes, rejected options and why, a procedure that worked): write it into the doc for that area under `docs/`, and link the archive path as the source.
+- **A gotcha that applies beyond this one change**: add it to the skill for that area in `.agents/skills/`, then run `.agents/bin/sync-skills`.
+- **A domain context needed in 2 or more sessions** with no skill yet: ask the owner whether to create one ("Skills" in `AGENTS.md`); do not create it unasked.
+- **A non-obvious fact about the owner's setup or preferences**: a memory note in `.claude/memory/`.
+
+Record the outcome in the archive PR description: what was extracted and where, or "nothing worth extracting". Do not copy whole items; the doc states the lesson, the archive keeps the history.
+
 ## Archive after Ship
 
 1. The delivering PRs are merged and any live follow-up is done or recorded in [`TODO.md`](TODO.md).
-2. In a small `chore(plans)` PR set `status` to `shipped` (or `dropped`, `superseded`) with the PR numbers, then move the folder verbatim: `git mv .plans/<slug> .archive/.plans/<slug>`.
-3. Rewrite links to the moved files by path replace (links use full repo-root paths), delete the row from `.plans/list.md`, and add one row to [`.archive/.plans/list.md`](../.archive/.plans/list.md) (Plan, Description, Completed; the description may end with the PR number).
-4. Run `.agents/bin/check-plans`; it must report no errors.
+2. Do "Extract knowledge before archiving" above.
+3. In a small `chore(plans)` PR set `status` to `shipped` (or `dropped`, `superseded`) with the PR numbers, then move the folder verbatim: `git mv .plans/<slug> .archive/.plans/<slug>`.
+4. Rewrite links to the moved files by path replace (links use full repo-root paths), delete the row from `.plans/list.md`, and add one row to [`.archive/.plans/list.md`](../.archive/.plans/list.md) (Plan, Description, Completed; the description may end with the PR number).
+5. Run `.agents/bin/check-plans`; it must report no errors.
 
 Archived plans are history, not instructions: see [`.archive/.plans/README.md`](../.archive/.plans/README.md). Archive files are not renamed, reformatted or re-linked in bulk.
 
@@ -70,10 +82,11 @@ Archived plans are history, not instructions: see [`.archive/.plans/README.md`](
 
 `TODO.md` holds open items only. Move an item out when it is done, or postponed or dropped by a decision of the owner.
 
-1. Append the item verbatim to [`.archive/TODO.md`](../.archive/TODO.md) under a `## Moved <date>` heading (a new heading per move, newest last). Say in one sentence per heading what was done and what was postponed or dropped; do not rewrite the item.
-2. A done parent with open children: archive the parent with its done children, and keep each open child in `TODO.md` as its own top-level item that names the archive file.
-3. Update the "Last reviewed" date at the top of `TODO.md`.
-4. Run `.agents/bin/check-plans`; it must report no errors. It does not read `TODO.md`, so check by eye that no open item was moved.
+1. Do "Extract knowledge before archiving" above.
+2. Append the item verbatim to [`.archive/TODO.md`](../.archive/TODO.md) under a `## Moved <date>` heading (a new heading per move, newest last). Say in one sentence per heading what was done and what was postponed or dropped; do not rewrite the item.
+3. A done parent with open children: archive the parent with its done children, and keep each open child in `TODO.md` as its own top-level item that names the archive file.
+4. Update the "Last reviewed" date at the top of `TODO.md`.
+5. Run `.agents/bin/check-plans`; it must report no errors. It does not read `TODO.md`, so check by eye that no open item was moved.
 
 ## Checking
 

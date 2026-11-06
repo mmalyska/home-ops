@@ -183,7 +183,7 @@ Plans live in `.plans/<slug>/` (`plan.md` with front matter, `tasks.md`), whiche
 - `.archive/.plans/` — finished plans moved verbatim, indexed in `.archive/.plans/list.md`. History, not instructions; older plans there came from earlier conventions and are not rewritten.
 
 **When starting a plan**: create `.plans/<slug>/plan.md` and `tasks.md`, and add a row to `.plans/list.md`.
-**When completing or dropping a plan**: follow "Archive after Ship" in `.plans/README.md`.
+**When completing or dropping a plan**: follow "Archive after Ship" in `.plans/README.md`. Before archiving a plan or a TODO item, extract any knowledge worth keeping into `docs/` or a skill ("Extract knowledge before archiving" in the same file).
 
 ## Skills
 
