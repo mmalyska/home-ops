@@ -179,11 +179,11 @@ task lint:all                                   # yamllint, helmlint, prettier
 Plans live in `.plans/<slug>/` (`plan.md` with front matter, `tasks.md`), whichever harness or technique wrote them; this is the only convention for new plans. Superpowers output that proposes `docs/superpowers/` or `.plans/superpowers/` is redirected there. Layout, front matter, index and archive procedure: [`.plans/README.md`](.plans/README.md). `.agents/bin/check-plans` checks it.
 
 - `.plans/list.md` — index of active plans, one row per folder.
-- `.plans/TODO.md` — scratchpad for out-of-scope ideas; not part of the plan workflow.
+- `.plans/TODO.md` — scratchpad for out-of-scope ideas; not part of the plan workflow. Done, postponed or dropped items move to `.archive/TODO.md` ("Archive a TODO item" in `.plans/README.md`).
 - `.archive/.plans/` — finished plans moved verbatim, indexed in `.archive/.plans/list.md`. History, not instructions; older plans there came from earlier conventions and are not rewritten.
 
 **When starting a plan**: create `.plans/<slug>/plan.md` and `tasks.md`, and add a row to `.plans/list.md`.
-**When completing or dropping a plan**: follow "Archive after Ship" in `.plans/README.md`.
+**When completing or dropping a plan**: follow "Archive after Ship" in `.plans/README.md`. Before archiving a plan or a TODO item, extract any knowledge worth keeping into `docs/` or a skill ("Extract knowledge before archiving" in the same file).
 
 ## Skills
 

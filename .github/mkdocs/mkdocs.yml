@@ -142,6 +142,7 @@ nav:
           - "Bootstrap": k8s/bootstrap.md
           - "OIDC": k8s/oidc/Readme.md
           - "Rook-Ceph CephX Ciphers": k8s/rook-ceph-cephx.md
+          - "Ceph and disk write load": k8s/ceph-write-load.md
           - "Debugging with egctl": k8s/egctl.md
           - "nv1 Jetson (GPU)": k8s/nv1-jetson.md
           - "AI gateway (LiteLLM)": k8s/ai-gateway.md

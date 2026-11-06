@@ -7,3 +7,4 @@ Everything under `.archive/` is history. Archived plans, specs and research reco
 - Paths here are stable because live docs and skills link to them. Files are moved here verbatim and never renamed or rewritten in bulk.
 - New entries are added by the procedure in [`.plans/README.md`](../../.plans/README.md): move the plan folder here, then add one row to [`list.md`](list.md).
 - `check-plans` verifies that the index and this folder agree.
+- Finished or postponed TODO items live in [`../TODO.md`](../TODO.md), moved by "Archive a TODO item" in `.plans/README.md`. Same rules: history, not instructions.
