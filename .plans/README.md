@@ -66,6 +66,15 @@ The first cell is a link `[<slug>](<slug>/plan.md)`; Profile/Topology is written
 
 Archived plans are history, not instructions: see [`.archive/.plans/README.md`](../.archive/.plans/README.md). Archive files are not renamed, reformatted or re-linked in bulk.
 
+## Archive a TODO item
+
+`TODO.md` holds open items only. Move an item out when it is done, or postponed or dropped by a decision of the owner.
+
+1. Append the item verbatim to [`.archive/TODO.md`](../.archive/TODO.md) under a `## Moved <date>` heading (a new heading per move, newest last). Say in one sentence per heading what was done and what was postponed or dropped; do not rewrite the item.
+2. A done parent with open children: archive the parent with its done children, and keep each open child in `TODO.md` as its own top-level item that names the archive file.
+3. Update the "Last reviewed" date at the top of `TODO.md`.
+4. Run `.agents/bin/check-plans`; it must report no errors. It does not read `TODO.md`, so check by eye that no open item was moved.
+
 ## Checking
 
 ```sh
