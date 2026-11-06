@@ -20,7 +20,7 @@ spec:
   silences:
     - matchers:
         - name: alertname
-          value: ^(CephMonDown|CephOSDDown|KubeNodeUnreachable|TargetDown)$
+          value: ^(CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration)$
           matchType: "=~"
       maxDuration: 2h
   healthChecks:

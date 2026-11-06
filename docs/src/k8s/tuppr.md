@@ -49,8 +49,12 @@ from tuppr's source, not observed here.
   start up to about 1h after the window closes (the gate wait). A node whose upgrade already started always finishes.
   If the window closes between nodes the run parks as `MaintenanceWindow` and is expected to resume in the next window
   (to be confirmed on the first run). Mixed versions for up to a week are expected then (nv1 is last).
-- **Silences:** tuppr holds an Alertmanager silence for `CephMonDown|CephOSDDown|KubeNodeUnreachable|TargetDown`
-  (`maxDuration: 2h`, renewed as a short lease).
+- **Silences:** tuppr holds an Alertmanager silence for
+  `CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration`
+  (`maxDuration: 2h`, renewed as a short lease). It is created when the upgrade Job starts, after the node is drained, so
+  the first alerts of each node (mon and OSD down from the drain) can still fire before it exists; see "The second Talos
+  upgrade". `KubeClientCertificateExpiration` is in the list because short-lived client certificates used during an
+  upgrade trip it (not a real expiry).
 
 ## Health gate
 
@@ -285,8 +289,9 @@ the Renovate PR (#5948) plus a one-off Friday window (#6143, moved to 15:15 Wars
   process`) and parks in `MaintenanceWindow` for the next Sunday with `completedNodes` empty; all nodes already run the
   target version.
 - **Silences and alerts:** tuppr created its Alertmanager silence at 14:50:38, after the mc1 drain began (14:48), so the
-  first `CephMonDown` and `CephOSDDownHigh` alerts fired before it existed. The silence regex does not include
-  `CephOSDDownHigh` or `CephMonQuorumAtRisk`, which fire on every node reboot with 3 mons and 3 OSDs.
+  first `CephMonDown` and `CephOSDDownHigh` alerts fired before it existed. The silence regex did not include
+  `CephOSDDownHigh`, `CephMonQuorumAtRisk` or `KubeClientCertificateExpiration` (added afterwards), and
+  `CephOSDDownHigh` and `CephMonQuorumAtRisk` fire on every node reboot with 3 mons and 3 OSDs.
   `KubeClientCertificateExpiration` also fired on the apiservers (about 1 request a minute with a client certificate that
   had 30 minutes or less left); it appeared only during this and the 2026-10-21 upgrade and cleared afterwards. Follow-up
   in `.plans/TODO.md`.
