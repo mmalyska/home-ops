@@ -259,6 +259,38 @@ process`), then `Pending` / `PrePulling`.
 - **nv1 and kexec:** nv1 has `kernel.kexec_load_disabled=1` (see "nv1 and kexec" below), which avoids the stale-UKI
   problem; the rename is only a fallback. `Failed` is terminal, so plan for the `reset` and the uncordon in the same session.
 
+## The second Talos upgrade
+
+**Observed 2026-11-06, Talos v1.14.4 to v1.14.5** (kernel 6.18.57 to 6.18.58) on mc1, mc2, mc3 and nv1. It started by merging
+the Renovate PR (#5948) plus a one-off Friday window (#6143, moved to 15:15 Warsaw by #6144, removed by #6145). Times are UTC.
+
+- **Window:** with no open window the run sat in `MaintenanceWindow` ("Waiting for maintenance window (next: ...)") and
+  started at 14:15, when the one-off window opened. Nothing was cordoned while it waited. This confirms the parking for a
+  run that waits before its first node; parking between nodes is still not observed.
+- **Pre-pull:** mc1 failed five times in a row from `factory.talos.dev` ("no pull progress after 1m30s (0 layers, 0 bytes
+  received)"), a new version's first request; the pre-pull finished at 14:25 for all four nodes. The nv1 alias
+  `custom-installer-jp7:v1.14.5` had to exist first: the fork build took about 2h15m on a native arm64 runner, because
+  the kernel compiled from a cold cache (about 105 minutes). Publish the alias before merging the Renovate PR.
+- **Health gate:** the phase stays `Pending` with the old pre-pull message and nothing is logged while the gate waits, so
+  it looks stuck. Here the "VolSync idle" check held it for about 20 minutes: a `ReplicationSource` had been
+  `Synchronizing` since 2026-10-26 because its `VolumeSnapshot` was stuck in deletion (only the
+  `volumesnapshot-as-source-protection` finalizer left, its content already gone). Removing that finalizer let VolSync
+  run again and the gate passed at 14:47. Evaluate the six checks by hand (see "Health gate") to find the one that fails.
+- **Timing (gate to done):** mc1 about 14:48 to 14:54, mc2 done 15:00, mc3 15:03 to 15:08, nv1 15:11 to 15:14; the whole
+  run about 27 minutes after the gate, with `HEALTH_OK` required between nodes. nv1 took about 3 minutes from drain to
+  Ready (the local LLM was offline about 3 minutes, against about 30 minutes on 2026-10-21).
+- **nv1:** booted the new image first try, with `kernel.kexec_load_disabled=1` still set. `task talos:diff` was clean on
+  all four nodes afterwards, nv1 included (it needed no `talos:apply`).
+- **After the run:** removing the one-off window changes the spec, so tuppr resets (`Spec updated, restarting upgrade
+  process`) and parks in `MaintenanceWindow` for the next Sunday with `completedNodes` empty; all nodes already run the
+  target version.
+- **Silences and alerts:** tuppr created its Alertmanager silence at 14:50:38, after the mc1 drain began (14:48), so the
+  first `CephMonDown` and `CephOSDDownHigh` alerts fired before it existed. The silence regex does not include
+  `CephOSDDownHigh` or `CephMonQuorumAtRisk`, which fire on every node reboot with 3 mons and 3 OSDs.
+  `KubeClientCertificateExpiration` also fired on the apiservers (about 1 request a minute with a client certificate that
+  had 30 minutes or less left); it appeared only during this and the 2026-10-21 upgrade and cleared afterwards. Follow-up
+  in `.plans/TODO.md`.
+
 ## nv1 and kexec
 
 By default Talos reboots after an upgrade through kexec. On nv1 (Jetson Orin) the kexec load fails, and Talos answers a
