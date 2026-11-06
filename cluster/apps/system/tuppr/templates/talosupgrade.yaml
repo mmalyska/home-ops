@@ -17,10 +17,6 @@ spec:
       - start: "0 7 * * 0"
         duration: 4h
         timezone: Europe/Warsaw
-      # One-off window for the v1.14.5 upgrade (2026-11-06); remove in a follow-up PR once the run is Completed.
-      - start: "15 15 * * 5"
-        duration: 3h
-        timezone: Europe/Warsaw
   silences:
     - matchers:
         - name: alertname
