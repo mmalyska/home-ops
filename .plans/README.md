@@ -20,7 +20,7 @@ One convention for every harness. A plan is a folder, `.plans/<slug>/`, written 
 
 `<slug>` is lowercase kebab-case and is unique across `.plans/` and `.archive/.plans/`. The shapes of `tasks.md`, `handoff.md` and `decision.md` come from the `development-lifecycle` plugin resources; this repository adds nothing to them.
 
-A spec can be reviewed before its plan exists: the folder then holds `spec.md` without `plan.md` or `tasks.md`, and `spec.md` carries the front matter below. When the plan is added, `plan.md` carries the front matter and `tasks.md` becomes required.
+A spec can be reviewed before its plan exists: the folder then holds `spec.md` alone, with no front matter and no row in the index. Adding the plan adds `plan.md` with its front matter, `tasks.md` and the row.
 
 ## Front matter of `plan.md`
 
@@ -45,11 +45,11 @@ updated: 2026-01-02
 
 ## The index
 
-`.plans/list.md` has one row per plan folder and exactly these columns:
+`.plans/list.md` has one row per plan folder that holds a plan, and exactly these columns:
 
 | Plan | Status | Owner | Profile/Topology | Branch | PR | Started | Updated | Description |
 
-The first cell is a link `[<slug>](<slug>/plan.md)`, or `[<slug>](<slug>/spec.md)` while the folder holds only a spec; Profile/Topology is written `<profile> / <topology>`. Cells must not contain a `|`.
+The first cell is a link `[<slug>](<slug>/plan.md)`; Profile/Topology is written `<profile> / <topology>`. Cells must not contain a `|`.
 
 ## Rules
 

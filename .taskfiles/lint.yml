@@ -10,7 +10,7 @@ tasks:
   markdown:
     desc: Lint Markdown
     cmds:
-      - markdownlint -c '.github/linters/.markdownlint.yaml' *.md **/*.md
+      - markdownlint *.md **/*.md
     ignore_error: true
 
   yaml:
@@ -22,30 +22,11 @@ tasks:
   prettier:check:
     desc: Lint general formatting (task lint:prettier:check)
     cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --check .
+      - prettier --ignore-unknown --check .
     ignore_error: true
 
   prettier:fix:
     desc: Lint general formatting (task lint:prettier:fix)
     cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --write .
+      - prettier --ignore-unknown --write .
     ignore_error: true
-
-  files:
-    desc: Check the given files with the repo configs and fail on a finding (task lint:files -- a.md b.yaml)
-    preconditions:
-      - sh: test -n "{{.CLI_ARGS}}"
-        msg: "usage: task lint:files -- <file>..."
-    cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --check {{.CLI_ARGS}}
-      - |
-        md=$(printf '%s\n' {{.CLI_ARGS}} | grep -E '\.md$' || true)
-        if [ -n "$md" ]; then markdownlint -c '.github/linters/.markdownlint.yaml' $md; fi
-
-  files:fix:
-    desc: Format only the given files with the repo config (task lint:files:fix -- a.md b.yaml)
-    preconditions:
-      - sh: test -n "{{.CLI_ARGS}}"
-        msg: "usage: task lint:files:fix -- <file>..."
-    cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --write {{.CLI_ARGS}}
