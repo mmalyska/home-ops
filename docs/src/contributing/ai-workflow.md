@@ -9,14 +9,13 @@ Links to files outside the documentation site point at the `main` branch on GitH
 
 This page is the **local application** of the workflow in `home-ops`, owned by this repository. It does not define the
 workflow. The lifecycle, the process levels, the topologies and the plan, handoff and decision resources are owned by the
-`mmalyska/claude-plugins` repository and are pinned here to the tag
-[`ai-workflow-v0.1.0-preview.1`](https://github.com/mmalyska/claude-plugins/tree/ai-workflow-v0.1.0-preview.1). Read them
-there; this page never restates them. The pin and the procedure to bump it are in
+[`mmalyska/claude-plugins`](https://github.com/mmalyska/claude-plugins) repository. Read them there; this page never
+restates them. `mmalyska/dotfiles` (chezmoi) decides which revision is installed, so this repository names no version; see
 [`.agents/README.md`](https://github.com/mmalyska/home-ops/blob/main/.agents/README.md).
 
 A process level never lowers a safety, permission, worktree or validation requirement, and no level authorizes another
 actor. The general procedure for adapting another repository is the canonical
-[repository-adoption guide](https://github.com/mmalyska/claude-plugins/blob/ai-workflow-v0.1.0-preview.2/docs/workflow/repository-adoption-guide.md).
+[repository-adoption guide](https://github.com/mmalyska/claude-plugins/blob/main/docs/workflow/repository-adoption-guide.md).
 
 ## 2. Where rules live
 
@@ -116,7 +115,7 @@ the public site.
 When work moves to another session or person, leave a note in `.plans/<slug>/handoff.md` with: the state (what is done and
 verified), the base SHA, the branch, the worktree path, the next task, the open questions, and every `NOT RUN` item with its
 reason. The note is text and authorizes nothing. The handoff shape and the topologies that use it are defined in
-[`claude-plugins`](https://github.com/mmalyska/claude-plugins/tree/ai-workflow-v0.1.0-preview.1) at the pinned tag.
+[`claude-plugins`](https://github.com/mmalyska/claude-plugins).
 
 ## 9. Troubleshooting
 
