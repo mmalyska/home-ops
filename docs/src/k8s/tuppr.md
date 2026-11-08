@@ -260,8 +260,9 @@ process`), then `Pending` / `PrePulling`.
   all four nodes. `task talos:generate` (and `talos:diff`, `talos:pki-parity`) fails only when the local `talosctl` is older than the pinned `TALOS_VERSION`; a newer client passes (`task talos:check-client` runs just that check). The `dev-workstation` image follows upstream releases, so it is normally newer. `task talos:install` installs only when `talosctl` is missing or older than the pin and `sudo` is available; the same rule applies to `task cilium:install`.
 - **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
   minutes, longer than the node's own reboot because of the stale boot entry.
-- **nv1 and kexec:** nv1 has `kernel.kexec_load_disabled=1` (see "nv1 and kexec" below), which avoids the stale-UKI
-  problem; the rename is only a fallback. `Failed` is terminal, so plan for the `reset` and the uncordon in the same session.
+- **nv1 and kexec:** since Talos v1.14.5 a failed kexec falls back to a normal reboot (see "nv1 and kexec" below) and the
+  nv1 sysctl is gone; the stale-UKI rename is only a fallback. `Failed` is terminal, so plan for the `reset` and the uncordon
+  in the same session.
 
 ## The second Talos upgrade
 
@@ -303,10 +304,12 @@ failed `kexecPrepare` by reverting the boot entry to the previous UKI, so nv1 co
 upgrade reports success (the 2026-10-21 incident). The revert is read from Talos's source (`revertBootloader` in
 `machined`) and from the result; no log line announces it, while the failed kexec and the old UKI booting are observed.
 
-nv1 therefore sets `kernel.kexec_load_disabled: "1"` (`provision/talos/patches/node/nv1/42-sysctl-kexec.yaml`). Talos
-logs `kexec support is disabled via sysctl` and reboots through the firmware into the new entry. It is node-only, so mc1
-to mc3 keep kexec. `policy.rebootMode: powercycle` on the `TalosUpgrade` would also work but applies to every node of the CR
-(and was set for a few hours on 2026-10-21 before the sysctl was found).
+**Fixed upstream in Talos v1.14.5** (siderolabs/talos#14695): a kexec load that fails because the kernel finds no free
+memory region (`EADDRNOTAVAIL`) is treated like the other "kexec not usable" cases, so Talos logs `kexec is skipped as
+there is no free memory region for the kernel` and reboots normally. From 2026-10-21 to 2026-11-06 nv1 had a workaround,
+`kernel.kexec_load_disabled: "1"` (`patches/node/nv1/42-sysctl-kexec.yaml`, now removed). `policy.rebootMode: powercycle`
+on the `TalosUpgrade` would also skip kexec but applies to every node of the CR (it was set for a few hours on
+2026-10-21 before the sysctl was found).
 
 Evidence, 2026-10-21, three same-version upgrades of nv1 with `talosctl upgrade --image .../custom-installer-jp7:v1.14.4`
 and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs another v1.14.4 UKI named
@@ -318,11 +321,22 @@ and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs a
 | default (kexec)                  | `kexec_file(Image): Could not find any suitable kernel location!`, `reboot failed: error running phase 13 in reboot sequence` | the previous UKI (`~1`) although `~2` was installed |
 | default, `kexec_load_disabled=1` | `kexec support is disabled via sysctl`, `phase kexec (13/14): done`                                                           | the new UKI (`~3`), `LoaderEntrySelected` `~3`      |
 
+Evidence, 2026-11-06, Talos v1.14.5, same method with `custom-installer-jp7:v1.14.5` (UKIs `Talos-v1.14.5~N.efi`), sysctl
+removed from the config first (`task talos:apply N=nv1`, no reboot):
+
+| Run                                                      | Log                                                                                          | Booted                                         |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| default, live value still 1 (the switch is one-way)      | `kexec support is disabled via sysctl`                                                       | the new UKI (`~1`); the value is 0 afterwards  |
+| default, `kexec_load_disabled=0`, kexec enabled          | `kexec is skipped as there is no free memory region for the kernel`, then a normal reboot | the new UKI (`~2`), `LoaderEntrySelected` `~2` |
+
+The first run did not try kexec (a config change cannot lower the value without a reboot), so only the second shows the
+fix on this hardware. Each run took about 2 to 3 minutes.
+
 EFI variable writes persisted in separate tests, so the earlier theory that the Jetson firmware drops the installer's
-write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is not known;
-the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692) (a failed kexec should
-fall back to a normal reboot instead of triggering the revert); see `.plans/TODO.md`. The sysctl cannot be set back to 0
-without a reboot (a one-way switch), which is fine here.
+write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is still not known (the kernel reports no free memory region);
+the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692); see `.plans/TODO.md`.
+The sysctl is a one-way switch (the value stays 1 until the node reboots), which is why the removal needed the reboot
+above. mc1 to mc3 reboot with kexec; their next upgrade is the check that it still works there.
 
 ## When things go wrong
 
@@ -337,7 +351,7 @@ without a reboot (a one-way switch), which is fine here.
 - **A node never converges (drain stalls):** a CNPG primary's PDB usually means an unhealthy replica. Fix the replica
   first, do not force the drain; `kubectl uncordon <node>` restores evicted Ceph pods and Ceph recovers on its own
   (see `cluster-reference`). tuppr uncordons itself after a failed drain and retries after 1 minute.
-- **nv1 reports the old version after the upgrade:** nv1 booted the previous UKI because kexec failed and Talos reverted the boot entry (see "nv1 and kexec"). This should not happen with `kernel.kexec_load_disabled=1` on nv1. Do not re-run the upgrade; use
+- **nv1 reports the old version after the upgrade:** nv1 booted the previous UKI because kexec failed and Talos reverted the boot entry (see "nv1 and kexec"). This should not happen on Talos v1.14.5 or newer (a failed kexec falls back to a normal reboot). Do not re-run the upgrade; use
   the fix in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade"). Seen on 2026-10-21: the run goes
   `Failed` with `node nv1 version mismatch`, nv1 stays cordoned and `llama-server` stays `Pending`. After the fix:
   `kubectl uncordon nv1`, then `kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%s)"
