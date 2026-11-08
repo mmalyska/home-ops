@@ -9,7 +9,7 @@ server:
     # .claude/memory/reference_jetson_llama_cuda_tag.md before changing the base.
     repository: ghcr.io/mmalyska/llama-cpp-jetson
     tag: "v0.9.0@sha256:03841e31febe034fac3d2b3c85bca95b0e55b6470cb3e945a605464713e284b4"
-  fetchImage: alpine:3@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a
+  fetchImage: alpine:3@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
   model:
     # LFM3-1.7B replaced Gemma 4 26B-A4B on 2026-10-28 (owner decision, plan in
     # .archive/.plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
