@@ -10,7 +10,7 @@ tasks:
   markdown:
     desc: Lint Markdown
     cmds:
-      - markdownlint -c '.github/linters/.markdownlint.yaml' *.md **/*.md
+      - markdownlint *.md **/*.md
     ignore_error: true
 
   yaml:
@@ -22,11 +22,11 @@ tasks:
   prettier:check:
     desc: Lint general formatting (task lint:prettier:check)
     cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --check .
+      - prettier --ignore-unknown --check .
     ignore_error: true
 
   prettier:fix:
     desc: Lint general formatting (task lint:prettier:fix)
     cmds:
-      - prettier --ignore-unknown --ignore-path '.github/linters/.prettierignore' --config '.github/linters/.prettierrc.yaml' --write .
+      - prettier --ignore-unknown --write .
     ignore_error: true

@@ -1,6 +1,6 @@
 # Plans
 
-One convention for every harness. A plan is a folder, `.plans/<slug>/`, written by whichever tool does the planning. The workflow that produces and runs plans (lifecycle, process levels, topologies, and the plan, tasks, handoff and decision resources) is owned by `mmalyska/claude-plugins` and pinned in [`.agents/README.md`](../.agents/README.md). This page only says where plans live and how this repository checks them.
+One convention for every harness. A plan is a folder, `.plans/<slug>/`, written by whichever tool does the planning. The workflow that produces and runs plans (lifecycle, process levels, topologies, and the plan, tasks, handoff and decision resources) is owned by `mmalyska/claude-plugins`, see [`.agents/README.md`](../.agents/README.md). This page only says where plans live and how this repository checks them.
 
 ## Layout
 
@@ -13,12 +13,14 @@ One convention for every harness. A plan is a folder, `.plans/<slug>/`, written 
     plan.md          # goal, context, decisions, current status; starts with front matter
     tasks.md         # self-contained tasks; each is executable without reading plan.md
     evidence.md      # optional: facts the plan rests on
-    spec.md          # optional
+    spec.md          # optional; the only required file until the plan is written
     handoff.md       # optional
     decision.md      # optional
 ```
 
 `<slug>` is lowercase kebab-case and is unique across `.plans/` and `.archive/.plans/`. The shapes of `tasks.md`, `handoff.md` and `decision.md` come from the `development-lifecycle` plugin resources; this repository adds nothing to them.
+
+A spec can be reviewed before its plan exists: the folder then holds `spec.md` alone, with no front matter and no row in the index. Adding the plan adds `plan.md` with its front matter, `tasks.md` and the row.
 
 ## Front matter of `plan.md`
 
@@ -43,7 +45,7 @@ updated: 2026-01-02
 
 ## The index
 
-`.plans/list.md` has one row per plan folder and exactly these columns:
+`.plans/list.md` has one row per plan folder that holds a plan, and exactly these columns:
 
 | Plan | Status | Owner | Profile/Topology | Branch | PR | Started | Updated | Description |
 

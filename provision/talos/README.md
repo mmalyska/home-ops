@@ -161,7 +161,7 @@ Examples:
 
 1. Add the node to `nodes.yaml` (name, ip, type: `controlplane` or `worker`).
 2. Create `patches/node/<name>/08-hostname.yaml` (`HostnameConfig`), `10-link.yaml` (`LinkConfig`: address, route, MTU) and, on a control plane, `11-vip.yaml` (`Layer2VIPConfig`). Leave out any `DHCPv4Config`: with no document the link runs no DHCP.
-3. Add a per-node install image only if the node needs its own installer (see below). A per-node `UnattendedInstallConfig` patch must repeat `provisioning.diskSelector.match` (a node with another disk needs its own selector); see "Install settings and reinstalling a node".
+3. Add a per-node install image only if the node needs its own installer (see below). The disk selector comes from `patches/all/30-install.yaml`, so a per-node `UnattendedInstallConfig` patch does not repeat it (a node with another disk needs its own selector in that patch); see "Install settings and reinstalling a node".
 4. `scripts/check-patches.sh`, then `task talos:generate`.
 
 ### Nodes with their own installer image
@@ -180,9 +180,6 @@ apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 installer:
   image: ghcr.io/mmalyska/custom-installer-jp7:${TALOS_VERSION}
-provisioning:
-  diskSelector:
-    match: disk.dev_path == "/dev/nvme0n1"
 ```
 
 The repo uses the plain Talos version as the tag (`custom-installer-jp7:v1.14.2`; the JetPack 7 installer has its own
@@ -199,9 +196,11 @@ image can leave the node with networking up but `apid` never starting: reachable
 fixable only over the console. See `.archive/.plans/superpowers/specs/2026-08-13-jetson-igpu-design.md` and
 `.archive/.plans/superpowers/specs/2026-08-13-jetson-installer-build-design.md`.
 
-The disk selector is repeated in this file on purpose: `talosctl machineconfig patch` drops `provisioning.diskSelector.match`
-when a later patch merges into the document, so it must be in the last file applied for the node (see the header of the
-file).
+The disk selector is not repeated in this file. Before Talos 1.14.5 (siderolabs/talos#14584) `talosctl machineconfig patch`
+dropped `provisioning.diskSelector.match` when a later patch merged into the document, so it had to be in the last file
+applied for the node; it now lives once in `patches/all/30-install.yaml`. The `talosctl` that renders the config must be
+1.14.5 or newer (`task talos:check-client`), otherwise `talosctl validate` fails with "provisioning.diskSelector.match is
+required".
 
 #### nv1 boots the wrong UKI after an upgrade (Jetson UEFI)
 
@@ -218,11 +217,12 @@ then reverts the boot entry to the previous UKI (`revertBootloader`) and reboots
 old image. Reproduced on a same-version upgrade of nv1 with the Talos logs in Loki: default reboot mode booted the old
 UKI (`~1`) although `~2` was installed; `--reboot-mode powercycle` logged `kexec skipped as reboot with power cycle was
 requested` and booted the new one. EFI variable writes persisted in every test, and the installer log showed a normal
-install. **Fix:** `kernel.kexec_load_disabled: "1"` on nv1 (`patches/node/nv1/42-sysctl-kexec.yaml`): Talos then logs
-`kexec support is disabled via sysctl` and reboots through the firmware into the new entry (verified with a default-mode
-upgrade); `policy.rebootMode: powercycle` or `talosctl upgrade --reboot-mode powercycle` also skips kexec. Upstream:
-[siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692). The rename workaround below is only needed
-after an upgrade done without the sysctl. `talosctl
+install. **Fix (2026-11-06):** Talos v1.14.5 treats this failure as "kexec not usable" (siderolabs/talos#14695, upstream
+report [#14692](https://github.com/siderolabs/talos/issues/14692)): it logs `kexec is skipped as there is no free memory
+region for the kernel` and reboots normally into the new entry. Verified on nv1 with a default-mode same-version upgrade
+and no sysctl. Until then nv1 had `kernel.kexec_load_disabled: "1"` as a workaround (`patches/node/nv1/42-sysctl-kexec.yaml`,
+removed); `policy.rebootMode: powercycle` or `talosctl upgrade --reboot-mode powercycle` also skips kexec. The rename
+workaround below is only needed if an upgrade still boots the old entry. `talosctl
 upgrade` and `talosctl health` both still succeed. `task talos:upgrade` now
 fails with `ERROR: nv1 runs vX, expected vY` when this happens (the expected version is the alias tag,
 `TALOS_VERSION`; the same applies when tuppr does the upgrade: it patches the image to the alias tag). **Do not re-run

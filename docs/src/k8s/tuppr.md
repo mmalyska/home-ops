@@ -49,8 +49,18 @@ from tuppr's source, not observed here.
   start up to about 1h after the window closes (the gate wait). A node whose upgrade already started always finishes.
   If the window closes between nodes the run parks as `MaintenanceWindow` and is expected to resume in the next window
   (to be confirmed on the first run). Mixed versions for up to a week are expected then (nv1 is last).
-- **Silences:** tuppr holds an Alertmanager silence for `CephMonDown|CephOSDDown|KubeNodeUnreachable|TargetDown`
-  (`maxDuration: 2h`, renewed as a short lease).
+- **Silences:** two layers cover
+  `CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration`
+  (the list is one Helm variable in `templates/talosupgrade.yaml`). `KubeClientCertificateExpiration` is in it because
+  short-lived client certificates used during an upgrade trip it (not a real expiry).
+  - **Pre and post hook Jobs (the main one):** `spec.hooks.pre` runs once per run, before any node is touched, and creates
+    one Alertmanager silence (creator `tuppr-hook`, 3 hours hard stop); `spec.hooks.post` expires it when the run ends. The
+    Jobs are best effort (the scripts always exit 0, so a missing Alertmanager never blocks the upgrade) and use the
+    `alpine/k8s` image (curl, jq) already used elsewhere in the repo.
+  - **tuppr's own silence (fallback):** `spec.silences`, `maxDuration: 2h`, a short lease re-extended while the run is
+    active. It is created only on the reconcile after the first drain: in tuppr 0.5.13 the sync runs at the start of each
+    reconcile (`syncAlertSilences` in `processUpgrade`) while the drain runs inside one, and the drain already stops the
+    mon and OSD pods. It is expired to a short tail whenever the run parks, including between nodes. That is why it alone let the first alerts of each node through on 2026-11-06.
 
 ## Health gate
 
@@ -256,8 +266,43 @@ process`), then `Pending` / `PrePulling`.
   all four nodes. `task talos:generate` (and `talos:diff`, `talos:pki-parity`) fails only when the local `talosctl` is older than the pinned `TALOS_VERSION`; a newer client passes (`task talos:check-client` runs just that check). The `dev-workstation` image follows upstream releases, so it is normally newer. `task talos:install` installs only when `talosctl` is missing or older than the pin and `sudo` is available; the same rule applies to `task cilium:install`.
 - **Cost:** the local LLM was offline from the nv1 drain (11:54) to the `llama-server` restart (about 12:24), about 30
   minutes, longer than the node's own reboot because of the stale boot entry.
-- **nv1 and kexec:** nv1 has `kernel.kexec_load_disabled=1` (see "nv1 and kexec" below), which avoids the stale-UKI
-  problem; the rename is only a fallback. `Failed` is terminal, so plan for the `reset` and the uncordon in the same session.
+- **nv1 and kexec:** since Talos v1.14.5 a failed kexec falls back to a normal reboot (see "nv1 and kexec" below) and the
+  nv1 sysctl is gone; the stale-UKI rename is only a fallback. `Failed` is terminal, so plan for the `reset` and the uncordon
+  in the same session.
+
+## The second Talos upgrade
+
+**Observed 2026-11-06, Talos v1.14.4 to v1.14.5** (kernel 6.18.57 to 6.18.58) on mc1, mc2, mc3 and nv1. It started by merging
+the Renovate PR (#5948) plus a one-off Friday window (#6143, moved to 15:15 Warsaw by #6144, removed by #6145). Times are UTC.
+
+- **Window:** with no open window the run sat in `MaintenanceWindow` ("Waiting for maintenance window (next: ...)") and
+  started at 14:15, when the one-off window opened. Nothing was cordoned while it waited. This confirms the parking for a
+  run that waits before its first node; parking between nodes is still not observed.
+- **Pre-pull:** mc1 failed five times in a row from `factory.talos.dev` ("no pull progress after 1m30s (0 layers, 0 bytes
+  received)"), a new version's first request; the pre-pull finished at 14:25 for all four nodes. The nv1 alias
+  `custom-installer-jp7:v1.14.5` had to exist first: the fork build took about 2h15m on a native arm64 runner, because
+  the kernel compiled from a cold cache (about 105 minutes). Publish the alias before merging the Renovate PR.
+- **Health gate:** the phase stays `Pending` with the old pre-pull message and nothing is logged while the gate waits, so
+  it looks stuck. Here the "VolSync idle" check held it for about 20 minutes: a `ReplicationSource` had been
+  `Synchronizing` since 2026-10-26 because its `VolumeSnapshot` was stuck in deletion (only the
+  `volumesnapshot-as-source-protection` finalizer left, its content already gone). Removing that finalizer let VolSync
+  run again and the gate passed at 14:47. Evaluate the six checks by hand (see "Health gate") to find the one that fails.
+- **Timing (gate to done):** mc1 about 14:48 to 14:54, mc2 done 15:00, mc3 15:03 to 15:08, nv1 15:11 to 15:14; the whole
+  run about 27 minutes after the gate, with `HEALTH_OK` required between nodes. nv1 took about 3 minutes from drain to
+  Ready (the local LLM was offline about 3 minutes, against about 30 minutes on 2026-10-21).
+- **nv1:** booted the new image first try, with `kernel.kexec_load_disabled=1` still set. `task talos:diff` was clean on
+  all four nodes afterwards, nv1 included (it needed no `talos:apply`).
+- **After the run:** removing the one-off window changes the spec, so tuppr resets (`Spec updated, restarting upgrade
+  process`) and parks in `MaintenanceWindow` for the next Sunday with `completedNodes` empty; all nodes already run the
+  target version.
+- **Silences and alerts:** tuppr created its Alertmanager silence at 14:50:38, after the mc1 drain began (14:48), so the
+  first `CephMonDown` and `CephOSDDownHigh` alerts fired before it existed. The silence regex did not include
+  `CephOSDDownHigh`, `CephMonQuorumAtRisk` or `KubeClientCertificateExpiration` (added afterwards), and
+  `CephOSDDownHigh` and `CephMonQuorumAtRisk` fire on every node reboot with 3 mons and 3 OSDs.
+  `KubeClientCertificateExpiration` also fired on the apiservers (about 1 request a minute with a client certificate that
+  had 30 minutes or less left); it appeared only during this and the 2026-10-21 upgrade and cleared afterwards. The pre
+  and post hook silence (see "How a run goes") was added afterwards for the next run; it is untested in a real run.
+  Follow-up in `.plans/TODO.md`.
 
 ## nv1 and kexec
 
@@ -266,10 +311,12 @@ failed `kexecPrepare` by reverting the boot entry to the previous UKI, so nv1 co
 upgrade reports success (the 2026-10-21 incident). The revert is read from Talos's source (`revertBootloader` in
 `machined`) and from the result; no log line announces it, while the failed kexec and the old UKI booting are observed.
 
-nv1 therefore sets `kernel.kexec_load_disabled: "1"` (`provision/talos/patches/node/nv1/42-sysctl-kexec.yaml`). Talos
-logs `kexec support is disabled via sysctl` and reboots through the firmware into the new entry. It is node-only, so mc1
-to mc3 keep kexec. `policy.rebootMode: powercycle` on the `TalosUpgrade` would also work but applies to every node of the CR
-(and was set for a few hours on 2026-10-21 before the sysctl was found).
+**Fixed upstream in Talos v1.14.5** (siderolabs/talos#14695): a kexec load that fails because the kernel finds no free
+memory region (`EADDRNOTAVAIL`) is treated like the other "kexec not usable" cases, so Talos logs `kexec is skipped as
+there is no free memory region for the kernel` and reboots normally. From 2026-10-21 to 2026-11-06 nv1 had a workaround,
+`kernel.kexec_load_disabled: "1"` (`patches/node/nv1/42-sysctl-kexec.yaml`, now removed). `policy.rebootMode: powercycle`
+on the `TalosUpgrade` would also skip kexec but applies to every node of the CR (it was set for a few hours on
+2026-10-21 before the sysctl was found).
 
 Evidence, 2026-10-21, three same-version upgrades of nv1 with `talosctl upgrade --image .../custom-installer-jp7:v1.14.4`
 and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs another v1.14.4 UKI named
@@ -281,11 +328,28 @@ and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs a
 | default (kexec)                  | `kexec_file(Image): Could not find any suitable kernel location!`, `reboot failed: error running phase 13 in reboot sequence` | the previous UKI (`~1`) although `~2` was installed |
 | default, `kexec_load_disabled=1` | `kexec support is disabled via sysctl`, `phase kexec (13/14): done`                                                           | the new UKI (`~3`), `LoaderEntrySelected` `~3`      |
 
+Evidence, 2026-11-06, Talos v1.14.5, same method with `custom-installer-jp7:v1.14.5` (UKIs `Talos-v1.14.5~N.efi`), sysctl
+removed from the config first (`task talos:apply N=nv1`, no reboot):
+
+| Run                                                      | Log                                                                                          | Booted                                         |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| default, live value still 1 (the switch is one-way)      | `kexec support is disabled via sysctl`                                                       | the new UKI (`~1`); the value is 0 afterwards  |
+| default, `kexec_load_disabled=0`, kexec enabled          | kernel: `kexec_file(Image): Could not find any suitable kernel location!`, then Talos: `kexec is skipped as there is no free memory region for the kernel`, then a normal reboot | the new UKI (`~2`), `LoaderEntrySelected` `~2` |
+
+The first run did not try kexec (a config change cannot lower the value without a reboot), so only the second shows the
+fix on this hardware. Each run took about 2 to 3 minutes.
+
 EFI variable writes persisted in separate tests, so the earlier theory that the Jetson firmware drops the installer's
-write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is not known;
-the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692) (a failed kexec should
-fall back to a normal reboot instead of triggering the revert); see `.plans/TODO.md`. The sysctl cannot be set back to 0
-without a reboot (a one-way switch), which is fine here.
+write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is still not known (the kernel reports no free memory region);
+the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692); see `.plans/TODO.md`.
+The sysctl is a one-way switch (the value stays 1 until the node reboots), which is why the removal needed the reboot
+above. The kernel error is the same one that failed the reboot sequence on v1.14.4 (there it was followed by
+`failed to load kernel for kexec: ... cannot assign requested address` and `reboot failed: error running phase 13 in
+reboot sequence`); v1.14.5 stops at the "skipped" line instead.
+
+mc1 to mc3 do kexec-boot, and did on the v1.14.5 upgrade of 2026-11-06 (`phase kexec (13/14)`, `sd-boot:
+LoaderEntryOneShot: kexec reboot`, `prepared kexec environment with kernel and initrd extracted from uki`, about 0.9
+seconds, no skip line). The failure is specific to the Jetson.
 
 ## When things go wrong
 
@@ -300,7 +364,7 @@ without a reboot (a one-way switch), which is fine here.
 - **A node never converges (drain stalls):** a CNPG primary's PDB usually means an unhealthy replica. Fix the replica
   first, do not force the drain; `kubectl uncordon <node>` restores evicted Ceph pods and Ceph recovers on its own
   (see `cluster-reference`). tuppr uncordons itself after a failed drain and retries after 1 minute.
-- **nv1 reports the old version after the upgrade:** nv1 booted the previous UKI because kexec failed and Talos reverted the boot entry (see "nv1 and kexec"). This should not happen with `kernel.kexec_load_disabled=1` on nv1. Do not re-run the upgrade; use
+- **nv1 reports the old version after the upgrade:** nv1 booted the previous UKI because kexec failed and Talos reverted the boot entry (see "nv1 and kexec"). This should not happen on Talos v1.14.5 or newer (a failed kexec falls back to a normal reboot). Do not re-run the upgrade; use
   the fix in `provision/talos/README.md` ("nv1 boots the wrong UKI after an upgrade"). Seen on 2026-10-21: the run goes
   `Failed` with `node nv1 version mismatch`, nv1 stays cordoned and `llama-server` stays `Pending`. After the fix:
   `kubectl uncordon nv1`, then `kubectl annotate talosupgrade cluster tuppr.home-operations.com/reset="$(date +%s)"

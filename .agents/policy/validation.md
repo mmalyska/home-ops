@@ -26,7 +26,7 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 
 ### Documentation, plans, comments
 
-- L0: `git diff --check`; `prettier --ignore-path .github/linters/.prettierignore --config .github/linters/.prettierrc.yaml --check <files>`; `markdownlint -c .github/linters/.markdownlint.yaml <files>` (NOT RUN when not installed); `pre-commit run --all-files` (includes gitleaks); no private domain in any file.
+- L0: `git diff --check`; `prettier --check <files>`; `markdownlint <files>` (NOT RUN when not installed); `pre-commit run --all-files` (includes gitleaks); no private domain in any file.
 - L1: Lint (markdownlint, prettier), Agent instructions.
 - L2, L3: none.
 - Profile: STANDARD.

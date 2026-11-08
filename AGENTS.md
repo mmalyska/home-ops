@@ -158,7 +158,7 @@ Rules:
 
 ## Process
 
-Default process: STANDARD with SOLO topology. <!-- workflow-ref --> The workflow (lifecycle, profiles, topologies, plan and handoff resources) is owned by `mmalyska/claude-plugins`, tag `ai-workflow-v0.1.0-preview.1`; this repository does not restate it. See [`.agents/README.md`](.agents/README.md) for the pin and the bump procedure.
+Default process: STANDARD with SOLO topology. <!-- workflow-ref --> The workflow (lifecycle, profiles, topologies, plan and handoff resources) is owned by `mmalyska/claude-plugins`; this repository does not restate it. `mmalyska/dotfiles` (chezmoi) decides which revision is installed, see [`.agents/README.md`](.agents/README.md).
 
 A process level never lowers safety, permission, worktree or validation requirements, and no level authorizes another actor.
 

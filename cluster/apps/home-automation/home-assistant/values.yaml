@@ -64,7 +64,7 @@ app-template:
         main:
           image:
             repository: ghcr.io/home-assistant/home-assistant
-            tag: 2026.10.4@sha256:23f4dfbb69ce76315dbc4de7915504f1c2dcecd7ca2648113a493a385972e133
+            tag: 2026.11.0@sha256:c6c1ca9931036bf3a2c4cc088d8db25dfea3b33935a5ecc83c40349462e2f69e
           envFrom:
             - secretRef:
                 name: home-assistant-secret
@@ -86,7 +86,7 @@ app-template:
         codeserver:
           image:
             repository: ghcr.io/coder/code-server
-            tag: 4.144.0@sha256:b9e8056bb74bd0c4f90284c7559eddeccd38400cfedc28e64c9d3ca50fef1f83
+            tag: 4.145.2@sha256:09565f9e07f5624554e295e8bab0e2fec4a7c533eb3cff459ed6596a4d3d7c1c
           workingDir: "/config"
           args:
             - --auth

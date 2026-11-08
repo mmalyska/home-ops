@@ -11,8 +11,8 @@ MD013:
   code_block_line_length: 240
   # Include code blocks
   code_blocks: true
-  # Include tables
-  tables: true
+  # Exclude tables: prettier pads every row to the widest cell, so one long cell would flag the whole table
+  tables: false
   # Include headings
   headings: true
   # Strict length checking
