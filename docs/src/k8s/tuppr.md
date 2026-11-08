@@ -49,12 +49,18 @@ from tuppr's source, not observed here.
   start up to about 1h after the window closes (the gate wait). A node whose upgrade already started always finishes.
   If the window closes between nodes the run parks as `MaintenanceWindow` and is expected to resume in the next window
   (to be confirmed on the first run). Mixed versions for up to a week are expected then (nv1 is last).
-- **Silences:** tuppr holds an Alertmanager silence for
+- **Silences:** two layers cover
   `CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration`
-  (`maxDuration: 2h`, renewed as a short lease). It is created when the upgrade Job starts, after the node is drained, so
-  the first alerts of each node (mon and OSD down from the drain) can still fire before it exists; see "The second Talos
-  upgrade". `KubeClientCertificateExpiration` is in the list because short-lived client certificates used during an
-  upgrade trip it (not a real expiry).
+  (the list is one Helm variable in `templates/talosupgrade.yaml`). `KubeClientCertificateExpiration` is in it because
+  short-lived client certificates used during an upgrade trip it (not a real expiry).
+  - **Pre and post hook Jobs (the main one):** `spec.hooks.pre` runs once per run, before any node is touched, and creates
+    one Alertmanager silence (creator `tuppr-hook`, 3 hours hard stop); `spec.hooks.post` expires it when the run ends. The
+    Jobs are best effort (the scripts always exit 0, so a missing Alertmanager never blocks the upgrade) and use the
+    `alpine/k8s` image (curl, jq) already used elsewhere in the repo.
+  - **tuppr's own silence (fallback):** `spec.silences`, `maxDuration: 2h`, a short lease re-extended while the run is
+    active. It is created only on the reconcile after the first drain: in tuppr 0.5.13 the sync runs at the start of each
+    reconcile (`syncAlertSilences` in `processUpgrade`) while the drain runs inside one, and the drain already stops the
+    mon and OSD pods. It is expired to a short tail whenever the run parks, including between nodes. That is why it alone let the first alerts of each node through on 2026-11-06.
 
 ## Health gate
 
@@ -294,8 +300,9 @@ the Renovate PR (#5948) plus a one-off Friday window (#6143, moved to 15:15 Wars
   `CephOSDDownHigh`, `CephMonQuorumAtRisk` or `KubeClientCertificateExpiration` (added afterwards), and
   `CephOSDDownHigh` and `CephMonQuorumAtRisk` fire on every node reboot with 3 mons and 3 OSDs.
   `KubeClientCertificateExpiration` also fired on the apiservers (about 1 request a minute with a client certificate that
-  had 30 minutes or less left); it appeared only during this and the 2026-10-21 upgrade and cleared afterwards. Follow-up
-  in `.plans/TODO.md`.
+  had 30 minutes or less left); it appeared only during this and the 2026-10-21 upgrade and cleared afterwards. The pre
+  and post hook silence (see "How a run goes") was added afterwards for the next run; it is untested in a real run.
+  Follow-up in `.plans/TODO.md`.
 
 ## nv1 and kexec
 

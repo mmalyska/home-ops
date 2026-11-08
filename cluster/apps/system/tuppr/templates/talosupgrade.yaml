@@ -1,3 +1,5 @@
+{{- /* Alerts that fire for expected reasons while a node drains and reboots (one of 3 mons and 3 OSDs is down, short-lived client certificates). Used by the tuppr silence and by the pre/post hooks below. */ -}}
+{{- $silenced := "CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration" -}}
 apiVersion: tuppr.home-operations.com/v1alpha1
 kind: TalosUpgrade
 metadata:
@@ -17,12 +19,53 @@ spec:
       - start: "0 7 * * 0"
         duration: 4h
         timezone: Europe/Warsaw
+  # tuppr's own silence is a short lease created only after the first drain (the drain blocks the reconcile and already
+  # stops the mon and OSD pods) and dropped between nodes, so it cannot cover the first alerts of a node. The pre hook
+  # below creates one silence before any node is touched and the post hook expires it; this one stays as a fallback.
   silences:
     - matchers:
         - name: alertname
-          value: ^(CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration)$
+          value: ^({{ $silenced }})$
           matchType: "=~"
       maxDuration: 2h
+  hooks:
+    pre:
+      - name: alertmanager-silence
+        image: docker.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
+        command: ["/bin/bash", "-c"]
+        env:
+          - name: ALERTMANAGER
+            value: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093
+          - name: ALERTS_RE
+            value: ^({{ $silenced }})$
+        # Best effort: a failure to create the silence must not stop the upgrade, so the script always exits 0.
+        args:
+          - |
+            set -u
+            starts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            ends=$(date -u -d "@$(( $(date +%s) + 10800 ))" +%Y-%m-%dT%H:%M:%SZ)
+            body=$(jq -n --arg re "$ALERTS_RE" --arg s "$starts" --arg e "$ends" '{matchers: [{name: "alertname", value: $re, isRegex: true, isEqual: true}], startsAt: $s, endsAt: $e, createdBy: "tuppr-hook", comment: "tuppr pre hook: Talos upgrade in progress, expired by the post hook (3h hard stop)"}')
+            if curl -fsS -m 20 -X POST -H 'Content-Type: application/json' -d "$body" "$ALERTMANAGER/api/v2/silences"; then
+              echo " silence created until $ends"
+            else
+              echo "WARNING: silence not created, alerts stay live"
+            fi
+            exit 0
+    post:
+      - name: alertmanager-unsilence
+        image: docker.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
+        command: ["/bin/bash", "-c"]
+        env:
+          - name: ALERTMANAGER
+            value: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093
+        args:
+          - |
+            set -u
+            ids=$(curl -fsS -m 20 "$ALERTMANAGER/api/v2/silences" | jq -r '.[] | select(.createdBy == "tuppr-hook" and .status.state == "active") | .id') || { echo "WARNING: could not list silences"; exit 0; }
+            for id in $ids; do
+              curl -fsS -m 20 -X DELETE "$ALERTMANAGER/api/v2/silence/$id" && echo "expired silence $id" || echo "WARNING: could not expire $id"
+            done
+            exit 0
   healthChecks:
     - apiVersion: v1
       kind: Node
