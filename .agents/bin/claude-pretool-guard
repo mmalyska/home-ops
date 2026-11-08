@@ -45,7 +45,12 @@ decide() { # reason -> deny, exit 0
 }
 
 # json_str <key>: JV gets the first string value of "key". 0 found, 1 absent, 2 malformed or unsupported.
+# Multi-line values arrive with \n and friends, so those are decoded and then scanned like any other text.
+# \uXXXX stays unsupported: it could spell a bypass name the string match would miss.
 JV=''
+NL='
+'
+TAB=$(printf '\t') CR=$(printf '\r') BS=$(printf '\b') FF=$(printf '\f')
 # shellcheck disable=SC1003  # the quoted backslashes below are intentional JSON escapes
 json_str() {
   k="\"$1\""
@@ -63,6 +68,11 @@ json_str() {
       '\\'*) out=$out'\'; rest=${rest#??} ;;
       '\"'*) out=$out'"'; rest=${rest#??} ;;
       '\/'*) out=$out/; rest=${rest#??} ;;
+      '\n'*) out=$out$NL; rest=${rest#??} ;;
+      '\t'*) out=$out$TAB; rest=${rest#??} ;;
+      '\r'*) out=$out$CR; rest=${rest#??} ;;
+      '\b'*) out=$out$BS; rest=${rest#??} ;;
+      '\f'*) out=$out$FF; rest=${rest#??} ;;
       '\'*) return 2 ;;
       *) chunk=${rest%%[\"\\]*}; out=$out$chunk; rest=${rest#"$chunk"} ;;
     esac
@@ -118,7 +128,7 @@ CWD=''; json_str cwd && CWD=$JV
 case $TOOL in
   Bash)
     json_str command; rc=$?
-    [ "$rc" = 0 ] || decide 'worktree guard: could not read the Bash command from the hook input, so it is blocked (fail closed).'
+    [ "$rc" = 0 ] || decide 'worktree guard: could not decode the Bash command from the hook input (malformed JSON or a \uXXXX escape), so it is blocked (fail closed). Rewrite the command without control characters.'
     case $JV in
       *HOME_OPS_BREAK_GLASS*|*CLAUDE_ALLOW_MAIN_EDITS*|*--no-verify*|*core.hooksPath*|*SKIP=*)
         decide 'worktree guard: this command sets or uses a bypass (HOME_OPS_BREAK_GLASS, CLAUDE_ALLOW_MAIN_EDITS, --no-verify, core.hooksPath or SKIP=). Break-glass is for a person, set before the session starts; an agent must not use it or skip hooks. Create a worktree instead: git worktree add .worktrees/<type>/<slug> -b <type>/<slug> origin/main' ;;

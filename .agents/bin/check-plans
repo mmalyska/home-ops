@@ -127,6 +127,7 @@ fi
 
 # --- active plan folders --------------------------------------------------------------------
 declare -A SLUG_DIR=()   # slug -> 1 for active folders
+declare -A SPEC_ONLY=()  # slug -> 1 for folders holding only a spec
 if [ -d "$PLANS" ]; then
   for d in "$PLANS"/*/; do
     [ -d "$d" ] || continue
@@ -134,12 +135,15 @@ if [ -d "$PLANS" ]; then
     [ "$slug" = superpowers ] && continue
     SLUG_DIR[$slug]=1
     [[ "$slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || err "$PLANS/$slug" "folder name is not a lowercase kebab-case slug"
-    [ -f "$PLANS/$slug/plan.md" ] || err "$PLANS/$slug" "plan.md is missing"
-    [ -f "$PLANS/$slug/tasks.md" ] || err "$PLANS/$slug" "tasks.md is missing"
     if [ -f "$PLANS/$slug/plan.md" ]; then
+      [ -f "$PLANS/$slug/tasks.md" ] || err "$PLANS/$slug" "tasks.md is missing"
       check_front_matter "$PLANS/$slug/plan.md" "$PLANS/$slug/plan.md"
       st="$(fm_get "$PLANS/$slug/plan.md" status)"
       if in_list "$st" "$TERMINAL"; then warn "$PLANS/$slug/plan.md" "status '$st': archive the plan (see .plans/README.md)"; fi
+    elif [ -f "$PLANS/$slug/spec.md" ]; then
+      SPEC_ONLY[$slug]=1   # a spec awaiting its plan needs no front matter and no index row
+    else
+      err "$PLANS/$slug" "plan.md is missing (a folder may hold only spec.md until its plan is written)"
     fi
   done
 fi
@@ -201,7 +205,7 @@ else
   err "$PLANS/list.md" "index is missing"
 fi
 for slug in "${!SLUG_DIR[@]}"; do
-  [ -n "${ROW_SLUG[$slug]:-}" ] || err "$PLANS/$slug" "active plan folder has no row in .plans/list.md"
+  [ -n "${ROW_SLUG[$slug]:-}" ] || [ -n "${SPEC_ONLY[$slug]:-}" ] || err "$PLANS/$slug" "active plan folder has no row in .plans/list.md"
 done
 if [ -d "$PLANS/superpowers/plans" ]; then
   for f in "$PLANS"/superpowers/plans/*.md; do
@@ -244,7 +248,7 @@ if [ -d "$ARCH" ]; then
     if [ -d "$p" ]; then
       [ "$b" = superpowers ] && continue
       [ -z "${SLUG_DIR[$b]:-}" ] || err "$PLANS/$b" "slug is also an archived plan ($ARCH/$b)"
-      if [ -z "${ARCH_TARGET[$b/plan.md]:-}" ] && ! legacy_allowed "$p"; then err "$p" "archived plan folder has no row in $ARCH/list.md"; fi
+      if [ -z "${ARCH_TARGET[$b/plan.md]:-}" ] && [ -z "${ARCH_TARGET[$b/spec.md]:-}" ] && ! legacy_allowed "$p"; then err "$p" "archived plan folder has no row in $ARCH/list.md"; fi
     else
       case "$b" in README.md|list.md) ;; *) legacy_allowed "$p" || err "$p" "plan file in the old location; new plans go to .plans/<slug>/" ;; esac
     fi
