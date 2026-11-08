@@ -2,7 +2,7 @@ embeddings:
   image:
     repository: ghcr.io/ggml-org/llama.cpp
     tag: "server@sha256:ca40726778c25a7fadce42c09bada8484eab22e28bc283bdbf212e87b1555390"
-  fetchImage: alpine:3@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a
+  fetchImage: alpine:3@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
   model:
     file: nomic-embed-text-v1.5.f16.gguf
     url: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf
