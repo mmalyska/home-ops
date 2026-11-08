@@ -6,7 +6,7 @@ topology: SOLO
 base_sha: 26f1c0d99675c02b6b3d466b7420ef630d019ec3
 branch: feat/hermes-orchestration-plan
 worktree: .worktrees/feat/hermes-orchestration-plan
-pr: not-opened
+pr: "#6176"
 started: 2026-11-06
 updated: 2026-11-08
 ---
