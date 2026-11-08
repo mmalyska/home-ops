@@ -134,12 +134,20 @@ if [ -d "$PLANS" ]; then
     [ "$slug" = superpowers ] && continue
     SLUG_DIR[$slug]=1
     [[ "$slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || err "$PLANS/$slug" "folder name is not a lowercase kebab-case slug"
-    [ -f "$PLANS/$slug/plan.md" ] || err "$PLANS/$slug" "plan.md is missing"
-    [ -f "$PLANS/$slug/tasks.md" ] || err "$PLANS/$slug" "tasks.md is missing"
+    # A folder holds a plan, or only a spec until its plan is written; the front matter sits in whichever leads.
+    lead=""
     if [ -f "$PLANS/$slug/plan.md" ]; then
-      check_front_matter "$PLANS/$slug/plan.md" "$PLANS/$slug/plan.md"
-      st="$(fm_get "$PLANS/$slug/plan.md" status)"
-      if in_list "$st" "$TERMINAL"; then warn "$PLANS/$slug/plan.md" "status '$st': archive the plan (see .plans/README.md)"; fi
+      lead="plan.md"
+      [ -f "$PLANS/$slug/tasks.md" ] || err "$PLANS/$slug" "tasks.md is missing"
+    elif [ -f "$PLANS/$slug/spec.md" ]; then
+      lead="spec.md"
+    else
+      err "$PLANS/$slug" "plan.md is missing (a folder may hold only spec.md until its plan is written)"
+    fi
+    if [ -n "$lead" ]; then
+      check_front_matter "$PLANS/$slug/$lead" "$PLANS/$slug/$lead"
+      st="$(fm_get "$PLANS/$slug/$lead" status)"
+      if in_list "$st" "$TERMINAL"; then warn "$PLANS/$slug/$lead" "status '$st': archive the plan (see .plans/README.md)"; fi
     fi
   done
 fi
@@ -179,14 +187,15 @@ if [ -f "$PLANS/list.md" ]; then
       warn "$PLANS/list.md" "row '$label' is a legacy .plans/superpowers entry"
       continue
     fi
-    if ! [[ "$target" =~ ^([a-z0-9-]+)/plan\.md$ ]]; then err "$PLANS/list.md" "row '$label': link must be <slug>/plan.md, got $target"; continue; fi
-    slug="${BASH_REMATCH[1]}"
+    if ! [[ "$target" =~ ^([a-z0-9-]+)/(plan|spec)\.md$ ]]; then err "$PLANS/list.md" "row '$label': link must be <slug>/plan.md or, before the plan exists, <slug>/spec.md, got $target"; continue; fi
+    slug="${BASH_REMATCH[1]}"; doc="${BASH_REMATCH[2]}.md"
     [ "$label" = "$slug" ] || err "$PLANS/list.md" "row label '$label' differs from the slug '$slug'"
     ROW_SLUG[$slug]=1
     [ -n "${SLUG_DIR[$slug]:-}" ] || { err "$PLANS/list.md" "row '$slug' has no folder .plans/$slug/"; continue; }
-    pm="$PLANS/$slug/plan.md"; [ -f "$pm" ] || continue
+    if [ "$doc" = spec.md ] && [ -f "$PLANS/$slug/plan.md" ]; then err "$PLANS/list.md" "row '$slug': link must be $slug/plan.md once the plan exists"; continue; fi
+    pm="$PLANS/$slug/$doc"; [ -f "$pm" ] || continue
     chk() { # column-name cell expected
-      [ "$2" = "$3" ] || err "$PLANS/list.md" "row '$slug': $1 is '$2' but plan.md says '$3'"
+      [ "$2" = "$3" ] || err "$PLANS/list.md" "row '$slug': $1 is '$2' but $doc says '$3'"
     }
     chk Status "${c[1]}" "$(fm_get "$pm" status)"
     chk Owner "${c[2]}" "$(fm_get "$pm" owner)"
@@ -244,7 +253,7 @@ if [ -d "$ARCH" ]; then
     if [ -d "$p" ]; then
       [ "$b" = superpowers ] && continue
       [ -z "${SLUG_DIR[$b]:-}" ] || err "$PLANS/$b" "slug is also an archived plan ($ARCH/$b)"
-      if [ -z "${ARCH_TARGET[$b/plan.md]:-}" ] && ! legacy_allowed "$p"; then err "$p" "archived plan folder has no row in $ARCH/list.md"; fi
+      if [ -z "${ARCH_TARGET[$b/plan.md]:-}" ] && [ -z "${ARCH_TARGET[$b/spec.md]:-}" ] && ! legacy_allowed "$p"; then err "$p" "archived plan folder has no row in $ARCH/list.md"; fi
     else
       case "$b" in README.md|list.md) ;; *) legacy_allowed "$p" || err "$p" "plan file in the old location; new plans go to .plans/<slug>/" ;; esac
     fi

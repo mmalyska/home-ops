@@ -37,6 +37,10 @@ task terraform:apply:cloudflare          # Local/manual only -- see note below
 # Lint / Format (advisory: always exits 0, read the output; CI is the gate)
 task lint:all
 task format:all
+
+# One file or a few, with the repo configs in .github/linters (lint:files fails on a finding)
+task lint:files -- path/to/a.md path/to/b.yaml
+task lint:files:fix -- path/to/a.md
 ```
 
 Bootstrap sequence and design decisions: `@docs/src/k8s/bootstrap.md`.
