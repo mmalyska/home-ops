@@ -193,8 +193,7 @@ Small work goes straight from the owner's request to an implementation PR, which
 at phase 2, from the owner's request. Big work goes through all three phases:
 
 1. **Spec.** The owner leads. Hermes assists: it asks questions, takes notes, records decisions and points out gaps. It
-   does not decide. It writes `.plans/<slug>/spec.md` in a PR, which the owner reviews and merges. In home-ops the PR
-   also carries placeholder `plan.md` and `tasks.md`, because `check-plans` requires them.
+   does not decide. It writes `.plans/<slug>/spec.md` in a PR, which the owner reviews and merges.
 2. **Plan.** When the owner tells Hermes the spec is approved, Hermes builds `plan.md` and `tasks.md` from the merged
    spec in a PR. The owner verifies and merges it.
 3. **Execution.** When the owner tells Hermes the plan is approved, Hermes turns the tasks into kanban cards and drives
@@ -217,7 +216,7 @@ on the same subscription, falling back to `main`. If the provider does not serve
 ### Discord
 
 One bot, several channels. `#hermes-renovate` holds the daily summary and one thread per PR that needs a decision. Spec
-work has one thread per spec in the existing free-response channel. Only the owner's account can give decisions.
+work has one thread per spec in the existing `#hermes` chat channel. Only the owner's account can give decisions.
 
 ### Protection in every repository
 
@@ -265,17 +264,18 @@ gains that scope. No design in this work should prevent that.
 - **Labels:** three `triage/*` labels.
 - **Flow:** spec and plan approved separately by the owner; the spec document is optional for smaller work.
 - **Phase start:** the owner's message, not automatic detection.
+- **Size rule:** the five triggers, as a starting point.
+- **Denylist additions:** Hermes's own stack, `github-workflows`, `renovate-config`.
+- **Re-check:** the orchestrator re-checks gates G1 to G5. Later, check whether this is too much overhead per PR.
+- **Rebase:** a rebase with an unchanged diff keeps its verdict.
+- **Worker memory:** no long-term memory for `worker`.
+- **Credentials:** the Hermes pod drops its own GitHub token and the old `sandbox` key. Each profile gets its own GitHub
+  account token, SSH signing key and SSH key for its workspace.
 
 ### Proposed, confirm in review
 
-- The size rule and its five triggers.
 - Numbers: 3 report-only runs, 5 merges per run, 20-minute health wait, 2-hour verdict wait, 2 parallel worker tasks.
-- Additions to the denylist: Hermes's own stack, `github-workflows`, `renovate-config`.
-- The orchestrator re-checking gates G1 to G5 instead of trusting the worker.
-- A rebase with an unchanged diff keeps its verdict.
 - `rudi-the-brain` opens implementation PRs for now.
-- No long-term memory for `worker`.
-- Removing the Hermes pod's own GitHub token and old `sandbox` key.
 
 ## Alternatives considered
 

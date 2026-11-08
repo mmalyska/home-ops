@@ -16,10 +16,11 @@ Collected 2026-11-06 by read-only checks (repository, `kubectl get/logs`, `gh` r
 - Renovate bot: `app/bendo-bot`. Open bot PRs: home-ops 11, containers 3 (one with failing checks), homelab-portal 12 (most are majors, the oldest from 2026-06-30).
 - Accounts: `rudi-the-brain` (created 2026-11-06 09:44 UTC), `agent-rosie` (created 2026-11-06 09:20 UTC). PR #6133 (rudi as code owner) was closed by the owner.
 - `homeinfra` was archived by the owner on 2026-11-06. No non-archived repository is private (`gh repo list`, 2026-11-06).
-- The owner's devcontainer token cannot read rulesets or branch protection (HTTP 403). Build reads them with the main token.
+- The owner's devcontainer token cannot read branch protection details (HTTP 403), but `GET repos/<repo>/rulesets` and `GET repos/<repo>/rules/branches/main` both answer it (0 rules on 2026-11-08). `main` has classic branch protection.
 - Fine-grained PATs cannot reach repositories where the account is only a collaborator, and pushing or merging changes to workflow files needs the `workflow` scope. Both come from general GitHub knowledge, not from a check run here (spec V8).
 - `.github/labels.yaml` is synced with `delete-other-labels: true`, so a label missing from that file is deleted on the next sync. `meta-enforce-labels` bans only `do-not-merge`.
-- `.agents/bin/check-plans` requires both `plan.md` and `tasks.md` in every plan folder.
+- `.agents/bin/check-plans` accepts a folder holding only `spec.md` (#6175). The first plan draft for this work is in git history at commit `e403e963`; it predates the spec, and the plan PR reconciles it with the spec.
+- Argo CD polls the repository: `timeout.reconciliation` is `1h` in `cluster/apps/core/argocd/patches/argocd-cm.yaml` and live (2026-11-08), with no webhook configured in that app.
 
 ## Hermes upstream
 
