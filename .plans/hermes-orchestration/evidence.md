@@ -51,6 +51,11 @@ Collected 2026-11-06 by read-only checks (repository, `kubectl get/logs`, `gh` r
 - A commit by another author marks the PR as modified: "Renovate won't perform any further commits".
 - Closing a PR with a unique version makes Renovate ignore that version; for a major, the whole major line. A grouped PR without a unique version is not safely ignorable.
 
+## Added 2026-11-08 (models and routing)
+
+- OpenAI model table, input / output per MTok: Astra $10 / $50, 6.1 Sol $2 / $10, 6.1 Terra $1 / $5, 6 Luna $0.10 / $0.50. The Codex pages list all four. How much of a subscription's limits each uses is not published, and availability varies by plan and client (spec V7).
+- Hermes: a model per profile, per scheduled job (`hermes cron create/edit --model`, a pin the agent cannot change), `/model` in Discord, and `delegation.backend: model_map` where the orchestrator picks by description, with children running as the parent profile. Kanban per-task overrides are documented only for CLI and dashboard use. Automatic routing by complexity is not documented.
+
 ## To be filled in during Build
 
 Live checks V1 to V9, upgrade notes, each repository's merge requirements, and the results of the report-only runs.

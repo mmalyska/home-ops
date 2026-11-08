@@ -46,7 +46,8 @@ Each is checked on the live system before the work ships.
 - Two Hermes profiles, each with its own Coder workspace, GitHub account and credentials.
 - Chat on Discord.
 - Daily Renovate triage with gated auto-merge across all non-archived `mmalyska` repositories.
-- PR state labels in every repository.
+- PR state labels and a workflow that maintains them in every repository.
+- Argo CD reconciling every 30 minutes, down from 1 hour.
 - Spec, plan and execution flow with owner approval between phases.
 - CODEOWNERS and a ruleset in every repository; Renovate's own automerge turned off.
 - A written, scoped permission for Hermes to merge in home-ops.
@@ -91,15 +92,16 @@ they differ the stricter one wins: a repository that reserves merging for people
 
 Every repository has these labels. They show the state at a glance and tell Hermes what to skip.
 
-| Label           | Meaning                          | Next actor | Set by                                     |
-| --------------- | -------------------------------- | ---------- | ------------------------------------------ |
-| `triage/needed` | Not checked, or diff has changed | Worker     | Renovate at creation; Hermes on a stale PR |
-| `triage/clean`  | Passed every gate                | Hermes     | Worker                                     |
-| `triage/owner`  | Waiting for the owner            | Owner      | Worker; Hermes on spec, plan and ready PRs |
+| Label           | Meaning                          | Next actor | Set by                                           |
+| --------------- | -------------------------------- | ---------- | ------------------------------------------------ |
+| `triage/needed` | Not checked, or diff has changed | Worker     | Renovate at creation; label workflow on any push |
+| `triage/clean`  | Passed every gate                | Hermes     | Worker                                           |
+| `triage/owner`  | Waiting for the owner            | Owner      | Worker; Hermes on spec, plan and ready PRs       |
 
 - A bot PR with no `triage/*` label is treated as `triage/needed`. This also adopts the PRs open at rollout.
-- The worker's verdict comment records a hash of the PR's diff. If the diff changes, the verdict is void and the label
-  returns to `triage/needed`. A rebase that leaves the diff unchanged keeps the verdict.
+- A reusable workflow in `github-workflows` sets `triage/needed` on any push to a PR, so the label is right straight away.
+- The worker's verdict comment records a hash of the PR's diff. If the diff has changed, the verdict is void. If a push
+  left the diff unchanged, as a rebase does, Hermes restores the previous label without a worker task.
 - A label never authorises a merge. The orchestrator re-checks the gates itself first.
 
 ### Daily Renovate run
@@ -107,7 +109,8 @@ Every repository has these labels. They show the state at a glance and tell Herm
 Starts at 06:00 Europe/Warsaw, every day.
 
 1. List open bot PRs (`app/bendo-bot`) in every non-archived `mmalyska` repository.
-2. Reset stale labels. Assign the worker one task for each `triage/needed` PR. `triage/owner` PRs get no new work.
+2. Restore labels where the diff hash still matches. Assign the worker one task for each remaining `triage/needed` PR.
+   `triage/owner` PRs get no new work.
 3. The worker returns a verdict with evidence: clean, needs the owner, or needs a fix. A check still open after 2 hours
    counts as needing the owner.
 4. While merging is on, for each `triage/clean` PR, the orchestrator re-checks gates G1 to G5, approves as
@@ -139,8 +142,9 @@ give evidence for each.
 - **G3 CI:** every check on the current head has finished as success, skipped or neutral; nothing pending; GitHub
   reports the PR mergeable.
 - **G4 Same diff:** the diff at merge time has the hash the worker checked.
-- **G5 Protected repository:** the repository has the required ruleset. Without one (for example a new repository), it
-  is treated as denylisted, and the summary says so.
+- **G5 Protected repository:** the repository has the required ruleset, read from `rules/branches/<default>`, which needs
+  no admin access. A repository that missed the new-repository requirements is treated as denylisted, and the summary
+  says so.
 - **G6 Diff shape:** only version, tag, digest and chart version lines, and their lock or checksum lines, change.
 - **G7 Release notes:** the worker read the notes for every version in between and cites them. Not clean: a breaking
   change, a removed or renamed option this repository uses (checked by searching it), a required migration or manual
@@ -159,11 +163,12 @@ and modules, and Hermes's own stack (`hermes-agent`, `litellm`, `litellm-operato
 In other repositories: all of `github-workflows` and `renovate-config`, because they change every other repository.
 The worker still checks denylisted PRs, so the owner's thread has the full analysis.
 
-**Run limits (home-ops).** At most 5 auto-merges per run, one at a time. After each, the worker waits up to 20 minutes
-for the owning ArgoCD Application to be Synced and Healthy. On failure: no more merges in that run, a revert PR is
-opened as `agent-rosie`, and the owner is mentioned with the evidence. Hermes does not merge the revert. In other
-repositories the check is the default-branch CI run after the merge, with the same response. The same check follows a
-merge done on the owner's `merge` reply.
+**Run limits.** At most 5 auto-merges per repository per run. In home-ops, after the merges, the worker waits for the next
+Argo CD reconcile and checks that each owning Application is Synced and Healthy, for up to 45 minutes. Argo CD polls, and
+Hermes cannot trigger a sync. On failure: a revert PR for that merge is opened as `agent-rosie`, the owner is mentioned
+with the evidence, and Hermes does not auto-merge in that repository until the owner has replied. Hermes does not merge
+the revert. In other repositories the check is the default-branch CI run after the merge, with the same response. The
+same check follows a merge done on the owner's `merge` reply.
 
 **Rollout.** Merging starts switched off in the policy file. The owner turns it on with a one-line PR after the three
 report-only runs in the success criteria.
@@ -211,7 +216,9 @@ from the spec or plan goes to the orchestrator, and then to the spec thread if t
 ### Models
 
 `default` uses `main` (`chatgpt/gpt-6.1-sol`). `worker` uses a new gateway alias `main-cheap` (`chatgpt/gpt-6.1-terra`)
-on the same subscription, falling back to `main`. If the provider does not serve Terra, the alias points at Sol.
+on the same subscription, falling back to `main`. The daily triage job is pinned to a new alias `main-lite`
+(`chatgpt/gpt-6-luna`), because it is mostly listing and bookkeeping: the merge rules are deterministic, and Terra still
+judges the changelogs. If the provider does not serve Terra or Luna, that alias points at the next model up.
 
 ### Discord
 
@@ -226,6 +233,8 @@ work has one thread per spec in the existing `#hermes` chat channel. Only the ow
 - Renovate's own automerge is off everywhere, including the shared presets. The Renovate app is not a bypass actor.
 - `rudi-the-brain` opens implementation PRs while the owner is the only approver, because an author cannot approve
   their own PR. That makes "the owner merges" a GitHub rule, not only a Hermes rule.
+- New-repository requirements, written down in one place: CODEOWNERS, the ruleset, the `triage/*` labels and the label
+  workflow.
 
 ### Permission to merge
 
@@ -241,13 +250,17 @@ of merge. Changing it is a PR that the owner merges. Hermes reads the live copy 
 - Hermes's commits and PRs carry no AI attribution, and it never prints or logs secret values.
 - Old profiles stay on disk, removed from dispatch, overlays and docs. Their memory hosts are disabled.
 - The `worker` profile has no long-term memory: its tasks are self-contained. `default` keeps it.
-- At most 2 worker tasks run at once, each in its own directory.
+- At most 2 worker tasks run at once, each in its own worktree of one long-lived clone per repository.
 
 ## Future direction (recorded, not built)
 
 The owner intends to become only the quality gate, giving go or no-go, with Hermes merging PRs and deploying. To allow
-it later: `agent-rosie` opens the implementation PRs so that `rudi-the-brain` can approve them, and the merge policy
-gains that scope. No design in this work should prevent that.
+it later: `agent-rosie` opens every PR and `rudi-the-brain` only approves, the owner's go or no-go becomes a required
+check (a `go` label enforced by a workflow) instead of a GitHub approval, and the merge policy gains that scope. No design
+in this work should prevent that.
+
+Once the report-only runs show real model usage, a third profile `worker-lite` on Luna would let the orchestrator choose
+a model per task, by assigning the task to that profile.
 
 ## Decisions
 
@@ -256,7 +269,7 @@ gains that scope. No design in this work should prevent that.
 - **Merge scope:** any update type, if clean; denylist always applies.
 - **Repositories:** all non-archived. `homeinfra` was archived on 2026-11-06, so none is private now.
 - **Workspaces:** two, separate. Both with read-only Kubernetes, neither with Talos.
-- **Models:** `main` and `main-cheap`.
+- **Models:** `main` and `main-cheap`, with the daily triage job pinned to `main-lite`.
 - **Failed merge:** notify and open a revert PR, do not merge it.
 - **Old profiles:** keep, disabled.
 - **Discord layout, 06:00 daily start, identities, HTTPS with token, SSH signing.**
@@ -271,33 +284,38 @@ gains that scope. No design in this work should prevent that.
 - **Worker memory:** no long-term memory for `worker`.
 - **Credentials:** the Hermes pod drops its own GitHub token and the old `sandbox` key. Each profile gets its own GitHub
   account token, SSH signing key and SSH key for its workspace.
-
-### Proposed, confirm in review
-
-- Numbers: 3 report-only runs, 5 merges per run, 20-minute health wait, 2-hour verdict wait, 2 parallel worker tasks.
-- `rudi-the-brain` opens implementation PRs for now.
+- **Numbers:** 3 report-only runs, 5 merges per repository per run, 45-minute health wait, 2-hour verdict wait, 2 parallel
+  worker tasks.
+- **Argo CD:** reconcile every 30 minutes; check merges together after the next reconcile.
+- **Labels on push:** a reusable workflow sets `triage/needed`.
+- **New repositories:** a written requirement, with G5 as the check.
+- **Worker directories:** a worktree per task.
+- **Implementation PRs:** `rudi-the-brain` opens them for now.
 
 ## Alternatives considered
 
-| Topic           | Rejected option           | Why                                                                   |
-| --------------- | ------------------------- | --------------------------------------------------------------------- |
-| Workspaces      | One shared                | Both tokens in one pod, so the separation is lost                     |
-| Workspaces      | Worker only               | The orchestrator needs a checkout to write specs and plans            |
-| Git auth        | SSH authentication key    | A second secret per account; the token already works for git and `gh` |
-| Approvals       | Both bots as code owners  | Rosie could approve a Renovate PR and then merge it herself           |
-| Renovate merges | App as bypass actor       | Those updates would skip Hermes's checks and limits                   |
-| Merge scope     | Patch and digest only     | Owner's call: majors are allowed if they pass every gate              |
-| Worker model    | `cheap` (Gemini)          | Weaker judgement on changelogs, and it has a per-token cost           |
-| Worker model    | `main` (Sol)              | Works, but a lighter model suits well-defined tasks                   |
-| Failed merge    | Auto-merge the revert     | Rollback stays the owner's call                                       |
-| Old profiles    | Delete                    | Owner's call: keep them                                               |
-| Labels          | One `triaged` label       | Cannot show whose move it is                                          |
-| Phase start     | Poll for merges           | More machinery, and the owner's message is enough                     |
-| Phase start     | GitHub webhook            | Needs an inbound port                                                 |
-| Spec location   | GitHub issue, kanban only | Not reviewable as a diff, or not in git at all                        |
-| PR structure    | One PR for spec and code  | The owner approves spec and plan separately                           |
-| Discord         | DMs, one existing channel | Decisions get mixed together on a busy day                            |
-| Schedule        | 18:00, or weekdays only   | Owner's call: early, every day                                        |
+| Topic            | Rejected option           | Why                                                                   |
+| ---------------- | ------------------------- | --------------------------------------------------------------------- |
+| Workspaces       | One shared                | Both tokens in one pod, so the separation is lost                     |
+| Workspaces       | Worker only               | The orchestrator needs a checkout to write specs and plans            |
+| Git auth         | SSH authentication key    | A second secret per account; the token already works for git and `gh` |
+| Approvals        | Both bots as code owners  | Rosie could approve a Renovate PR and then merge it herself           |
+| Renovate merges  | App as bypass actor       | Those updates would skip Hermes's checks and limits                   |
+| Merge scope      | Patch and digest only     | Owner's call: majors are allowed if they pass every gate              |
+| Worker model     | `cheap` (Gemini)          | Weaker judgement on changelogs, and it has a per-token cost           |
+| Worker model     | `main` (Sol)              | Works, but a lighter model suits well-defined tasks                   |
+| Failed merge     | Auto-merge the revert     | Rollback stays the owner's call                                       |
+| Old profiles     | Delete                    | Owner's call: keep them                                               |
+| Labels           | One `triaged` label       | Cannot show whose move it is                                          |
+| Post-merge check | Wait after each merge     | Argo CD polls, so five merges in sequence would take hours            |
+| Post-merge check | GitHub webhook to Argo CD | Needs a new public path; may come later                               |
+| Worker clones    | A full clone per task     | Slower and larger than a worktree of one clone                        |
+| Phase start      | Poll for merges           | More machinery, and the owner's message is enough                     |
+| Phase start      | GitHub webhook            | Needs an inbound port                                                 |
+| Spec location    | GitHub issue, kanban only | Not reviewable as a diff, or not in git at all                        |
+| PR structure     | One PR for spec and code  | The owner approves spec and plan separately                           |
+| Discord          | DMs, one existing channel | Decisions get mixed together on a busy day                            |
+| Schedule         | 18:00, or weekdays only   | Owner's call: early, every day                                        |
 
 ## Risks
 
@@ -317,8 +335,7 @@ gains that scope. No design in this work should prevent that.
 
 ## Open questions
 
-No decisions are open beyond confirming the "Proposed" list above. These facts cannot be settled on paper and are checked
-on the live system during Build. Each has a defined outcome if the answer is no.
+No decisions are open. These facts cannot be settled on paper and are checked on the live system during Build. Each has a defined outcome if the answer is no.
 
 | #   | To verify                                                   | If no                                                        |
 | --- | ----------------------------------------------------------- | ------------------------------------------------------------ |
@@ -328,7 +345,7 @@ on the live system during Build. Each has a defined outcome if the answer is no.
 | V4  | Startup context files are read from the workspace           | Nothing changes: skills read `AGENTS.md` explicitly anyway   |
 | V5  | The scheduled job can be created from git at pod start      | Create it once by hand and document that                     |
 | V6  | The orchestrator can close a human-task card for the owner  | The owner closes it with `/kanban` in Discord                |
-| V7  | The provider serves `gpt-6.1-terra`                         | The alias points at Sol                                      |
+| V7  | The provider serves `gpt-6.1-terra` and `gpt-6-luna`        | That alias points at the next model up                       |
 | V8  | Classic tokens with `repo` and `workflow` scopes are enough | Stop and ask the owner                                       |
 | V9  | Config keys known only from doc summaries exist in v0.23    | Use the documented equivalent, or record the gap in the plan |
 
