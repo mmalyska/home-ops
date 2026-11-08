@@ -327,7 +327,7 @@ removed from the config first (`task talos:apply N=nv1`, no reboot):
 | Run                                                      | Log                                                                                          | Booted                                         |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | default, live value still 1 (the switch is one-way)      | `kexec support is disabled via sysctl`                                                       | the new UKI (`~1`); the value is 0 afterwards  |
-| default, `kexec_load_disabled=0`, kexec enabled          | `kexec is skipped as there is no free memory region for the kernel`, then a normal reboot | the new UKI (`~2`), `LoaderEntrySelected` `~2` |
+| default, `kexec_load_disabled=0`, kexec enabled          | kernel: `kexec_file(Image): Could not find any suitable kernel location!`, then Talos: `kexec is skipped as there is no free memory region for the kernel`, then a normal reboot | the new UKI (`~2`), `LoaderEntrySelected` `~2` |
 
 The first run did not try kexec (a config change cannot lower the value without a reboot), so only the second shows the
 fix on this hardware. Each run took about 2 to 3 minutes.
@@ -336,7 +336,13 @@ EFI variable writes persisted in separate tests, so the earlier theory that the 
 write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is still not known (the kernel reports no free memory region);
 the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692); see `.plans/TODO.md`.
 The sysctl is a one-way switch (the value stays 1 until the node reboots), which is why the removal needed the reboot
-above. mc1 to mc3 reboot with kexec; their next upgrade is the check that it still works there.
+above. The kernel error is the same one that failed the reboot sequence on v1.14.4 (there it was followed by
+`failed to load kernel for kexec: ... cannot assign requested address` and `reboot failed: error running phase 13 in
+reboot sequence`); v1.14.5 stops at the "skipped" line instead.
+
+mc1 to mc3 do kexec-boot, and did on the v1.14.5 upgrade of 2026-11-06 (`phase kexec (13/14)`, `sd-boot:
+LoaderEntryOneShot: kexec reboot`, `prepared kexec environment with kernel and initrd extracted from uki`, about 0.9
+seconds, no skip line). The failure is specific to the Jetson.
 
 ## When things go wrong
 
