@@ -24,17 +24,20 @@ updated: 2026-11-08
 
 ## Design decisions made here
 
-The spec left these to the plan. They are proposals until this PR is merged.
+The spec left these to the plan. The owner accepted P1, P2, P8 and P9 and the order in "Rollout and rollback" on
+2026-11-08. The others are proposals until this PR is merged.
 
-| #   | Decision                                                                                                                           | Why                                                                                                      |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| P1  | "Non-archived repositories" means the 12 source repositories. The 9 forks are excluded.                                            | Forks hold upstream code and get no bot PRs                                                              |
-| P2  | The label workflow acts only on PRs opened by `bendo-bot[bot]`.                                                                    | On a spec or plan PR it would replace `triage/owner` and hide the PR from the owner                      |
-| P3  | Hermes configuration is seeded from git by the existing init containers, extended per task.                                        | Spec requires a rebuild from git; the seeders already exist                                              |
-| P4  | Skills and SOUL files live in `cluster/apps/ai/hermes-agent/{skills,files}` and overwrite the copies on the volume at every start. | Git stays the only source                                                                                |
-| P5  | Fallback lists, written in full: `main-cheap: [main, cheap, local]`, `main-lite: [main-cheap, main, cheap, local]`.                | Each falls to the next model up, then to the existing last resorts, without relying on chained fallbacks |
-| P6  | New-repository requirements live in `docs/src/contributing/new-repository.md`.                                                     | One place, published with the other contributing docs                                                    |
-| P7  | One PR per repository carries its CODEOWNERS, label workflow caller and Renovate changes.                                          | Twelve small reviewable PRs instead of three rounds of twelve                                            |
+| #   | Decision                                                                                                                           | Why                                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | "Non-archived repositories" means the 12 source repositories. The 9 forks are excluded.                                            | Forks hold upstream code and get no bot PRs                                                                                                                            |
+| P2  | The label workflow acts only on PRs opened by `bendo-bot[bot]`.                                                                    | On a spec or plan PR it would replace `triage/owner` and hide the PR from the owner                                                                                    |
+| P3  | Hermes configuration is seeded from git by the existing init containers, extended per task.                                        | Spec requires a rebuild from git; the seeders already exist                                                                                                            |
+| P4  | Skills and SOUL files live in `cluster/apps/ai/hermes-agent/{skills,files}` and overwrite the copies on the volume at every start. | Git stays the only source                                                                                                                                              |
+| P5  | Fallback lists, written in full: `main-cheap: [main, cheap, local]`, `main-lite: [main-cheap, main, cheap, local]`.                | Each falls to the next model up, then to the existing last resorts, without relying on chained fallbacks                                                               |
+| P6  | New-repository requirements live in `docs/src/contributing/new-repository.md`.                                                     | One place, published with the other contributing docs                                                                                                                  |
+| P7  | One PR per repository carries its CODEOWNERS, label workflow caller and Renovate changes.                                          | Twelve small reviewable PRs instead of three rounds of twelve                                                                                                          |
+| P8  | T01 gates every other task.                                                                                                        | Its failures (a bad token, a missing invitation) then appear before anything is half-built                                                                             |
+| P9  | `approvals.cron_mode` stays `deny`. If a merge command is ever flagged, only that rule goes into `command_allowlist`.              | `deny` acts only on commands Hermes flags, and v0.23.0 flags neither `gh pr merge` nor `gh pr review`; `approve` would auto-approve every dangerous command in the job |
 
 ## Scope and ownership
 
@@ -57,8 +60,8 @@ The build actor is one agent working SOLO and is the integrator. The owner does 
 Task records are in [tasks.md](tasks.md). SOLO runs them one at a time.
 
 ```text
-T01 --> T07, T08, T09, T14                T02 --> T10, T14
-T03 (independent)                         T04 --> T05, T09
+T01 --> every other task (P8)
+T02 --> T10, T14                          T04 --> T05, T09
 T06 --> T07 --> T08, T10                  T09 --> T10 --> T11 --> T12 --> T14
 T08, T15 --> T16 --> T14, T17             T13 --> T14
 T14, T17 --> T18 --> T19 --> T20
@@ -135,12 +138,15 @@ cluster queries.
 | `containers` and `argocd-secret-replacer` already have a CODEOWNERS line                                       | T16 replaces it                                            |
 | The label workflow did not state its permissions                                                               | REST label endpoints and `pull-requests: write`            |
 | Decisions from other Discord users were not excluded in the skills                                             | T12 rule added                                             |
-| `cron_mode: deny` might block the merge command, which report-only runs cannot reveal                          | T19 stop condition added                                   |
+| `cron_mode: deny` might block the merge command, which report-only runs cannot reveal                          | Source read; P9, check in T11, fallback in T19             |
 | Placeholders and unclear text: ReplicationSource name, branch for evidence, garbled T07 line, build actor      | Fixed; evidence branch rule in the `tasks.md` header       |
 | T11 claimed V9, which T10 runs; `terraform validate` needs `init`; profile must exist before its overlay lands | Corrected                                                  |
 
 Also checked, no change needed: the Argo CD StatefulSet name, the LiteLLM pod label, the template's parameter names and size
 default, and that no repository other than home-ops reserves merging in its `AGENTS.md`.
+
+After that pass, on the owner's answers: P1, P2, P8 and P9 were recorded as above and every task now depends on T01. T03
+is no longer independent of it.
 
 Limits: Hermes configuration keys are unverified until V9, and T15 and T16 behaviour is checked only when they run. No task
 was executed.

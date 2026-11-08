@@ -16,6 +16,8 @@ the task's done criterion. Update a task's status and evidence in place as it is
 ## T01 — Owner prerequisites
 
 - **Who:** the owner. **Files:** none. **Depends on:** nothing.
+- **Human task, blocking everything:** no other task starts until this one is done, so a bad token or a missing invitation
+  shows up before anything is half-built.
 - **Do:**
   1. Invite `rudi-the-brain` and `agent-rosie` with write access to the 12 source repositories, and accept the invitations.
   2. Add each account's SSH signing key on GitHub as a signing key.
@@ -30,7 +32,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 
 ## T02 — Gateway aliases `main-cheap` and `main-lite`
 
-- **Branch:** `feat/hermes-gateway-aliases`. **Depends on:** nothing.
+- **Branch:** `feat/hermes-gateway-aliases`. **Depends on:** T01.
 - **Files:** `cluster/apps/ai/litellm/templates/models/main-cheap.yaml` and `main-lite.yaml` (new, modelled on `main.yaml`),
   `cluster/apps/ai/litellm/templates/teams.yaml`, `cluster/apps/ai/litellm/templates/litellmproxy.yaml`,
   `cluster/apps/ai/hermes-agent/templates/litellm-key.yaml`, `docs/src/k8s/ai-gateway.md`.
@@ -58,7 +60,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 
 ## T03 — Argo CD reconciles every 30 minutes
 
-- **Branch:** `chore/argocd-reconcile-30m`. **Depends on:** nothing.
+- **Branch:** `chore/argocd-reconcile-30m`. **Depends on:** T01.
 - **Files:** `cluster/apps/core/argocd/patches/argocd-cm.yaml`.
 - **Change:** `timeout.reconciliation` from `1h` to `30m`.
 - **Checks:** render the Argo CD app; the diff is that one value.
@@ -74,7 +76,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 
 ## T04 — Upgrade Hermes to the current `v0.x` release
 
-- **Branch:** `feat/hermes-upgrade`. **Depends on:** nothing.
+- **Branch:** `feat/hermes-upgrade`. **Depends on:** T01.
 - **Files:** `cluster/apps/ai/hermes-agent/values.yaml`, chart templates if the release notes need it,
   `.plans/hermes-orchestration/evidence.md` (section "Upgrade notes").
 - **Change:** pin `hermes.image.tag` to the latest `v0.x` tag by digest (`v0.23.0` on 2026-11-08; re-check). Read the
@@ -102,7 +104,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 
 ## T06 — Workspace template: git identity and signing
 
-- **Branch:** `feat/agent-workspace-git-identity`. **Depends on:** nothing.
+- **Branch:** `feat/agent-workspace-git-identity`. **Depends on:** T01.
 - **Files:** `cluster/apps/ai/coder/workspace-template-agent-workspace/main.tf` and its `README.md`,
   `docs/src/k8s/agent-workspaces.md`.
 - **Change:** add optional parameters `git_user_name` and `git_user_email`. At every start, write the git configuration:
@@ -199,6 +201,10 @@ the task's done criterion. Update a task's status and evidence in place as it is
 - **V5:** `hermes cron create` in an init container, without the gateway running. If not: T14 creates the job once by hand.
 - **V6:** `default` closes a human-task card. If not: the owner closes it with `/kanban` in Discord.
 - **SSH host keys:** first connection records the key in `/opt/data/.ssh/known_hosts`, and it survives a workspace restart.
+- **Merge commands under `cron_mode: deny`:** run the exact approve and merge commands the skills will use through
+  `detect_dangerous_command` in the deployed image's `tools/approval_detection.py`. It must flag none of them, as in
+  v0.23.0. If it flags one, T12's PR adds only that rule to `command_allowlist` for `default`. `cron_mode` stays `deny`:
+  `approve` would auto-approve every dangerous command in the job.
 - **Done when:** each has a recorded result, and the chosen branch is written into the tasks it affects.
 - **Rollback:** delete the test jobs and cards.
 
@@ -228,7 +234,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 
 ## T13 — Merge policy and standing permission
 
-- **Branch:** `feat/hermes-merge-policy`. **Depends on:** nothing.
+- **Branch:** `feat/hermes-merge-policy`. **Depends on:** T01.
 - **Files:** `.agents/policy/hermes-merge-policy.md` (new), `AGENTS.md`, `.agents/policy/permissions.md`.
 - **Change:** the policy file holds `merge_enabled: false`, the limits, gates G1 to G8, the denylist, the revert rule and the
   thread decisions, copied from the spec. `AGENTS.md` gains a "Standing authorization for Hermes" paragraph: the `default`
@@ -251,7 +257,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 
 ## T15 — Reusable label workflow
 
-- **Repository:** `mmalyska/github-workflows`, branch `feat/pr-triage-label`. **Depends on:** nothing.
+- **Repository:** `mmalyska/github-workflows`, branch `feat/pr-triage-label`. **Depends on:** T01.
 - **Files:** `.github/workflows/pr-triage-label.yaml` (new).
 - **Change:** a `workflow_call` workflow. For a PR opened by `bendo-bot[bot]`, removes `triage/clean` and `triage/owner` and adds
   `triage/needed`, through the REST issue-labels endpoints with the caller's `GITHUB_TOKEN`. The caller grants
@@ -317,7 +323,8 @@ the task's done criterion. Update a task's status and evidence in place as it is
 - **Files:** `.agents/policy/hermes-merge-policy.md` (`merge_enabled: true`).
 - **Do:** the owner merges this one-line PR, then watches the first run with merges.
 - **Expected:** a clean PR is approved, merged and checked. A denylisted PR gets a thread, and `merge` in it merges that PR.
-  If `approvals.cron_mode: deny` blocks the merge command, set `merge_enabled` back to `false` and stop and ask the owner.
+  If `approvals.cron_mode: deny` blocks a merge command anyway, set `merge_enabled` back to `false` and add only that rule
+  to `command_allowlist` for `default` in a PR, never `cron_mode: approve`.
 - **Done when:** that is observed. **Risk:** R1. **Rollback:** set it back to `false`.
 
 ## T20 — Final acceptance and ship
