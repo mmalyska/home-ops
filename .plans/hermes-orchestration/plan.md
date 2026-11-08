@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 owner: repository owner
 profile: DEEP
 topology: SOLO
@@ -25,7 +25,7 @@ updated: 2026-11-08
 ## Design decisions made here
 
 The spec left these to the plan. The owner accepted P1, P2, P8 and P9 and the order in "Rollout and rollback" on
-2026-11-08. The others are proposals until this PR is merged.
+2026-11-08. The others were accepted when the owner merged #6176.
 
 | #   | Decision                                                                                                                           | Why                                                                                                                                                                    |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -114,9 +114,9 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 ## Status and next action
 
-Completed: none. The plan is a draft for the owner to verify.
+Completed: none. The owner verified and merged the plan in #6176.
 
-Exact next action: the owner reviews this PR. After it merges, Build starts at T01, on the owner's instruction.
+Exact next action: the owner does T01. Build of the other tasks starts after that, on the owner's instruction.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.
