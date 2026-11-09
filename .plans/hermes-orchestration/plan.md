@@ -117,10 +117,9 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 ## Status and next action
 
-Completed: T01 (2026-11-09). The owner verified and merged the plan in #6176.
+Completed: T01, T02, T03, T04, T06, T13 and T15 (2026-11-09). The owner verified and merged the plan in #6176.
 
-Exact next action: the first wave, T02, T03, T04, T06, T13 and T15, on the owner's instruction of 2026-11-09. Pushing and
-opening their PRs is authorized by that instruction. Each merge and each `consent-gated` command still needs the owner.
+Exact next action: T05, T07 and T09, on the owner's instruction. Each merge and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.
