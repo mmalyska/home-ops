@@ -43,14 +43,21 @@ The declarative configuration lives in `values.yaml` and covers:
 
 - **`hermes.image`** — Container image (`nousresearch/hermes-agent`)
 - **`hermes.resources`** — CPU/memory requests and limits
-- **`hermes.config`** — Core config (model, approvals, timezone, Discord settings, auxiliary models; all through the gateway). Gets rendered into a ConfigMap, then merged into `/opt/data/config.yaml` by an init container on every pod start.
+- **`hermes.config`** — Settings shared by every profile (approvals mode, display, timezone, TTS, auxiliary models; all through the gateway).
+  Rendered to a ConfigMap and mounted read-only as `/etc/hermes/config.yaml` (Hermes Managed Scope, single file by `subPath`; the image keeps other files in `/etc/hermes`).
+  A managed value beats every profile for that exact key and a managed list replaces the profile's list, so a key that differs between profiles must not go here.
+- **`hermes.profileOverlays`** — Per-profile settings, deep-merged by `profile-config-seeder` on every pod start: `default` into `/opt/data/config.yaml`, any other name into `/opt/data/profiles/<name>/config.yaml`.
 - **`externalSecrets`** — Bitwarden secret references for API keys
 - **`backup`** — VolSync schedule and retention
 
-Two init containers run on every pod start:
+Init containers of note, run on every pod start:
 
-1. **`config-seeder`** — deep-merges the `hermes-agent-config` ConfigMap (rendered from `values.yaml`) into `/opt/data/config.yaml` on the PVC. Values changed in `values.yaml` are picked up on next restart; runtime state (sessions, kanban board) survives on the PVC.
-2. **`honcho-seeder`** — deep-merges `hermes-agent-honcho` ConfigMap into `/opt/data/.hermes/honcho.json`. Declares all 7 Hermes profiles as Honcho memory hosts. Runtime additions made by `hermes honcho sync` are preserved across restarts (deep-merge, not overwrite).
+1. **`profile-config-seeder`** — deep-merges each overlay in `hermes.profileOverlays` into that profile's `config.yaml` (lists are replaced).
+   A missing `/opt/data/config.yaml` is created from the `default` overlay; an overlay for a profile with no directory yet is skipped. Runtime state (sessions, kanban board) survives on the PVC.
+2. **`honcho-seeder`** — deep-merges `hermes-agent-honcho` ConfigMap into `/opt/data/honcho.json`, and seeds a copy into profile directories except `worker`, which has no long-term memory.
+   Runtime additions made by `hermes honcho sync` are preserved across restarts (deep-merge, not overwrite).
+
+Both the managed file and the overlays carry a checksum annotation on the pod template, so a change restarts the pod.
 
 ## HTTPRoute
 
@@ -66,17 +73,12 @@ On every container boot, the s6-overlay `02-reconcile-profiles` script walks `/o
 
 ### Current Profile Fleet
 
-| Profile          | Role                                                   | Gateway      | Key Tools                           |
-| ---------------- | ------------------------------------------------------ | ------------ | ----------------------------------- |
-| **default**      | Interactive user-facing profile                        | ✅ (Discord) | Full tools                          |
-| **orchestrator** | Decomposes goals into kanban tasks, routes to workers  | ❌           | `kanban`, `web`, `memory` only      |
-| **devops**       | Home infrastructure: K8s, Proxmox, NAS, network, CI/CD | ❌           | `terminal`, `file`, `web`, `github` |
-| **researcher**   | Technology research, feature planning, comparisons     | ❌           | `terminal`, `file`, `web`           |
-| **dotnet-dev**   | .NET / C# development                                  | ❌           | `terminal`, `file`, `web`, `github` |
-| **node-dev**     | Node.js / TypeScript backend and CLI                   | ❌           | `terminal`, `file`, `web`, `github` |
-| **mobile-dev**   | Cross-platform mobile (Expo / React Native)            | ❌           | `terminal`, `file`, `web`, `github` |
+| Profile     | Role                                                                                | Workspace (SSH terminal) | Model        |
+| ----------- | ----------------------------------------------------------------------------------- | ------------------------ | ------------ |
+| **default** | Interactive Discord profile and kanban orchestrator                                 | `hermes-main`            | `main`       |
+| **worker**  | Executes well-defined tasks from the orchestrator, spawned by the kanban dispatcher | `hermes-worker`          | `main-cheap` |
 
-Only the **default** profile runs a gateway — it handles Discord messaging. Worker profiles are spawned by the kanban dispatcher on demand.
+The `orchestrator`, `devops`, `researcher`, `dotnet-dev`, `node-dev` and `mobile-dev` profiles stay on the volume but are retired: no overlay, no kanban dispatch. Kanban only claims cards assigned to `worker` (`kanban.dispatch_profiles`).
 
 ### Creating a New Profile
 
@@ -92,7 +94,7 @@ kubectl exec -it deploy/hermes-agent -n hermes-agent -- bash -c \
 
 ### Profile Configuration
 
-Each profile has its own `config.yaml` at `/opt/data/profiles/<name>/config.yaml`. The main config values to adjust per profile:
+Each profile has its own `config.yaml` at `/opt/data/profiles/<name>/config.yaml` (the `default` profile's is `/opt/data/config.yaml`). The main config values to adjust per profile:
 
 ```bash
 # Set the model for a specific profile
@@ -106,47 +108,21 @@ hermes -p <name> tools disable browser cronjob
 # Edit /opt/data/profiles/<name>/profile.yaml directly
 ```
 
-### Orchestrator Toolsets — Critical Gotcha
-
-The `kanban` toolset is gated — `hermes -p orchestrator tools enable kanban` reports `"Unknown toolset 'kanban'"`. It must be enabled by editing `config.yaml` directly:
-
-```bash
-kubectl exec -it deploy/hermes-agent -n hermes-agent -- python3 -c "
-import yaml
-path = '/opt/data/profiles/orchestrator/config.yaml'
-with open(path) as f:
-    config = yaml.safe_load(f)
-toolsets = config.get('toolsets', [])
-if 'kanban' not in toolsets:
-    toolsets.append('kanban')
-    config['toolsets'] = toolsets
-with open(path, 'w') as f:
-    yaml.dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
-"
-```
-
-The orchestrator must also **not** have `terminal`, `file`, `browser`, or other implementation tools — only `kanban`, `web`, and `memory`. This prevents it from trying to implement tasks instead of routing them.
-
 ### Kanban Wiring
 
-```bash
-hermes config set kanban.orchestrator_profile orchestrator
-hermes config set kanban.default_assignee devops
-hermes kanban init
-```
-
-This auto-discovers all profiles and registers them as valid assignees.
+Kanban settings live in the `default` overlay in `values.yaml`: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker]`, `max_in_progress_per_profile: 2`.
+The `kanban` toolset is off by default per platform; the `worker` overlay enables it under `platform_toolsets.cli`, which is what dispatcher-spawned workers use.
 
 ### Filesystem Layout Inside the Container
 
 ```
 /opt/data/                        ← PVC (hermes-agent-data)
-├── config.yaml                   ← Main config (merged from ConfigMap template)
+├── config.yaml                   ← Default profile config (overlay merged at start)
 ├── SOUL.md                       ← Agent personality
 ├── .env                          ← Environment (API keys injected from Secret)
 ├── .hermes/                      ← Hermes internal state
 ├── profiles/                     ← Profile directories
-│   ├── default/
+│   ├── <name>/
 │   │   ├── config.yaml
 │   │   ├── profile.yaml          ← Description + metadata
 │   │   ├── SOUL.md
@@ -155,12 +131,7 @@ This auto-discovers all profiles and registers them as valid assignees.
 │   │   ├── sessions/
 │   │   ├── .env
 │   │   └── gateway_state.json    ← {"state": "running"} — s6 reconciler key
-│   ├── orchestrator/
-│   ├── devops/
-│   ├── researcher/
-│   ├── dotnet-dev/
-│   ├── node-dev/
-│   └── mobile-dev/
+│   └── worker/
 ├── skills/                       ← Shared skills (symlinked into profiles)
 ├── logs/
 │   ├── agent.log
@@ -172,7 +143,7 @@ This auto-discovers all profiles and registers them as valid assignees.
 
 ## Memory (Honcho)
 
-Hermes uses [Honcho](../honcho/README.md) as a persistent memory backend (`memory.provider: honcho` in `config.yaml`). Memory is scoped per-profile — each of the 7 profiles maps to a distinct Honcho host with a shared workspace.
+Hermes uses [Honcho](../honcho/README.md) as a persistent memory backend (`memory.provider: honcho` in `config.yaml`). Memory is scoped per-profile: `default` maps to the Honcho host `hermes`. `worker` has no long-term memory and no host.
 
 ### How it works
 
@@ -200,17 +171,11 @@ kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
 
 ### Profile → Honcho host mapping
 
-| Hermes profile | Honcho host key       | aiPeer         |
-| -------------- | --------------------- | -------------- |
-| default        | `hermes`              | `hermes`       |
-| orchestrator   | `hermes.orchestrator` | `orchestrator` |
-| devops         | `hermes.devops`       | `devops`       |
-| researcher     | `hermes.researcher`   | `researcher`   |
-| dotnet-dev     | `hermes.dotnet-dev`   | `dotnet-dev`   |
-| node-dev       | `hermes.node-dev`     | `node-dev`     |
-| mobile-dev     | `hermes.mobile-dev`   | `mobile-dev`   |
+| Hermes profile | Honcho host key | aiPeer   |
+| -------------- | --------------- | -------- |
+| default        | `hermes`        | `hermes` |
 
-All profiles share `peerName: mmalyska` and `workspace: hermes`.
+The `hermes.orchestrator`, `hermes.devops` and `hermes.researcher` hosts are disabled (`enabled: false`) so their old memory stays intact.
 
 ## Maintenance Tasks
 
@@ -240,10 +205,18 @@ Edit `values.yaml` → update `hermes.image.tag` → commit → ArgoCD syncs. Th
 
 ### Forcing Config Reload
 
-Restart the pod — the init container re-seeds config.yaml from the ConfigMap:
+Restart the pod. `profile-config-seeder` re-applies the overlays, and the managed file comes from the ConfigMap (a `subPath` mount does not update in place, which is why changes to it restart the pod):
 
 ```bash
 kubectl rollout restart deploy/hermes-agent -n hermes-agent
+```
+
+### Restoring onto an Empty Volume
+
+After a restore onto an empty volume, Honcho is missing until the plugin and its dependency environment are rebuilt, and a running gateway cannot see a dependency environment built after it started. Run this, then restart the gateway:
+
+```bash
+hermes plugins install honcho --yes-deps --enable
 ```
 
 ## Models (through the AI gateway)
@@ -254,7 +227,7 @@ Hermes holds no provider key. `model.base_url` is the gateway, `model.api_key` i
 - Auxiliary tasks follow "prefer `main`" (subscription, no budget cap): `web_extract`, `compression`, `approval`, `mcp` and `kanban_decomposer` use `main`. `vision` uses `local-think` since 2026-10-29 (the server runs LFM3-VL-2B, which reads images; reasoning on, because a dashboard screenshot was misread with it off). Small background tasks (`title_generation`, `triage_specifier`, `profile_describer`, `curator`, `skills_hub`) stay on `local`, which is free and keeps them off the subscription limits. Nothing in Hermes depends on `cheap` directly, so it can be retired without touching this file.
 - **Hermes refuses to build an agent for any model with less than 64,000 tokens of context** (`agent_init._enforce_minimum_context`). `local` is llama-server with `-c 65536 -np 1`, one slot of 65536 tokens, so it only stays usable as an auxiliary model while that slot stays at or above 64000 (see `.claude/memory/reference_hermes_64k_context_floor.md`). It serves one request at a time.
 - Text-to-speech is configured for Piper (voices cached under `cache/piper-voices/` in each profile home), but **`piper-tts` is not installed since the v0.23.0 upgrade**, so voice output does not work. The image no longer ships `uv` and its virtual environment is sealed; see `.plans/TODO.md`. Speech-to-text (Speaches) is not restored.
-- Profiles are not in `values.yaml`; their config lives on the PVC. `hermes.profileOverlays.<name>` (researcher, devops, orchestrator) is deep-merged into `/opt/data/profiles/<name>/config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile to another provider, overwrite `model.provider`, `model.default`, `model.base_url`, `model.api_key` and `model.context_length` explicitly, otherwise a stale value keeps traffic on the old endpoint. `hermes chat -q "ping"` (or `hermes -p <name> chat -q "ping"`) in the pod is the quickest check that an agent can start.
+- Profiles are not created by the chart; their config lives on the PVC. `hermes.profileOverlays.<name>` (`default`, `worker`) is deep-merged into that profile's `config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile to another provider, overwrite `model.provider`, `model.default`, `model.base_url`, `model.api_key` and `model.context_length` explicitly, otherwise a stale value keeps traffic on the old endpoint. `hermes chat -q "ping"` (or `hermes -p <name> chat -q "ping"`) in the pod is the quickest check that an agent can start.
 - `${LITELLM_API_KEY}` in `config.yaml` is expanded by Hermes from the pod environment. If `hermes chat -q "ping"` reports an authentication error, check that expansion first.
 - GPU rules, memory budget and recovery for `local`: see `docs/src/k8s/nv1-jetson.md`.
 
