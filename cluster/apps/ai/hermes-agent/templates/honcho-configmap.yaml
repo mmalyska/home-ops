@@ -21,19 +21,19 @@ data:
           "workspace": "hermes"
         },
         "hermes.orchestrator": {
-          "enabled": true,
+          "enabled": false,
           "aiPeer": "orchestrator",
           "peerName": "mmalyska",
           "workspace": "hermes"
         },
         "hermes.devops": {
-          "enabled": true,
+          "enabled": false,
           "aiPeer": "devops",
           "peerName": "mmalyska",
           "workspace": "hermes"
         },
         "hermes.researcher": {
-          "enabled": true,
+          "enabled": false,
           "aiPeer": "researcher",
           "peerName": "mmalyska",
           "workspace": "hermes"

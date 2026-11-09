@@ -35,47 +35,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
-        - name: config-seeder
-          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
-          command:
-            # Since v0.23.0 the system python3 has no YAML module; hermes_yaml in the venv is what Hermes itself uses.
-            - /opt/hermes/.venv/bin/python
-            - -c
-            - |
-              import hermes_yaml as yaml, json, os
-
-              template_path = '/config-template/config.yaml'
-              config_path = '/opt/data/config.yaml'
-
-              with open(template_path) as f:
-                  overrides = yaml.safe_load(f)
-
-              if os.path.exists(config_path):
-                  with open(config_path) as f:
-                      config = yaml.safe_load(f) or {}
-
-                  def deep_merge(base, src):
-                      for k, v in src.items():
-                          if isinstance(v, dict) and isinstance(base.get(k), dict):
-                              deep_merge(base[k], v)
-                          else:
-                              base[k] = v
-
-                  deep_merge(config, overrides)
-              else:
-                  config = overrides
-
-              with open(config_path, 'w') as f:
-                  yaml.safe_dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
-
-          env:
-            - name: PYTHONPATH
-              value: /opt/hermes
-          volumeMounts:
-            - name: data
-              mountPath: /opt/data
-            - name: config-template
-              mountPath: /config-template
         - name: ssh-key-seeder
           image: alpine:3@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
           command:
@@ -129,12 +88,15 @@ spec:
               with open(target_path, 'w') as f:
                   json.dump(config, f, indent=2)
 
-              # Seed honcho.json to worker profile directories
-              # Worker profiles read from $HERMES_HOME/honcho.json
-              # which resolves to /opt/data/profiles/<name>/honcho.json
+              # Seed honcho.json to profile directories, which read it from
+              # $HERMES_HOME/honcho.json (/opt/data/profiles/<name>/honcho.json).
+              # The worker profile has no long-term memory, so it gets none.
+              no_honcho_profiles = {'worker'}
               profiles_dir = os.path.join(hermes_home, 'profiles')
               if os.path.isdir(profiles_dir):
                   for profile in os.listdir(profiles_dir):
+                      if profile in no_honcho_profiles:
+                          continue
                       profile_target = os.path.join(profiles_dir, profile, 'honcho.json')
                       if not os.path.exists(profile_target):
                           with open(profile_target, 'w') as f:
@@ -160,8 +122,10 @@ spec:
               import hermes_yaml as yaml
 
               # Deep-merges per-profile overlays (ConfigMap files named <profile>.yaml) into
-              # <HERMES_HOME>/profiles/<profile>/config.yaml. Profiles are created
-              # imperatively inside the pod, so a missing profile directory is skipped.
+              # <HERMES_HOME>/profiles/<profile>/config.yaml, and the overlay named `default`
+              # into <HERMES_HOME>/config.yaml (the default profile has no directory under
+              # profiles/). Profiles are created imperatively inside the pod, so a missing
+              # profile directory is skipped; a missing default config.yaml is created.
               overlay_dir = os.environ.get('OVERLAY_DIR', '/profile-overlays')
               hermes_home = os.environ.get('HERMES_HOME', '/opt/data')
               profiles_dir = os.path.join(hermes_home, 'profiles')
@@ -179,14 +143,19 @@ spec:
                   if not fname.endswith('.yaml'):
                       continue
                   profile = fname[:-len('.yaml')]
-                  target = os.path.join(profiles_dir, profile, 'config.yaml')
-                  if not os.path.isfile(target):
+                  if profile == 'default':
+                      target = os.path.join(hermes_home, 'config.yaml')
+                  else:
+                      target = os.path.join(profiles_dir, profile, 'config.yaml')
+                  if profile != 'default' and not os.path.isfile(target):
                       print(f'skip {profile}: {target} not found', file=sys.stderr)
                       continue
                   with open(os.path.join(overlay_dir, fname)) as f:
                       overrides = yaml.safe_load(f) or {}
-                  with open(target) as f:
-                      config = yaml.safe_load(f) or {}
+                  config = {}
+                  if os.path.isfile(target):
+                      with open(target) as f:
+                          config = yaml.safe_load(f) or {}
                   deep_merge(config, overrides)
                   with open(target, 'w') as f:
                       yaml.safe_dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
@@ -267,6 +236,11 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
+            # Managed Scope, single file: the image already keeps other files in /etc/hermes.
+            - name: managed-config
+              mountPath: /etc/hermes/config.yaml
+              subPath: config.yaml
+              readOnly: true
         - name: nginx
           image: nginx:1.31-alpine@sha256:713fc2ebfd92e8217db451477182ee91944b123d2b1ee9fd5a8c6e91ca6c3a11
           ports:
@@ -287,7 +261,7 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: hermes-agent-data
-        - name: config-template
+        - name: managed-config
           configMap:
             name: hermes-agent-config
         - name: nginx-config

@@ -157,3 +157,32 @@ Collected 2026-11-09 from the `hermes-main` workspace as `rudi-the-brain`. `agen
 ## Bitwarden projects
 
 The cluster's only store, `bitwarden`, reads the `cluster` Bitwarden project. An item in any other project answers 404 to External Secrets, even when `bws` in the devcontainer can read it. On 2026-11-09 the six `HERMES_*` items were in `devcontainer`, which broke the Hermes rollout until the owner moved them to `cluster`.
+
+## Live checks
+
+### V9: configuration keys (T10, 2026-11-09)
+
+Checked against upstream `NousResearch/hermes-agent` tag `v0.23.0`: `website/docs/user-guide/{configuration,managed-scope,security,profiles}.md`, `website/docs/user-guide/features/{kanban,tools,memory-providers}.md`, `website/docs/user-guide/messaging/discord.md`, and the source `hermes_cli/config_defaults.py`, `hermes_cli/managed_scope.py`, `hermes_cli/tools_config.py`, `toolsets.py`, `tools/approval_floors.py`, `gateway/config_loader.py`. Text only: no pod exec, so nothing here is verified on the running image.
+
+| Key                                                                                                  | Result                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `model.provider`, `.default`, `.base_url`, `.api_key`, `.context_length`                             | Present; per profile, because `model.default` differs                                                                                      |
+| `memory.provider`, `.memory_enabled`, `.user_profile_enabled`                                        | Present; default `provider` is empty (built-in only)                                                                                       |
+| `terminal.backend: ssh`, `terminal.cwd`                                                              | Present; `TERMINAL_SSH_*` stay in the profile `.env` (T09)                                                                                 |
+| `discord.require_mention`, `.free_response_channels`, `.auto_thread`                                 | Present; channels are a comma-separated string or a YAML list. A string is used, so 64-bit IDs survive Helm                                |
+| `kanban.orchestrator_profile`, `.default_assignee`, `.dispatch_profiles`                             | Present                                                                                                                                    |
+| Worker limit 2                                                                                       | `kanban.max_in_progress_per_profile: 2`, documented and in `DEFAULT_CONFIG`                                                                |
+| `approvals.mode`, `approvals.deny`                                                                   | Present; fnmatch globs, case-insensitive, whole command plus each executable candidate. Quote them; a list replaces whole                  |
+| Worker toolsets                                                                                      | `platform_toolsets.cli` (dispatcher workers run on platform `cli`, `gateway/session_kanban.py`). Root `toolsets` is only a legacy fallback |
+| `memory`, `cronjob`, `delegation`, `discord` off                                                     | `agent.disabled_toolsets`, applied last and authoritative over a saved list; all four are valid toolset names                              |
+| `tts.provider`, `tts.piper.voice`, `timezone`, `display.show_cost`, `dashboard.show_token_analytics` | Present; `timezone` and the gateway loader read through the managed overlay                                                                |
+| `auxiliary.*`                                                                                        | Present (T04)                                                                                                                              |
+| Honcho `hosts.<host>.enabled`                                                                        | Present in the Honcho provider docs                                                                                                        |
+| Managed Scope: `/etc/hermes/config.yaml`                                                             | Leaf-level merge; a managed `${VAR}` expands against the process environment only, which holds `LITELLM_API_KEY` in the pod                |
+
+### Gaps
+
+- Managed Scope must be confirmed live with `hermes doctor`: a malformed file is only logged and ignored.
+- `kanban.dispatch_profiles` is per Hermes home. Whether the multiplexed gateway reads the `default` home's value when it dispatches for `worker` is not documented. Check with `hermes kanban diagnostics` in T11.
+- With `dispatch_profiles: [worker]`, a card assigned to `default` is never claimed (`skipped_nonspawnable`). A kanban root task for `default` therefore waits in `ready` until something else moves it.
+- A `git push` with no refspec, on a branch whose upstream is `main`, is not matched by the deny rules; the GitHub ruleset covers that case.
