@@ -121,7 +121,7 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 Completed: T01 to T17 (2026-11-09). The owner verified and merged the plan in #6176.
 
-Exact next action: T18, three scheduled report-only runs from 2026-11-10 06:00 Europe/Warsaw. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
+Exact next action: `renovate-daily` is paused after an unauthorized merge (see `evidence.md`, "Ramp"). The owner decides when to resume it, then T18 starts: three scheduled report-only runs. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.

@@ -154,6 +154,8 @@ hermes:
       terminal:
         backend: ssh
         cwd: /workspaces
+        # A foreground command otherwise stops early unless the agent passes a timeout itself.
+        timeout: 600
       discord:
         require_mention: true
         # Comma-separated string, documented form: #hermes, #hermes-renovate.
