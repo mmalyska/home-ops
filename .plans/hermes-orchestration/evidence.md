@@ -120,3 +120,11 @@ Written for task T04 on 2026-11-09. Sources: the GitHub release notes of `NousRe
 - Whether the multiplexed-gateway auto migration changes how the three existing worker profiles (researcher, devops, orchestrator) get their Discord bot tokens, and whether any of them share the default profile's token. The chart's `profileOverlays` and `honcho.json` host entries for the profiles were not changed.
 - The live `_config_version` and `state.db` schema version, because no command was run in the pod.
 - Renovate: `.github/renovate/groups.json5` still describes `v2026.x.x` CalVer tags with `versioning: loose`. Under loose ordering `v2026.9.24` sorts above `v0.23.0`, so Renovate may propose the old CalVer tags as an update. This is for the Renovate task, not this one.
+
+### Rollout on 2026-11-09
+
+- The manual `pre-upgrade` backup was not taken before #6192 merged. The restore point is the scheduled VolSync backup that finished at 12:00:36 UTC, before the merge.
+- The first start failed in `config-seeder` with `ModuleNotFoundError: No module named 'yaml'`: on v0.23.0 the system `python3` has no YAML module.
+  The main container did not start, so no config or `state.db` migration had run at that point.
+- The seeders now use `/opt/hermes/.venv/bin/python` and `hermes_yaml`, the module Hermes itself loads configuration with.
+- Upstream's Managed Scope (`website/docs/user-guide/managed-scope.md`) layers a read-only `/etc/hermes/config.yaml` over each profile's configuration. It is global to all profiles and covers only `config.yaml` and `.env`.
