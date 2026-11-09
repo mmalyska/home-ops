@@ -110,11 +110,11 @@ If a render fails, G8 fails, and you quote the error. Never quote a Secret's dat
 
 Set the verdict:
 
-| Verdict | When                                                                                                                 |
-| ------- | -------------------------------------------------------------------------------------------------------------------- |
-| `clean` | G6, G7 and G8 all pass, or G8 is not applicable, and the PR is not on the policy's denylist.                         |
-| `fix`   | A gate fails and one specific, small change in this repository would resolve it. Describe it under "Proposed fix".   |
-| `owner` | Anything else, including a denylisted PR that passes every gate, and any gate you could not establish with evidence. |
+| Verdict | When                                                                                                               |
+| ------- | ------------------------------------------------------------------------------------------------------------------ |
+| `clean` | G6, G7 and G8 all pass, or G8 is not applicable. The denylist does not change the verdict.                         |
+| `fix`   | A gate fails and one specific, small change in this repository would resolve it. Describe it under "Proposed fix". |
+| `owner` | Anything else, including any gate you could not establish with evidence.                                           |
 
 Compute the diff hash again. If it differs from the hash you judged, the diff changed under you: post nothing, change no label, go to step 6, and complete the card with the summary "diff changed during the check".
 
@@ -136,7 +136,7 @@ Proposed fix: <only for verdict fix>
 EOF
 ```
 
-Then set exactly one label with the line for your verdict. `clean` uses the first line, `owner` and `fix` the second:
+Then set exactly one label. A `clean` verdict on a PR that is not on the denylist uses the first line. Every other result, including a `clean` verdict on a denylisted PR, uses the second, because a denylisted PR is never auto-merged:
 
 ```sh
 gh pr edit "$PR" --repo "mmalyska/$REPO" --add-label triage/clean --remove-label triage/needed --remove-label triage/owner

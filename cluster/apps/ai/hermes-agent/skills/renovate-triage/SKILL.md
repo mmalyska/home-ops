@@ -279,6 +279,7 @@ Use this layout, write "none" under an empty heading, and keep all headings:
 Reply here with one of: merge <repo>#<number> | fix <repo>#<number> <what to change> | I merge <repo>#<number> | reject <repo>#<number> | resume <repo>
 ```
 
+Mark a denylisted PR as `denylisted` next to its verdict: the verdict is the worker's real assessment, and the denylist only stops auto-merge.
 Write the reasons in your own words and do not copy PR titles. Never include the literal text `[SILENT]` in the final response, because it would suppress delivery.
 
 ## Part B: the owner's replies

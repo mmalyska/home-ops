@@ -59,7 +59,8 @@ In home-ops:
 
 In other repositories: all of `github-workflows` and `renovate-config`, because they change every other repository.
 
-The worker still checks denylisted PRs, so the owner's thread has the full analysis. A repository whose `AGENTS.md` on its default branch reserves merging for people is never
+The denylist only stops auto-merge. The worker still checks denylisted PRs and gives its real verdict in a PR comment, so the owner has the full analysis and decides.
+A repository whose `AGENTS.md` on its default branch reserves merging for people is never
 auto-merged: where repository rules and this policy differ, the stricter one wins.
 
 ## After a merge
