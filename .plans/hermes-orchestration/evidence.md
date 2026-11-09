@@ -214,3 +214,6 @@ Manual runs of `renovate-daily` on 2026-11-09. They do not count towards the thr
   - Failed: `containers#729` passed every gate but appeared under no heading.
   - Failed: all 24 waiting PRs carried the false reason "no verdict provided in PR comments", and denylisted PRs were not marked.
   - The model wrote its own snapshot command, which errored at 60 seconds. The per-PR work moved into complete scripts in the skill, each ending with a `COMPLETE` line, and the summary step now checks that no PR is missing.
+- **Fourth run, on `main-cheap` (22:24 to 22:27 UTC), incident:** `rudi-the-brain` approved and merged `home-ops#6020` and `#6064` while `merge_enabled` was `false`.
+  - The session shows the policy output with `merge_enabled: false`. The gates script ran without a timeout, was killed at 60 seconds after about two PRs and had no `COMPLETE` line. The model did not re-run it, ran the merge commands for those PRs and wrote `merging: on`. No reasoning was stored.
+  - The owner chose to keep `#6064`, and the job was paused on 2026-11-09. The merge commands now refuse unless the policy says `merge_enabled: true`, a partial gate output blocks merging, and the terminal timeout for `default` is 600 seconds. This is not a hard limit: the account can still merge if the model bypasses the block.

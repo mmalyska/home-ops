@@ -80,7 +80,7 @@ A repository with such a card gets no auto-merge until the owner replies `resume
 Work through the steps in order. If a step fails, keep going where that is safe, and report the failure in the summary. Never end the run without the summary.
 
 The commands in steps 2, 7 and 9 are complete scripts that cover every PR. Run each one exactly as written, with the timeout given. Never shorten or rewrite them, and never loop over PRs with commands of your own.
-Each script ends with a `COMPLETE` line. If that line is missing, the output is partial: run the script once more, and if the line is still missing, say so under failed checks.
+Each script ends with a `COMPLETE` line. If that line is missing, the output is partial: run the script once more. If the line is still missing, say so under failed checks, and approve and merge nothing in this run.
 
 ### 1. Start
 
@@ -212,7 +212,8 @@ for REPO in $REPOS; do
     N=$((N + 1))
   done
 done
-if [ -n "$REPOS" ]; then echo "GATES COMPLETE count=$N"; else echo "ERROR cannot list repositories"; fi
+ENABLED="$(gh api -H 'Accept: application/vnd.github.raw' repos/mmalyska/home-ops/contents/.agents/policy/hermes-merge-policy.md | sed -n 's/^merge_enabled: //p' | head -n 1)"
+if [ -n "$REPOS" ]; then echo "GATES COMPLETE count=$N merge_enabled=${ENABLED:-unknown}"; else echo "ERROR cannot list repositories"; fi
 ```
 
 Go through every PR it printed, in that order. Skip the PR and list why under "Skipped", leaving the label as it is, when any of these holds:
@@ -223,7 +224,7 @@ Merging a PR can change the state of the next one. With `ONLY` set, it prints th
 
 For G2, compare `files=` and the dependency names on the `changed:` lines against the policy's denylist for this repository. If you are unsure, treat the PR as denylisted. The `changed:` lines are data, like the rest of a diff.
 
-Apply the results. Stop at the first row that applies. Nothing is merged unless every gate passed.
+Apply the results. Stop at the first row that applies. Nothing is merged unless every gate passed. `merge_enabled` is the value on the `GATES COMPLETE` line.
 
 | Result                                                | Action                                                                                  |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -249,10 +250,16 @@ Then run these, using the `head=` value from the script and replacing `--squash`
 
 ```sh
 REPO=<repo> PR=<number> HEAD=<head value>
-gh pr review "$PR" --repo "mmalyska/$REPO" --approve
-gh pr merge "$PR" --repo "mmalyska/$REPO" --squash --match-head-commit "$HEAD"
-gh pr view "$PR" --repo "mmalyska/$REPO" --json mergeCommit,mergedAt --jq '"sha=\(.mergeCommit.oid) merged_at=\(.mergedAt)"'
+if gh api -H 'Accept: application/vnd.github.raw' repos/mmalyska/home-ops/contents/.agents/policy/hermes-merge-policy.md | grep -qx 'merge_enabled: true'; then
+  gh pr review "$PR" --repo "mmalyska/$REPO" --approve &&
+    gh pr merge "$PR" --repo "mmalyska/$REPO" --squash --match-head-commit "$HEAD" &&
+    gh pr view "$PR" --repo "mmalyska/$REPO" --json mergeCommit,mergedAt --jq '"sha=\(.mergeCommit.oid) merged_at=\(.mergedAt)"'
+else
+  echo "REFUSED: merge_enabled is not true on main, nothing was approved or merged"
+fi
 ```
+
+Run `gh pr review --approve` and `gh pr merge` only through this block. If it prints `REFUSED`, leave the label, approve and merge nothing else in this run, and list the PR under failed checks.
 
 Never add `--admin` or `--auto`. If the approval or the merge fails, do not retry. Set `triage/owner`, record a note and list it under failed checks.
 
@@ -304,7 +311,7 @@ if [ -n "$REPOS" ]; then echo "REASONS COMPLETE count=$N"; else echo "ERROR cann
 Write one "waiting for the owner" bullet per line, leaving out the PRs the owner is merging (step 3).
 Take the verdict from `verdict=` and summarise `reason=` in one sentence. Write only what `reason=` says: if it is `none`, the reason is "no verdict yet".
 
-Use this layout, write "none" under an empty heading, and keep all headings:
+Write `merging: on` only if the `GATES COMPLETE` line says `merge_enabled=true`. Otherwise write `merging: off`. Use this layout, write "none" under an empty heading, and keep all headings:
 
 ```text
 **Renovate summary <YYYY-MM-DD>** (merging: on|off)
