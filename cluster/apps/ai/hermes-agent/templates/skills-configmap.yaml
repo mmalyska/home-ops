@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-skills
+  namespace: hermes-agent
+data:
+{{- range $path, $_ := .Files.Glob "skills/*/SKILL.md" }}
+  {{ base (dir $path) }}.md: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- range $path, $_ := .Files.Glob "files/soul-*.md" }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}

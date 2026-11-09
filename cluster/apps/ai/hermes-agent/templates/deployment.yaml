@@ -21,6 +21,8 @@ spec:
           {{include (print $.Template.BasePath "/configmap.yaml") . | sha256sum}}
         checksum/profile-overlays:
           {{include (print $.Template.BasePath "/profile-overlays-configmap.yaml") . | sha256sum}}
+        checksum/skills:
+          {{include (print $.Template.BasePath "/skills-configmap.yaml") . | sha256sum}}
     spec:
       initContainers:
         - name: fix-kanban-db-permissions
@@ -206,6 +208,33 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
+        - name: skills-seeder
+          image: alpine:3@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              {{- range $profile, $skills := .Values.hermes.profileSkills }}
+              {{- $dir := ternary "/opt/data" (printf "/opt/data/profiles/%s" $profile) (eq $profile "default") }}
+              if [ -d {{ $dir | squote }} ]; then
+                cp {{ printf "/seed/soul-%s.md" $profile | squote }} {{ printf "%s/SOUL.md" $dir | squote }}
+                chown 10000:10000 {{ printf "%s/SOUL.md" $dir | squote }}
+                {{- range $skills }}
+                mkdir -p {{ printf "%s/skills/%s" $dir . | squote }}
+                cp {{ printf "/seed/%s.md" . | squote }} {{ printf "%s/skills/%s/SKILL.md" $dir . | squote }}
+                chown -R 10000:10000 {{ printf "%s/skills/%s" $dir . | squote }}
+                {{- end }}
+              else
+                echo {{ printf "skip %s: profile directory not found" $profile | squote }}
+              fi
+              {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: skills-seed
+              mountPath: /seed
+              readOnly: true
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
@@ -283,6 +312,9 @@ spec:
         - name: profile-overlays
           configMap:
             name: hermes-agent-profile-overlays
+        - name: skills-seed
+          configMap:
+            name: hermes-agent-skills
         - name: workspace-ssh-keys
           secret:
             secretName: hermes-agent-secrets

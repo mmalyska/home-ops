@@ -110,6 +110,16 @@ hermes:
   profileSecretEnv:
     worker:
       - LITELLM_API_KEY
+  # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
+  profileSkills:
+    default:
+      - renovate-triage
+      - spec-author
+    worker:
+      - renovate-pr-check
+      - renovate-fix
+      - post-merge-check
+      - implement-task
   # Per-profile config overlays deep-merged on every pod start (lists are replaced):
   # `default` into /opt/data/config.yaml, any other name into /opt/data/profiles/<name>/config.yaml.
   # Profiles themselves are created imperatively; overlays for profiles that do not exist yet are skipped.
@@ -145,8 +155,8 @@ hermes:
         dispatch_profiles:
           - worker
         max_in_progress_per_profile: 2
-      # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools, so they
-      # are disabled again below to stay as they are today.
+      # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
+      # the `discord` set for create_thread; the admin set stays disabled.
       platform_toolsets:
         discord:
           - hermes-discord
@@ -156,8 +166,8 @@ hermes:
           - kanban
       agent:
         disabled_toolsets:
-          - discord
           - discord_admin
+          - file
       approvals:
         deny:
           - "git *push*--force*"
@@ -199,7 +209,6 @@ hermes:
       platform_toolsets:
         cli:
           - terminal
-          - file
           - web
           - kanban
           - skills
@@ -212,6 +221,7 @@ hermes:
           - cronjob
           - delegation
           - discord
+          - file
       approvals:
         deny:
           - "git *push*--force*"
