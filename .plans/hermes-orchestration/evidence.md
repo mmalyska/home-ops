@@ -128,3 +128,6 @@ Written for task T04 on 2026-11-09. Sources: the GitHub release notes of `NousRe
   The main container did not start, so no config or `state.db` migration had run at that point.
 - The seeders now use `/opt/hermes/.venv/bin/python` and `hermes_yaml`, the module Hermes itself loads configuration with.
 - Upstream's Managed Scope (`website/docs/user-guide/managed-scope.md`) layers a read-only `/etc/hermes/config.yaml` over each profile's configuration. It is global to all profiles and covers only `config.yaml` and `.env`.
+- Honcho on v0.23.0: the plugin migration runs when the first agent session starts, not at container start (`recover_at_startup`), so it waited for the first Discord message on 12:43 UTC.
+  It installed the plugin and built a dependency environment with `honcho-ai` 2.8.0 under `/opt/data/installs`. The gateway that was already running could not see it (`honcho-ai is required`), and a pod restart fixed that.
+- After the restart the environment was still there, and a Discord session created a Honcho session against the self-hosted server with no errors.

@@ -34,6 +34,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T02 — Gateway aliases `main-cheap` and `main-lite`
 
+- **Status:** done, 2026-11-09 (#6187). V7 passed: each alias answered as itself with fallbacks off.
 - **Branch:** `feat/hermes-gateway-aliases`. **Depends on:** T01.
 - **Files:** `cluster/apps/ai/litellm/templates/models/main-cheap.yaml` and `main-lite.yaml` (new, modelled on `main.yaml`),
   `cluster/apps/ai/litellm/templates/teams.yaml`, `cluster/apps/ai/litellm/templates/litellmproxy.yaml`,
@@ -62,6 +63,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T03 — Argo CD reconciles every 30 minutes
 
+- **Status:** done, 2026-11-09 (#6188). The value is live and the controller was restarted.
 - **Branch:** `chore/argocd-reconcile-30m`. **Depends on:** T01.
 - **Files:** `cluster/apps/core/argocd/patches/argocd-cm.yaml`.
 - **Change:** `timeout.reconciliation` from `1h` to `30m`.
@@ -78,6 +80,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T04 — Upgrade Hermes to the current `v0.x` release
 
+- **Status:** done, 2026-11-09 (#6192, #6193). Running v0.23.0; Discord and Honcho checked. Piper text-to-speech is open in `.plans/TODO.md`.
 - **Branch:** `feat/hermes-upgrade`. **Depends on:** T01.
 - **Files:** `cluster/apps/ai/hermes-agent/values.yaml`, chart templates if the release notes need it,
   `.plans/hermes-orchestration/evidence.md` (section "Upgrade notes").
@@ -106,6 +109,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T06 — Workspace template: git identity and signing
 
+- **Status:** done, 2026-11-09 (#6189).
 - **Branch:** `feat/agent-workspace-git-identity`. **Depends on:** T01.
 - **Files:** `cluster/apps/ai/coder/workspace-template-agent-workspace/main.tf` and its `README.md`,
   `docs/src/k8s/agent-workspaces.md`.
@@ -172,6 +176,9 @@ done criterion. Update a task's status and evidence in place as it is done.
 - **Shared settings move to Managed Scope (P10):** settings common to every profile go into a ConfigMap mounted read-only at
   `/etc/hermes/config.yaml`, and `config-seeder` is removed. Per-profile differences stay in `profile-config-seeder`. After the
   change, `hermes doctor` must report the pinned keys, because a malformed managed file is only logged and ignored.
+- **Honcho on an empty volume (owner's decision, 2026-11-09):** no pre-job, because this case is rare. The Hermes README records the
+  manual step: after a restore onto an empty volume, run `hermes plugins install honcho --yes-deps --enable`, then restart the gateway,
+  because a running gateway does not see a dependency environment built after it started.
 - **Create the profile once, before this PR merges,** so that the overlay has a profile to land in:
 
   ```sh consent-gated
@@ -239,6 +246,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T13 — Merge policy and standing permission
 
+- **Status:** done, 2026-11-09 (#6191), with `merge_enabled: false`.
 - **Branch:** `feat/hermes-merge-policy`. **Depends on:** T01.
 - **Files:** `.agents/policy/hermes-merge-policy.md` (new), `AGENTS.md`, `.agents/policy/permissions.md`.
 - **Change:** the policy file holds `merge_enabled: false`, the limits, gates G1 to G8, the denylist, the revert rule and the
@@ -262,6 +270,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T15 — Reusable label workflow
 
+- **Status:** done, 2026-11-09 (github-workflows#34).
 - **Repository:** `mmalyska/github-workflows`, branch `feat/pr-triage-label`. **Depends on:** T01.
 - **Files:** `.github/workflows/pr-triage-label.yaml` (new).
 - **Change:** a `workflow_call` workflow. For a PR opened by `bendo-bot[bot]`, removes `triage/clean` and `triage/owner` and adds
