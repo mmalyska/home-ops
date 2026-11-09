@@ -150,8 +150,8 @@ Rules:
 
 The Hermes `default` profile, acting as `rudi-the-brain`, may approve and merge exactly the Renovate PRs that pass
 [`.agents/policy/hermes-merge-policy.md`](.agents/policy/hermes-merge-policy.md), while `merge_enabled` is `true` in the copy of that file on `main`. This is the owner's written
-consent for those merges, and the only exception to fresh consent per merge and to the denial of consent classes in non-interactive runs. The owner's `merge` reply in that PR's
-thread, from the owner's Discord account, is consent for that one PR.
+consent for those merges, and the only exception to fresh consent per merge and to the denial of consent classes in non-interactive runs. The owner's `merge` reply naming that PR
+in `#hermes-renovate`, from the owner's Discord account, is consent for that one PR.
 
 Everything else stays as it is. This grants nothing to the `worker` profile, to any other PR or action, or to Claude, Codex or any other session.
 
