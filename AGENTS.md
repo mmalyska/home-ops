@@ -146,6 +146,15 @@ Rules:
 - Never use `--no-verify`. Never `terraform destroy`. Never read secret values; request a reference or schema instead.
 - Read-only checks (`kubectl get/describe/logs`, `argocd app get/list/diff`, `talosctl get`) are allowed.
 
+### Standing authorization for Hermes
+
+The Hermes `default` profile, acting as `rudi-the-brain`, may approve and merge exactly the Renovate PRs that pass
+[`.agents/policy/hermes-merge-policy.md`](.agents/policy/hermes-merge-policy.md), while `merge_enabled` is `true` in the copy of that file on `main`. This is the owner's written
+consent for those merges, and the only exception to fresh consent per merge and to the denial of consent classes in non-interactive runs. The owner's `merge` reply in that PR's
+thread, from the owner's Discord account, is consent for that one PR.
+
+Everything else stays as it is. This grants nothing to the `worker` profile, to any other PR or action, or to Claude, Codex or any other session.
+
 ## Hard Rules
 
 - **Never commit secrets** — no credentials, tokens or API keys in any tracked file; gitleaks will block the commit.

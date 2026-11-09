@@ -74,7 +74,7 @@ Anything whose effect is a deploy through Git or CI. Fresh consent per action wi
 
 Claude patterns (`ask`): `Bash(gh pr merge*)`, `Bash(gh api *POST*)`, `Bash(gh api *PUT*)`, `Bash(gh api *PATCH*)`, `Bash(gh api *DELETE*)`, `Bash(gh api graphql*)`, `Bash(gh api * -f *)`, `Bash(gh api * -F *)`, `Bash(gh api * --field *)`, `Bash(gh api * --raw-field *)`, `Bash(gh api * --input *)`
 
-Policy: merging a PR by any route (UI, `gh pr merge`, `--auto`, the API), enabling auto-merge, editing Renovate automerge rules, changing `syncPolicy` or `enabled` in `app-config.yaml`. **A merge may deploy.** Renovate PRs that automerge are an owner-configured path outside agent authority.
+Policy: merging a PR by any route (UI, `gh pr merge`, `--auto`, the API), enabling auto-merge, editing Renovate automerge rules, changing `syncPolicy` or `enabled` in `app-config.yaml`. **A merge may deploy.** Renovate PRs that automerge are an owner-configured path outside agent authority. The only standing exception is for the Hermes `default` profile, defined in "Standing authorization for Hermes" in [`AGENTS.md`](../../AGENTS.md) and limited by [`hermes-merge-policy.md`](hermes-merge-policy.md).
 
 The impact statement names: which paths change, which Applications will sync (prune on or off), whether HCP Terraform will apply, whether a tuppr upgrade resource changes, and the rollback (revert PR plus any live step).
 
