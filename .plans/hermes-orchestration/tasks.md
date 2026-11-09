@@ -169,6 +169,9 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 - **Branch:** `feat/hermes-profiles`. **Depends on:** T02, T07, T09.
 - **Files:** `cluster/apps/ai/hermes-agent/values.yaml`, `templates/honcho-configmap.yaml`, `templates/deployment.yaml`.
+- **Shared settings move to Managed Scope (P10):** settings common to every profile go into a ConfigMap mounted read-only at
+  `/etc/hermes/config.yaml`, and `config-seeder` is removed. Per-profile differences stay in `profile-config-seeder`. After the
+  change, `hermes doctor` must report the pinned keys, because a malformed managed file is only logged and ignored.
 - **Create the profile once, before this PR merges,** so that the overlay has a profile to land in:
 
   ```sh consent-gated
