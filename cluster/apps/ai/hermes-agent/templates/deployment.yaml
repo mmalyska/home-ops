@@ -83,13 +83,16 @@ spec:
             - -c
             - |
               mkdir -p /opt/data/ssh
-              cp /run/ssh-keys/SANDBOX_DEVOPS_SSH_KEY /opt/data/ssh/sandbox-devops.key
+              cp /run/ssh-keys/HERMES_MAIN_WS_SSH_KEY /opt/data/ssh/hermes-main.key
+              cp /run/ssh-keys/HERMES_WORKER_WS_SSH_KEY /opt/data/ssh/hermes-worker.key
+              rm -f /opt/data/ssh/sandbox-devops.key
+              chown 10000:10000 /opt/data/ssh /opt/data/ssh/*.key
+              chmod 700 /opt/data/ssh
               chmod 600 /opt/data/ssh/*.key
-              chown 0:0 /opt/data/ssh/*.key
           volumeMounts:
             - name: data
               mountPath: /opt/data
-            - name: sandbox-ssh-keys
+            - name: workspace-ssh-keys
               mountPath: /run/ssh-keys
         - name: honcho-seeder
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
@@ -198,6 +201,32 @@ spec:
               mountPath: /opt/data
             - name: profile-overlays
               mountPath: /profile-overlays
+        - name: profile-env-seeder
+          image: alpine:3@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              {{- range $profile, $env := .Values.hermes.profileEnv }}
+              {{- $dir := ternary "/opt/data" (printf "/opt/data/profiles/%s" $profile) (eq $profile "default") }}
+              if [ -d {{ $dir | squote }} ]; then
+                f={{ printf "%s/.env" $dir | squote }}
+                touch "$f"
+                if [ -s "$f" ] && [ -n "$(tail -c 1 "$f")" ]; then echo >> "$f"; fi
+                {{- range $key, $value := $env }}
+                sed -i '/^{{ $key }}=/d' "$f"
+                printf '%s=%s\n' {{ $key | squote }} {{ $value | toString | squote }} >> "$f"
+                {{- end }}
+                chown 10000:10000 "$f"
+                chmod 600 "$f"
+              else
+                echo {{ printf "skip %s: profile directory not found" $profile | squote }}
+              fi
+              {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
@@ -222,11 +251,13 @@ spec:
                   name: hermes-litellm
                   key: key
             {{- range .Values.externalSecrets }}
+            {{- if not .fileOnly }}
             - name: {{ if .envName }}{{ .envName }}{{ else }}{{ .secretName }}{{ end }}
               valueFrom:
                 secretKeyRef:
                   name: hermes-agent-secrets
                   key: {{ .secretName }}
+            {{- end }}
             {{- end }}
           ports:
             - name: http
@@ -268,9 +299,11 @@ spec:
         - name: profile-overlays
           configMap:
             name: hermes-agent-profile-overlays
-        - name: sandbox-ssh-keys
+        - name: workspace-ssh-keys
           secret:
             secretName: hermes-agent-secrets
             items:
-              - key: SANDBOX_DEVOPS_SSH_KEY
-                path: SANDBOX_DEVOPS_SSH_KEY
+              - key: HERMES_MAIN_WS_SSH_KEY
+                path: HERMES_MAIN_WS_SSH_KEY
+              - key: HERMES_WORKER_WS_SSH_KEY
+                path: HERMES_WORKER_WS_SSH_KEY

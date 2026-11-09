@@ -107,6 +107,21 @@ hermes:
   # Per-profile config overlays deep-merged into /opt/data/profiles/<name>/config.yaml
   # on every pod start (lists are replaced). Profiles themselves are created
   # imperatively; overlays for profiles that do not exist yet are skipped.
+  # Non-secret keys merged into each profile's .env at every start. A profile whose directory does not exist yet is skipped.
+  profileEnv:
+    default:
+      TERMINAL_SSH_HOST: mmalyska-hermes-main-ssh.agent-workspaces.svc.cluster.local
+      TERMINAL_SSH_USER: vscode
+      TERMINAL_SSH_PORT: "22"
+      TERMINAL_SSH_KEY: /opt/data/ssh/hermes-main.key
+      TERMINAL_SSH_PERSISTENT: "true"
+      DISCORD_HOME_CHANNEL: "1569307898860015628" # #hermes-renovate
+    worker:
+      TERMINAL_SSH_HOST: mmalyska-hermes-worker-ssh.agent-workspaces.svc.cluster.local
+      TERMINAL_SSH_USER: vscode
+      TERMINAL_SSH_PORT: "22"
+      TERMINAL_SSH_KEY: /opt/data/ssh/hermes-worker.key
+      TERMINAL_SSH_PERSISTENT: "true"
   profileOverlays:
     researcher: &gatewayMainModel
       model:
@@ -127,11 +142,13 @@ externalSecrets:
     bwsId: "be7ed9dc-3301-4c8b-adcd-b45600ea8816" #gitleaks:allow #HERMES_DISCORD_BOT_TOKEN
   - secretName: DISCORD_ALLOWED_USERS
     bwsId: "17384da9-0339-44a9-b322-b45600eaaf2b" #gitleaks:allow #HERMES_DISCORD_ALLOWED_USERS
-  - secretName: GITHUB_PERSONAL_ACCESS_TOKEN
-    bwsId: "6eda6fc7-6ecf-4b73-b075-b45700db9d2b" #gitleaks:allow #HERMES_GITHUB_PERSONAL_ACCESS_TOKEN
-    envName: GITHUB_TOKEN
-  - secretName: SANDBOX_DEVOPS_SSH_KEY
-    bwsId: "5bae28c2-8722-422b-8263-b46201453181" #gitleaks:allow #SANDBOX_DEVOPS_SSH_PRIVATE_KEY
+  # fileOnly: mounted only into the ssh-key-seeder init container, never an environment variable of the pod.
+  - secretName: HERMES_MAIN_WS_SSH_KEY
+    bwsId: "de8d4af8-10f2-46a0-81f4-b4fd00b76c12" #gitleaks:allow #HERMES_MAIN_WS_SSH_KEY
+    fileOnly: true
+  - secretName: HERMES_WORKER_WS_SSH_KEY
+    bwsId: "3e74a610-c2bd-4c8d-b2eb-b4fd00b79c2a" #gitleaks:allow #HERMES_WORKER_WS_SSH_KEY
+    fileOnly: true
 
 backup:
   schedule: "0 */6 * * *"
