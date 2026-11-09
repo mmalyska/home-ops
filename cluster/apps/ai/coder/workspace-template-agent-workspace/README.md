@@ -19,6 +19,8 @@ and bounds it: `cluster/apps/ai/agent-workspaces`. Full description: `docs/src/k
 | `github_token_ref`      | empty     | Optional Bitwarden secret ID of a `GITHUB_TOKEN` that works against `api.github.com`; must be allowlisted |
 | `extra_secrets`         | `[]`      | `NAME=<Bitwarden secret ID>` entries, each an environment variable; IDs must be allowlisted               |
 | `signing_key_ref`       | empty     | Optional secret ID of the commit signing key                                                              |
+| `git_user_name`         | empty     | Optional git `user.name`, written at every start                                                          |
+| `git_user_email`        | empty     | Optional git `user.email`, written at every start                                                         |
 | `authorized_key`        | none      | Public key allowed to SSH in on 2222 (user `vscode`)                                                      |
 | `kubernetes_access`     | `false`   | Mount the pod ServiceAccount token (read-only cluster access)                                             |
 | `talos_access`          | `false`   | Create and mount an `os:reader` Talos credential                                                          |

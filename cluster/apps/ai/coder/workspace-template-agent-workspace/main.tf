@@ -59,6 +59,26 @@ data "coder_parameter" "signing_key_ref" {
   order        = 3
 }
 
+data "coder_parameter" "git_user_name" {
+  name         = "git_user_name"
+  display_name = "Git author name"
+  description  = "Optional. Written to git user.name in the workspace at every start. Empty leaves it unset."
+  type         = "string"
+  default      = ""
+  mutable      = false
+  order        = 3
+}
+
+data "coder_parameter" "git_user_email" {
+  name         = "git_user_email"
+  display_name = "Git author email"
+  description  = "Optional. Written to git user.email in the workspace at every start. Empty leaves it unset."
+  type         = "string"
+  default      = ""
+  mutable      = false
+  order        = 3
+}
+
 data "coder_parameter" "authorized_key" {
   name         = "authorized_key"
   display_name = "SSH public key"
@@ -143,7 +163,7 @@ locals {
   env_secrets   = merge(local.extra_secrets, local.github_token ? { GITHUB_TOKEN = data.coder_parameter.github_token_ref.value } : {})
   env_names     = sort(keys(local.env_secrets))
   has_env       = length(local.env_secrets) > 0
-  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY)$"
+  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY|GIT_USER_NAME|GIT_USER_EMAIL)$"
 
   # Variables copied for SSH sessions. sshd gives a login a fresh environment, so the startup script writes these
   # (when set) to a file that sshd reads (PermitUserEnvironment).
@@ -222,6 +242,26 @@ resource "coder_agent" "main" {
       fi
     else
       echo "no signing key configured"
+    fi
+
+    # Git configuration, rewritten at every start in ~/.gitconfig (the startup script runs as vscode with HOME on the home
+    # volume, the file the agent's shell reads). Every step is idempotent and best effort; no key or token is printed.
+    [ -n "$${GIT_USER_NAME:-}" ] && git config --global user.name "$GIT_USER_NAME"
+    [ -n "$${GIT_USER_EMAIL:-}" ] && git config --global user.email "$GIT_USER_EMAIL"
+    # An empty agent prints "The agent has no identities." to stdout, so only a real public key line counts.
+    pub="$(SSH_AUTH_SOCK="${local.signing_dir}/agent.sock" ssh-add -L 2>/dev/null | grep -m1 -E '^(ssh|ecdsa|sk)-')"
+    if [ -n "$pub" ]; then
+      git config --global gpg.format ssh
+      git config --global user.signingkey "key::$pub"
+      git config --global commit.gpgsign true
+      git config --global tag.gpgsign true
+      echo "git commit signing configured"
+    fi
+    if [ -n "$${GITHUB_TOKEN:-}" ]; then
+      gh auth setup-git >/dev/null 2>&1 || echo "gh auth setup-git failed"
+      git config --global --unset-all 'url.https://github.com/.insteadOf' 2>/dev/null || true
+      git config --global --add 'url.https://github.com/.insteadOf' 'git@github.com:'
+      git config --global --add 'url.https://github.com/.insteadOf' 'ssh://git@github.com/'
     fi
 
     # SSH for the agent that drives this workspace (hermes): sshd as vscode on 2222, key login only, no forwarding.
@@ -540,6 +580,15 @@ resource "kubernetes_deployment_v1" "workspace" {
           env {
             name  = "AUTHORIZED_KEY"
             value = data.coder_parameter.authorized_key.value
+          }
+          # The optional git identity; the startup script writes it to the git config.
+          env {
+            name  = "GIT_USER_NAME"
+            value = data.coder_parameter.git_user_name.value
+          }
+          env {
+            name  = "GIT_USER_EMAIL"
+            value = data.coder_parameter.git_user_email.value
           }
           # The optional GITHUB_TOKEN and the extra secrets, from the Secret that External Secrets fills (no value passes through
           # Terraform variables or state).
