@@ -105,6 +105,11 @@ hermes:
       TERMINAL_SSH_PORT: "22"
       TERMINAL_SSH_KEY: /opt/data/ssh/hermes-worker.key
       TERMINAL_SSH_PERSISTENT: "true"
+  # Secrets copied from the init container's environment into a profile's .env. A profile resolves ${VAR} in its config
+  # from its own .env, not from the pod's environment, so a key used by a non-default profile must be listed here.
+  profileSecretEnv:
+    worker:
+      - LITELLM_API_KEY
   # Per-profile config overlays deep-merged on every pod start (lists are replaced):
   # `default` into /opt/data/config.yaml, any other name into /opt/data/profiles/<name>/config.yaml.
   # Profiles themselves are created imperatively; overlays for profiles that do not exist yet are skipped.

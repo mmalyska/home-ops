@@ -187,12 +187,22 @@ spec:
                 sed -i '/^{{ $key }}=/d' "$f"
                 printf '%s=%s\n' {{ $key | squote }} {{ $value | toString | squote }} >> "$f"
                 {{- end }}
+                {{- range (index $.Values.hermes.profileSecretEnv $profile | default list) }}
+                sed -i '/^{{ . }}=/d' "$f"
+                printf '%s=%s\n' {{ . | squote }} "${{ . }}" >> "$f"
+                {{- end }}
                 chown 10000:10000 "$f"
                 chmod 600 "$f"
               else
                 echo {{ printf "skip %s: profile directory not found" $profile | squote }}
               fi
               {{- end }}
+          env:
+            - name: LITELLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-litellm
+                  key: key
           volumeMounts:
             - name: data
               mountPath: /opt/data
