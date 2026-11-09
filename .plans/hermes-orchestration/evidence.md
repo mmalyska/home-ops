@@ -56,6 +56,18 @@ Collected 2026-11-06 by read-only checks (repository, `kubectl get/logs`, `gh` r
 - OpenAI model table, input / output per MTok: Astra $10 / $50, 6.1 Sol $2 / $10, 6.1 Terra $1 / $5, 6 Luna $0.10 / $0.50. The Codex pages list all four. How much of a subscription's limits each uses is not published, and availability varies by plan and client (spec V7).
 - Hermes: a model per profile, per scheduled job (`hermes cron create/edit --model`, a pin the agent cannot change), `/model` in Discord, and `delegation.backend: model_map` where the orchestrator picks by description, with children running as the parent profile. Kanban per-task overrides are documented only for CLI and dashboard use. Automatic routing by complexity is not documented.
 
+## T01 prerequisites (2026-11-09)
+
+- Repositories: `gh repo list` shows 10 non-archived non-fork repositories (home-ops, containers, dotfiles, claude-plugins, homelab-portal, argocd-secret-replacer, github-workflows, renovate-config, vintagestory-mods-downloader, helm-charts).
+  The plan's earlier count of 12 was wrong; the owner confirmed 10.
+- Invitations: `rudi-the-brain` and `agent-rosie` are collaborators with write access on all 10 (`collaborators/<user>` answers 204).
+- Tokens: the owner ran the check and it printed the login and scopes only. `HERMES_MAIN_GITHUB_TOKEN` is `rudi-the-brain`, `HERMES_WORKER_GITHUB_TOKEN` is `agent-rosie`, both classic with `repo` and `workflow`.
+- Bitwarden: the four key items exist and hold passphrase-free OpenSSH private keys. The private halves of the signing keys match the keys on each GitHub account.
+  The public halves are not stored there: signing keys are on GitHub, and workspace public keys become the `authorized_key` parameter in T07.
+- **An OpenSSH private key stored in Bitwarden must end with a newline.** Without it, `ssh-keygen` and `ssh-add` fail with "error in libcrypto". All four values needed this fix.
+- Discord: the owner created `#hermes-renovate` and confirmed that the bot can post and create threads there, and that the channel in `discord.free_response_channels` is `#hermes`.
+- `coder` CLI: logged in on the devcontainer, where T07 runs.
+
 ## To be filled in during Build
 
 Live checks V1 to V9, upgrade notes, each repository's merge requirements, and the results of the report-only runs.

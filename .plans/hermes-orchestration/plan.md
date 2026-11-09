@@ -1,14 +1,14 @@
 ---
-status: approved
+status: in-progress
 owner: repository owner
 profile: DEEP
-topology: SOLO
+topology: PARALLEL
 base_sha: 26f1c0d99675c02b6b3d466b7420ef630d019ec3
 branch: feat/hermes-orchestration-plan
 worktree: .worktrees/feat/hermes-orchestration-plan
 pr: "#6176"
 started: 2026-11-06
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 # Plan: Hermes orchestration
@@ -29,19 +29,20 @@ The spec left these to the plan. The owner accepted P1, P2, P8 and P9 and the or
 
 | #   | Decision                                                                                                                           | Why                                                                                                                                                                    |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | "Non-archived repositories" means the 12 source repositories. The 9 forks are excluded.                                            | Forks hold upstream code and get no bot PRs                                                                                                                            |
+| P1  | "Non-archived repositories" means the 10 source repositories. The 9 forks are excluded.                                            | Forks hold upstream code and get no bot PRs                                                                                                                            |
 | P2  | The label workflow acts only on PRs opened by `bendo-bot[bot]`.                                                                    | On a spec or plan PR it would replace `triage/owner` and hide the PR from the owner                                                                                    |
 | P3  | Hermes configuration is seeded from git by the existing init containers, extended per task.                                        | Spec requires a rebuild from git; the seeders already exist                                                                                                            |
 | P4  | Skills and SOUL files live in `cluster/apps/ai/hermes-agent/{skills,files}` and overwrite the copies on the volume at every start. | Git stays the only source                                                                                                                                              |
 | P5  | Fallback lists, written in full: `main-cheap: [main, cheap, local]`, `main-lite: [main-cheap, main, cheap, local]`.                | Each falls to the next model up, then to the existing last resorts, without relying on chained fallbacks                                                               |
 | P6  | New-repository requirements live in `docs/src/contributing/new-repository.md`.                                                     | One place, published with the other contributing docs                                                                                                                  |
-| P7  | One PR per repository carries its CODEOWNERS, label workflow caller and Renovate changes.                                          | Twelve small reviewable PRs instead of three rounds of twelve                                                                                                          |
+| P7  | One PR per repository carries its CODEOWNERS, label workflow caller and Renovate changes.                                          | Ten small reviewable PRs instead of three rounds of ten                                                                                                                |
 | P8  | T01 gates every other task.                                                                                                        | Its failures (a bad token, a missing invitation) then appear before anything is half-built                                                                             |
 | P9  | `approvals.cron_mode` stays `deny`. If a merge command is ever flagged, only that rule goes into `command_allowlist`.              | `deny` acts only on commands Hermes flags, and v0.23.0 flags neither `gh pr merge` nor `gh pr review`; `approve` would auto-approve every dangerous command in the job |
 
 ## Scope and ownership
 
-The build actor is one agent working SOLO and is the integrator. The owner does T01 and every merge.
+The owner chose PARALLEL for Build on 2026-11-09: subagents edit and validate in one worktree per task, and the conductor
+is the integrator and does every commit, push and PR. The owner does T01 and every merge.
 
 | Boundary                                                                        | Change                                       | Tasks                   |
 | ------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------- |
@@ -57,7 +58,8 @@ The build actor is one agent working SOLO and is the integrator. The owner does 
 
 ## Tasks and dependencies
 
-Task records are in [tasks.md](tasks.md). SOLO runs them one at a time.
+Task records are in [tasks.md](tasks.md). Tasks whose dependencies are merged and whose files do not overlap run in
+parallel.
 
 ```text
 T01 --> every other task (P8)
@@ -94,7 +96,7 @@ Every PR also runs the matching rows of `.agents/policy/validation.md`, and repo
 - **Merges that deploy:** T02, T03, T04, T07, T09, T10, T12, T14. Merges that change Renovate behaviour (GITOPS_TRIGGER):
   T05, T16. T13 and T17 deploy nothing. T19 deploys nothing itself, but from then on Hermes merges without the owner.
 - **Live changes needing fresh consent** are in `consent-gated` blocks in the tasks.
-- **Missing today:** everything in T01, and a logged-in `coder` CLI for T07.
+- **T01 is complete** (2026-11-09), including the logged-in `coder` CLI for T07.
 
 ## Rollout and rollback
 
@@ -114,9 +116,10 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 ## Status and next action
 
-Completed: none. The owner verified and merged the plan in #6176.
+Completed: T01 (2026-11-09). The owner verified and merged the plan in #6176.
 
-Exact next action: the owner does T01. Build of the other tasks starts after that, on the owner's instruction.
+Exact next action: the first wave, T02, T03, T04, T06, T13 and T15, on the owner's instruction of 2026-11-09. Pushing and
+opening their PRs is authorized by that instruction. Each merge and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.
