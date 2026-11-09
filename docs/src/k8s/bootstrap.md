@@ -109,11 +109,15 @@ This single command runs the following phases in sequence:
 | 5 | `rook` | Wipes Rook data directories (`/var/lib/rook`) and raw disk partition tables on every node |
 | 6 | `argocd` | Creates an empty `cluster-secrets` placeholder Secret, applies the ArgoCD kustomize, applies the root `bootstrap-application.yaml`, and waits for `argocd-server` Available |
 
-### 3. Sync Rook Ceph storage (manual gate)
+### 3. Check Rook Ceph storage
 
-Rook Ceph operator and cluster have `syncPolicy.enabled: false` intentionally — auto-sync could
-claim disks on an unexpected re-sync. After the bootstrap task completes and ArgoCD has had a
-moment to discover and deploy the appsets, run:
+Rook Ceph auto-syncs like every other app, with `prune` off, so there is no manual gate: as soon as
+ArgoCD discovers the appsets it deploys the operator and the cluster, and the CephCluster formats
+the disks wiped in the `rook` phase. Any disk Rook is allowed to use can be claimed without a
+further step.
+
+If `rook-ceph-cluster` fails because the operator's CRDs were not there yet, ArgoCD does not retry
+an auto-sync of the same revision. Sync it by hand:
 
 ```sh
 task argocd:login      # log in with local admin (see below)
@@ -121,7 +125,7 @@ task bootstrap:rook-sync
 ```
 
 `rook-sync` syncs the operator first, waits for its deployment to be Available, then syncs the
-cluster. The CephCluster resource will then reconcile and format the clean disks.
+cluster.
 
 ### 4. Log in to ArgoCD (local admin)
 
@@ -184,7 +188,7 @@ disks are ready when the CephCluster resource is first reconciled.
 
 - [ ] `kubectl get nodes` — all 3 nodes `Ready`
 - [ ] `task argocd:login` — ArgoCD accessible with local admin
-- [ ] `task bootstrap:rook-sync` — Rook Ceph operator + cluster synced
+- [ ] Rook Ceph operator + cluster synced (`task bootstrap:rook-sync` if the auto-sync failed)
 - [ ] `kubectl -n rook-ceph get cephcluster` — CephCluster status `HEALTH_OK`
 - [ ] Keycloak deployed and realm/client configured
 - [ ] `task argocd:login` — SSO login works

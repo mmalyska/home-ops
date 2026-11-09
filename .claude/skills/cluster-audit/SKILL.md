@@ -187,9 +187,8 @@ kubectl get pods -A --no-headers | grep -v Running | grep -v Completed
 kubectl -n argocd get applications --no-headers | awk '$2!="Synced" || $3!="Healthy"'
 ```
 
-Several apps (`argocd`, `rook-ceph-operator`, `rook-ceph-cluster`, `root-app`) run with `automated.enabled: false`,
-so a merged Renovate bump stays **pending until someone syncs it**. `OutOfSync` there usually means "upgrade
-waiting", not noise. Diff before deciding:
+Every app auto-syncs, so `OutOfSync` that lasts is a finding: a failed auto-sync, or resources left behind
+because the app has `prune: false` (all core apps and most others). Diff before deciding:
 
 ```bash
 kubectl config set-context --current --namespace=argocd     # --core reads the namespace from kubeconfig
@@ -213,7 +212,9 @@ kubectl config set-context --current --namespace=default    # always put it back
   persists after a sync when live CRDs already match.
 - Syncing is a cluster mutation: confirm with the user first, one app at a time.
 
-**Rook/Ceph upgrade order:** `rook-ceph-operator` first, then `rook-ceph-cluster`. The operator then restarts
+**Rook/Ceph upgrade order:** `rook-ceph-operator` first, then `rook-ceph-cluster`. Auto-sync does not enforce this: the
+`rook-ceph-suite` Renovate PR can bump both, and both sync on merge. To keep the order, land the operator bump in its
+own PR and let it finish before the cluster bump. The operator then restarts
 mgrs, CSI plugins, mons and **all OSDs one at a time**, taking about 10 minutes per wave. `HEALTH_WARN` with
 "1 osds down / pgs degraded / undersized" is expected during each OSD restart; wait for `Ready` + HEALTH_OK and
 169-of-169 PGs `active+clean`. A second wave of mon/OSD restarts follows the `requireMsgr2` flip. Volsync

@@ -84,7 +84,7 @@ spec:
       {{- end }}
         automated:
           enabled: {{ .syncPolicy.enabled }}
-          prune: {{ .syncPolicy.prune }}
+          prune: false # hardcoded: core apps must never prune, whatever app-config.yaml says
           selfHeal: {{.syncPolicy.selfHeal}}
       {{- if hasKey . "ignoreDifferences" }}
       ignoreDifferences:

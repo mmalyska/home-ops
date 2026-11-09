@@ -207,7 +207,7 @@ If Terraform was ran successfully you can log into Cloudflare and validate the D
    # When prompted, use local credentials — SSO will not work yet
    ```
 
-5. Sync the Rook Ceph operator and cluster (manual gate — storage is not auto-synced to prevent accidental disk claims):
+5. Check that the Rook Ceph operator and cluster have synced. They auto-sync like every other app; if `rook-ceph-cluster` failed because the operator's CRDs were not there yet, sync them by hand:
 
    ```sh
    task bootstrap:rook-sync

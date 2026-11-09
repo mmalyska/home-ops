@@ -3,7 +3,7 @@
   namespace: rook-ceph
   syncWave: "1"
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   managedNamespaceMetadata:
@@ -14,7 +14,7 @@
   namespace: rook-ceph
   syncWave: "2"
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
 - enabled: "true"
@@ -22,7 +22,7 @@
   namespace: rook-ceph
   syncWave: "3"
   syncPolicy:
-    enabled: false
+    enabled: true
     selfHeal: true
     prune: false
   plugin:

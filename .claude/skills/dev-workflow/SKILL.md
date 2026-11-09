@@ -24,7 +24,7 @@ task talos:upgrade:k8s                # Upgrade Kubernetes version
 
 # Cluster bootstrap
 task bootstrap:kubernetes             # Full automated bootstrap
-task bootstrap:rook-sync              # Post-bootstrap: sync Rook Ceph (run after argocd:login)
+task bootstrap:rook-sync              # Post-bootstrap fallback: sync Rook Ceph if its auto-sync failed (run after argocd:login)
 
 # ArgoCD
 task argocd:login                     # Login (--sso; use local admin on first bootstrap)
