@@ -42,6 +42,8 @@ General backlog items not tied to a specific plan. Last reviewed 2026-11-06. Fin
   - Offer the alias-tag change (`custom-installer-jp7:v<talos>` next to the compound tag; our fork `mmalyska/talos-jetson-orin`, branch `pr/jetpack7-r39`) to `schwankner/talos-jetson-orin`: it has worked through real nv1 upgrades.
   - nv1 boots the new UKI without the sysctl (verified 2026-11-06, see step 4 of the Talos v1.14.5 item), and mc1 to mc3 kexec-boot fine (Talos logs of the same upgrade). Drop the stale-UKI rename from the runbook once a real nv1 upgrade has gone through without it.
 
+- [ ] **Hermes: restore Piper text-to-speech (2026-11-09, from the v0.23.0 upgrade).** The chart's `postStart` installed `honcho-ai` and `piper-tts` with `uv`. The v0.23.0 image has no `uv` on PATH and a sealed venv, so the owner chose to remove the hook. Honcho now comes from the catalog plugin. `piper-tts` has no confirmed install route: check `hermes tools` on v0.23.0 first, and otherwise build a thin derived image in `mmalyska/containers`.
+
 ## Waiting on something external
 
 - [ ] **Rook-Ceph: migrate CSI keys to `aes256k` and unmute the CephX warnings** (background: `docs/src/k8s/rook-ceph-cephx.md`). Gate 2 is met: ceph-csi is v3.18.1 (needed 3.17.1 or newer). **Gate 1 is not: Linux kernel 7.0+ on every node.** `aes256k` is used by the kernel RBD/CephFS clients; forcing it on a 6.x kernel breaks every kernel mount and takes out all PVCs. All nodes run 6.18.54 and Talos tracks the 6.18 longterm branch, so this waits for Talos to adopt a 7.x kernel (check `kubectl get nodes -o custom-columns='NAME:.metadata.name,KERNEL:.status.nodeInfo.kernelVersion'`).
