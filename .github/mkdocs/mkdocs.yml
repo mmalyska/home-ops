@@ -157,3 +157,4 @@ nav:
           - "Config Map": talos/config-map.md
   - "Contributing":
       - "AI workflow": contributing/ai-workflow.md
+      - "New repository requirements": contributing/new-repository.md

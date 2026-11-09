@@ -52,25 +52,48 @@ the pod gets exactly the secrets named in the parameters and cannot list the oth
 
 ## How hermes connects
 
-Hermes runs in the `hermes-agent` namespace and uses SSH, as it does with the `sandbox` workspace today.
+Hermes runs in the `hermes-agent` namespace and uses SSH. It has two workspaces, one for each profile:
+
+| Profile                      | Workspace       | Service host                                                    | GitHub account   |
+| ---------------------------- | --------------- | --------------------------------------------------------------- | ---------------- |
+| `default` (`rudi-the-brain`) | `hermes-main`   | `mmalyska-hermes-main-ssh.agent-workspaces.svc.cluster.local`   | `rudi-the-brain` |
+| `worker` (`agent-rosie`)     | `hermes-worker` | `mmalyska-hermes-worker-ssh.agent-workspaces.svc.cluster.local` | `agent-rosie`    |
+
+Both have read-only Kubernetes access and no Talos access. `hermes-worker` has a larger `/workspaces` volume (50 Gi).
 
 - **Network.** The namespace has an ingress deny-all. `allow-ssh-from-agents` opens port 2222 of the workspace pods to the
   pods listed in `sshClients` (values.yaml): the Hermes pod (`app=hermes-agent`) in `hermes-agent`. Nothing else reaches it.
-- **Key.** Hermes already holds a private key at `/opt/data/ssh/sandbox-devops.key`. Derive its public half and pass it as
-  the workspace's `authorized_key` (`ssh-keygen -y -f <key>`), or generate a new pair and store the private key for Hermes the
-  same way as the existing one.
-- **Target.** Hermes selects its SSH terminal with `terminal.backend: ssh` in the profile's `config.yaml` and reads the target
-  from the profile's `.env` ([Hermes docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools)):
-  `TERMINAL_SSH_HOST=<id>-ssh.agent-workspaces.svc.cluster.local`, `TERMINAL_SSH_USER=vscode`, `TERMINAL_SSH_PORT=22`,
-  `TERMINAL_SSH_KEY=/opt/data/ssh/<key>`; set `terminal.cwd` to `/workspaces`. One profile has one SSH target, so one workspace
-  per profile. The server host key is kept on the home volume, so `known_hosts` stays valid across restarts. The Hermes docs do
-  not say whether the backend checks host keys; check that on the first connection.
+- **Keys.** Each workspace has its own SSH key pair. The private keys are Bitwarden items `HERMES_MAIN_WS_SSH_KEY` and
+  `HERMES_WORKER_WS_SSH_KEY`. The Hermes chart copies them at every pod start to `/opt/data/ssh/hermes-main.key` and
+  `/opt/data/ssh/hermes-worker.key` (mode 600), and removes the old `sandbox-devops.key`. The public half of each is that
+  workspace's `authorized_key` parameter. Both items must be in the `cluster` Bitwarden project, and a private key stored there
+  must end with a newline.
+- **Target.** Each profile selects its SSH terminal with `terminal.backend: ssh` in its `config.yaml` and reads the target
+  from its `.env` ([Hermes docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools)):
+  `TERMINAL_SSH_HOST`, `TERMINAL_SSH_USER=vscode`, `TERMINAL_SSH_PORT=22` and `TERMINAL_SSH_KEY=/opt/data/ssh/hermes-{main,worker}.key`;
+  `terminal.cwd` is `/workspaces`. The chart writes these keys (`hermes.profileEnv`). One profile has one SSH target. The server
+  host key is kept on the home volume, so `known_hosts` stays valid when a workspace restarts onto a new pod.
+- **File tools.** Hermes `write_file` refuses paths outside `/opt/data`, so the `file` toolset is off and files are edited through the terminal.
+- **Repository rules.** Startup context files such as `AGENTS.md` are not loaded from the workspace over SSH. The skills read the
+  repository's `AGENTS.md` from the default branch explicitly.
 - **Shell.** Hermes runs commands non-interactively (no TTY). Tools come from `/usr/local/bin` shims, so no shell init is needed.
 
 - **Environment.** The optional `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on) and `SSH_AUTH_SOCK` are handed to SSH
   sessions through `~/.ssh/environment`, rebuilt at every start from a file in `/cache`.
 - **Image.** sshd comes from the `dev-workstation` image (`openssh-server`, added in `mmalyska/containers`). With an older
   image the workspace still starts and the log says sshd is missing.
+
+## Git identity and signing
+
+Each workspace acts as its own GitHub account. The template parameters set it up:
+
+- `github_token_ref` is that account's classic token (`repo` and `workflow` scopes). It is both the `GITHUB_TOKEN` for `gh` and the
+  HTTPS credential for git. There is no SSH authentication key for git.
+- `git_user_name` and `git_user_email` (the account name and its GitHub noreply address) are written to `~/.gitconfig` at every start.
+- `signing_key_ref` is an SSH signing key. It is loaded into the in-pod ssh-agent and never written to a volume. All of the
+  account's commits are signed and show "Verified" on GitHub, because the public half is registered on the account as a signing key.
+
+The Hermes pod holds none of this: the tokens and signing keys exist only in the workspaces.
 
 ## How you get in to fix something
 

@@ -1,6 +1,6 @@
 ---
 name: reference_hermes_64k_context_floor
-description: Hermes Agent refuses any model below 64,000 tokens of context; llama-server slots are 32768 so the main model and compression must stay on the cloud
+description: Hermes Agent refuses any model below 64,000 tokens of context; a local main model or compression needs one 64K slot; the main model stays on the cloud
 metadata:
   type: reference
 ---
@@ -14,6 +14,6 @@ llama-server on nv1 runs `-c 65536 -np 2` = 32768 per slot, so a local main mode
 
 **Update 2026-10-15:** llama-server now runs `-c 65536 -np 1` (one slot of 65536), so the floor is met and the main model and compression run locally on Gemma 4. See [[reference_gemma4_single_slot_swap]].
 
-**Archived 2026-10-21:** the Hermes stack (hermes-agent, honcho, llm-embeddings, llm-stt) moved to `.archive/cluster/ai/` because only a Claude subscription was available and API pricing was too high; restore steps are in `.archive/cluster/ai/README.md`. No data was kept. The checks above only matter if it is restored.
+**Restored 2026-11:** the Hermes stack runs again in `cluster/apps/ai/hermes-agent` (the 2026-10-21 archive no longer applies). It goes through the AI gateway: `default` on `main`, `worker` on `main-cheap`, and `local` only for small auxiliary tasks. The floor still applies to any model a profile or auxiliary task uses.
 
 **Update 2026-10-28:** the local model is now LFM3-1.7B (256K context) at `-c 65536 -np 1`, so the floor is still met; more slots need `ctx / parallel >= 64000` and the hybrid-corruption gate ([[project_nv1_drop_gemma_multi_model]]).

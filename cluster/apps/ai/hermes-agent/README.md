@@ -29,11 +29,11 @@ Hermes Agent deployed as a single-pod application on the home Kubernetes cluster
 
 | Component                      | Purpose                                                                                                                                                   |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **hermes-agent**               | Main process — gateway server (Discord), kanban dispatcher, dashboard                                                                                     |
+| **hermes-agent**               | Main process — one multiplexed gateway for both profiles (Discord), kanban dispatcher, scheduled jobs, dashboard                                          |
 | **nginx**                      | Reverse proxy in front of hermes-agent; rewrites Host to `127.0.0.1` so hermes gateway loopback guard passes                                              |
-| **PVC `hermes-agent-data`**    | Persistent state — config, profiles, skills, sessions, memory, logs                                                                                       |
+| **PVC `hermes-agent-data`**    | Persistent state — config, profile homes, sessions, memory, logs, SSH keys                                                                                |
 | **VolSync**                    | Restic backups of the PVC to S3 (every 6 hours)                                                                                                           |
-| **ExternalSecret**             | Discord, GitHub and sandbox SSH credentials from Bitwarden → K8s Secret → env vars in pod                                                                 |
+| **ExternalSecret**             | Discord credentials and the two workspace SSH keys from Bitwarden → K8s Secret (the keys are files, never environment variables)                          |
 | **LiteLLMVirtualKey `hermes`** | Team key for the AI gateway; the operator writes it to Secret `hermes-litellm`, the pod reads it as `LITELLM_API_KEY` (no provider key in this namespace) |
 | **Honcho**                     | Self-hosted memory server (separate namespace) — provides persistent cross-session user memory via Theory-of-Mind reasoning and vector recall             |
 
@@ -46,6 +46,7 @@ The declarative configuration lives in `values.yaml` and covers:
 - **`hermes.config`** — Settings shared by every profile (approvals mode, display, timezone, TTS, auxiliary models; all through the gateway).
   Rendered to a ConfigMap and mounted read-only as `/etc/hermes/config.yaml` (Hermes Managed Scope, single file by `subPath`; the image keeps other files in `/etc/hermes`).
   A managed value beats every profile for that exact key and a managed list replaces the profile's list, so a key that differs between profiles must not go here.
+- **`hermes.profileEnv`**, **`hermes.profileSecretEnv`**, **`hermes.profileSkills`** — Per-profile `.env` keys, secrets copied into a profile's `.env`, and the skills and SOUL file seeded into it.
 - **`hermes.profileOverlays`** — Per-profile settings, deep-merged by `profile-config-seeder` on every pod start: `default` into `/opt/data/config.yaml`, any other name into `/opt/data/profiles/<name>/config.yaml`.
 - **`externalSecrets`** — Bitwarden secret references for API keys
 - **`backup`** — VolSync schedule and retention
@@ -63,87 +64,138 @@ Both the managed file and the overlays carry a checksum annotation on the pod te
 
 The dashboard is exposed at `hermes.<private-domain>` via Envoy Gateway (HTTPS). A `cluster-secrets` plugin token resolves the private domain from Bitwarden at ArgoCD sync time.
 
-## Profiles — Not in `values.yaml`
+## Profiles and workspaces
 
-**Profiles are NOT declared in the Helm chart.** They are created imperatively inside the running container and survive on the PVC. This is by design — profiles are stateful (skills, memory, sessions) and are managed as runtime objects, not infrastructure templates.
+Two profiles run in one pod. Each has its own Coder workspace, reached over SSH, and its own GitHub account. The pod holds no GitHub credential: the tokens exist only inside the workspaces.
 
-### How Profiles Survive Pod Restarts
+| Profile                        | GitHub account   | Role                                                                                                              | Workspace (SSH terminal) | Model        |
+| ------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------ |
+| **default** (`rudi-the-brain`) | `rudi-the-brain` | Chat on Discord, spec notes, plans, orchestration, the daily Renovate run; approves and merges clean Renovate PRs | `hermes-main`            | `main`       |
+| **worker** (`agent-rosie`)     | `agent-rosie`    | PR checks, implementation, post-merge checks, revert PRs. Never approves or merges                                | `hermes-worker`          | `main-cheap` |
 
-On every container boot, the s6-overlay `02-reconcile-profiles` script walks `/opt/data/profiles/<name>/gateway_state.json` and re-registers each profile's gateway as an s6 service. Profiles whose prior state was `"running"` are auto-started. This makes profiles durable across pod restarts and image upgrades without any Helm involvement.
+Terminal commands, `git` and `gh` run in the profile's workspace, not in the Hermes pod. The `file` toolset is off for both profiles, because `write_file` is refused outside `/opt/data`; files are edited through the terminal.
+See [Agent workspaces](../../../../docs/src/k8s/agent-workspaces.md) for the workspaces, their SSH keys and git identity.
 
-### Current Profile Fleet
+### One gateway for both profiles
 
-| Profile     | Role                                                                                | Workspace (SSH terminal) | Model        |
-| ----------- | ----------------------------------------------------------------------------------- | ------------------------ | ------------ |
-| **default** | Interactive Discord profile and kanban orchestrator                                 | `hermes-main`            | `main`       |
-| **worker**  | Executes well-defined tasks from the orchestrator, spawned by the kanban dispatcher | `hermes-worker`          | `main-cheap` |
+Since Hermes v0.22 one multiplexed gateway serves every profile, and the kanban dispatcher runs inside it. The `worker` profile therefore needs no gateway of its own (no bot token, no `gateway_state.json`).
+The container runs `gateway run --replace`, and the dashboard stays on loopback behind nginx.
 
-The `orchestrator`, `devops`, `researcher`, `dotnet-dev`, `node-dev` and `mobile-dev` profiles stay on the volume but are retired: no overlay, no kanban dispatch. Kanban only claims cards assigned to `worker` (`kanban.dispatch_profiles`).
+### What is seeded at every pod start
 
-### Creating a New Profile
+Nothing a profile needs is set by hand, except creating the `worker` profile once (see below). Init containers restore all of it from git on every start:
 
-Access the pod and use `hermes profile create`:
+| What                 | Where it comes from                                                                                              | Where it lands                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Shared settings      | `hermes.config`, a ConfigMap mounted by `subPath`                                                                | `/etc/hermes/config.yaml` (Managed Scope, read-only, beats every profile for the same key)                    |
+| Per-profile settings | `hermes.profileOverlays`, deep-merged by `profile-config-seeder`                                                 | `/opt/data/config.yaml` for `default`, `/opt/data/profiles/<name>/config.yaml` for the others                 |
+| Profile `.env` keys  | `hermes.profileEnv` (plain values) and `hermes.profileSecretEnv` (secrets), written by `profile-env-seeder`      | the profile's `.env`: the `TERMINAL_SSH_*` target, `DISCORD_HOME_CHANNEL`, and `LITELLM_API_KEY` for `worker` |
+| Workspace SSH keys   | ExternalSecret items `HERMES_MAIN_WS_SSH_KEY` and `HERMES_WORKER_WS_SSH_KEY`, mounted only into `ssh-key-seeder` | `/opt/data/ssh/hermes-main.key` and `/opt/data/ssh/hermes-worker.key` (mode 600)                              |
+| Skills               | `skills/<name>/SKILL.md`, listed per profile in `hermes.profileSkills`                                           | `<profile home>/skills/<name>/SKILL.md`                                                                       |
+| SOUL files           | `files/soul-<profile>.md`                                                                                        | `<profile home>/SOUL.md`                                                                                      |
+| Honcho settings      | ConfigMap `hermes-agent-honcho`, merged by `honcho-seeder`                                                       | `honcho.json` of each profile except `worker`                                                                 |
 
-```bash
-kubectl exec -it deploy/hermes-agent -n hermes-agent -- bash -c \
-  'export PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:$PATH" && \
-   hermes profile create <name> --clone --description "..."'
-```
+Rules that follow from this:
 
-`--clone` copies API keys from the default profile. `--description` is critical — the kanban decomposer uses it to route tasks to the right specialist.
+- Seeders only add or overwrite keys, never delete. To change a value for good, overwrite it explicitly.
+- A non-default profile resolves `${VAR}` in its config from its own `.env`, not from the pod environment. A secret that the profile's config uses must be listed in `hermes.profileSecretEnv` (today
+  `LITELLM_API_KEY` for `worker`). `default` and Managed Scope read the pod environment.
+- A seeded skill or SOUL file overwrites the copy on the volume, so edit them in `skills/` and `files/`, not in the pod.
+- A profile directory that does not exist yet is skipped by every seeder. This is why the `worker` profile has to be created once.
+- Changes to the managed file, the overlays or the skills carry a checksum annotation on the pod template and restart the pod.
 
-### Profile Configuration
+### Remaining manual steps
 
-Each profile has its own `config.yaml` at `/opt/data/profiles/<name>/config.yaml` (the `default` profile's is `/opt/data/config.yaml`). The main config values to adjust per profile:
+1. **Create the `worker` profile once**, after the first deploy onto an empty volume. The next restart seeds it:
 
-```bash
-# Set the model for a specific profile
-hermes -p <name> config set model.default "cheap"
+   ```bash
+   kubectl exec -it deploy/hermes-agent -n hermes-agent -- bash -c \
+     'export PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:$PATH" && \
+      hermes profile create worker --clone --description "Executes well-defined tasks from the orchestrator"'
+   ```
 
-# Enable/disable toolsets
-hermes -p <name> tools enable terminal file web
-hermes -p <name> tools disable browser cronjob
+   `--description` matters: the kanban decomposer uses it to route tasks.
 
-# Set profile description (used by kanban decomposer for routing)
-# Edit /opt/data/profiles/<name>/profile.yaml directly
-```
+2. **Restore Honcho** after a restore onto an empty volume (see [Restoring onto an Empty Volume](#restoring-onto-an-empty-volume)).
 
-### Kanban Wiring
+### Kanban wiring
 
-Kanban settings live in the `default` overlay in `values.yaml`: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker]`, `max_in_progress_per_profile: 2`.
-The `kanban` toolset is off by default per platform; the `worker` overlay enables it under `platform_toolsets.cli`, which is what dispatcher-spawned workers use.
+Kanban settings live in the `default` overlay: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker]`, `max_in_progress_per_profile: 2`.
+Kanban tools are opt-in per platform: the `default` overlay turns them on for Discord and cron, and the `worker` overlay turns them on under `platform_toolsets.cli`, which is what dispatcher-spawned workers use.
+A card assigned to `default` is never claimed by the dispatcher, so it waits in `ready` until something else moves it.
+
+### Command policy
+
+`approvals.deny` in each overlay holds case-insensitive `fnmatch` globs matched against the whole command and each executable in it.
+Both profiles refuse force pushes, pushes to `main` or `master`, and `kubectl apply`, `delete`, `patch` and `exec`. `worker` also refuses `gh pr merge`, `gh pr review`, merge calls through `gh api`,
+`PUT` and `DELETE` through `gh api`, and `argocd app sync`.
+This is a policy, not a sandbox. A bare `git push` on a branch whose upstream is `main` is not matched; the GitHub ruleset stops it. `default` may run `gh pr review` and `gh pr merge`, because it
+approves and merges the PRs the merge policy allows.
+
+## Daily Renovate run
+
+Job `renovate-daily` runs at 06:00 Europe/Warsaw every day on the `default` profile, with the `renovate-triage` skill and the `main-lite` model alias. It is declared in the chart. It posts to `#hermes-renovate`.
+
+1. It lists open Renovate PRs (author `app/bendo-bot`) in every non-archived `mmalyska` repository.
+2. It restores the label of a PR whose diff hash still matches the worker's earlier verdict, and gives the `worker` one task per remaining `triage/needed` PR. `triage/owner` PRs get no new work.
+3. The worker returns a verdict with evidence: clean, needs the owner, or needs a fix.
+4. When merging is on, the orchestrator re-checks gates G1 to G5 for each `triage/clean` PR, approves as `rudi-the-brain` and merges, then the worker checks the result (Argo CD health in home-ops,
+   default-branch CI elsewhere) and opens a revert PR on failure.
+5. It posts one summary: merged, would merge, waiting for the owner, skipped and failed checks. A run with nothing to report still posts, so a missing summary at 07:00 means the run failed.
+
+**Merging is off until T19.** The switch is `merge_enabled` in `.agents/policy/hermes-merge-policy.md`, and the owner turns it on with a one-line PR after three report-only runs. Until then the summary says "would merge" and nothing is merged.
+The gates, the denylist and the limits are in that file; this page does not repeat them.
+
+Every PR that waits for the owner is listed in the summary. The owner replies in `#hermes-renovate` and names the PR, for example `merge home-ops#6183`:
+
+| Reply     | Result                                                                              |
+| --------- | ----------------------------------------------------------------------------------- |
+| `fix`     | The worker pushes the change and re-checks. The PR returns to the owner.            |
+| `I merge` | Hermes stops listing it.                                                            |
+| `merge`   | The orchestrator approves and merges. This is the owner's consent for that one PR.  |
+| `reject`  | The PR is closed with a comment, so Renovate ignores that version.                  |
+| `resume`  | Lifts the auto-merge block on the named repository after a failed post-merge check. |
+
+The denylist only stops auto-merge. A `merge` reply from the owner overrides it. A cron job cannot create Discord threads, so decisions are replies in the channel, not per-PR threads.
+
+## Spec, plan and execution
+
+Work is sized when it starts: small (owner's request, then PR), medium (plan PR) or big (spec PR, then plan PR, then implementation PR). Big work goes through three phases, and each starts only on a
+message from the owner's Discord account after the earlier PR is merged on the default branch:
+
+1. **Spec.** The owner leads; Hermes asks questions, records decisions and writes `.plans/<slug>/spec.md` in a PR (skill `spec-author`).
+2. **Plan.** Hermes builds `plan.md` and `tasks.md` from the merged spec in a PR.
+3. **Execution.** Hermes turns the tasks into kanban cards, posts every human task at once and drives the rest through the `worker`. The implementation PR goes to the owner.
+
+The design is in [`.plans/hermes-orchestration/spec.md`](../../../../.plans/hermes-orchestration/spec.md) and [`plan.md`](../../../../.plans/hermes-orchestration/plan.md); `tasks.md` in the same folder tracks the build.
+The `default` profile may approve and merge only the Renovate PRs the merge policy allows. Every other PR is merged by the owner, and the repository rules (see [New repository
+requirements](../../../../docs/src/contributing/new-repository.md)) enforce that.
 
 ### Filesystem Layout Inside the Container
 
 ```
 /opt/data/                        ← PVC (hermes-agent-data)
 ├── config.yaml                   ← Default profile config (overlay merged at start)
-├── SOUL.md                       ← Agent personality
-├── .env                          ← Environment (API keys injected from Secret)
-├── .hermes/                      ← Hermes internal state
-├── profiles/                     ← Profile directories
-│   ├── <name>/
-│   │   ├── config.yaml
-│   │   ├── profile.yaml          ← Description + metadata
-│   │   ├── SOUL.md
-│   │   ├── skills/
-│   │   ├── memories/
-│   │   ├── sessions/
-│   │   ├── .env
-│   │   └── gateway_state.json    ← {"state": "running"} — s6 reconciler key
+├── SOUL.md                       ← Seeded from files/soul-default.md
+├── .env                          ← Default profile environment
+├── ssh/                          ← hermes-main.key, hermes-worker.key (seeded)
+├── installs/                     ← Plugin dependency environments (Honcho)
+├── plugins/                      ← Catalog plugins (Honcho)
+├── profiles/
 │   └── worker/
-├── skills/                       ← Shared skills (symlinked into profiles)
+│       ├── config.yaml
+│       ├── SOUL.md
+│       ├── skills/
+│       ├── sessions/
+│       └── .env
+├── skills/                       ← Default profile skills
 ├── logs/
-│   ├── agent.log
-│   ├── errors.log
-│   ├── container-boot.log        ← s6 reconciliation log
-│   └── gateways/
-└── voice-memos/
+└── backups/config/               ← Copies taken before a config migration
 ```
 
 ## Memory (Honcho)
 
-Hermes uses [Honcho](../honcho/README.md) as a persistent memory backend (`memory.provider: honcho` in `config.yaml`). Memory is scoped per-profile: `default` maps to the Honcho host `hermes`. `worker` has no long-term memory and no host.
+Hermes uses [Honcho](../honcho/README.md) as a persistent memory backend (`memory.provider: honcho` in `config.yaml`). `default` maps to the Honcho host `hermes`. `worker` has no long-term memory and no host.
 
 ### How it works
 
@@ -175,8 +227,6 @@ kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
 | -------------- | --------------- | -------- |
 | default        | `hermes`        | `hermes` |
 
-The `hermes.orchestrator`, `hermes.devops` and `hermes.researcher` hosts are disabled (`enabled: false`) so their old memory stays intact.
-
 ## Maintenance Tasks
 
 ### Viewing Logs
@@ -188,12 +238,9 @@ kubectl logs deploy/hermes-agent -n hermes-agent -c hermes-agent --tail=100
 # s6 boot reconciliation
 kubectl exec deploy/hermes-agent -n hermes-agent -- tail -50 /opt/data/logs/container-boot.log
 
-# Profile gateway logs (for debugging)
-kubectl exec deploy/hermes-agent -n hermes-agent -- ls /opt/data/logs/gateways/
-kubectl exec deploy/hermes-agent -n hermes-agent -- tail -50 /opt/data/logs/gateways/default/current
 ```
 
-### Checking Gateway Status
+### Checking Profiles
 
 ```bash
 kubectl exec deploy/hermes-agent -n hermes-agent -- hermes profile list
@@ -201,7 +248,7 @@ kubectl exec deploy/hermes-agent -n hermes-agent -- hermes profile list
 
 ### Updating the Image
 
-Edit `values.yaml` → update `hermes.image.tag` → commit → ArgoCD syncs. The s6 reconciler restores profile gateways from PVC state on restart.
+Edit `values.yaml` → update `hermes.image.tag` → commit → ArgoCD syncs. On start the container migrates `/opt/data/config.yaml` to the new schema and keeps a copy in `backups/config/`. Downgrading is unsupported upstream, so restore from a VolSync backup instead of pinning an older tag.
 
 ### Forcing Config Reload
 
@@ -227,13 +274,15 @@ Hermes holds no provider key. `model.base_url` is the gateway, `model.api_key` i
 - Auxiliary tasks follow "prefer `main`" (subscription, no budget cap): `web_extract`, `compression`, `approval`, `mcp` and `kanban_decomposer` use `main`. `vision` uses `local-think` since 2026-10-29 (the server runs LFM3-VL-2B, which reads images; reasoning on, because a dashboard screenshot was misread with it off). Small background tasks (`title_generation`, `triage_specifier`, `profile_describer`, `curator`, `skills_hub`) stay on `local`, which is free and keeps them off the subscription limits. Nothing in Hermes depends on `cheap` directly, so it can be retired without touching this file.
 - **Hermes refuses to build an agent for any model with less than 64,000 tokens of context** (`agent_init._enforce_minimum_context`). `local` is llama-server with `-c 65536 -np 1`, one slot of 65536 tokens, so it only stays usable as an auxiliary model while that slot stays at or above 64000 (see `.claude/memory/reference_hermes_64k_context_floor.md`). It serves one request at a time.
 - Text-to-speech is configured for Piper (voices cached under `cache/piper-voices/` in each profile home), but **`piper-tts` is not installed since the v0.23.0 upgrade**, so voice output does not work. The image no longer ships `uv` and its virtual environment is sealed; see `.plans/TODO.md`. Speech-to-text (Speaches) is not restored.
-- Profiles are not created by the chart; their config lives on the PVC. `hermes.profileOverlays.<name>` (`default`, `worker`) is deep-merged into that profile's `config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile to another provider, overwrite `model.provider`, `model.default`, `model.base_url`, `model.api_key` and `model.context_length` explicitly, otherwise a stale value keeps traffic on the old endpoint. `hermes chat -q "ping"` (or `hermes -p <name> chat -q "ping"`) in the pod is the quickest check that an agent can start.
-- `${LITELLM_API_KEY}` in `config.yaml` is expanded by Hermes from the pod environment. If `hermes chat -q "ping"` reports an authentication error, check that expansion first.
+- `hermes.profileOverlays.<name>` (`default`, `worker`) is deep-merged into that profile's `config.yaml` on every pod start. The seeders **only add or overwrite keys, never delete**: to move a profile to another provider, overwrite `model.provider`, `model.default`, `model.base_url`, `model.api_key` and `model.context_length` explicitly, otherwise a stale value keeps traffic on the old endpoint. `hermes chat -q "ping"` (or `hermes -p <name> chat -q "ping"`) in the pod is the quickest check that an agent can start.
+- `${LITELLM_API_KEY}` in `default`'s config and in Managed Scope is expanded from the pod environment; in `worker`'s config it is expanded from the profile's `.env` (see `hermes.profileSecretEnv`). If `hermes chat -q "ping"` reports an authentication error, check that expansion first.
 - GPU rules, memory budget and recovery for `local`: see `docs/src/k8s/nv1-jetson.md`.
 
 ## Security Notes
 
-- All secrets come from Bitwarden via ExternalSecret — no credentials in git
+- All secrets come from Bitwarden via ExternalSecret — no credentials in git. The ExternalSecret store reads only the `cluster` Bitwarden project, so every `HERMES_*` item must be in that project; an item elsewhere answers 404.
+- The pod holds no GitHub token. The workspace SSH keys are mounted only into the `ssh-key-seeder` init container and copied to `/opt/data/ssh/` with mode 600.
+- Private keys stored in Bitwarden must end with a newline, or `ssh-keygen` fails with "error in libcrypto".
 - `cluster-secrets` plugin resolves `<secret:private-domain>` in HTTPRoute hostname
 - gitleaks pre-commit hook blocks accidental secret commits (bws IDs are annotated with `#gitleaks:allow`)
 - Dashboard is loopback-only internally; nginx rewrites Host to `127.0.0.1` so the hermes host-header guard passes
