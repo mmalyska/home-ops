@@ -209,3 +209,8 @@ Manual runs of `renovate-daily` on 2026-11-09. They do not count towards the thr
   - Failed: the job ended after about 29 minutes, inside the 50-minute limit, with this run's cards still `ready` or `running`, and said the gate re-check was not completed. `home-ops#6202` was `triage/clean` and should have been listed as "would merge", but appeared nowhere. Hence P12.
   - Failed: a 404 on `AGENTS.md` was reported as an error for `github-workflows` and `homelab-portal`, which have no such file. The `renovate-triage` skill now treats it as no extra rules.
   - Expected: a first-run backlog. Only two worker tasks run at a time, so 14 cards were still `ready` and 2 `running` after the job. Later runs pick up those verdicts by diff hash.
+- **Third run, on `main-cheap` (about 21:54 to 21:57 UTC):**
+  - Worked: the gate re-check ran, 7 PRs were listed as "would merge", the `AGENTS.md` 404 was no longer reported, and nothing merged.
+  - Failed: `containers#729` passed every gate but appeared under no heading.
+  - Failed: all 24 waiting PRs carried the false reason "no verdict provided in PR comments", and denylisted PRs were not marked.
+  - The model wrote its own snapshot command, which errored at 60 seconds. The per-PR work moved into complete scripts in the skill, each ending with a `COMPLETE` line, and the summary step now checks that no PR is missing.
