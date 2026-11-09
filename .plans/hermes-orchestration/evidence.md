@@ -59,3 +59,52 @@ Collected 2026-11-06 by read-only checks (repository, `kubectl get/logs`, `gh` r
 ## To be filled in during Build
 
 Live checks V1 to V9, upgrade notes, each repository's merge requirements, and the results of the report-only runs.
+
+## Upgrade notes
+
+Written for task T04 on 2026-11-09. Sources: the GitHub release notes of `NousResearch/hermes-agent` for every release after `v2026.9.24` (v0.21.6, v0.21.7, v0.22.0 to v0.22.7, v0.23.0), the Docker Hub tag list, and the Dockerfile, `docker/` scripts, `pm/` and `hermes_cli/` sources at both tags. All of it is untrusted text and was only read, not followed. The image was not run or inspected (no container runtime here), so everything below about image contents comes from source at the tags.
+
+### Target
+
+- Latest `v0.x` tag on 2026-11-09: `v0.23.0` (released 2026-11-05). The digest is the multi-arch index digest of Docker Hub tag `v0.23.0` (`stable` and `latest` point at the same digest); it was pinned in `cluster/apps/ai/hermes-agent/values.yaml` as `v0.23.0@sha256:adb7890916de63245523492be8f68f9d2095fecbec4e2a6dab7960381f0fc002`.
+- The previous pin `v2026.9.24` is the same release as GitHub's "v0.21.5 (v2026.9.24)". The scheme changed with v0.21.6 (2026-10-08): CalVer tags stopped and SemVer `vX.Y.Z` began. Docker tags `v0.22.x` and `v0.23.0` also exist, plus `-desktop` variants that this chart does not use.
+- The release notes for v0.21.6 to v0.22.7 are short roll-ups; their full curated notes ship in v0.22.0 and v0.23.0, which were read in full for upgrade notes, breaking changes, gateway, session, plugin, Docker, config and security sections.
+
+### Changes that affect this chart
+
+- **`uv` is no longer on the image PATH (v0.22.0 Docker rework; verified in the v0.23.0 Dockerfile).** The old image copied `/usr/local/bin/uv`. The new one stages uv inside the package manager store (`/opt/hermes/tools`) and symlinks only `python3`, `node`, `npm`, `npx`, `ffmpeg`, `ffprobe` and `rg` into `/usr/local/bin`. The upstream `pm/AGENTS.md` says: "Do not mutate Hermes environments with raw pip or uv" and "Callers receive an interpreter or tool path, not uv". The chart's `postStart` runs `VIRTUAL_ENV=/opt/hermes/.venv uv pip install honcho-ai piper-tts`. If `uv` is missing it exits 127, and a failed `postStart` hook makes Kubernetes kill the container, which would crash-loop the pod. This was not confirmed on the running image. Left unchanged, see decisions below.
+- **The venv is sealed and `/opt/hermes` is root-owned and read-only by design.** Upstream: on-demand dependencies go to package-manager "generations" under `/opt/data/installs`, "the sealed /opt/hermes/.venv is never written". `HERMES_DISABLE_LAZY_INSTALLS` and `HERMES_LAZY_INSTALL_TARGET=/opt/data/lazy-packages` from the old image are gone. A raw `uv pip install` into the venv is therefore at odds with the new design even if `uv` were found.
+- **Honcho left core and is now a catalog plugin (v0.22.0).** Upstream: "Existing users are migrated on update or first start, with data intact" (`hermes_cli/memory_provider_migration.py`). It installs the catalog entry `honcho` (version 1.1.0, pinned to a reviewed commit in `plastic-labs/honcho`) under `HERMES_HOME/plugins/honcho` when `memory.provider: honcho` is configured and the provider cannot be found, and the plugin brings its own dependencies. Same provider name, same settings, same `honcho.json` read path and tool names. The install needs network access to GitHub from the pod; on failure it retries with backoff (1 hour doubling up to 7 days) and reports it in chat and logs. If the migration fails the provider stays missing, which means no memory. The `honcho-seeder` init container and the `honcho.json` it writes are still the documented configuration, so they need no change.
+- **`piper-tts` is still not baked into the image or in the lazy-dependency list.** The TTS tool still says to select Piper under `hermes tools`. Whether the new design installs it on first use was not determined.
+- **One gateway serves every profile (v0.22.0, default).** `hermes update` folds per-profile gateways into the default multiplexed gateway "when nothing conflicts"; `gateway.standalone: true` is a temporary opt-out; `gateway.multiplex_profile_allowlist` was removed (config step 42 to 43). The image adds an s6 service `profile-gateways`. The `gateway run --replace` args and the `HERMES_DASHBOARD`, `HERMES_DASHBOARD_HOST`, `HERMES_DASHBOARD_PORT` variables are unchanged in the scripts at v0.23.0 (`--replace` still exists in the CLI; the dashboard run script still reads those variables). `HERMES_DASHBOARD_TUI` was not found in the scripts read; it is harmless if unused. In v0.23.0 every local session (CLI, TUI, API, bots, cron) attaches to one gateway per profile.
+- **Config schema 46 to 52.** `_config_version` was 46 at v2026.9.24 and is 52 at v0.23.0. On every container start, `stage2-hook.sh` runs `scripts/docker_config_migrate.py` on `/opt/data/config.yaml`: it copies `config.yaml` and `.env` into `backups/config/` first (label `pre-docker-migrate`), migrates, and restores the copies if the migration fails. Steps in range that touch this chart's area: none of the keys the chart sets are renamed or removed. A one-time personality reset (33 to 34) is below the live version and does not apply. All the chart's `auxiliary.*` keys (including `kanban_decomposer`, `profile_describer`, `triage_specifier`, `skills_hub`, `curator`) and `approvals`, `display.show_cost`, `dashboard.show_token_analytics`, `discord.*`, `memory.provider` and `tts.*` still exist in the v0.23.0 defaults. The live `_config_version` was not read (no exec).
+- **Session auto-prune.** v0.22.0 turned `sessions.auto_prune` on by default (ended sessions inactive 90 days deleted at startup). v0.23.0 made it opt-in again. At the target, nothing is pruned unless configured. The chart does not set it.
+- **No idle or daily chat reset (v0.22.0).** `session_reset` idle/daily modes are retired; the chart does not set them.
+- **Browser tools replaced (v0.23.0).** The ten `browser_*` tools and agent-browser are gone; use `browser_exec`. The chart does not name them.
+- **Other v0.23.0 upgrade notes that do not apply here:** `hermes mcp serve` is now `hermes mcp-serve`, the three Office skills merged into `microsoft-office`, the Webapp is off by default, Desktop needs macOS 13+.
+- **Tool renames (v0.22.0):** `todo`, `cronjob`, `process` became `todo_list`, `cronjob_manage`, `process_manage`; the old names still work.
+- **Security fixes in v0.21.6:** dashboard sign-in hardening (rate limit, body size, loopback-only login codes), git filter hardening, email allowlist. None need a chart change.
+- **Image base and size.** Debian 13 base, full Chromium through the package manager, new `tmux`, Office and PDF libraries; `ripgrep` and `ffmpeg` come from pm instead of apt. The image is larger than before (index size about 1.1 GB per arch at the target); the pod memory limit was not re-measured.
+
+### State, migrations and one-way steps (risk R8)
+
+- `docker_config_migrate.py` rewrites `config.yaml` to schema 52 on first start. It keeps a copy in `backups/config/` on the volume. Downgrading is unsupported upstream: `gateway/runtime_downgrade_exit.py` says "Downgrading is unsupported" and `update_downgrade_guard.py` exists. A rollback of the image alone would run an older release against a migrated config.
+- The gateway runtime added a `session_admissions` ledger table to the SQLite session store (v0.22.0 and v0.22.1). The state database schema is migrated forward on start. Upstream tests a "genuine SQLite full rollback" but names no supported downgrade path. Treat `state.db` migration as one-way.
+- v0.22.2 notes a known issue: sessions that ran under the v0.22.1 gateway cannot be deleted in v0.22.2. v0.22.1 was built from the wrong commit and is not a target here.
+- The package manager refreshes dependency "generations" under `/opt/data/installs` on every boot (`refresh_dependencies`) and garbage-collects unused ones. That directory is new on the volume.
+- The honcho plugin is installed under `/opt/data/plugins/honcho` on first start (see above). The Honcho server data (in the `honcho` namespace) is not touched.
+- Volume layout is otherwise the same: `HERMES_HOME=/opt/data`, `/opt/data/profiles/<name>/` for profiles, `kanban.db` files still handled by the existing `fix-kanban-db-permissions` init container. Container start is still as root under s6 with services running as UID 10000 (`hermes`). Profile directories are chowned to `hermes` on every boot.
+- A `volsync` backup exists in this chart (`backup:` in values); the conductor runs the pre-upgrade backup.
+
+### What was adjusted and why
+
+- The image pin in `values.yaml`, and the `postStart` hook is removed. The owner chose removal on 2026-11-09: the hook would very likely crash-loop the pod on v0.23.0. Honcho comes from the catalog plugin; `piper-tts` is not installed (`.plans/TODO.md`).
+
+### What could not be determined
+
+- Whether `uv` is on the PATH of the v0.23.0 image at runtime; the source says it is not.
+- Whether `piper-tts` can still be installed into the sealed venv, and how it should be installed in the new design.
+- Whether the honcho catalog migration succeeds from the pod network and brings the `honcho-ai` dependency itself.
+- Whether the multiplexed-gateway auto migration changes how the three existing worker profiles (researcher, devops, orchestrator) get their Discord bot tokens, and whether any of them share the default profile's token. The chart's `profileOverlays` and `honcho.json` host entries for the profiles were not changed.
+- The live `_config_version` and `state.db` schema version, because no command was run in the pod.
+- Renovate: `.github/renovate/groups.json5` still describes `v2026.x.x` CalVer tags with `versioning: loose`. Under loose ordering `v2026.9.24` sorts above `v0.23.0`, so Renovate may propose the old CalVer tags as an update. This is for the Renovate task, not this one.

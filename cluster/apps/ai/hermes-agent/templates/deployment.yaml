@@ -199,13 +199,6 @@ spec:
             - gateway
             - run
             - --replace
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - sh
-                  - -c
-                  - "VIRTUAL_ENV=/opt/hermes/.venv uv pip install honcho-ai piper-tts"
           env:
             - name: HOME
               value: /opt/data
