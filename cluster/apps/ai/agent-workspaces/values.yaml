@@ -24,6 +24,8 @@ resticRefs:
 allowedBwsRefs:
   - "9eebf1ba-9c20-403b-9bb2-b4f900ccf919" #gitleaks:allow #HERMES_MAIN_GITHUB_TOKEN (main hermes profile, wider permissions)
   - "ccc3c108-164f-44ed-a4a8-b4f900cd74ab" #gitleaks:allow #HERMES_WORKER_GITHUB_TOKEN (worker hermes profile, restricted permissions)
+  - "f8c12901-a4d9-419e-a4ee-b4fd00b711d4" #gitleaks:allow #HERMES_MAIN_SIGNING_KEY
+  - "49dd9fe7-df02-44e6-b100-b4fd00b727c5" #gitleaks:allow #HERMES_WORKER_SIGNING_KEY
 
 # Pods that may open SSH (port 2222) to the workspaces. Hermes logs in here with the key whose public half is the
 # workspace's `authorized_key` parameter.
