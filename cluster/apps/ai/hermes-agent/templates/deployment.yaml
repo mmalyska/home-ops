@@ -235,6 +235,81 @@ spec:
             - name: skills-seed
               mountPath: /seed
               readOnly: true
+        - name: cron-seeder
+          image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"
+          securityContext:
+            runAsUser: 10000
+            runAsGroup: 10000
+          workingDir: /tmp
+          command:
+            - /opt/hermes/.venv/bin/python
+            - -c
+            - |
+              import json
+              import os
+              import subprocess
+              import sys
+
+              # Creates the jobs in hermes.cronJobs, and replaces one only when its definition changed, so a restart
+              # keeps run history and a paused job stays paused. A failure must not stop Hermes: the missing daily
+              # summary shows it.
+              JOBS_PATH = '/opt/data/cron/jobs.json'
+              HERMES = [sys.executable, '-m', 'hermes_cli.main', 'cron']
+
+
+              def run(args):
+                  result = subprocess.run(HERMES + args, capture_output=True, text=True, timeout=120)
+                  if result.returncode != 0:
+                      print(result.stdout[-500:], result.stderr[-500:], file=sys.stderr)
+                  return result.returncode == 0
+
+
+              def same(existing, job):
+                  return (existing.get('schedule', {}).get('expr') == job['schedule']
+                          and existing.get('model') == job['model']
+                          and existing.get('deliver') == job['deliver']
+                          and existing.get('skills') == [job['skill']]
+                          and existing.get('timezone') == job['timezone']
+                          and existing.get('prompt') == job['prompt'])
+
+
+              def main():
+                  try:
+                      with open(JOBS_PATH) as f:
+                          current = {j.get('name'): j for j in json.load(f).get('jobs', [])}
+                  except FileNotFoundError:
+                      current = {}
+                  for job in json.loads(os.environ['CRON_JOBS']):
+                      existing = current.get(job['name'])
+                      if existing and same(existing, job):
+                          print(f"unchanged: {job['name']}")
+                          continue
+                      paused = bool(existing) and existing.get('state') == 'paused'
+                      if existing and not run(['remove', existing['id']]):
+                          print(f"could not replace: {job['name']}", file=sys.stderr)
+                          continue
+                      args = ['create', '--name', job['name'], '--deliver', job['deliver'], '--skill', job['skill'],
+                              '--model', job['model'], '--pin', '--timezone', job['timezone']]
+                      if paused:
+                          args.append('--paused')
+                      ok = run(args + [job['schedule'], job['prompt']])
+                      print(f"{'created' if ok else 'FAILED'}: {job['name']}", file=None if ok else sys.stderr)
+
+
+              try:
+                  main()
+              except Exception as exc:
+                  print(f'cron seeding failed: {exc}', file=sys.stderr)
+          env:
+            - name: HOME
+              value: /opt/data
+            - name: HERMES_HOME
+              value: /opt/data
+            - name: CRON_JOBS
+              value: {{ .Values.hermes.cronJobs | toJson | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
       containers:
         - name: hermes-agent
           image: "{{ .Values.hermes.image.repository }}:{{ .Values.hermes.image.tag }}"

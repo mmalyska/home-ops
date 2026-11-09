@@ -228,6 +228,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T12 — Skills and SOUL files
 
+- **Status:** done, 2026-11-09 (#6206, #6207). Both profiles list their skills and SOUL files. Not yet exercised on a real run; that is T18.
 - **Branch:** `feat/hermes-skills`. **Depends on:** T11.
 - **From T11:** turn off the `file` toolset for both profiles and edit through the terminal (V1). Use one daily message, with decisions as replies naming the PR, such as
   `merge home-ops#6183` (V3); update `.agents/policy/hermes-merge-policy.md` and the skills to match. Skills read `AGENTS.md` explicitly (V4). No `command_allowlist` change is needed.

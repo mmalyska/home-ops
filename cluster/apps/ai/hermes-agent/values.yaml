@@ -110,6 +110,16 @@ hermes:
   profileSecretEnv:
     worker:
       - LITELLM_API_KEY
+  # Scheduled jobs of the default profile, created at pod start and replaced when their definition here changes.
+  # `hermes cron pause` survives a restart; merge_enabled in the merge policy is what turns merging on.
+  cronJobs:
+    - name: renovate-daily
+      schedule: "0 6 * * *"
+      timezone: Europe/Warsaw
+      skill: renovate-triage
+      model: main-lite
+      deliver: "discord:1569307898860015628" # #hermes-renovate
+      prompt: "Run Part A of the renovate-triage skill: the daily Renovate run."
   # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
   profileSkills:
     default:
