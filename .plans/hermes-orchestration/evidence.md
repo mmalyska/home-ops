@@ -61,7 +61,7 @@ Collected 2026-11-06 by read-only checks (repository, `kubectl get/logs`, `gh` r
 - Repositories: `gh repo list` shows 10 non-archived non-fork repositories (home-ops, containers, dotfiles, claude-plugins, homelab-portal, argocd-secret-replacer, github-workflows, renovate-config, vintagestory-mods-downloader, helm-charts).
   The plan's earlier count of 12 was wrong; the owner confirmed 10.
 - Invitations: `rudi-the-brain` and `agent-rosie` are collaborators with write access on all 10 (`collaborators/<user>` answers 204).
-- Tokens: the owner ran the check and it printed the login and scopes only. `HERMES_MAIN_GITHUB_TOKEN` is `rudi-the-brain`, `HERMES_WORKER_GITHUB_TOKEN` is `agent-rosie`, both classic with `repo` and `workflow`.
+- Tokens: the owner ran the check and it printed the login and scopes only. `HERMES_MAIN_GITHUB_TOKEN` is `rudi-the-brain`, `HERMES_WORKER_GITHUB_TOKEN` is `agent-rosie`, both classic with `repo` and `workflow`. Both later gained `read:org`, see "Ramp".
 - Bitwarden: the four key items exist and hold passphrase-free OpenSSH private keys. The private halves of the signing keys match the keys on each GitHub account.
   The public halves are not stored there: signing keys are on GitHub, and workspace public keys become the `authorized_key` parameter in T07.
 - **An OpenSSH private key stored in Bitwarden must end with a newline.** Without it, `ssh-keygen` and `ssh-add` fail with "error in libcrypto". All four values needed this fix.
@@ -152,7 +152,7 @@ Collected 2026-11-09 from the `hermes-main` workspace as `rudi-the-brain`. `agen
 - `argocd-secret-replacer` and `containers` report required status checks with `non_admins` enforcement, but an empty list of checks.
 - `homelab-portal`: ruleset `default` has no force push or deletion, PR required, required signatures, merge methods rebase and squash; `deletion-no` blocks deletion.
 - `vintagestory-mods-downloader`: ruleset `Main` has no force push, deletion or creation, PR required, required signatures and linear history, so a merge commit would be refused even though the repository setting allows it.
-- V8 passed: each account pushed an empty signed commit to `dotfiles` over HTTPS with a classic token, GitHub reported `verified=true`, and the scratch branches were deleted.
+- V8 passed: each account pushed an empty signed commit to `dotfiles` over HTTPS with a classic token, GitHub reported `verified=true`, and the scratch branches were deleted. This covered pushing only: the first daily run showed that `repo` and `workflow` are not enough, see "Ramp".
 
 ## Bitwarden projects
 
@@ -198,3 +198,14 @@ Checked against upstream `NousResearch/hermes-agent` tag `v0.23.0`: `website/doc
 - SSH host keys: after a restart of `hermes-worker` onto a new pod, the connection worked and `known_hosts` was unchanged.
 - `detect_dangerous_command` flags none of `gh pr review --approve` or `gh pr merge --squash|--rebase|--merge`.
 - `worker` does not need a gateway of its own: since v0.22 one multiplexed gateway serves all profiles, and the kanban dispatcher runs inside it.
+
+## Ramp
+
+Manual runs of `renovate-daily` on 2026-11-09. They do not count towards the three scheduled runs of T18.
+
+- **First run:** labels could not be set. `gh pr edit` uses GraphQL and needs `read:org` on a classic token, which disproves spec V8 as written. The owner added the scope to both accounts.
+- **Second run, on `main-lite` (20:24 to 20:52 UTC):**
+  - Worked: worker verdicts with specific reasons, labels, comments, and the denylist behaviour from P11 (`home-ops#6198` reported as clean and denylisted).
+  - Failed: the job ended after about 29 minutes, inside the 50-minute limit, with this run's cards still `ready` or `running`, and said the gate re-check was not completed. `home-ops#6202` was `triage/clean` and should have been listed as "would merge", but appeared nowhere. Hence P12.
+  - Failed: a 404 on `AGENTS.md` was reported as an error for `github-workflows` and `homelab-portal`, which have no such file. The `renovate-triage` skill now treats it as no extra rules.
+  - Expected: a first-run backlog. Only two worker tasks run at a time, so 14 cards were still `ready` and 2 `running` after the job. Later runs pick up those verdicts by diff hash.

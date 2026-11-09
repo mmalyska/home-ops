@@ -117,7 +117,7 @@ hermes:
       schedule: "0 6 * * *"
       timezone: Europe/Warsaw
       skill: renovate-triage
-      model: main-lite
+      model: main-cheap
       deliver: "discord:1569307898860015628" # #hermes-renovate
       prompt: "Run Part A of the renovate-triage skill: the daily Renovate run."
   # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
