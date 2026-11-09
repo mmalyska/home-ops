@@ -134,7 +134,7 @@ approves and merges the PRs the merge policy allows.
 
 ## Daily Renovate run
 
-Job `renovate-daily` runs at 06:00 Europe/Warsaw every day on the `default` profile, with the `renovate-triage` skill and the `main-lite` model alias. It is declared in the chart. It posts to `#hermes-renovate`.
+Job `renovate-daily` runs at 06:00 Europe/Warsaw every day on the `default` profile, with the `renovate-triage` skill and the `main-cheap` model alias. It is declared in the chart. It posts to `#hermes-renovate`.
 
 1. It lists open Renovate PRs (author `app/bendo-bot`) in every non-archived `mmalyska` repository.
 2. It restores the label of a PR whose diff hash still matches the worker's earlier verdict, and gives the `worker` one task per remaining `triage/needed` PR. `triage/owner` PRs get no new work.

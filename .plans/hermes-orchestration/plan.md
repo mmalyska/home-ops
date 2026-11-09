@@ -40,6 +40,7 @@ The spec left these to the plan. The owner accepted P1, P2, P8 and P9 and the or
 | P9  | `approvals.cron_mode` stays `deny`. If a merge command is ever flagged, only that rule goes into `command_allowlist`.                                                                      | `deny` acts only on commands Hermes flags, and v0.23.0 flags neither `gh pr merge` nor `gh pr review`; `approve` would auto-approve every dangerous command in the job |
 | P10 | Settings shared by all profiles move to Hermes Managed Scope in T10, replacing `config-seeder`. Per-profile overlays stay seeded. Accepted by the owner on 2026-11-09.                     | Read-only, needs no init container, and the agent cannot change those keys. It applies to every profile, so it cannot hold `worker` differences                        |
 | P11 | The denylist only stops auto-merge. The worker gives its real verdict on a denylisted PR, and the owner's `merge` reply still overrides the denylist. Accepted by the owner on 2026-11-09. | The owner wants the full analysis and the decision                                                                                                                     |
+| P12 | The daily job runs on `main-cheap`, not `main-lite` as the spec chose. Accepted by the owner on 2026-11-09.                                                                                | On `main-lite` the second manual run stopped before the wait limit and skipped the gate re-check, so a `triage/clean` PR was never reported                            |
 
 ## Scope and ownership
 
@@ -118,9 +119,9 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 ## Status and next action
 
-Completed: T01 to T13, T15 and T16 (2026-11-09). The owner verified and merged the plan in #6176.
+Completed: T01 to T17 (2026-11-09). The owner verified and merged the plan in #6176.
 
-Exact next action: T14 and T17, on the owner's instruction. Each merge and each `consent-gated` command still needs the owner.
+Exact next action: T18, three scheduled report-only runs from 2026-11-10 06:00 Europe/Warsaw. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.

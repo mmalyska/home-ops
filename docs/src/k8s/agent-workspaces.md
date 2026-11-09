@@ -87,7 +87,7 @@ Both have read-only Kubernetes access and no Talos access. `hermes-worker` has a
 
 Each workspace acts as its own GitHub account. The template parameters set it up:
 
-- `github_token_ref` is that account's classic token (`repo` and `workflow` scopes). It is both the `GITHUB_TOKEN` for `gh` and the
+- `github_token_ref` is that account's classic token (`repo`, `workflow` and `read:org` scopes). It is both the `GITHUB_TOKEN` for `gh` and the
   HTTPS credential for git. There is no SSH authentication key for git.
 - `git_user_name` and `git_user_email` (the account name and its GitHub noreply address) are written to `~/.gitconfig` at every start.
 - `signing_key_ref` is an SSH signing key. It is loaded into the in-pod ssh-agent and never written to a volume. All of the

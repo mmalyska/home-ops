@@ -24,7 +24,7 @@ done criterion. Update a task's status and evidence in place as it is done.
   1. Invite `rudi-the-brain` and `agent-rosie` with write access to the 10 source repositories, and accept the invitations.
   2. Add each account's SSH signing key on GitHub as a signing key.
   3. Confirm `HERMES_MAIN_GITHUB_TOKEN` belongs to rudi and `HERMES_WORKER_GITHUB_TOKEN` to rosie, as classic tokens with
-     `repo` and `workflow` scopes.
+     `repo`, `workflow` and `read:org` scopes (`read:org` added after the first daily run: `gh pr edit` needs it).
   4. Create in Bitwarden: `HERMES_MAIN_SIGNING_KEY`, `HERMES_WORKER_SIGNING_KEY`, `HERMES_MAIN_WS_SSH_KEY`,
      `HERMES_WORKER_WS_SSH_KEY`. Give the build actor the four IDs and the two workspace public keys.
   5. Create `#hermes-renovate`, let the bot post and create threads there, and give the build actor its channel ID.
@@ -268,6 +268,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T14 — Daily cron job
 
+- **Status:** done, 2026-11-09 (#6208). The model later moved from `main-lite` to `main-cheap` (P12).
 - **From T11:** V5 passed, so the job is declared in git. It delivers to `discord:<#hermes-renovate channel ID>`.
 - **Branch:** `feat/hermes-cron`. **Depends on:** T01, T02, T11, T12, T13, T16: the first run must find the policy and the
   labels.
@@ -325,6 +326,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T17 — Docs and memory
 
+- **Status:** done, 2026-11-09 (#6209).
 - **Branch:** `docs/hermes-orchestration`. **Depends on:** T16.
 - **Files:** `cluster/apps/ai/hermes-agent/README.md`, `docs/src/k8s/agent-workspaces.md`,
   `docs/src/contributing/new-repository.md` (new), `.github/mkdocs/mkdocs.yml`, `.claude/memory/reference_hermes_64k_context_floor.md`
