@@ -131,3 +131,29 @@ Written for task T04 on 2026-11-09. Sources: the GitHub release notes of `NousRe
 - Honcho on v0.23.0: the plugin migration runs when the first agent session starts, not at container start (`recover_at_startup`), so it waited for the first Discord message on 12:43 UTC.
   It installed the plugin and built a dependency environment with `honcho-ai` 2.8.0 under `/opt/data/installs`. The gateway that was already running could not see it (`honcho-ai is required`), and a pod restart fixed that.
 - After the restart the environment was still there, and a Discord session created a Honcho session against the self-hosted server with no errors.
+
+## Merge requirements
+
+Collected 2026-11-09 from the `hermes-main` workspace as `rudi-the-brain`. `agent-rosie` lists the same 10 repositories.
+
+| Repository                   | Default | Protected | Required checks | Squash / merge / rebase | Active rules |
+| ---------------------------- | ------- | --------- | --------------- | ----------------------- | ------------ |
+| argocd-secret-replacer       | main    | yes       | none            | yes / no / no           | 0            |
+| claude-plugins               | main    | no        | none            | yes / yes / yes         | 0            |
+| containers                   | main    | yes       | none            | yes / yes / yes         | 0            |
+| dotfiles                     | main    | no        | none            | yes / yes / yes         | 0            |
+| github-workflows             | main    | yes       | none            | yes / yes / yes         | 0            |
+| helm-charts                  | main    | no        | none            | yes / yes / yes         | 0            |
+| homelab-portal               | main    | yes       | none            | yes / yes / yes         | 5            |
+| home-ops                     | main    | yes       | none            | yes / no / no           | 0            |
+| renovate-config              | main    | no        | none            | yes / yes / yes         | 0            |
+| vintagestory-mods-downloader | master  | yes       | none            | yes / yes / yes         | 6            |
+
+- `argocd-secret-replacer` and `containers` report required status checks with `non_admins` enforcement, but an empty list of checks.
+- `homelab-portal`: ruleset `default` has no force push or deletion, PR required, required signatures, merge methods rebase and squash; `deletion-no` blocks deletion.
+- `vintagestory-mods-downloader`: ruleset `Main` has no force push, deletion or creation, PR required, required signatures and linear history, so a merge commit would be refused even though the repository setting allows it.
+- V8 passed: each account pushed an empty signed commit to `dotfiles` over HTTPS with a classic token, GitHub reported `verified=true`, and the scratch branches were deleted.
+
+## Bitwarden projects
+
+The cluster's only store, `bitwarden`, reads the `cluster` Bitwarden project. An item in any other project answers 404 to External Secrets, even when `bws` in the devcontainer can read it. On 2026-11-09 the six `HERMES_*` items were in `devcontainer`, which broke the Hermes rollout until the owner moved them to `cluster`.

@@ -101,6 +101,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T05 — Renovate tracks the `v0.x` tags
 
+- **Status:** done, 2026-11-09 (#6195). A real upgrade PR is still to be seen at the next Hermes release.
 - **Branch:** `fix/renovate-hermes-versioning`. **Depends on:** T04 (Renovate compares against the pinned tag).
 - **Files:** `.github/renovate/groups.json5`.
 - **Change:** in the Hermes rule, replace `versioning: loose` with `semver-coerced` and add `allowedVersions: "/^v0\\./"`.
@@ -122,6 +123,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T07 — Allowlist and the two workspaces
 
+- **Status:** done, 2026-11-09 (#6196). Both workspaces are healthy on the current template.
 - **Branch:** `feat/hermes-workspaces`. **Depends on:** T01, T06.
 - **Files:** `cluster/apps/ai/agent-workspaces/values.yaml` (`allowedBwsRefs` gains the two signing-key IDs; the workspace SSH
   keys go to the Hermes pod in T09).
@@ -146,6 +148,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T08 — Identity checks and merge requirements
 
+- **Status:** done, 2026-11-09. V8 passed.
 - **Files:** `.plans/hermes-orchestration/evidence.md` (section "Merge requirements").
 - **Depends on:** T01, T07.
 - **Checks, in each workspace:** `gh auth status` shows the right account; `gh repo list mmalyska --source --no-archived`
@@ -159,6 +162,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T09 — Hermes chart: workspace keys, profile environment, cleanup
 
+- **Status:** done, 2026-11-09 (#6197).
 - **Branch:** `feat/hermes-workspace-credentials`. **Depends on:** T01, T04.
 - **Files:** `cluster/apps/ai/hermes-agent/values.yaml`, `templates/deployment.yaml`.
 - **Change:** add the two `*_WS_SSH_KEY` secrets. Remove `GITHUB_PERSONAL_ACCESS_TOKEN` and `SANDBOX_DEVOPS_SSH_KEY`. Seed
@@ -290,6 +294,9 @@ done criterion. Update a task's status and evidence in place as it is done.
   `.github/workflows/triage-label.yaml` on `pull_request: [synchronize]` with `@main`, like the existing Renovate callers;
   remove that repository's automerge rules. In home-ops: also `.github/labels.yaml` gains the three labels, and
   `.github/renovate/autoMerge.json5`, `groups.json5` and `.github/renovate.json5` lose their automerge settings.
+- **Existing rulesets:** `homelab-portal` (`default`, `deletion-no`) and `vintagestory-mods-downloader` (`Main`) already have active rulesets, recorded in
+  `evidence.md`. Reconcile the new rules with those; do not add a conflicting second set. No repository has a required status check today.
+
 - **Labels elsewhere, and rulesets (external writes, per repository):**
 
   ```sh consent-gated
