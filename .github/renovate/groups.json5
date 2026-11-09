@@ -76,10 +76,11 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Hermes agent — track curated v2026.x.x release tags (not the noisy rolling :main tag) and cap automerge to weekly. versioning: loose because tags are CalVer with an occasional 4th hotfix component (e.g. v2026.7.7.2) that default docker/semver versioning sorts incorrectly. platformAutomerge must be disabled here: GitHub's native automerge enqueues at PR-creation time and ignores automergeSchedule entirely, which silently defeated this rule before.",
+      "description": "Hermes agent — track curated v0.x release tags (not the noisy rolling :main tag) and cap automerge to weekly. semver-coerced with allowedVersions because the tags moved to v0.x in October 2026 and the older CalVer tags (v2026.x.x) would otherwise sort above them. platformAutomerge must be disabled here: GitHub's native automerge enqueues at PR-creation time and ignores automergeSchedule entirely, which silently defeated this rule before.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["nousresearch/hermes-agent"],
-      "versioning": "loose",
+      "versioning": "semver-coerced",
+      "allowedVersions": "/^v0\\./",
       "matchUpdateTypes": ["patch", "minor", "digest"],
       "automergeSchedule": ["before 5am on monday"],
       "platformAutomerge": false
