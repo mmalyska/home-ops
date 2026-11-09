@@ -1,0 +1,16 @@
+---
+name: "PR Triage Label"
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    name: Triage label
+    uses: mmalyska/github-workflows/.github/workflows/pr-triage-label.yaml@main
+    permissions:
+      pull-requests: write

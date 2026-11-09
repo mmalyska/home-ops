@@ -30,6 +30,19 @@
   color: "FF9800"
 - name: dep/major
   color: "F6412D"
+# Triage
+- name: triage/needed
+  color: "fbca04"
+  description: >-
+    Bot PR waiting for triage review
+- name: triage/clean
+  color: "0e8a16"
+  description: >-
+    Bot PR reviewed and clean to merge
+- name: triage/owner
+  color: "d93f0b"
+  description: >-
+    Bot PR needs a decision from the owner
 # Size
 - name: size/XS
   color: "009900"

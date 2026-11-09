@@ -53,19 +53,6 @@
       "separateMultipleMinor": true
     },
     {
-      "description": "Talos and Kubernetes upgrade PRs must be reviewed and merged by a person: merging starts a rollout (tuppr). Scoped by file so the rest of the Talos and Kubernetes groups (alpine/k8s etc.) keep their automerge behaviour.",
-      "matchPackageNames": [
-        "siderolabs/talos",
-        "siderolabs/kubelet",
-        "ghcr.io/siderolabs/kubelet"
-      ],
-      "matchFileNames": [
-        ".taskfiles/talos/Taskfile.yaml",
-        "cluster/apps/system/tuppr/**"
-      ],
-      "automerge": false
-    },
-    {
       "description": "Helm",
       "matchDatasources": ["github-releases"],
       "matchPackageNames": [
@@ -76,14 +63,11 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Hermes agent — track curated v0.x release tags (not the noisy rolling :main tag) and cap automerge to weekly. semver-coerced with allowedVersions because the tags moved to v0.x in October 2026 and the older CalVer tags (v2026.x.x) would otherwise sort above them. platformAutomerge must be disabled here: GitHub's native automerge enqueues at PR-creation time and ignores automergeSchedule entirely, which silently defeated this rule before.",
+      "description": "Hermes agent — track curated v0.x release tags (not the noisy rolling :main tag). Uses semver-coerced with allowedVersions because the tags moved to v0.x in October 2026 and the older CalVer tags (v2026.x.x) would otherwise sort above them.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["nousresearch/hermes-agent"],
       "versioning": "semver-coerced",
-      "allowedVersions": "/^v0\\./",
-      "matchUpdateTypes": ["patch", "minor", "digest"],
-      "automergeSchedule": ["before 5am on monday"],
-      "platformAutomerge": false
+      "allowedVersions": "/^v0\\./"
     },
     {
       "description": "AzerothCore WoW server images",
@@ -95,9 +79,7 @@
         "acore/ac-wotlk-client-data"
       ],
       "groupName": "azerothcore",
-      "group": {"commitMessageTopic": "{{{groupName}}} group"},
-      "automergeSchedule": ["before 5am on monday"],
-      "platformAutomerge": false
+      "group": {"commitMessageTopic": "{{{groupName}}} group"}
     }
   ]
 }
