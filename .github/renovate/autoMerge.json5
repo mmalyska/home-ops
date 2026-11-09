@@ -1,70 +1,19 @@
 {
   "packageRules": [
     {
-      "description": "Auto merge pre-commits",
+      "description": "Wait 3 days before GitHub release and tag updates",
       "matchDatasources": ["github-releases", "github-tags"],
-      "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": [
-        "sirosen/texthooks",
-        "gruntwork-io/pre-commit",
-        "zricethezav/gitleaks",
-        "Lucas-C/pre-commit-hooks",
-        "adrienverge/yamllint",
-        "pre-commit/pre-commit-hooks"
-      ],
-      "ignoreTests": true
+      "minimumReleaseAge": "3 days"
     },
     {
-      "description": "Auto merge devcontainer",
-      "matchDatasources": ["docker"],
-      "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["digest"],
-      "matchFileNames": [".devcontainer/devcontainer.json"],
-      "ignoreTests": true
-    },
-    {
-      "description": "Auto merge gh actions",
+      "description": "Wait 3 days before cosign updates",
       "matchDatasources": ["github-releases", "github-tags"],
-      "automerge": true,
-      "automergeType": "branch",
       "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
         "sigstore/cosign"
       ],
       "matchFileNames": [".github/**"],
-      "minimumReleaseAge": "3 days",
-      "ignoreTests": true
-    },
-    {
-      "description": "Auto cluster container apps",
-      "matchDatasources": ["docker"],
-      "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": [
-        "ghcr.io/mmalyska/s3-bucket-cleaner",
-        "docker.io/cloudflare/cloudflared",
-        "ghcr.io/coder/code-server"
-      ],
-      "matchFileNames": ["cluster/**"],
-      "ignoreTests": true
-    },
-    {
-      "description": "Auto cluster apps",
-      "matchDatasources": ["github-releases", "github-tags", "helm", "docker"],
-      "automerge": true,
-      "automergeType": "pr",
-      "matchUpdateTypes": ["minor", "patch", "digest"],
-      "matchFileNames": ["cluster/**", "!cluster/core/**"],
-      "ignoreTests": false
-    },
-    {
-      "description": "Coder workspace templates: never auto merge. A merge does not reach the workspaces; the template push and coder update are manual runtime steps (skill coder-workspace-template-deploy)",
-      "matchFileNames": ["cluster/apps/ai/coder/workspace-template*/main.tf"],
-      "automerge": false
+      "minimumReleaseAge": "3 days"
     }
   ]
 }
