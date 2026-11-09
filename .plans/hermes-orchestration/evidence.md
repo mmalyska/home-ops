@@ -186,3 +186,15 @@ Checked against upstream `NousResearch/hermes-agent` tag `v0.23.0`: `website/doc
 - `kanban.dispatch_profiles` is per Hermes home. Whether the multiplexed gateway reads the `default` home's value when it dispatches for `worker` is not documented. Check with `hermes kanban diagnostics` in T11.
 - With `dispatch_profiles: [worker]`, a card assigned to `default` is never claimed (`skipped_nonspawnable`). A kanban root task for `default` therefore waits in `ready` until something else moves it.
 - A `git push` with no refspec, on a branch whose upstream is `main`, is not matched by the deny rules; the GitHub ruleset covers that case.
+
+## T11 results (2026-11-09)
+
+- V1 file tools: `read_file` reads the workspace (`/etc/hostname` returned the workspace name). `write_file` is refused outside `HERMES_WRITE_SAFE_ROOT` (`/opt/data`). Fallback: terminal-only editing.
+- V2: a cron job created a card with `kanban_create`. The dispatcher spawned `worker`, which ran `hostname` in its workspace and completed the card.
+- V3: a cron job delivered to `#hermes-renovate`, and an owner reply reached `default` without a mention. A cron job cannot create a thread: `create_thread` is in the `discord` toolset, which upstream restricts to the Discord platform. Fallback: one daily message, with decisions as replies naming the PR.
+- V4: startup context files are not loaded from the workspace over SSH. A marker in `/workspaces/AGENTS.md` was not seen. Skills read `AGENTS.md` explicitly.
+- V5: `hermes cron create` works in a separate `HERMES_HOME` with no gateway for it. The directory must be owned by `hermes`.
+- V6: `default` unblocked and completed a human-task card from a cron job.
+- SSH host keys: after a restart of `hermes-worker` onto a new pod, the connection worked and `known_hosts` was unchanged.
+- `detect_dangerous_command` flags none of `gh pr review --approve` or `gh pr merge --squash|--rebase|--merge`.
+- `worker` does not need a gateway of its own: since v0.22 one multiplexed gateway serves all profiles, and the kanban dispatcher runs inside it.

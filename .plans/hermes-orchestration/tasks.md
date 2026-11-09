@@ -175,6 +175,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T10 — Profiles, toolsets, kanban, approvals
 
+- **Status:** done, 2026-11-09 (#6203, #6204). Each profile runs in its own workspace; `worker` needs `LITELLM_API_KEY` in its own `.env`.
 - **Branch:** `feat/hermes-profiles`. **Depends on:** T02, T07, T09.
 - **Files:** `cluster/apps/ai/hermes-agent/values.yaml`, `templates/honcho-configmap.yaml`, `templates/deployment.yaml`.
 - **Shared settings move to Managed Scope (P10):** settings common to every profile go into a ConfigMap mounted read-only at
@@ -205,6 +206,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T11 — Live checks V1 to V6
 
+- **Status:** done, 2026-11-09. Results in `evidence.md`, section "T11 results".
 - **Depends on:** T10. **Files:** `.plans/hermes-orchestration/evidence.md` (section "Live checks"). Each check needs exec
   consent and uses paused or throwaway jobs. A change that a result calls for ships in T12's or T14's PR.
 - **V1:** `-p worker` reads, writes and patches a path that exists only in the workspace. If they act on the pod, T12's PR
@@ -227,6 +229,8 @@ done criterion. Update a task's status and evidence in place as it is done.
 ## T12 — Skills and SOUL files
 
 - **Branch:** `feat/hermes-skills`. **Depends on:** T11.
+- **From T11:** turn off the `file` toolset for both profiles and edit through the terminal (V1). Use one daily message, with decisions as replies naming the PR, such as
+  `merge home-ops#6183` (V3); update `.agents/policy/hermes-merge-policy.md` and the skills to match. Skills read `AGENTS.md` explicitly (V4). No `command_allowlist` change is needed.
 - **Files:** `cluster/apps/ai/hermes-agent/skills/<name>/SKILL.md` and `files/soul-{default,worker}.md` (new); `templates/`
   ConfigMaps and a seeder step in `templates/deployment.yaml`.
 - **Skills, all implementing the spec's sections of the same name:**
@@ -263,6 +267,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T14 — Daily cron job
 
+- **From T11:** V5 passed, so the job is declared in git. It delivers to `discord:<#hermes-renovate channel ID>`.
 - **Branch:** `feat/hermes-cron`. **Depends on:** T01, T02, T11, T12, T13, T16: the first run must find the policy and the
   labels.
 - **Files:** `cluster/apps/ai/hermes-agent/values.yaml`, `templates/deployment.yaml` (only if V5 passed); otherwise the README
@@ -285,6 +290,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T16 — Repository protection and labels, per repository
 
+- **Status:** done, 2026-11-09. The label workflow ran on a real Renovate push, but that PR already had `triage/needed`, so the label change itself is seen in the first real runs.
 - **Depends on:** T08, T15. Afterwards nothing merges without an approval, so the owner's own PRs (T14, T17) use the bypass
   and the owner merges Renovate PRs by hand until T19.
 - **`mmalyska/renovate-config` first:** remove `automerge` from the `automerge-*` presets; drop `:automergeDigest` from
