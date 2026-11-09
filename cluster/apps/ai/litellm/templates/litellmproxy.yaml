@@ -62,6 +62,8 @@ spec:
       # main is the subscription: on a usage limit or error it falls to the
       # pay-per-token model, and to the Jetson once that budget is spent.
       - main: ["cheap", "local"]
+      - main-cheap: ["main", "cheap", "local"]
+      - main-lite: ["main-cheap", "main", "cheap", "local"]
       - cheap: ["local"]
   resources:
     requests:
