@@ -58,10 +58,12 @@ Collected 2026-11-06 by read-only checks (repository, `kubectl get/logs`, `gh` r
 
 ## T01 prerequisites (2026-11-09)
 
-- Repositories: `gh repo list` shows 10 non-archived non-fork repositories (home-ops, containers, dotfiles, claude-plugins, homelab-portal, argocd-secret-replacer, github-workflows, renovate-config, vintagestory-mods-downloader, helm-charts). The plan's earlier count of 12 was wrong; the owner confirmed 10.
+- Repositories: `gh repo list` shows 10 non-archived non-fork repositories (home-ops, containers, dotfiles, claude-plugins, homelab-portal, argocd-secret-replacer, github-workflows, renovate-config, vintagestory-mods-downloader, helm-charts).
+  The plan's earlier count of 12 was wrong; the owner confirmed 10.
 - Invitations: `rudi-the-brain` and `agent-rosie` are collaborators with write access on all 10 (`collaborators/<user>` answers 204).
 - Tokens: the owner ran the check and it printed the login and scopes only. `HERMES_MAIN_GITHUB_TOKEN` is `rudi-the-brain`, `HERMES_WORKER_GITHUB_TOKEN` is `agent-rosie`, both classic with `repo` and `workflow`.
-- Bitwarden: the four key items exist and hold passphrase-free OpenSSH private keys. The private halves of the signing keys match the keys on each GitHub account. The public halves are not stored there: signing keys are on GitHub, and workspace public keys become the `authorized_key` parameter in T07.
+- Bitwarden: the four key items exist and hold passphrase-free OpenSSH private keys. The private halves of the signing keys match the keys on each GitHub account.
+  The public halves are not stored there: signing keys are on GitHub, and workspace public keys become the `authorized_key` parameter in T07.
 - **An OpenSSH private key stored in Bitwarden must end with a newline.** Without it, `ssh-keygen` and `ssh-add` fail with "error in libcrypto". All four values needed this fix.
 - Discord: the owner created `#hermes-renovate` and confirmed that the bot can post and create threads there, and that the channel in `discord.free_response_channels` is `#hermes`.
 - `coder` CLI: logged in on the devcontainer, where T07 runs.
