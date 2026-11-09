@@ -131,7 +131,7 @@ tasks:
       - test -f {{.CLUSTER_DIR}}/bootstrap-application.yaml
 
   rook-sync:
-    desc: Sync Rook Ceph operator then cluster via ArgoCD (run after bootstrap completes)
+    desc: Sync Rook Ceph operator then cluster via ArgoCD (fallback when the auto-sync failed during bootstrap)
     cmds:
       - argocd app sync rook-ceph-operator --timeout 300
       - kubectl -n rook-ceph wait --for=condition=Available deployment/rook-ceph-operator --timeout=5m
