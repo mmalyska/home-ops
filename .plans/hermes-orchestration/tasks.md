@@ -3,23 +3,25 @@
 Gates (G1 to G8), live checks (V1 to V9) and decisions are defined in [spec.md](spec.md). Facts are in
 [evidence.md](evidence.md).
 
-Unless a task says otherwise: status is planned, actual evidence is NOT RUN, the build actor (one agent, SOLO) is the
-integrator and works in a linked worktree on the branch named in the task, and the owner merges. The expected result is
-the task's done criterion. Update a task's status and evidence in place as it is done.
+Unless a task says otherwise: status is planned, actual evidence is NOT RUN, the conductor is the integrator, each writer
+works in its own linked worktree on the branch named in the task, and the owner merges. The expected result is the task's
+done criterion. Update a task's status and evidence in place as it is done.
 
-- **Authority:** none yet for any task. Build starts on the owner's instruction. Pushing and opening a PR need an instruction;
-  every command in a `consent-gated` block needs the owner's consent at that moment, naming the action, target and effect.
+- **Authority:** the owner instructed the first wave (T02, T03, T04, T06, T13, T15), including push and PR, on 2026-11-09. Other
+  tasks need their own instruction. Every command in a `consent-gated` block needs the owner's consent at that moment,
+  naming the action, target and effect.
 - **Next action:** a task starts when its dependencies are merged and its checks have passed.
 - **Evidence found after a PR merged** goes into a `docs/hermes-evidence-<task>` PR.
 - **Secrets:** name Bitwarden items by reference. IDs appear only in the `#gitleaks:allow` value lines of chart values.
 
 ## T01 — Owner prerequisites
 
+- **Status:** done, 2026-11-09. Evidence in [evidence.md](evidence.md), section "T01 prerequisites".
 - **Who:** the owner. **Files:** none. **Depends on:** nothing.
 - **Human task, blocking everything:** no other task starts until this one is done, so a bad token or a missing invitation
   shows up before anything is half-built.
 - **Do:**
-  1. Invite `rudi-the-brain` and `agent-rosie` with write access to the 12 source repositories, and accept the invitations.
+  1. Invite `rudi-the-brain` and `agent-rosie` with write access to the 10 source repositories, and accept the invitations.
   2. Add each account's SSH signing key on GitHub as a signing key.
   3. Confirm `HERMES_MAIN_GITHUB_TOKEN` belongs to rudi and `HERMES_WORKER_GITHUB_TOKEN` to rosie, as classic tokens with
      `repo` and `workflow` scopes.
@@ -143,7 +145,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 - **Files:** `.plans/hermes-orchestration/evidence.md` (section "Merge requirements").
 - **Depends on:** T01, T07.
 - **Checks, in each workspace:** `gh auth status` shows the right account; `gh repo list mmalyska --source --no-archived`
-  lists the 12 repositories. For each repository, record the required checks (`gh api repos/mmalyska/<repo>/branches/<default>`,
+  lists the 10 repositories. For each repository, record the required checks (`gh api repos/mmalyska/<repo>/branches/<default>`,
   field `protection`) and the allowed merge methods (`gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`),
   and confirm `gh api repos/mmalyska/<repo>/rules/branches/<default>` answers.
 - **Scratch write, `mmalyska/dotfiles`:** each account pushes an empty signed commit to `hermes/identity-check-<account>` over
@@ -271,7 +273,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
   and the owner merges Renovate PRs by hand until T19.
 - **`mmalyska/renovate-config` first:** remove `automerge` from the `automerge-*` presets; drop `:automergeDigest` from
   `default.json`; add `triage/needed` through `addLabels` in `pr-labels.json`, without disturbing the `dep/*` labels.
-- **One PR in each of the 12 repositories:** `.github/CODEOWNERS` as `* @rudi-the-brain @mmalyska`, replacing the
+- **One PR in each of the 10 repositories:** `.github/CODEOWNERS` as `* @rudi-the-brain @mmalyska`, replacing the
   `* @mmalyska` line in `containers` and `argocd-secret-replacer` and the comment-only file in home-ops; caller
   `.github/workflows/triage-label.yaml` on `pull_request: [synchronize]` with `@main`, like the existing Renovate callers;
   remove that repository's automerge rules. In home-ops: also `.github/labels.yaml` gains the three labels, and
@@ -292,7 +294,7 @@ the task's done criterion. Update a task's status and evidence in place as it is
 - **Checks:** `renovate-config-validator` on every changed config. `rules/branches/<default>` lists the rules. On a throwaway
   PR in `dotfiles`: rosie's approval leaves it blocked, rudi's unblocks it, a later push by rosie blocks it again. A push
   to a real Renovate PR sets `triage/needed`, and a push to a non-bot PR changes no label.
-- **Done when:** all 12 are covered and those checks pass. New Renovate PRs show no "Automerge: Enabled".
+- **Done when:** all 10 are covered and those checks pass. New Renovate PRs show no "Automerge: Enabled".
 - **Risk:** R5, R10. **Rollback:** delete the ruleset and revert the PRs; the owner can bypass meanwhile.
 
 ## T17 — Docs and memory
