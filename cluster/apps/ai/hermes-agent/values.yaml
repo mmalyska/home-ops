@@ -127,6 +127,12 @@ hermes:
       timezone: Europe/Warsaw
       script: renovate-post.sh
       deliver: "discord:1569307898860015628" # #hermes-renovate
+    # Script only, no model: archives done cards of the renovate board older than 14 days. Silent unless it fails.
+    - name: renovate-cleanup
+      schedule: "30 5 * * *"
+      timezone: Europe/Warsaw
+      script: renovate-cleanup.sh
+      deliver: "discord:1569307898860015628" # #hermes-renovate
   # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
   profileSkills:
     default:

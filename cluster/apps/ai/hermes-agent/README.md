@@ -146,6 +146,7 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | `renovate-merge <repo>#<n>`               | `default`, `main`       | One PR: re-checks the gates and merges. Cards of one repository are chained, so merges never race                         |
 | `renovate-merge-report <date>`            | `default`               | After the merges: the report, and a `post-merge-check` card for the worker                                                |
 | Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
+| Job `renovate-cleanup`, 05:30             | script only, no model   | Archives done cards older than 14 days; posts only if it fails                                                            |
 
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
 means the run failed or a check is stuck: look at the `renovate` board.

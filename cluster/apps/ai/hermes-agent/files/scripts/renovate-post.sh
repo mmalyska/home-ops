@@ -5,7 +5,7 @@
 set -u
 STATE=/opt/data/cron/renovate-posted.txt
 touch "$STATE"
-hermes kanban --board renovate list --status done --json 2>/dev/null | /opt/hermes/.venv/bin/python -c '
+hermes kanban --board renovate list --status "done" --json 2>/dev/null | /opt/hermes/.venv/bin/python -c '
 import json
 import subprocess
 import sys
