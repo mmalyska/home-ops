@@ -20,10 +20,12 @@ spec:
             description: >-
               When it runs out the gateway skips `cheap` and falls back to
               `local`. Raise budget_limit in values.yaml or wait for the reset.
+        # Requests rejected before routing (e.g. keyless /v1/models probes, 401)
+        # are counted with an empty model name; they are not a model failing.
         - alert: LiteLLMModelFailing
           expr: >-
-            sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total[15m]))
-            / sum by (litellm_model_name) (rate(litellm_deployment_total_requests_total[15m])) > 0.5
+            sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total{litellm_model_name!=""}[15m]))
+            / sum by (litellm_model_name) (rate(litellm_deployment_total_requests_total{litellm_model_name!=""}[15m])) > 0.5
           for: 15m
           labels:
             severity: warning
