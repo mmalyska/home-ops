@@ -42,6 +42,7 @@ The spec left these to the plan. The owner accepted P1, P2, P8 and P9 and the or
 | P11 | The denylist only stops auto-merge. The worker gives its real verdict on a denylisted PR, and the owner's `merge` reply still overrides the denylist. Accepted by the owner on 2026-11-09. | The owner wants the full analysis and the decision                                                                                                                     |
 | P12 | The daily job runs on `main-cheap`, not `main-lite` as the spec chose. Accepted by the owner on 2026-11-09.                                                                                | On `main-lite` the second manual run stopped before the wait limit and skipped the gate re-check, so a `triage/clean` PR was never reported                            |
 | P13 | The daily Renovate run becomes a kanban pipeline of short parent and child cards, replacing the spec's single long session. Accepted by the owner on 2026-11-10.                           | A long session skipped a rule and merged while merging was off; short cards keep each decision small                                                                   |
+| P14 | The owner can also ask for a fix with a `/hermes fix` comment on a bot PR, picked up by the next run. Merging stays Discord-only. Accepted by the owner on 2026-11-10.                     | Only `fix` lacks a GitHub equivalent; merging and closing are done on GitHub directly                                                                                  |
 
 ## Redesign: the Renovate run as a kanban pipeline (P13)
 
@@ -80,6 +81,13 @@ cron renovate-daily (short) --> coordinator card (worker)
   Upstream kanban tools take a `board` argument, and the embedded dispatcher works through every board on each tick.
   The tenants `renovate` and `renovate-block` stay, inside that board.
 - The model keeps the right to merge (owner, 2026-11-10).
+- Fix requests from GitHub (P14): a comment on an open bot PR whose first line is `/hermes fix <instruction>`, written
+  by `mmalyska`, is the same decision as the Discord reply `fix <repo>#<number> <instruction>`. The coordinator's
+  snapshot script selects these comments by author in `jq`, so the model never sees anyone else's comment as a request.
+  The coordinator creates a `renovate-fix` card with the instruction, keyed by the comment ID. When the worker finishes,
+  it replies on the PR with `<!-- hermes-fix-done comment=<id> -->` as `agent-rosie`, and the script skips comments
+  that already have such a reply. `merge`, `I merge`, `reject` and `resume` stay Discord-only; the owner merges or
+  closes on GitHub directly.
 
 ## Scope and ownership
 
