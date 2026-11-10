@@ -234,4 +234,4 @@ Also found:
 
 - Upstream hides `kanban_list` and `kanban_unblock` from cards started by the dispatcher, so listing and cleanup belong in a cron session.
 - The post-merge check for `home-ops#6020` and `#6064` never ran: `kubectl` in the `hermes-worker` workspace answered "connection refused", and the worker blocked its card. The post-merge check, and so the revert path, does not work until the workspace's cluster access is fixed.
-- `renovate-daily` ran at 23:00 UTC on 2026-11-09, 6 seconds after the gateway started for #6213, although it had been paused at 22:41 and still showed `[paused]` afterwards. It merged nothing and approved nothing. The cause is not known yet: a manual trigger before the restart, or a catch-up run of a paused job.
+- `renovate-daily` ran at 23:00 UTC on 2026-11-09 while paused, because the owner triggered it by hand just before the gateway restarted for #6213. It merged and approved nothing, and the pause held.
