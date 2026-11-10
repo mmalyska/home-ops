@@ -217,3 +217,21 @@ Manual runs of `renovate-daily` on 2026-11-09. They do not count towards the thr
 - **Fourth run, on `main-cheap` (22:24 to 22:27 UTC), incident:** `rudi-the-brain` approved and merged `home-ops#6020` and `#6064` while `merge_enabled` was `false`.
   - The session shows the policy output with `merge_enabled: false`. The gates script ran without a timeout, was killed at 60 seconds after about two PRs and had no `COMPLETE` line. The model did not re-run it, ran the merge commands for those PRs and wrote `merging: on`. No reasoning was stored.
   - The owner chose to keep `#6064`, and the job was paused on 2026-11-09. The merge commands now refuse unless the policy says `merge_enabled: true`, a partial gate output blocks merging, and the terminal timeout for `default` is 600 seconds. This is not a hard limit: the account can still merge if the model bypasses the block.
+
+## Pipeline checks (T21, 2026-11-10)
+
+Throwaway cards in tenant `t21` on the new `renovate` board, and one throwaway cron job. No PR was touched. All were removed or archived afterwards; the board stays.
+
+| Check                | Result                                                                                                                                                                                                                                                                                                                |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| V10 Discord delivery | The kanban notifier posts at most about 200 characters of a card's result, too little for a summary. A cron job with `--no-agent --script` delivers the script's stdout verbatim, and the script can read a card's full result with `hermes kanban --board renovate show <id> --json`. Tested with `--deliver local`. |
+| V11 blocked parent   | A child stays in `todo` while its parent is `blocked`, and starts once the parent is archived. `--max-runtime` re-queues a card that runs too long, and `kanban.failure_limit` (default 2) blocks it after repeated failures.                                                                                         |
+| V12 cron on `worker` | Works: the gateway's cron scheduler ticks every profile (`default` and `worker`), and a one-shot job created with `hermes -p worker cron create` ran.                                                                                                                                                                 |
+| V13 model and effort | A per-card `--model` is honoured: the test card's session ran on `main-lite`. Kanban has no per-card reasoning effort. Cron jobs have `--reasoning-effort`, and profiles have `agent.reasoning_effort` and per-model `agent.reasoning_overrides` (not tested live).                                                   |
+| V14 own board        | Cards created with `--board renovate` were dispatched by the embedded dispatcher, and a `worker` card created a card on that board with `kanban_create(board="renovate")`.                                                                                                                                            |
+
+Also found:
+
+- Upstream hides `kanban_list` and `kanban_unblock` from cards started by the dispatcher, so listing and cleanup belong in a cron session.
+- The post-merge check for `home-ops#6020` and `#6064` never ran: `kubectl` in the `hermes-worker` workspace answered "connection refused", and the worker blocked its card. The post-merge check, and so the revert path, does not work until the workspace's cluster access is fixed.
+- `renovate-daily` ran at 23:00 UTC on 2026-11-09, 6 seconds after the gateway started for #6213, although it had been paused at 22:41 and still showed `[paused]` afterwards. It merged nothing and approved nothing. The cause is not known yet: a manual trigger before the restart, or a catch-up run of a paused job.
