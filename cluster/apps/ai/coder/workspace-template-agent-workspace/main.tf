@@ -163,11 +163,16 @@ locals {
   env_secrets   = merge(local.extra_secrets, local.github_token ? { GITHUB_TOKEN = data.coder_parameter.github_token_ref.value } : {})
   env_names     = sort(keys(local.env_secrets))
   has_env       = length(local.env_secrets) > 0
-  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY|GIT_USER_NAME|GIT_USER_EMAIL)$"
+  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|KUBERNETES_.*|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY|GIT_USER_NAME|GIT_USER_EMAIL)$"
 
   # Variables copied for SSH sessions. sshd gives a login a fresh environment, so the startup script writes these
-  # (when set) to a file that sshd reads (PermitUserEnvironment).
-  ssh_env_names = concat(local.env_names, ["TALOSCONFIG", "KUBECACHEDIR", "SSH_AUTH_SOCK"])
+  # (when set) to a file that sshd reads (PermitUserEnvironment). kubectl's in-cluster configuration needs the
+  # KUBERNETES_SERVICE_* pair: without it an SSH session falls back to localhost:8080 and gets "connection refused".
+  ssh_env_names = concat(
+    local.env_names,
+    ["TALOSCONFIG", "KUBECACHEDIR", "SSH_AUTH_SOCK"],
+    local.kubernetes_access ? ["KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT"] : [],
+  )
 
   # Backed-up volumes: PVC suffix, size, schedule and retention. The restic repository path is agent-workspaces-<ws>-<suffix>.
   volumes = {

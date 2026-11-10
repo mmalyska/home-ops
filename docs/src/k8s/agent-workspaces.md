@@ -78,7 +78,8 @@ Both have read-only Kubernetes access and no Talos access. `hermes-worker` has a
   repository's `AGENTS.md` from the default branch explicitly.
 - **Shell.** Hermes runs commands non-interactively (no TTY). Tools come from `/usr/local/bin` shims, so no shell init is needed.
 
-- **Environment.** The optional `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on) and `SSH_AUTH_SOCK` are handed to SSH
+- **Environment.** The optional `GITHUB_TOKEN`, the extra secrets, `TALOSCONFIG` (when on), `KUBERNETES_SERVICE_HOST` and
+  `KUBERNETES_SERVICE_PORT` (when `kubernetes_access` is on, so `kubectl` finds the API server) and `SSH_AUTH_SOCK` are handed to SSH
   sessions through `~/.ssh/environment`, rebuilt at every start from a file in `/cache`.
 - **Image.** sshd comes from the `dev-workstation` image (`openssh-server`, added in `mmalyska/containers`). With an older
   image the workspace still starts and the log says sshd is missing.
