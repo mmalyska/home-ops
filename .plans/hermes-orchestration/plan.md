@@ -72,9 +72,10 @@ cron renovate-daily (short) --> coordinator card (worker)
 - With `merge_enabled: false` the summary card creates no merge cards and lists "would merge", as today.
 - A merge card names exactly one PR and its checked hash, and the merge block from #6213 still refuses while the policy
   does not say `merge_enabled: true`. Both are instructions to the model, not limits it cannot cross.
-- Stale cards: the next coordinator archives check cards older than the policy's verdict wait and sets `triage/owner`, the
+- Stale cards: the next run archives check cards older than the policy's verdict wait and sets `triage/owner`, the
   rule in today's step 6, so a stuck check cannot hold a summary for more than a day. V11 decides whether the dispatcher
-  can also do this by itself.
+  can also do this by itself. Upstream hides `kanban_list` from cards started by the dispatcher, so this cleanup
+  runs in the short cron session, not in the coordinator card.
 - The cards live on their own board, `renovate`, so a run can be read on its own and other kanban work stays apart.
   Upstream kanban tools take a `board` argument, and the embedded dispatcher works through every board on each tick.
   The tenants `renovate` and `renovate-block` stay, inside that board.
