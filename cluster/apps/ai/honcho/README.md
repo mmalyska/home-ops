@@ -64,6 +64,7 @@ Embeddings use the CPU-only `llm-embeddings` server (llama.cpp, `llm` namespace)
 - **Endpoint**: the gateway (`embed` maps to `http://llm-embeddings.llm.svc.cluster.local:8080/v1`)
 - **Cost**: free (local inference), works offline
 - **Dimensions**: `EMBEDDING_VECTOR_DIMENSIONS=768`, `DIMENSIONS_MODE=never` (the server ignores the dimensions parameter)
+- **Chunk size**: `EMBEDDING_MAX_INPUT_TOKENS=2048`. Honcho splits messages by tiktoken count, but the server rejects any input over 4096 BERT tokens (`--ubatch-size`, and `--ctx-size 8192` shared by 2 slots). With the 8192 default, a long message produced an 8505-token chunk that failed on every reconcile and fired `LiteLLMModelFailing` for `nomic-embed-text`.
 
 `nomic-embed-text` is an uncased BERT: llama-server lowercases input, Ollama (retired) did not. Stored vectors match llama-server exactly, so no re-embedding was needed when moving off Ollama. The server is defined in `cluster/apps/ai/llm/embeddings/`.
 
