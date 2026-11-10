@@ -76,7 +76,7 @@
         "ghcr.io/mmalyska/azerothcore-worldserver",
         "ghcr.io/mmalyska/azerothcore-authserver",
         "ghcr.io/mmalyska/azerothcore-db-import",
-        "acore/ac-wotlk-client-data"
+        "ghcr.io/mmalyska/azerothcore-client-data"
       ],
       "groupName": "azerothcore",
       "group": {"commitMessageTopic": "{{{groupName}}} group"}
