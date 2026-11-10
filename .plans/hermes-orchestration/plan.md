@@ -8,7 +8,7 @@ branch: feat/hermes-orchestration-plan
 worktree: .worktrees/feat/hermes-orchestration-plan
 pr: "#6176"
 started: 2026-11-06
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 # Plan: Hermes orchestration
@@ -41,6 +41,43 @@ The spec left these to the plan. The owner accepted P1, P2, P8 and P9 and the or
 | P10 | Settings shared by all profiles move to Hermes Managed Scope in T10, replacing `config-seeder`. Per-profile overlays stay seeded. Accepted by the owner on 2026-11-09.                     | Read-only, needs no init container, and the agent cannot change those keys. It applies to every profile, so it cannot hold `worker` differences                        |
 | P11 | The denylist only stops auto-merge. The worker gives its real verdict on a denylisted PR, and the owner's `merge` reply still overrides the denylist. Accepted by the owner on 2026-11-09. | The owner wants the full analysis and the decision                                                                                                                     |
 | P12 | The daily job runs on `main-cheap`, not `main-lite` as the spec chose. Accepted by the owner on 2026-11-09.                                                                                | On `main-lite` the second manual run stopped before the wait limit and skipped the gate re-check, so a `triage/clean` PR was never reported                            |
+| P13 | The daily Renovate run becomes a kanban pipeline of short parent and child cards, replacing the spec's single long session. Accepted by the owner on 2026-11-10.                           | A long session skipped a rule and merged while merging was off; short cards keep each decision small                                                                   |
+
+## Redesign: the Renovate run as a kanban pipeline (P13)
+
+Added 2026-11-10 after the fourth manual run merged two PRs while `merge_enabled` was `false` ("Ramp" in
+[evidence.md](evidence.md)). One long cron session did every step, so a skipped rule or a compacted context could reach
+the merge commands. The run becomes a chain of short cards instead. Each card does one job with a small skill, and the
+kanban dispatcher starts a card only when its parents are `done` or `archived`, which upstream `kanban_create` supports
+with `parents`.
+
+```text
+cron renovate-daily (short) --> coordinator card (worker)
+                                  |-- check card per PR (worker)              existing renovate-pr-check
+                                  `-- summary card (default)                  parents: every check card of the run
+                                        |-- merge card per clean PR (default) chained per repository
+                                        |     `-- post-merge card (worker)    parents: every merge card
+                                        `-- merge report card (default)       parents: every merge card
+```
+
+| Card         | Profile, model                        | Does                                                                                                                          |
+| ------------ | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Coordinator  | `worker`, `main-cheap`                | Runs the snapshot script, sets labels, creates check cards (idempotency key by diff hash) and the summary card. Never merges. |
+| Check        | `worker`, `main-cheap`                | Unchanged: one verdict comment per PR.                                                                                        |
+| Summary      | `default`, `main`                     | Runs the gate and reason scripts read-only, writes the daily summary, and creates one merge card per PR it would merge.       |
+| Merge        | `default`, `main`, high effort if V13 | One PR only: re-runs the gates for it, runs the guarded merge block, records the result. Merge cards of one repository chain. |
+| Post-merge   | `worker`, `main-cheap`                | Unchanged, started by its parents instead of by the daily session.                                                            |
+| Merge report | `default`, `main`                     | Posts the merge results to `#hermes-renovate`.                                                                                |
+
+- With `merge_enabled: false` the summary card creates no merge cards and lists "would merge", as today.
+- A merge card names exactly one PR and its checked hash, and the merge block from #6213 still refuses while the policy
+  does not say `merge_enabled: true`. Both are instructions to the model, not limits it cannot cross.
+- Stale cards: the next coordinator archives check cards older than the policy's verdict wait and sets `triage/owner`, the
+  rule in today's step 6, so a stuck check cannot hold a summary for more than a day. V11 decides whether the dispatcher
+  can also do this by itself.
+- The model keeps the right to merge (owner, 2026-11-10). Hard limits outside the model were proposed the same day and
+  are not decided: required status checks in the rulesets, CODEOWNERS that leave denylisted paths to the owner only, and
+  2 required approvals until T19.
 
 ## Scope and ownership
 
@@ -69,7 +106,7 @@ T01 --> every other task (P8)
 T02 --> T10, T14                          T04 --> T05, T09
 T06 --> T07 --> T08, T10                  T09 --> T10 --> T11 --> T12 --> T14
 T08, T15 --> T16 --> T14, T17             T13 --> T14
-T14, T17 --> T18 --> T19 --> T20
+T14, T17 --> T21 --> T22 --> T23 --> T18 --> T19 --> T20   (P13; T22 replaces T14's single-session job)
 ```
 
 ## Quality gates
@@ -88,6 +125,8 @@ Results are filled in during Build. Everything is NOT RUN today.
 | Unchanged diff causes no worker task         | Second run, kanban board                | T18  |
 | Spec, plan, implementation flow              | One real small piece of work            | T20  |
 | Restored after a pod restart                 | Restart, then re-run the checks above   | T20  |
+| Summary after every check, without polling   | Card timestamps on the board            | T18  |
+| Each merge in its own card, one PR per card  | Board and PR timeline                   | T19  |
 
 Every PR also runs the matching rows of `.agents/policy/validation.md`, and reports PASS, FAIL, NOT RUN or N/A.
 
@@ -121,7 +160,7 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 Completed: T01 to T17 (2026-11-09). The owner verified and merged the plan in #6176.
 
-Exact next action: `renovate-daily` is paused after an unauthorized merge (see `evidence.md`, "Ramp"). The owner decides when to resume it, then T18 starts: three scheduled report-only runs. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
+Exact next action: T21, the live checks for the kanban pipeline (P13). `renovate-daily` stays paused until T22 replaces it. Then T18 starts: three scheduled report-only runs. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.
