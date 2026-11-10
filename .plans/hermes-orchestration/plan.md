@@ -75,9 +75,10 @@ cron renovate-daily (short) --> coordinator card (worker)
 - Stale cards: the next coordinator archives check cards older than the policy's verdict wait and sets `triage/owner`, the
   rule in today's step 6, so a stuck check cannot hold a summary for more than a day. V11 decides whether the dispatcher
   can also do this by itself.
-- The model keeps the right to merge (owner, 2026-11-10). Hard limits outside the model were proposed the same day and
-  are not decided: required status checks in the rulesets, CODEOWNERS that leave denylisted paths to the owner only, and
-  2 required approvals until T19.
+- The cards live on their own board, `renovate`, so a run can be read on its own and other kanban work stays apart.
+  Upstream kanban tools take a `board` argument, and the embedded dispatcher works through every board on each tick.
+  The tenants `renovate` and `renovate-block` stay, inside that board.
+- The model keeps the right to merge (owner, 2026-11-10).
 
 ## Scope and ownership
 

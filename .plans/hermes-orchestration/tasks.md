@@ -337,7 +337,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 - **Checks:** `.agents/bin/check-plans`; `markdownlint`; CI docs build.
 - **Done when:** merged. **Rollback:** revert the PR.
 
-## T21 — Live checks V10 to V13 for the kanban pipeline
+## T21 — Live checks V10 to V14 for the kanban pipeline
 
 - **Depends on:** T14, T17. **Files:** `.plans/hermes-orchestration/evidence.md` (section "Pipeline checks").
 - **Do:** with `renovate-daily` paused, use throwaway cards in a test tenant. No PR is touched.
