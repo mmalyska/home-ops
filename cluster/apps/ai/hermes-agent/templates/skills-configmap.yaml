@@ -12,3 +12,7 @@ data:
   {{ base $path }}: |
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
+{{- range $path, $_ := .Files.Glob "files/scripts/*" }}
+  script-{{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}

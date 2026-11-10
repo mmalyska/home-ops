@@ -361,6 +361,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T22 — Pipeline skills and chart
 
+- **Status:** PR opened 2026-11-10; see "Built in T22" in `plan.md`.
 - **Branch:** `feat/hermes-kanban-pipeline`. **Depends on:** T21.
 - **Files:** `cluster/apps/ai/hermes-agent/skills/` (new `renovate-coordinator`, `renovate-summary`, `renovate-merge`;
   `renovate-triage` keeps Part B, the owner's replies, and loses Part A), `values.yaml` (`profileSkills`, `cronJobs`, the
@@ -374,8 +375,8 @@ done criterion. Update a task's status and evidence in place as it is done.
 - **Checks:** `helm template`; each script run read-only against GitHub; the merge block with a stubbed `gh`. For P14:
   a `/hermes fix` comment from another account is not selected, one from `mmalyska` is, and one with a done reply is
   skipped, tested against fixture JSON.
-- **Note:** a changed job definition makes the seeder recreate the job, which clears the pause. Merge this PR only when
-  the owner is ready to resume the daily run.
+- **Note:** the cron seeder keeps a paused job paused when it replaces it, so merging this PR does not resume
+  `renovate-daily`. The owner resumes it with `hermes cron resume renovate-daily`.
 - **Done when:** merged and the seeders report the new job and skills. **Rollback:** revert the PR and pause the job.
 
 ## T23 — Docs for the pipeline

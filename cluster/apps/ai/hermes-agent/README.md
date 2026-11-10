@@ -120,9 +120,10 @@ Rules that follow from this:
 
 ### Kanban wiring
 
-Kanban settings live in the `default` overlay: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker]`, `max_in_progress_per_profile: 2`.
-Kanban tools are opt-in per platform: the `default` overlay turns them on for Discord and cron, and the `worker` overlay turns them on under `platform_toolsets.cli`, which is what dispatcher-spawned workers use.
-A card assigned to `default` is never claimed by the dispatcher, so it waits in `ready` until something else moves it.
+Kanban settings live in the `default` overlay: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker, default]`, `max_in_progress_per_profile: 2`.
+Kanban tools are opt-in per platform: the `default` overlay turns them on for Discord, cron and `cli`, and the `worker` overlay under `platform_toolsets.cli`. Cards started by the dispatcher run on `cli`.
+Those cards can show, create and complete cards, but not list or unblock them; that is left to a cron or Discord session.
+The Renovate run uses its own board, `renovate`.
 
 ### Command policy
 
@@ -134,27 +135,34 @@ approves and merges the PRs the merge policy allows.
 
 ## Daily Renovate run
 
-Job `renovate-daily` runs at 06:00 Europe/Warsaw every day on the `default` profile, with the `renovate-triage` skill and the `main-cheap` model alias. It is declared in the chart. It posts to `#hermes-renovate`.
+The run is a chain of short cards on the kanban board `renovate`, so no single session has to hold every step. Both jobs are declared in the chart.
 
-1. It lists open Renovate PRs (author `app/bendo-bot`) in every non-archived `mmalyska` repository.
-2. It restores the label of a PR whose diff hash still matches the worker's earlier verdict, and gives the `worker` one task per remaining `triage/needed` PR. `triage/owner` PRs get no new work.
-3. The worker returns a verdict with evidence: clean, needs the owner, or needs a fix.
-4. When merging is on, the orchestrator re-checks gates G1 to G5 for each `triage/clean` PR, approves as `rudi-the-brain` and merges, then the worker checks the result (Argo CD health in home-ops,
-   default-branch CI elsewhere) and opens a revert PR on failure.
-5. It posts one summary: merged, would merge, waiting for the owner, skipped and failed checks. A run with nothing to report still posts, so a missing summary at 07:00 means the run failed.
+| Step                                      | Runs as                 | Does                                                                                                                      |
+| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Job `renovate-daily`, 06:00 Europe/Warsaw | `default`, `main-cheap` | Closes check cards older than the verdict wait, lists auto-merge blocks, creates the coordinator card                     |
+| `renovate-coordinator <date>`             | `worker`                | Snapshots open Renovate PRs, sets labels, creates check cards, fix cards for `/hermes fix` comments, and the summary card |
+| `renovate-pr-check <repo>#<n>`            | `worker`                | One verdict with evidence: clean, needs the owner, or needs a fix                                                         |
+| `renovate-summary <date>`                 | `default`, `main`       | Starts when every check card has finished. Re-checks gates, writes the summary, creates merge cards when merging is on    |
+| `renovate-merge <repo>#<n>`               | `default`, `main`       | One PR: re-checks the gates and merges. Cards of one repository are chained, so merges never race                         |
+| `renovate-merge-report <date>`            | `default`               | After the merges: the report, and a `post-merge-check` card for the worker                                                |
+| Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
+
+A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
+means the run failed or a check is stuck: look at the `renovate` board.
 
 **Merging is off until T19.** The switch is `merge_enabled` in `.agents/policy/hermes-merge-policy.md`, and the owner turns it on with a one-line PR after three report-only runs. Until then the summary says "would merge" and nothing is merged.
 The gates, the denylist and the limits are in that file; this page does not repeat them.
 
-Every PR that waits for the owner is listed in the summary. The owner replies in `#hermes-renovate` and names the PR, for example `merge home-ops#6183`:
+Every PR that waits for the owner is listed in the summary. The owner replies in `#hermes-renovate` and names the PR, for example `merge home-ops#6183`.
+A `fix` can also be asked on GitHub: a comment on the PR from the owner's account whose first line is `/hermes fix <what to change>`, picked up by the next run.
 
-| Reply     | Result                                                                              |
-| --------- | ----------------------------------------------------------------------------------- |
-| `fix`     | The worker pushes the change and re-checks. The PR returns to the owner.            |
-| `I merge` | Hermes stops listing it.                                                            |
-| `merge`   | The orchestrator approves and merges. This is the owner's consent for that one PR.  |
-| `reject`  | The PR is closed with a comment, so Renovate ignores that version.                  |
-| `resume`  | Lifts the auto-merge block on the named repository after a failed post-merge check. |
+| Reply     | Result                                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
+| `fix`     | The worker pushes the change and re-checks. The PR returns to the owner.             |
+| `I merge` | Hermes stops listing it.                                                             |
+| `merge`   | A merge card re-checks the PR, approves and merges. The owner's consent for that PR. |
+| `reject`  | The PR is closed with a comment, so Renovate ignores that version.                   |
+| `resume`  | Lifts the auto-merge block on the named repository after a failed post-merge check.  |
 
 The denylist only stops auto-merge. A `merge` reply from the owner overrides it. A cron job cannot create Discord threads, so decisions are replies in the channel, not per-PR threads.
 

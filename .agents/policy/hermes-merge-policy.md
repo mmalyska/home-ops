@@ -75,7 +75,8 @@ until the owner has replied. Hermes does not merge the revert.
 
 Each PR waiting for the owner is listed in the daily message in `#hermes-renovate` with the verdict, the reasons and four choices, and stays listed until the owner decides.
 The owner replies in that channel naming the PR, for example `merge home-ops#6183`.
-Only the owner's Discord account can give a decision.
+Only the owner's Discord account can give a decision. The one exception is `fix`: a comment on the PR from the owner's GitHub account whose first line is `/hermes fix <what to change>`
+is the same request, picked up by the next daily run.
 
 | Owner's reply | Result                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------- |

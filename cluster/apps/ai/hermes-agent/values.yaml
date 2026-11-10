@@ -110,7 +110,8 @@ hermes:
   profileSecretEnv:
     worker:
       - LITELLM_API_KEY
-  # Scheduled jobs of the default profile, created at pod start and replaced when their definition here changes.
+  # Scheduled jobs of the default profile, created at pod start and replaced when their definition here changes
+  # (a paused job stays paused). A job with `script` runs that script from files/scripts/ with no model.
   # `hermes cron pause` survives a restart; merge_enabled in the merge policy is what turns merging on.
   cronJobs:
     - name: renovate-daily
@@ -119,13 +120,22 @@ hermes:
       skill: renovate-triage
       model: main-cheap
       deliver: "discord:1569307898860015628" # #hermes-renovate
-      prompt: "Run Part A of the renovate-triage skill: the daily Renovate run."
+      prompt: "Run Part A of the renovate-triage skill: start the daily Renovate run."
+    # Script only, no model: posts each finished summary and merge report card of the renovate board once.
+    - name: renovate-post
+      schedule: "*/10 * * * *"
+      timezone: Europe/Warsaw
+      script: renovate-post.sh
+      deliver: "discord:1569307898860015628" # #hermes-renovate
   # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
   profileSkills:
     default:
       - renovate-triage
+      - renovate-summary
+      - renovate-merge
       - spec-author
     worker:
+      - renovate-coordinator
       - renovate-pr-check
       - renovate-fix
       - post-merge-check
@@ -164,8 +174,10 @@ hermes:
       kanban:
         orchestrator_profile: default
         default_assignee: worker
+        # default runs the summary, merge and report cards of the renovate board.
         dispatch_profiles:
           - worker
+          - default
         max_in_progress_per_profile: 2
       # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
       # the `discord` set for create_thread; the admin set stays disabled.
@@ -176,6 +188,12 @@ hermes:
         cron:
           - hermes-cron
           - kanban
+        # Cards started by the dispatcher run on the cli platform.
+        cli:
+          - terminal
+          - kanban
+          - skills
+          - todo
       agent:
         disabled_toolsets:
           - discord_admin

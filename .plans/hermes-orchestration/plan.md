@@ -81,6 +81,17 @@ cron renovate-daily (short) --> coordinator card (worker)
   Upstream kanban tools take a `board` argument, and the embedded dispatcher works through every board on each tick.
   The tenants `renovate` and `renovate-block` stay, inside that board.
 - The model keeps the right to merge (owner, 2026-11-10).
+
+Built in T22, where the build settled details the design left open:
+
+- Kanban has no archive tool, so the cron session closes stale check cards with `kanban_unblock` and `kanban_complete`,
+  as `resume` already did for block cards. Check cards complete without a verdict instead of blocking, and get a
+  one-hour runtime cap.
+- The summary and merge report go to Discord through a second job, `renovate-post`: a script with no model that posts
+  each finished card's `result` once (V10). The cron seeder gained script jobs, and `files/scripts/` is seeded.
+- `default` joined `kanban.dispatch_profiles` and got a `cli` toolset list, so the dispatcher runs its cards.
+- The owner's Discord `merge` creates a merge card with `owner_consent: yes`. A merge card acts only if `created_by` is
+  `default`, which Hermes sets from the running profile, not from tool arguments.
 - Fix requests from GitHub (P14): a comment on an open bot PR whose first line is `/hermes fix <instruction>`, written
   by `mmalyska`, is the same decision as the Discord reply `fix <repo>#<number> <instruction>`. The coordinator's
   snapshot script selects these comments by author in `jq`, so the model never sees anyone else's comment as a request.
@@ -170,7 +181,7 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 Completed: T01 to T17 (2026-11-09). The owner verified and merged the plan in #6176.
 
-Exact next action: fix `kubectl` in the `hermes-worker` workspace, which the post-merge check needs, then T22 (P13). T21 is done. `renovate-daily` stays paused until T22 replaces it. Then T18 starts: three scheduled report-only runs. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
+Exact next action: the owner reviews and merges T22, then resumes `renovate-daily` for a manual first run on the pipeline. The worker's `kubectl` was fixed in #6224. Then T23 and T18. `renovate-daily` stays paused until T22 replaces it. Then T18 starts: three scheduled report-only runs. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.
