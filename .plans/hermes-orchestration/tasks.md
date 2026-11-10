@@ -268,7 +268,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T14 — Daily cron job
 
-- **Status:** done, 2026-11-09 (#6208). The model later moved from `main-lite` to `main-cheap` (P12).
+- **Status:** done, 2026-11-09 (#6208). The model later moved from `main-lite` to `main-cheap` (P12). Its single long session is replaced in T22 (P13).
 - **From T11:** V5 passed, so the job is declared in git. It delivers to `discord:<#hermes-renovate channel ID>`.
 - **Branch:** `feat/hermes-cron`. **Depends on:** T01, T02, T11, T12, T13, T16: the first run must find the policy and the
   labels.
@@ -337,9 +337,50 @@ done criterion. Update a task's status and evidence in place as it is done.
 - **Checks:** `.agents/bin/check-plans`; `markdownlint`; CI docs build.
 - **Done when:** merged. **Rollback:** revert the PR.
 
+## T21 — Live checks V10 to V14 for the kanban pipeline
+
+- **Depends on:** T14, T17. **Files:** `.plans/hermes-orchestration/evidence.md` (section "Pipeline checks").
+- **Do:** with `renovate-daily` paused, create the `renovate` board (`hermes kanban boards create renovate`) and use
+  throwaway cards in a test tenant on it. No PR is touched.
+
+  | Check | Question                                                                                             | If it fails                                                              |
+  | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+  | V10   | How does a card started by the dispatcher (`cli` platform) post to `#hermes-renovate`?               | A short cron job posts the latest summary card's result instead          |
+  | V11   | What happens to a child when a parent is `blocked` or fails, and does the dispatcher time cards out? | The next coordinator archives stale parents, as in "Redesign"            |
+  | V12   | Can a cron job run on the `worker` profile, or must the `default` job create the coordinator card?   | The `default` job stays and only creates the coordinator card            |
+  | V13   | Is a per-card `model` honoured, and can a card or its profile set the reasoning effort?              | Merge cards run on `main` at the profile's effort, and the owner decides |
+  | V14   | Are cards created with `board="renovate"` dispatched, and can a `worker` card create cards there?    | Cards stay on the default board, separated by tenant                     |
+
+  ```sh consent-gated
+  kubectl -n hermes-agent exec deploy/hermes-agent -c hermes-agent -- hermes kanban boards create renovate
+  kubectl -n hermes-agent exec deploy/hermes-agent -c hermes-agent -- hermes kanban <create|show|list|archive> ...
+  ```
+
+- **Done when:** each check has a recorded answer. **Rollback:** archive the test cards.
+
+## T22 — Pipeline skills and chart
+
+- **Branch:** `feat/hermes-kanban-pipeline`. **Depends on:** T21.
+- **Files:** `cluster/apps/ai/hermes-agent/skills/` (new `renovate-coordinator`, `renovate-summary`, `renovate-merge`;
+  `renovate-triage` keeps Part B, the owner's replies, and loses Part A), `values.yaml` (`profileSkills`, `cronJobs`, the
+  `worker` toolsets if creating cards needs more than `kanban`), `templates/` if the cron seeder needs new fields or the `renovate` board must be created at start.
+- **Change:** the design in "Redesign" in `plan.md`, with the answers from T21. The scripts and the guarded merge block
+  from #6212 and #6213 move into the new skills unchanged.
+- **Checks:** `helm template`; each script run read-only against GitHub; the merge block with a stubbed `gh`.
+- **Note:** a changed job definition makes the seeder recreate the job, which clears the pause. Merge this PR only when
+  the owner is ready to resume the daily run.
+- **Done when:** merged and the seeders report the new job and skills. **Rollback:** revert the PR and pause the job.
+
+## T23 — Docs for the pipeline
+
+- **Branch:** `docs/hermes-kanban-pipeline-docs`. **Depends on:** T22.
+- **Files:** `cluster/apps/ai/hermes-agent/README.md`, `docs/src/k8s/agent-workspaces.md`.
+- **Change:** describe the cards, who runs them, and how to read a run on the board.
+- **Done when:** merged. **Rollback:** revert the PR.
+
 ## T18 — Report-only ramp
 
-- **Depends on:** T14, T17. **Files:** `.plans/hermes-orchestration/evidence.md` (section "Ramp").
+- **Depends on:** T23 (P13). **Files:** `.plans/hermes-orchestration/evidence.md` (section "Ramp").
 - **Do:** three daily runs with `merge_enabled: false`. The owner reviews "would merge" and the threads. Fix the skills or the policy
   for every wrong verdict, and restart the count.
 - **Expected:** a summary by 07:00 each day, a label and verdict on every open bot PR, nothing merged, and no worker task on
