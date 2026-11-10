@@ -229,6 +229,15 @@ spec:
                 echo {{ printf "skip %s: profile directory not found" $profile | squote }}
               fi
               {{- end }}
+              # Scripts for the default profile's script-only cron jobs.
+              mkdir -p /opt/data/scripts
+              for f in /seed/script-*; do
+                [ -e "$f" ] || continue
+                n="${f#/seed/script-}"
+                cp "$f" "/opt/data/scripts/$n"
+                chmod 755 "/opt/data/scripts/$n"
+                chown 10000:10000 "/opt/data/scripts/$n"
+              done
           volumeMounts:
             - name: data
               mountPath: /opt/data
@@ -264,13 +273,16 @@ spec:
                   return result.returncode == 0
 
 
+              # A job runs a skill with a model, or (with `script`) only a script whose stdout is delivered.
               def same(existing, job):
                   return (existing.get('schedule', {}).get('expr') == job['schedule']
-                          and existing.get('model') == job['model']
+                          and existing.get('model') == job.get('model')
                           and existing.get('deliver') == job['deliver']
-                          and existing.get('skills') == [job['skill']]
+                          and (existing.get('skills') or []) == ([job['skill']] if job.get('skill') else [])
                           and existing.get('timezone') == job['timezone']
-                          and existing.get('prompt') == job['prompt'])
+                          and (existing.get('prompt') or '') == job.get('prompt', '')
+                          and (existing.get('script') or '') == job.get('script', '')
+                          and bool(existing.get('no_agent')) == bool(job.get('script')))
 
 
               def main():
@@ -288,11 +300,14 @@ spec:
                       if existing and not run(['remove', existing['id']]):
                           print(f"could not replace: {job['name']}", file=sys.stderr)
                           continue
-                      args = ['create', '--name', job['name'], '--deliver', job['deliver'], '--skill', job['skill'],
-                              '--model', job['model'], '--pin', '--timezone', job['timezone']]
+                      args = ['create', '--name', job['name'], '--deliver', job['deliver'], '--timezone', job['timezone']]
+                      if job.get('script'):
+                          args += ['--script', job['script'], '--no-agent']
+                      else:
+                          args += ['--skill', job['skill'], '--model', job['model'], '--pin']
                       if paused:
                           args.append('--paused')
-                      ok = run(args + [job['schedule'], job['prompt']])
+                      ok = run(args + [job['schedule']] + ([job['prompt']] if job.get('prompt') else []))
                       print(f"{'created' if ok else 'FAILED'}: {job['name']}", file=None if ok else sys.stderr)
 
 
