@@ -340,7 +340,8 @@ done criterion. Update a task's status and evidence in place as it is done.
 ## T21 — Live checks V10 to V14 for the kanban pipeline
 
 - **Depends on:** T14, T17. **Files:** `.plans/hermes-orchestration/evidence.md` (section "Pipeline checks").
-- **Do:** with `renovate-daily` paused, use throwaway cards in a test tenant. No PR is touched.
+- **Do:** with `renovate-daily` paused, create the `renovate` board (`hermes kanban boards create renovate`) and use
+  throwaway cards in a test tenant on it. No PR is touched.
 
   | Check | Question                                                                                             | If it fails                                                              |
   | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -348,8 +349,10 @@ done criterion. Update a task's status and evidence in place as it is done.
   | V11   | What happens to a child when a parent is `blocked` or fails, and does the dispatcher time cards out? | The next coordinator archives stale parents, as in "Redesign"            |
   | V12   | Can a cron job run on the `worker` profile, or must the `default` job create the coordinator card?   | The `default` job stays and only creates the coordinator card            |
   | V13   | Is a per-card `model` honoured, and can a card or its profile set the reasoning effort?              | Merge cards run on `main` at the profile's effort, and the owner decides |
+  | V14   | Are cards created with `board="renovate"` dispatched, and can a `worker` card create cards there?    | Cards stay on the default board, separated by tenant                     |
 
   ```sh consent-gated
+  kubectl -n hermes-agent exec deploy/hermes-agent -c hermes-agent -- hermes kanban boards create renovate
   kubectl -n hermes-agent exec deploy/hermes-agent -c hermes-agent -- hermes kanban <create|show|list|archive> ...
   ```
 
@@ -360,7 +363,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 - **Branch:** `feat/hermes-kanban-pipeline`. **Depends on:** T21.
 - **Files:** `cluster/apps/ai/hermes-agent/skills/` (new `renovate-coordinator`, `renovate-summary`, `renovate-merge`;
   `renovate-triage` keeps Part B, the owner's replies, and loses Part A), `values.yaml` (`profileSkills`, `cronJobs`, the
-  `worker` toolsets if creating cards needs more than `kanban`), `templates/` if the cron seeder needs new fields.
+  `worker` toolsets if creating cards needs more than `kanban`), `templates/` if the cron seeder needs new fields or the `renovate` board must be created at start.
 - **Change:** the design in "Redesign" in `plan.md`, with the answers from T21. The scripts and the guarded merge block
   from #6212 and #6213 move into the new skills unchanged.
 - **Checks:** `helm template`; each script run read-only against GitHub; the merge block with a stubbed `gh`.
