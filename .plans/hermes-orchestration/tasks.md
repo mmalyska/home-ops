@@ -339,6 +339,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T21 — Live checks V10 to V14 for the kanban pipeline
 
+- **Status:** done, 2026-11-10. All five answered; see [evidence.md](evidence.md), section "Pipeline checks".
 - **Depends on:** T14, T17. **Files:** `.plans/hermes-orchestration/evidence.md` (section "Pipeline checks").
 - **Do:** with `renovate-daily` paused, create the `renovate` board (`hermes kanban boards create renovate`) and use
   throwaway cards in a test tenant on it. No PR is touched.
