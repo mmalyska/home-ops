@@ -32,7 +32,11 @@ Committing a change to `workspace-template/main.tf` has zero effect on already-r
    ```
    The live template is named `sandbox` (the original design doc called it `sandbox-workspace` — that name was never actually used).
 
-3. **Redeploy each running workspace** with `coder update <owner>/<workspace>` — not `coder restart`, which keeps the workspace on its old template version. `update` has **no `-y`/`--yes` flag** (unlike `create`), but it does not prompt interactively as long as no parameter values changed, so it completes non-interactively in that case.
+3. **Redeploy each running workspace** with `coder update <owner>/<workspace>` — not `coder restart`, which keeps the workspace on its old template version. `update` has **no `-y`/`--yes` flag**, and it can ask `Continue? (yes/no)` ("Updating your workspace will start the workspace on the active template version"). Without a terminal it then fails with `error: EOF` and changes nothing (seen 2026-11-10 on `agent-workspace`, CLI matching the server). Answer the prompt on stdin:
+   ```bash
+   echo yes | coder update <owner>/<workspace>
+   ```
+   Check `coder list` afterwards: `OUTDATED` must be `false`.
 
 4. **Run updates one at a time, not looped with combined output capture.** Each `update` does a full stop → plan → apply → start cycle (roughly 30–90s). Piping several sequential `coder update` calls into one shell command easily exceeds a 2-minute tool timeout across multiple workspaces — invoke each as its own command instead.
 
