@@ -45,6 +45,12 @@
   value: http://litellm.ai.svc.cluster.local:4000/v1
 - name: EMBEDDING_MODEL_CONFIG__DIMENSIONS_MODE
   value: never
+# Honcho counts tokens with tiktoken (cl100k); the nomic BERT tokenizer
+# counts more, and llm-embeddings rejects any input over its 4096-token
+# batch (8505 BERT tokens came from a chunk under the 8192 default). 2048
+# leaves 2x headroom and matches the model's native context.
+- name: EMBEDDING_MAX_INPUT_TOKENS
+  value: "2048"
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__TRANSPORT
   value: openai
 - name: DIALECTIC_LEVELS__minimal__MODEL_CONFIG__MODEL
