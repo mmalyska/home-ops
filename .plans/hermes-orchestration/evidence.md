@@ -235,3 +235,13 @@ Also found:
 - Upstream hides `kanban_list` and `kanban_unblock` from cards started by the dispatcher, so listing and cleanup belong in a cron session.
 - The post-merge check for `home-ops#6020` and `#6064` never ran: `kubectl` in the `hermes-worker` workspace answered "connection refused", and the worker blocked its card. The post-merge check, and so the revert path, does not work until the workspace's cluster access is fixed.
 - `renovate-daily` ran at 23:00 UTC on 2026-11-09 while paused, because the owner triggered it by hand just before the gateway restarted for #6213. It merged and approved nothing, and the pause held.
+
+## Pipeline run (2026-11-10)
+
+First run on the kanban pipeline, triggered by hand after #6227. It does not count towards T18.
+
+- 16:50 UTC: the cron session created the coordinator card. The coordinator finished in about 4 minutes, with 10 check cards (7 new PRs, 3 changed diffs) and the summary card.
+- The checks finished in about 15 minutes, two at a time, none stuck. The summary card started as soon as the last one finished, and was done in about 4 minutes.
+- `renovate-post` delivered the summary at its next run, 17:20 UTC, in three Discord messages: all 37 open bot PRs, 9 "would merge" and 28 waiting for the owner, with reasons and `denylisted` marks. Nothing was merged.
+- Two `owner` verdicts came from the check skill, not the PRs: `home-ops#6218` because the render passed `-f values.yaml` to a chart without one (`talos-backup`), and `home-ops#5865` because a render failed on the base commit as well. Both are fixed in the skill. No wrong `clean` verdict.
+- Done cards are never archived by Hermes; `hermes kanban gc` only trims events and logs. A `renovate-cleanup` script job now archives done cards older than 14 days.

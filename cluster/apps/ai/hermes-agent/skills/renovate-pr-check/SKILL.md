@@ -95,8 +95,8 @@ For each changed app, find the nearest parent directory of the changed file that
 ```sh
 REPO=home-ops PR=<number> APP_DIR=<path> APP=<name>; WT=/workspaces/repos/$REPO/.worktrees/check-$PR; OUT=$WT/.render/$APP; mkdir -p "$OUT"
 # Helm app
-(cd "$WT/$APP_DIR" && helm dependency update . >/dev/null && helm template "$APP" . -f values.yaml --include-crds > "$OUT/head.yaml")
-(cd "$WT-base/$APP_DIR" && helm dependency update . >/dev/null && helm template "$APP" . -f values.yaml --include-crds > "$OUT/base.yaml")
+(cd "$WT/$APP_DIR" && helm dependency update . >/dev/null && helm template "$APP" . --include-crds > "$OUT/head.yaml")
+(cd "$WT-base/$APP_DIR" && helm dependency update . >/dev/null && helm template "$APP" . --include-crds > "$OUT/base.yaml")
 # Kustomize app, instead of the two lines above
 (cd "$WT/$APP_DIR" && kubectl kustomize . > "$OUT/head.yaml")
 (cd "$WT-base/$APP_DIR" && kubectl kustomize . > "$OUT/base.yaml")
@@ -104,7 +104,9 @@ diff -u "$OUT/base.yaml" "$OUT/head.yaml"
 ```
 
 Compare the difference with the policy's G8 lists. If a value looks randomly generated, render the base a second time: a line that differs between two renders of the same commit is noise, and you can ignore it.
-If a render fails, G8 fails, and you quote the error. Never quote a Secret's data in your verdict.
+Helm reads the chart's own `values.yaml` when there is one, so never add `-f values.yaml`: some charts have none.
+If only the head render fails, G8 fails, and you quote the error. If the base render fails too, the failure is not caused by this PR: write
+"G8: could not render, the base fails as well" with the error, and give `owner` for that reason alone. Never quote a Secret's data in your verdict.
 
 ### 5. Decide and post
 

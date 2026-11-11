@@ -361,7 +361,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T22 — Pipeline skills and chart
 
-- **Status:** PR opened 2026-11-10; see "Built in T22" in `plan.md`.
+- **Status:** done, 2026-11-10 (#6227). First run recorded in [evidence.md](evidence.md), section "Pipeline run".
 - **Branch:** `feat/hermes-kanban-pipeline`. **Depends on:** T21.
 - **Files:** `cluster/apps/ai/hermes-agent/skills/` (new `renovate-coordinator`, `renovate-summary`, `renovate-merge`;
   `renovate-triage` keeps Part B, the owner's replies, and loses Part A), `values.yaml` (`profileSkills`, `cronJobs`, the
@@ -381,6 +381,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T23 — Docs for the pipeline
 
+- **Status:** done, 2026-11-10: the README changes in #6227 cover it.
 - **Branch:** `docs/hermes-kanban-pipeline-docs`. **Depends on:** T22.
 - **Files:** `cluster/apps/ai/hermes-agent/README.md`, `docs/src/k8s/agent-workspaces.md`.
 - **Change:** describe the cards, who runs them, and how to read a run on the board.
