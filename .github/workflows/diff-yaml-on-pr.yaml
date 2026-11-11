@@ -5,8 +5,10 @@ on: # yamllint disable-line rule:truthy
   pull_request:
     branches:
       - main
+    # Charts also render from .tpl helpers, dashboards, files and skills;
+    # the "changes" job decides which charts to diff.
     paths:
-      - "cluster/**.yaml"
+      - "cluster/**"
 
 env:
   conf_live_branch: main

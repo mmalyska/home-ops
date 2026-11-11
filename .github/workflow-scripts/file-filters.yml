@@ -1,7 +1,12 @@
 helm:
   - added|modified: "cluster/**/Chart.yaml"
   - added|modified: "cluster/**/values.yaml"
-  - added|modified: "cluster/**/templates/*.yaml"
+  # Everything a chart renders: templates in subfolders and .tpl helpers, plus
+  # files read with .Files.Get/.Glob (dashboards, files, skills).
+  - added|modified: "cluster/**/templates/**"
+  - added|modified: "cluster/**/dashboards/**"
+  - added|modified: "cluster/**/files/**"
+  - added|modified: "cluster/**/skills/**"
 kustomize:
   - added|modified: "cluster/**/kustomization.yaml"
   - added|modified: "cluster/**/generators/*.yaml"
