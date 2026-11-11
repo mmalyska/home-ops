@@ -64,7 +64,7 @@ Embeddings use the CPU-only `llm-embeddings` server (llama.cpp, `llm` namespace)
 - **Endpoint**: the gateway (`embed` maps to `http://llm-embeddings.llm.svc.cluster.local:8080/v1`)
 - **Cost**: free (local inference), works offline
 - **Dimensions**: `EMBEDDING_VECTOR_DIMENSIONS=768`, `DIMENSIONS_MODE=never` (the server ignores the dimensions parameter)
-- **Chunk size**: `EMBEDDING_MAX_INPUT_TOKENS=2048`. Honcho splits messages by tiktoken count, but the server rejects any input over 4096 BERT tokens (`--ubatch-size`, and `--ctx-size 8192` shared by 2 slots). With the 8192 default, a long message produced an 8505-token chunk that failed on every reconcile and fired `LiteLLMModelFailing` for `nomic-embed-text`.
+- **Chunk size**: `EMBEDDING_MAX_INPUT_TOKENS=1024`. Honcho splits messages by tiktoken count, but the server rejects any input over 2048 BERT tokens: llama-server caps each slot at the model's training context (2048), whatever `--ctx-size` says. The BERT tokenizer counts more than tiktoken (a 2048-token chunk was 2345 BERT tokens), so 1024 leaves 2x headroom. With the 8192 default, long messages failed on every reconcile and fired `LiteLLMModelFailing` for `nomic-embed-text`. Messages whose embedding failed can be re-embedded: delete their failed `message_embeddings` rows, then run `scripts/generate_message_embeddings.py --workspace-name <name>` in the deriver pod (it embeds only messages with no embedding rows).
 
 `nomic-embed-text` is an uncased BERT: llama-server lowercases input, Ollama (retired) did not. Stored vectors match llama-server exactly, so no re-embedding was needed when moving off Ollama. The server is defined in `cluster/apps/ai/llm/embeddings/`.
 
