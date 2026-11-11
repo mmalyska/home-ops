@@ -20,6 +20,12 @@
       "pinDigests": false
     },
     {
+      "description": "Disable pinDigests for the kubelet image (the version is read as a plain Kubernetes version by Taskfile, tuppr KubernetesUpgrade and Talos patches, none accept an @sha256 suffix)",
+      "matchPackageNames": ["ghcr.io/siderolabs/kubelet", "siderolabs/kubelet"],
+      "matchUpdateTypes": ["pinDigest"],
+      "enabled": false
+    },
+    {
       "description": "Disable pinDigests for vintagestory (vs-version is a game version env var, not a container image tag; container tag digest is managed via autoReplaceStringTemplate)",
       "matchPackageNames": ["ghcr.io/mmalyska/vintagestory"],
       "matchUpdateTypes": ["pinDigest"],
