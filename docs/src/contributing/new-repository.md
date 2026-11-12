@@ -60,7 +60,16 @@ jobs:
       pull-requests: write
 ```
 
-## 5. Secrets the cluster reads
+## 5. Renovate, not Dependabot
+
+Dependency updates come from Renovate, run by the Renovate app (`app/bendo-bot`). Hermes checks only PRs opened by that app, so a Dependabot PR is never checked, labelled or merged.
+
+- Add `.github/renovate.json5` extending `github>mmalyska/renovate-config`, with `timezone`, `gitAuthor` and `reviewers` as in `homelab-portal`.
+- Add `.github/workflows/scheduled-renovate.yaml`, the hourly caller of `mmalyska/github-workflows/.github/workflows/run-renovate.yaml@main`, with the repository secrets `BOT_APP_ID` and
+  `BOT_APP_PRIVATE_KEY`, and install the Renovate app on the repository.
+- Do not add `.github/dependabot.yml`, and turn off Dependabot security updates in the repository settings: Renovate reads the same vulnerability alerts.
+
+## 6. Secrets the cluster reads
 
 The cluster has one External Secrets store, `bitwarden`, and it reads only the `cluster` Bitwarden project. A secret in any other project answers 404 to External Secrets, even when `bws` in the
 devcontainer can read it. Create every secret that a cluster app uses in the `cluster` project.
@@ -72,3 +81,4 @@ A private key stored in Bitwarden must end with a newline. Without it, `ssh-keyg
 - **Gate G5.** Hermes reads `rules/branches/<default branch>`, which needs no admin access. A repository that lacks the ruleset is treated as denylisted: no PR there is auto-merged, and the daily summary says so.
 - **No CI checks.** A repository with no CI checks never auto-merges, because there is nothing for gate G3 to confirm.
 - **Missing labels.** A bot PR with no `triage/*` label is treated as `triage/needed`.
+- **Dependabot PRs.** Hermes never sees them. Merge them yourself, or move the repository to Renovate.
