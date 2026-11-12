@@ -8,7 +8,7 @@ server:
     # (ci/latest.sh). nv1 runs JetPack 7 (CUDA 13); see
     # .claude/memory/reference_jetson_llama_cuda_tag.md before changing the base.
     repository: ghcr.io/mmalyska/llama-cpp-jetson
-    tag: "v0.9.0@sha256:03841e31febe034fac3d2b3c85bca95b0e55b6470cb3e945a605464713e284b4"
+    tag: "v0.9.0@sha256:78becada77b668578c3f9ac5736719fce0a7dd03951aea8bc066fc54dc07cd6a"
   fetchImage: alpine:3@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
   model:
     # LFM3-1.7B replaced Gemma 4 26B-A4B on 2026-10-28 (owner decision, plan in
