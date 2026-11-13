@@ -378,9 +378,11 @@ spec:
             # terminal.cwd (/workspaces) is a path in the Coder workspace behind the ssh backend, but
             # Hermes also checks it on this host: the dashboard's skills watcher logged "TERMINAL_CWD
             # does not exist" every 2 seconds. An empty directory satisfies the local check; the ssh
-            # tools pass the cwd through as a string and do not use it.
+            # tools pass the cwd through as a string and do not use it. Read-only: nothing on this host
+            # should write there.
             - name: workspaces
               mountPath: /workspaces
+              readOnly: true
         # Ships the file logs on the PVC to Loki (config in templates/alloy-configmap.yaml).
         - name: alloy
           image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
@@ -451,7 +453,7 @@ spec:
             name: hermes-agent-alloy
         - name: workspaces
           emptyDir:
-            sizeLimit: 1Gi
+            sizeLimit: 1Mi
         - name: honcho-config
           configMap:
             name: hermes-agent-honcho

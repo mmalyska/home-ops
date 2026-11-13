@@ -33,7 +33,7 @@ Hermes Agent deployed as a single-pod application on the home Kubernetes cluster
 | **nginx**                      | Reverse proxy in front of hermes-agent; rewrites Host to `127.0.0.1` so hermes gateway loopback guard passes                                              |
 | **PVC `hermes-agent-data`**    | Persistent state — config, profile homes, sessions, memory, logs, SSH keys                                                                                |
 | **alloy** (sidecar)            | Tails the file logs on the PVC and pushes them to Loki (see Viewing Logs)                                                                                 |
-| **emptyDir `/workspaces`**     | Empty local copy of `terminal.cwd`: the path lives in the Coder workspace, but Hermes also checks it on this host and warns every 2 s                     |
+| **emptyDir `/workspaces`**     | Empty read-only stand-in for `terminal.cwd`: the path lives in the Coder workspace, but Hermes also checks it on this host and warns every 2 s            |
 | **VolSync**                    | Restic backups of the PVC to S3 (every 6 hours)                                                                                                           |
 | **ExternalSecret**             | Discord credentials and the two workspace SSH keys from Bitwarden → K8s Secret (the keys are files, never environment variables)                          |
 | **LiteLLMVirtualKey `hermes`** | Team key for the AI gateway; the operator writes it to Secret `hermes-litellm`, the pod reads it as `LITELLM_API_KEY` (no provider key in this namespace) |
