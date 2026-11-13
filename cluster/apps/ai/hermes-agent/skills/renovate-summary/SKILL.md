@@ -16,7 +16,7 @@ You are `rudi-the-brain`, running in the `default` profile on one kanban card. Y
 The card title says which part applies:
 
 - `renovate-summary <date>`: Part A, the daily summary. The body gives `run_date`, `run_start`, `blocked_repos`, `check_cards` and `fix_cards`.
-- `renovate-merge-report <date>`: Part B, the merge report. The body gives `run_date` and `merge_cards`.
+- `renovate-merge-report <date>`: Part B, the merge report. The body gives `run_date`, `merge_cards` and `post_merge_card`.
 
 The `result` you pass to `kanban_complete` is posted to `#hermes-renovate` by a script, word for word. It must exist even when there is nothing to do.
 Never include the literal text `[SILENT]` in it.
@@ -208,6 +208,21 @@ kanban_create(
 )
 ```
 
+Then the post-merge card, with every merge card as a parent. Create it whenever you created a merge card: it starts when they have all finished, and it finds out itself which of them merged.
+
+```text
+kanban_create(
+  board="renovate",
+  title="post-merge-check <run_date>",
+  assignee="worker",
+  tenant="renovate",
+  skills=["post-merge-check"],
+  parents=[<every merge card id>],
+  idempotency_key="post-merge-check:<run_date>",
+  body="merge_cards: <repo>#<number>=<task_id>, ..."
+)
+```
+
 Then one report card with every merge card as a parent:
 
 ```text
@@ -219,7 +234,7 @@ kanban_create(
   skills=["renovate-summary"],
   parents=[<every merge card id>],
   idempotency_key="renovate-merge-report:<run_date>",
-  body="run_date: <run_date>\nmerge_cards: <repo>#<number>=<task_id>, ..."
+  body="run_date: <run_date>\nmerge_cards: <repo>#<number>=<task_id>, ...\npost_merge_card: <the post-merge card id>"
 )
 ```
 
@@ -286,23 +301,12 @@ Then call `kanban_complete(result=<the whole summary text>, summary="Renovate su
 
 ## Part B: merge report
 
-For each card in `merge_cards`, call `kanban_show(task_id=<id>)` and read its result. Each starts with `merged` or `not merged`.
+Your card body is all you work from. Create no cards: the post-merge card already exists, created with the merge cards.
 
-If anything was merged, create one post-merge card for all of it. Use the `sha` of the first merge in the key:
+For each card in `merge_cards`, call `kanban_show(task_id=<id>)` and read its `result`. If that is empty, read the `summary` of its last run. Each starts with `merged` or `not merged`.
+Call `kanban_show` for every merge card, even when your own card already shows a summary.
 
-```text
-kanban_create(
-  board="renovate",
-  title="post-merge-check <run_date>",
-  assignee="worker",
-  tenant="renovate",
-  skills=["post-merge-check"],
-  idempotency_key="post-merge-check:<sha of the first merge>",
-  body="merge: <repo>#<number> sha=<sha> merged_at=<merged_at>\nmerge: ..."
-)
-```
-
-Then call `kanban_complete` with this text as `result`, `summary="Renovate merges <run_date> reported"`, and `created_cards` if you created the post-merge card:
+Then call `kanban_complete` with this text as `result` and `summary="Renovate merges <run_date> reported"`:
 
 ```text
 **Renovate merges <run_date>**
@@ -310,8 +314,10 @@ Then call `kanban_complete` with this text as `result`, `summary="Renovate merge
 **Merged:** <repo>#<number>, ...
 **Not merged:**
 - <repo>#<number>: <reason, one sentence>
-**Post-merge check:** started | not needed
+**Post-merge check:** card <post_merge_card from your body>
 ```
+
+The post-merge card checks every merge and posts nothing itself. A failure there opens a revert PR that mentions the owner.
 
 ## Pitfalls
 

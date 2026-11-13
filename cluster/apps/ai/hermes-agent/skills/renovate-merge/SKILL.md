@@ -159,7 +159,7 @@ Run `gh pr review --approve` and `gh pr merge` only through this block. Never ad
 
 ### 7. Finish
 
-Complete with exactly one of these summaries:
+Complete with exactly one of these texts, passed as both `summary` and `result`: the post-merge and report cards read it.
 
 - `merged <repo>#<number> sha=<sha> merged_at=<merged_at>`
 - `not merged <repo>#<number>: <reason, one sentence>`. After `REFUSED`, or a failed approval or merge, set `triage/owner` and record a note first.

@@ -170,13 +170,17 @@ Anything else that seems to be about a PR gets a clarifying question, and no act
      max_runtime_seconds=3600, idempotency_key="renovate-pr-check:<repo>#<number>:<hash>", body="repo: <repo>\npr: <number>\ndiff_hash: <hash>")
    ```
 
-5. Otherwise create the merge card and its report card. The merge card re-checks CI and the diff itself, and merges with your approval:
+5. Otherwise create the merge card, its post-merge card and its report card, in this order. The merge card re-checks CI and the diff itself, and merges with your approval.
+   Create all three: the post-merge card starts when the merge card has finished and finds out itself whether it merged.
 
    ```text
    kanban_create(board="renovate", title="renovate-merge <repo>#<number>", assignee="default", tenant="renovate", skills=["renovate-merge"], model="main",
      idempotency_key="renovate-merge:<repo>#<number>:<hash>", body="repo: <repo>\npr: <number>\nverdict_hash: <hash>\nowner_consent: yes")
+   kanban_create(board="renovate", title="post-merge-check <repo>#<number>", assignee="worker", tenant="renovate", skills=["post-merge-check"],
+     parents=[<the merge card id>], idempotency_key="post-merge-check:<repo>#<number>:<hash>", body="merge_cards: <repo>#<number>=<the merge card id>")
    kanban_create(board="renovate", title="renovate-merge-report <repo>#<number>", assignee="default", tenant="renovate", skills=["renovate-summary"],
-     parents=[<the merge card id>], idempotency_key="renovate-merge-report:<repo>#<number>:<hash>", body="run_date: <today>\nmerge_cards: <repo>#<number>=<the merge card id>")
+     parents=[<the merge card id>], idempotency_key="renovate-merge-report:<repo>#<number>:<hash>",
+     body="run_date: <today>\nmerge_cards: <repo>#<number>=<the merge card id>\npost_merge_card: <the post-merge card id>")
    ```
 
 6. Tell the owner the merge has started, and that the result and the post-merge check follow in `#hermes-renovate`.
