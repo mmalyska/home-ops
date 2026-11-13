@@ -11,6 +11,12 @@ spec:
   syncPolicy:
     applicationsSync: create-update
     preserveResourcesOnDeletion: false # To prevent an Application's child resources from being deleted when the parent Application is deleted set this to true
+  # Let auto-sync be turned off by hand (UI or CLI) so a rollback is possible; git keeps owning
+  # every other field. Scoped to bookorbit as a trial: see docs/src/k8s/argocd-rollback.md.
+  ignoreApplicationDifferences:
+    - name: bookorbit
+      jsonPointers:
+        - /spec/syncPolicy/automated/enabled
   generators:
     - git:
         repoURL: https://github.com/mmalyska/home-ops
