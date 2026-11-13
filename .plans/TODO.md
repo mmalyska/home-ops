@@ -1,6 +1,6 @@
 # TODO
 
-General backlog items not tied to a specific plan. Last reviewed 2026-11-06. Finished items are moved to `.archive/TODO.md`.
+General backlog items not tied to a specific plan. Last reviewed 2026-11-13. Finished items are moved to `.archive/TODO.md`.
 
 ---
 
@@ -41,8 +41,6 @@ General backlog items not tied to a specific plan. Last reviewed 2026-11-06. Fin
   - Find out why the arm64 kexec load fails on the Jetson (memory layout, the 567 MB UKI, `crashkernel`?) and tell the fork.
   - Offer the alias-tag change (`custom-installer-jp7:v<talos>` next to the compound tag; our fork `mmalyska/talos-jetson-orin`, branch `pr/jetpack7-r39`) to `schwankner/talos-jetson-orin`: it has worked through real nv1 upgrades.
   - nv1 boots the new UKI without the sysctl (verified 2026-11-06, see step 4 of the Talos v1.14.5 item), and mc1 to mc3 kexec-boot fine (Talos logs of the same upgrade). Drop the stale-UKI rename from the runbook once a real nv1 upgrade has gone through without it.
-
-- [ ] **Hermes: restore Piper text-to-speech (2026-11-09, from the v0.23.0 upgrade).** The chart's `postStart` installed `honcho-ai` and `piper-tts` with `uv`. The v0.23.0 image has no `uv` on PATH and a sealed venv, so the owner chose to remove the hook. Honcho now comes from the catalog plugin. `piper-tts` has no confirmed install route: check `hermes tools` on v0.23.0 first, and otherwise build a thin derived image in `mmalyska/containers`.
 
 ## Waiting on something external
 
