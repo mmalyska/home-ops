@@ -32,6 +32,8 @@ Hermes Agent deployed as a single-pod application on the home Kubernetes cluster
 | **hermes-agent**               | Main process — one multiplexed gateway for both profiles (Discord), kanban dispatcher, scheduled jobs, dashboard                                          |
 | **nginx**                      | Reverse proxy in front of hermes-agent; rewrites Host to `127.0.0.1` so hermes gateway loopback guard passes                                              |
 | **PVC `hermes-agent-data`**    | Persistent state — config, profile homes, sessions, memory, logs, SSH keys                                                                                |
+| **alloy** (sidecar)            | Tails the file logs on the PVC and pushes them to Loki (see Viewing Logs)                                                                                 |
+| **emptyDir `/workspaces`**     | Empty local copy of `terminal.cwd`: the path lives in the Coder workspace, but Hermes also checks it on this host and warns every 2 s                     |
 | **VolSync**                    | Restic backups of the PVC to S3 (every 6 hours)                                                                                                           |
 | **ExternalSecret**             | Discord credentials and the two workspace SSH keys from Bitwarden → K8s Secret (the keys are files, never environment variables)                          |
 | **LiteLLMVirtualKey `hermes`** | Team key for the AI gateway; the operator writes it to Secret `hermes-litellm`, the pod reads it as `LITELLM_API_KEY` (no provider key in this namespace) |
@@ -253,8 +255,7 @@ dashboard and the s6 boot lines. The `alloy` sidecar (`templates/alloy-configmap
 | `{job="hermes-agent/files", profile="worker"}`                                    | Files under `profiles/worker/logs/`                     |
 | `{namespace="hermes-agent", container="hermes-agent", job!="hermes-agent/files"}` | Container stdout (dashboard, s6), via alloy-k8s-logs    |
 
-`errors.log` and `gateway.log` are subsets of `agent.log` and are skipped. The dashboard's `TERMINAL_CWD does not exist` warning
-(every 2 seconds) is dropped from the file stream; container stdout still carries it. Positions live on the PVC, so a restart resumes where it stopped; a file seen for the first time is read from
+`errors.log` and `gateway.log` are subsets of `agent.log` and are skipped. Positions live on the PVC, so a restart resumes where it stopped; a file seen for the first time is read from
 its end.
 
 ```bash
