@@ -10,7 +10,7 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | `main-cheap`  | ChatGPT (Codex) subscription, `chatgpt/gpt-6.1-terra`, same login as `main`                | none per token    |
 | `main-lite`   | ChatGPT (Codex) subscription, `chatgpt/gpt-6-luna`, same login as `main`                   | none per token    |
 | `cheap`       | OpenRouter, `google/gemini-3.1-flash-lite`                                                 | per token, capped |
-| `local`       | llama-server on nv1 (`llm` namespace), thinking off                                        | none              |
+| `local`       | llama-server on nv1 (`llm` namespace, LFM3-VL-2B, alias `lfm3-vl-2b`), thinking off        | none              |
 | `local-think` | same llama-server, thinking on, reasoning capped at 256 tokens (`max_tokens` 1024 is safe) | none              |
 | `embed`       | CPU llama.cpp embeddings server (nomic-embed-text)                                         | none              |
 
@@ -35,6 +35,18 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 | `hermes`   | `main`, `main-cheap`, `main-lite`, `cheap`, `local`, `local-think` |
 | `honcho`   | `cheap`, `local`, `embed`                                          |
 | `opencode` | `main`, `cheap`, `local`                                           |
+| `lingarr`  | `cheap`, `local`                                                   |
+
+What each client is set to call (the team list above is what it may call):
+
+| Client                      | Aliases in use                                                                                                                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hermes                      | `main` (`default` profile, most auxiliary tasks), `main-cheap` (`worker` profile, `renovate-daily` job), `local` (small background tasks), `local-think` (vision); see the Hermes README |
+| Honcho                      | `local` (deriver, summary, dialectic minimal to medium), `cheap` (dialectic high and max, dreams), `embed`                                                                               |
+| opencode (Coder workspaces) | `main`, `local` as the small model                                                                                                                                                       |
+| Lingarr                     | `cheap`                                                                                                                                                                                  |
+
+The Home Assistant voice services (`whisper`, `piper`, `openwakeword`) speak the Wyoming protocol, not the OpenAI API, so they run their own models outside the gateway.
 
 opencode in the Coder workspace is installed by the template startup script from a pinned GitHub release, checked against a SHA-256 in `workspace-template/main.tf` (`opencode_version`, `opencode_sha256`). It is not installed with the upstream install script. After a version bump, take the new digest from the release page and change both values together; a mismatch skips the install and the workspace still starts.
 
@@ -89,4 +101,4 @@ Cilium enforces `NetworkPolicy`. The gateway, its Postgres and Dragonfly, Honcho
 | `llm-embeddings:8080`             | `litellm` pods in `ai`                                                                                                  |
 | `llama-server:8080`               | `litellm` pods in `ai`; `monitoring` (metrics)                                                                          |
 
-Policies select the pods above, not the whole namespace, because the `litellm-operator` pod must stay reachable by the API server for its admission webhook. There is no egress policy: the gateway has to reach OpenRouter and ChatGPT. Every model call goes through the gateway: a new client gets a team, a virtual key and an entry in the `litellm` policy, and nothing may call `llama-server` or `llm-embeddings` directly. The `llama-server` policy is ingress-only and leaves the Jetson node itself untouched. Lingarr is a client too (team `lingarr`, alias `local`); its key is entered once in the Lingarr UI (Settings, Translation, Local AI) because Lingarr stores it encrypted and ignores a plain `LOCAL_AI_API_KEY`.
+Policies select the pods above, not the whole namespace, because the `litellm-operator` pod must stay reachable by the API server for its admission webhook. There is no egress policy: the gateway has to reach OpenRouter and ChatGPT. Every model call goes through the gateway: a new client gets a team, a virtual key and an entry in the `litellm` policy, and nothing may call `llama-server` or `llm-embeddings` directly. The `llama-server` policy is ingress-only and leaves the Jetson node itself untouched. Lingarr is a client too (team `lingarr`, alias `cheap`; `local` stays allowed on its key for a rollback); its key is entered once in the Lingarr UI (Settings, Translation, Local AI) because Lingarr stores it encrypted and ignores a plain `LOCAL_AI_API_KEY`.

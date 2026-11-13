@@ -157,7 +157,7 @@ hermes:
       # Everything goes through the AI gateway: the gateway holds the provider credentials, picks the
       # fallback (main, cheap, local) and enforces the budget, so Hermes keeps no provider key and no
       # fallback_providers. LITELLM_API_KEY is the hermes team key (Secret hermes-litellm). Hermes rejects
-      # any model below 64K context; local is served with -c 65536 -np 1. context_length is main's usable
+      # any model below 64K context; local is served with -c 262144 -np 2 (128000 per slot). context_length is main's usable
       # window (272K at the gateway) with headroom, so compression does not start at 32K.
       model:
         provider: custom
