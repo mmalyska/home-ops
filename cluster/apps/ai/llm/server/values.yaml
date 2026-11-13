@@ -18,13 +18,13 @@ server:
     # TEST 2026-10-29: LFM3-VL-2B replaces LFM3-1.7B to see whether one server can
     # cover text and vision. Revert this block (and mmproj below) to go back to
     # file LFM3-1.7B-Q8_0.gguf, sha256 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6,
-    # alias lfm3-1.7b. The LiteLLM models still point at alias lfm3-1.7b, so the
-    # alias is kept to avoid touching the gateway.
+    # alias lfm3-1.7b. The alias was renamed to lfm3-vl-2b on 2026-11-13 to match
+    # the file; the LiteLLM `local` and `local-think` models point at it.
     file: LFM3-VL-2B-Q8_0.gguf
     url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/LFM3-VL-2B-Q8_0.gguf
     sha256: e138e54189a751d90ea8c0b236360490613ecd465d28d68fa6094d3db7fa6727
     size: "1846238496"
-    alias: lfm3-1.7b
+    alias: lfm3-vl-2b
   # Vision projector for the multimodal model, fetched and verified like the
   # model file and passed as --mmproj. Remove for a text-only model.
   mmproj:

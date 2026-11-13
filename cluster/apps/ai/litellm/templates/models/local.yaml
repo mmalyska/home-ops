@@ -8,7 +8,7 @@ spec:
   modelName: local
   proxyRef: litellm
   params:
-    model: openai/lfm3-1.7b
+    model: openai/lfm3-vl-2b
     apiBase: http://llama-server.llm.svc.cluster.local:8080/v1
     apiKey: local
   info:
