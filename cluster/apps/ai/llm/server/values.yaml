@@ -15,31 +15,29 @@ server:
     # .archive/.plans/lfm3-llama-server). Q8_0 is 1.85 GB, so the node has ~10 GB more
     # room than it had with Gemma. The old Gemma file stays on the PVC until it
     # is cleaned up by hand.
-    # TEST 2026-10-29: LFM3-VL-2B replaces LFM3-1.7B to see whether one server can
-    # cover text and vision. Revert this block (and mmproj below) to go back to
-    # file LFM3-1.7B-Q8_0.gguf, sha256 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6,
-    # alias lfm3-1.7b. The alias was renamed to lfm3-vl-2b on 2026-11-13 to match
-    # the file; the LiteLLM `local` and `local-think` models point at it.
-    file: LFM3-VL-2B-Q8_0.gguf
-    url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/LFM3-VL-2B-Q8_0.gguf
-    sha256: e138e54189a751d90ea8c0b236360490613ecd465d28d68fa6094d3db7fa6727
+    # LFM3-VL-2B served from 2026-10-29 to 2026-11-13 (one server for text and
+    # images). Back to the text model by owner decision: Liquid does not recommend
+    # VL-2B for multi-turn or complex reasoning, which is most `local` traffic, and
+    # no client sent it images. To serve VL-2B again: file LFM3-VL-2B-Q8_0.gguf,
+    # sha256 e138e54189a751d90ea8c0b236360490613ecd465d28d68fa6094d3db7fa6727,
+    # plus `server.mmproj` (mmproj-LFM3-VL-2B-Q8_0.gguf, sha256
+    # c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab, size
+    # 203031872), both from LiquidAI/LFM3-VL-2B-GGUF; the chart passes --mmproj
+    # only when `server.mmproj` is set.
+    file: LFM3-1.7B-Q8_0.gguf
+    url: https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/main/LFM3-1.7B-Q8_0.gguf
+    sha256: 8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6
     size: "1846238496"
-    alias: lfm3-vl-2b
-  # Vision projector for the multimodal model, fetched and verified like the
-  # model file and passed as --mmproj. Remove for a text-only model.
-  mmproj:
-    file: mmproj-LFM3-VL-2B-Q8_0.gguf
-    url: https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/main/mmproj-LFM3-VL-2B-Q8_0.gguf
-    sha256: c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab
-    size: "203031872"
+    alias: lfm3-1.7b
   # Two slots since 2026-10-29. `ctx` is the total, split across slots, so 262144
-  # gives each slot 131072, but llama-server caps a slot at the model's trained
-  # context (128000 for LFM3-VL-2B). Hermes refuses a model with less than 64,000
-  # tokens of context per slot. LFM2.5's hybrid recurrent state corrupted
+  # gives each slot 131072 (LFM3-1.7B is trained to 262144; VL-2B capped a slot at
+  # 128000). Hermes refuses a model with less than 64,000 tokens of context per
+  # slot. LFM2.5's hybrid recurrent state corrupted
   # multi-turn output when sequences were co-batched (llama.cpp#29002, still open)
   # and LFM3 is also a conv/attention hybrid, so the move from one slot waited for
-  # the corruption harness: 0 corrupt of 60 turns (4 sessions, tool calls, image
-  # requests mixed in; docs/src/k8s/nv1-jetson.md). Revert to ctx 131072 /
+  # the corruption harness: 0 corrupt of 60 turns on LFM3-VL-2B, same LFM3
+  # backbone (4 sessions, tool calls, image requests mixed in;
+  # docs/src/k8s/nv1-jetson.md). LFM3-1.7B itself was measured at one slot only. Revert to ctx 131072 /
   # parallel 1 if corruption shows up in real traffic or node MemAvailable drops
   # under ~3 GB (it was 7.3 GB with two slots).
   # Only 6 of LFM3's 24 layers keep a global KV cache (~6.5 KB/token with

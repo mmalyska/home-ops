@@ -10,7 +10,7 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | `main-cheap`  | ChatGPT (Codex) subscription, `chatgpt/gpt-6.1-terra`, same login as `main`                | none per token    |
 | `main-lite`   | ChatGPT (Codex) subscription, `chatgpt/gpt-6-luna`, same login as `main`                   | none per token    |
 | `cheap`       | OpenRouter, `google/gemini-3.1-flash-lite`                                                 | per token, capped |
-| `local`       | llama-server on nv1 (`llm` namespace, LFM3-VL-2B, alias `lfm3-vl-2b`), thinking off        | none              |
+| `local`       | llama-server on nv1 (`llm` namespace, LFM3-1.7B, alias `lfm3-1.7b`), thinking off          | none              |
 | `local-think` | same llama-server, thinking on, reasoning capped at 256 tokens (`max_tokens` 1024 is safe) | none              |
 | `embed`       | CPU llama.cpp embeddings server (nomic-embed-text)                                         | none              |
 
@@ -39,12 +39,12 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 
 What each client is set to call (the team list above is what it may call):
 
-| Client                      | Aliases in use                                                                                                                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hermes                      | `main` (`default` profile, most auxiliary tasks), `main-cheap` (`worker` profile, `renovate-daily` job), `local` (small background tasks), `local-think` (vision); see the Hermes README |
-| Honcho                      | `local` (deriver, summary, dialectic minimal to medium), `cheap` (dialectic high and max, dreams), `embed`                                                                               |
-| opencode (Coder workspaces) | `main`, `local` as the small model                                                                                                                                                       |
-| Lingarr                     | `cheap`                                                                                                                                                                                  |
+| Client                      | Aliases in use                                                                                                                                                                    |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hermes                      | `main` (`default` profile, most auxiliary tasks including vision), `main-cheap` (`worker` profile, `renovate-daily` job), `local` (small background tasks); see the Hermes README |
+| Honcho                      | `local` (deriver, summary, dialectic minimal to medium), `cheap` (dialectic high and max, dreams), `embed`                                                                        |
+| opencode (Coder workspaces) | `main`, `local` as the small model                                                                                                                                                |
+| Lingarr                     | `cheap`                                                                                                                                                                           |
 
 The Home Assistant voice services (`whisper`, `piper`, `openwakeword`) speak the Wyoming protocol, not the OpenAI API, so they run their own models outside the gateway.
 
