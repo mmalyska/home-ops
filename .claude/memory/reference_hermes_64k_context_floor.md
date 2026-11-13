@@ -17,3 +17,5 @@ llama-server on nv1 runs `-c 65536 -np 2` = 32768 per slot, so a local main mode
 **Restored 2026-11:** the Hermes stack runs again in `cluster/apps/ai/hermes-agent` (the 2026-10-21 archive no longer applies). It goes through the AI gateway: `default` on `main`, `worker` on `main-cheap`, and `local` only for small auxiliary tasks. The floor still applies to any model a profile or auxiliary task uses.
 
 **Update 2026-10-28:** the local model is now LFM3-1.7B (256K context) at `-c 65536 -np 1`, so the floor is still met; more slots need `ctx / parallel >= 64000` and the hybrid-corruption gate ([[project_nv1_drop_gemma_multi_model]]).
+
+**Update 2026-11-13:** llama-server is back on LFM3-1.7B (alias `lfm3-1.7b`, trained to 262144) at `-c 262144 -np 2`, so each slot has 131072 and the floor is met. Under LFM3-VL-2B (2026-10-29 to 11-13) a slot was capped at 128000.

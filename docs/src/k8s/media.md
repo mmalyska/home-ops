@@ -108,9 +108,9 @@ subtitle providers and languages.
 
 ## Lingarr
 
-Lingarr translates subtitles for Bazarr. It uses the local model on nv1 (`llama-server` in namespace `llm`, alias
-`lfm3-1.7b`) through the OpenAI-compatible `LOCAL_AI_ENDPOINT`, English to Polish, one job at a time because
-llama-server has a single slot. The settings are environment variables in `cluster/apps/media/lingarr/values.yaml`; its
+Lingarr translates subtitles for Bazarr. It calls the AI gateway alias `cheap` (Gemini Flash Lite via OpenRouter, see
+`docs/src/k8s/ai-gateway.md`) through the OpenAI-compatible `LOCAL_AI_ENDPOINT`, English to Polish, one job at a time.
+The local model on nv1 was tried and rejected for subtitles (`docs/src/k8s/nv1-jetson.md`). The settings are environment variables in `cluster/apps/media/lingarr/values.yaml`; its
 SQLite config lives on a 1Gi `ceph-block` PVC and is not backed up, since everything in it can be recreated.
 
 To use it from Bazarr, set Settings, Subtitles, Translating: translator `Lingarr` and URL
