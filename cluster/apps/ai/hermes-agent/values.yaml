@@ -29,10 +29,6 @@ hermes:
       show_cost: true
     dashboard:
       show_token_analytics: true
-    tts:
-      provider: piper
-      piper:
-        voice: en_US-lessac-medium
     timezone: "Europe/Warsaw"
     auxiliary:
       vision:
@@ -207,6 +203,10 @@ hermes:
         disabled_toolsets:
           - discord_admin
           - file
+          # No text-to-speech: without a tts section Hermes falls back to Edge TTS, a cloud
+          # service outside the AI gateway. Applied after platform_toolsets, so the
+          # hermes-discord and hermes-cron bundles lose it too.
+          - tts
       approvals:
         deny:
           - "git *push*--force*"
@@ -264,6 +264,7 @@ hermes:
           - delegation
           - discord
           - file
+          - tts
       approvals:
         deny:
           - "git *push*--force*"

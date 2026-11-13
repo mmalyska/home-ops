@@ -39,3 +39,9 @@ Everything is done except the Nextcloud phone upload test, which the owner postp
 The Talos bug siderolabs/talos#14584 item: the fix shipped in v1.14.5, the cluster runs it, and the repeated disk selectors were dropped (step 5 of the Talos v1.14.5 upgrade item). Knowledge kept in `provision/talos/README.md` and `provision/talos/patches/all/30-install.yaml`.
 
 - [ ] **Talos bug siderolabs/talos#14584 (`talosctl machineconfig patch` dropped base-side CEL expressions and `minSize`): fixed upstream 2026-10-20, released in Talos v1.14.5 (2026-10-26).** Closed by commit "fix: preserve omitted CEL expressions when patching configs"; it is in v1.14.5 and v1.15.0-alpha.2, not in v1.14.4 (the cluster runs v1.14.4 on 2026-11-06). After the upgrade to v1.14.5 or later, drop the repeated disk selectors (`controlplane/05`, `worker/05`, `node/nv1/20`; guarded by `tests/test_render.sh`) and re-run `task talos:check`. Details of the cause are in the issue.
+
+## Moved 2026-11-13
+
+Dropped by the owner on 2026-11-13: Hermes text-to-speech was removed instead of restored (no `tts` section, `tts` toolset disabled in both profiles); the restore route is in `cluster/apps/ai/hermes-agent/README.md`.
+
+- [ ] **Hermes: restore Piper text-to-speech (2026-11-09, from the v0.23.0 upgrade).** The chart's `postStart` installed `honcho-ai` and `piper-tts` with `uv`. The v0.23.0 image has no `uv` on PATH and a sealed venv, so the owner chose to remove the hook. Honcho now comes from the catalog plugin. `piper-tts` has no confirmed install route: check `hermes tools` on v0.23.0 first, and otherwise build a thin derived image in `mmalyska/containers`.
