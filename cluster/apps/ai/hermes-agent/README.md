@@ -153,7 +153,7 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
 means the run failed or a check is stuck: look at the `renovate` board.
 
-**Merging is off until T19.** The switch is `merge_enabled` in `.agents/policy/hermes-merge-policy.md`, and the owner turns it on with a one-line PR after three report-only runs. Until then the summary says "would merge" and nothing is merged.
+**Merging is on since T19.** The switch is `merge_enabled` in `.agents/policy/hermes-merge-policy.md`. Setting it to `false` in a PR stops every merge, the owner's `merge` replies included, and the summary then says "would merge" instead.
 The gates, the denylist and the limits are in that file; this page does not repeat them.
 
 Every PR that waits for the owner is listed in the summary. The owner replies in `#hermes-renovate` and names the PR, for example `merge home-ops#6183`.

@@ -8,7 +8,7 @@ Hermes reads the copy on `main` at every run. A copy on a PR branch is never tru
 ## Switch
 
 ```yaml
-merge_enabled: false
+merge_enabled: true
 ```
 
 While this is `false`, Hermes merges nothing, including on the owner's `merge` reply, and its summary reports "would merge" instead.
