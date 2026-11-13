@@ -140,6 +140,7 @@ nav:
   - "Home Ops":
       - "Kubernetes":
           - "Bootstrap": k8s/bootstrap.md
+          - "ArgoCD rollback": k8s/argocd-rollback.md
           - "OIDC": k8s/oidc/Readme.md
           - "Rook-Ceph CephX Ciphers": k8s/rook-ceph-cephx.md
           - "Ceph and disk write load": k8s/ceph-write-load.md
