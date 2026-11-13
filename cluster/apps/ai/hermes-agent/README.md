@@ -150,6 +150,8 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
 | Job `renovate-cleanup`, 05:30             | script only, no model   | Archives done cards older than 14 days; posts only if it fails                                                            |
 
+`renovate-post` is the only thing that posts about cards. `kanban.auto_subscribe_on_create` is off for `default`, so a card created from a Discord reply, such as a merge card, posts no done notice and does not wake the agent.
+
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
 means the run failed or a check is stuck: look at the `renovate` board.
 

@@ -184,6 +184,10 @@ hermes:
           - worker
           - default
         max_in_progress_per_profile: 2
+        # A Discord session that creates a card would subscribe its channel to it, and the cards created from that
+        # card inherit the subscription: each done card then posts a short notice and wakes the agent. renovate-post
+        # already posts the full summaries and merge reports, so no session subscribes itself.
+        auto_subscribe_on_create: false
       # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
       # the `discord` set for create_thread; the admin set stays disabled.
       platform_toolsets:
