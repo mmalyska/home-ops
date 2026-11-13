@@ -245,3 +245,14 @@ First run on the kanban pipeline, triggered by hand after #6227. It does not cou
 - `renovate-post` delivered the summary at its next run, 17:20 UTC, in three Discord messages: all 37 open bot PRs, 9 "would merge" and 28 waiting for the owner, with reasons and `denylisted` marks. Nothing was merged.
 - Two `owner` verdicts came from the check skill, not the PRs: `home-ops#6218` because the render passed `-f values.yaml` to a chart without one (`talos-backup`), and `home-ops#5865` because a render failed on the base commit as well. Both are fixed in the skill. No wrong `clean` verdict.
 - Done cards are never archived by Hermes; `hermes kanban gc` only trims events and logs. A `renovate-cleanup` script job now archives done cards older than 14 days.
+
+## Empty tool calls (2026-11-13)
+
+The scheduled run on 2026-11-13 produced no summary: the coordinator card sent `kanban_create` with empty arguments five times, the loop guard blocked it, and the dispatcher gave up after three runs.
+It does not count towards T18.
+
+- Over the 7 days before, 390 tool calls (`terminal` 346, `kanban_create` 44) reached Hermes with empty arguments and all failed, on every model and both profiles. Usually the model retried and got through.
+- In responses with several tool calls, 65 of 69 calls had empty arguments; in responses with one, 325 of 1,091.
+- Test from the Hermes pod against LiteLLM `v1.109.1`, model `main-cheap`, 3 runs each: one tool, streamed or not, and two tools not streamed kept their arguments. Two tools streamed lost both arguments every time:
+  the stream sends each call's first chunk with empty arguments, then `finish_reason=tool_calls`. `parallel_tool_calls: false` in the request changed nothing.
+- Fix: `model.streaming: false` in both profile overlays, a Hermes setting meant for backends whose streaming tool calls are broken.

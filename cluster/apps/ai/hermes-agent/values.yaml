@@ -165,6 +165,9 @@ hermes:
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
         context_length: 200000
+        # LiteLLM loses the arguments of parallel tool calls in a streamed response (tested 2026-11-13 on v1.109.1).
+        # Hermes then gets empty tool calls; unstreamed responses arrive intact.
+        streaming: false
       memory:
         provider: honcho
       terminal:
@@ -233,6 +236,9 @@ hermes:
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
         context_length: 200000
+        # LiteLLM loses the arguments of parallel tool calls in a streamed response (tested 2026-11-13 on v1.109.1).
+        # Hermes then gets empty tool calls; unstreamed responses arrive intact.
+        streaming: false
       # No long-term memory: worker tasks are self-contained (spec, worker memory decision).
       memory:
         provider: ""
