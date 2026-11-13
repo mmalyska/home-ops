@@ -94,12 +94,6 @@ data:
       stage.labels {
         values = { level = "" }
       }
-
-      // The dashboard logs this every 2 seconds (about 30,000 lines a day):
-      // the ssh terminal backend's cwd exists in the Coder workspace, not here.
-      stage.drop {
-        expression = "TERMINAL_CWD does not exist"
-      }
     }
 
     loki.write "loki" {
