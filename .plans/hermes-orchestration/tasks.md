@@ -389,6 +389,8 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T18 — Report-only ramp
 
+- **Status:** done, 2026-11-13. Runs on 2026-11-11, 11-12 and 11-13; the owner counted the third, finished after a manual unblock, as run 3.
+  No wrong `clean` verdict reported. Evidence: "T18 runs". `worker-lite` not decided: the worker on `main-cheap` handled 25 checks in one run.
 - **Depends on:** T23 (P13). **Files:** `.plans/hermes-orchestration/evidence.md` (section "Ramp").
 - **Do:** three daily runs with `merge_enabled: false`. The owner reviews "would merge" and the threads. Fix the skills or the policy
   for every wrong verdict, and restart the count.
