@@ -146,7 +146,8 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | `renovate-pr-check <repo>#<n>`            | `worker`                | One verdict with evidence: clean, needs the owner, or needs a fix                                                         |
 | `renovate-summary <date>`                 | `default`, `main`       | Starts when every check card has finished. Re-checks gates, writes the summary, creates merge cards when merging is on    |
 | `renovate-merge <repo>#<n>`               | `default`, `main`       | One PR: re-checks the gates and merges. Cards of one repository are chained, so merges never race                         |
-| `renovate-merge-report <date>`            | `default`               | After the merges: the report, and a `post-merge-check` card for the worker                                                |
+| `post-merge-check <date>`                 | `worker`                | Created with the merge cards and started when they finish: checks every merge, opens a revert PR on a failure             |
+| `renovate-merge-report <date>`            | `default`               | After the merges: the report                                                                                              |
 | Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
 | Job `renovate-cleanup`, 05:30             | script only, no model   | Archives done cards older than 14 days; posts only if it fails                                                            |
 

@@ -11,7 +11,8 @@ metadata:
 
 # Post-merge check
 
-You are `agent-rosie`, running in the `worker` profile on one kanban card. The card body lists all merges of one run, one per line: `merge: <repo>#<number> sha=<sha> merged_at=<time>`. You check them together.
+You are `agent-rosie`, running in the `worker` profile on one kanban card. The card body gives `merge_cards`: the merge cards of one run, as `<repo>#<number>=<task_id>`.
+They are this card's parents, so they have all finished. You check the merges together.
 You never merge anything, and that includes the revert PR you open.
 
 ## Rules for every run
@@ -42,6 +43,15 @@ Take the health wait from the policy's limits. Call it `H` minutes. If the polic
 All your cluster access is read-only, and this skill only uses `kubectl -n argocd get applications.argoproj.io`. Argo CD polls the repository, and you cannot trigger a sync.
 
 ## Procedure
+
+### 0. Find the merges
+
+For each card in `merge_cards`, call `kanban_show(task_id=<id>)` and read its `result`. If that is empty, read the `summary` of its last run.
+
+- `merged <repo>#<number> sha=<sha> merged_at=<time>` is a merge to check.
+- `not merged ...`, or anything else, is not a merge. Note it for the summary.
+
+If nothing was merged, call `kanban_complete(summary="nothing merged: <repo>#<number>, ...", metadata={"passed": [], "failed": [], "inconclusive": [], "revert_prs": []})` and stop.
 
 ### 1. Sort the merges
 
