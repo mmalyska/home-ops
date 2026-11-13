@@ -256,3 +256,22 @@ It does not count towards T18.
 - Test from the Hermes pod against LiteLLM `v1.109.1`, model `main-cheap`, 3 runs each: one tool, streamed or not, and two tools not streamed kept their arguments. Two tools streamed lost both arguments every time:
   the stream sends each call's first chunk with empty arguments, then `finish_reason=tool_calls`. `parallel_tool_calls: false` in the request changed nothing.
 - Fix: `model.streaming: false` in both profile overlays, a Hermes setting meant for backends whose streaming tool calls are broken.
+
+## T18 runs
+
+Three report-only runs with `merge_enabled: false`. Nothing merged. The owner accepted the three runs, and no wrong `clean` verdict was reported.
+
+- **Run 1, 2026-11-11 06:00:** summary posted in four parts. The per-repository limit of 5 applied as the policy says (`home-ops#6234` skipped). The Discord link previews made it long; the poster now wraps links in `<>`.
+- **Run 2, 2026-11-12 06:00:** summary at 06:40, every PR accounted for, denylist marks right. Flaw: the limit was applied before the gates, so 8 `clean` `home-ops` PRs got no gate check, among them the denylisted `#6230`.
+  Fixed in #6247, merged after run 3 (gates first, then the limit, and a heading "Over today's limit"). Also two check-skill faults, not wrong verdicts:
+  - `#5865` rendered the stale `provision/talos/kustomization.yaml`.
+  - `#6218` went to the owner because `ghcr.io/mmalyska/*` images publish no release notes.
+
+  #6247 narrows the render to `cluster/apps/` and uses the CI diff comment. The release notes are for the `containers` repository.
+
+- **Run 3, 2026-11-13:** the 06:00 run failed (see "Empty tool calls"), and the first manual unblock failed too: the worker passed the card's `workspace_path` as `workdir`.
+  After #6265 and #6270 the coordinator was unblocked again at the owner's request, and the owner counts this run as run 3.
+  - The coordinator created 22 new check cards plus 3 from that morning. All 25 checks were done in about 23 minutes, none blocked.
+  - The summary was done at 14:42 UTC and posted at 14:50 UTC: 11 "would merge", 15 waiting for the owner, nothing skipped or failed. `argocd-secret-replacer#170` was the first PR from that repository after its move to Renovate.
+  - Of 402 tool calls in the last hour, no `terminal` or `kanban_create` call had empty arguments.
+- **Not met:** "a summary by 07:00 each day" on run 3, accepted by the owner. "No worker task for an unchanged diff" was not checked one by one on run 3: two days of new PRs and the new repository explain most of the 22 cards.

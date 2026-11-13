@@ -8,7 +8,7 @@ branch: feat/hermes-orchestration-plan
 worktree: .worktrees/feat/hermes-orchestration-plan
 pr: "#6176"
 started: 2026-11-06
-updated: 2026-11-10
+updated: 2026-11-13
 ---
 
 # Plan: Hermes orchestration
@@ -181,9 +181,11 @@ A revert cannot undo what a merged update already did to the cluster. That has i
 
 ## Status and next action
 
-Completed: T01 to T17 (2026-11-09). The owner verified and merged the plan in #6176.
+Completed: T01 to T17 (2026-11-09), T21 to T23 (2026-11-10), T18 (2026-11-13). The owner verified and merged the plan in #6176.
 
-Exact next action: T18, three scheduled report-only runs from 2026-11-11 06:00 Europe/Warsaw. T22 and T23 are done, and the first pipeline run worked. `renovate-daily` stays paused until T22 replaces it. Then T18 starts: three scheduled report-only runs. Manual runs do not count. Each merge and each `consent-gated` command still needs the owner.
+Exact next action: T19, a one-line PR setting `merge_enabled: true`, merged by the owner, who then watches the first
+run with merges. T18 is done (2026-11-13), and #6247 (gates before the limit, the CI diff for G8) is merged. Each merge
+and each `consent-gated` command still needs the owner.
 
 The first plan draft (`e403e963`) was reconciled into these tasks. New since then: T03, T15, the label and new-repository
 parts of T16, `main-lite`, read-only Kubernetes for both workspaces, and batch post-merge checks.
