@@ -198,7 +198,8 @@ requirements](../../../../docs/src/contributing/new-repository.md)) enforce that
 │       ├── sessions/
 │       └── .env
 ├── skills/                       ← Default profile skills
-├── logs/
+├── logs/                         ← agent.log, gateways/<slot>/current (s6-log), … (shipped to Loki)
+├── .alloy/                       ← Read positions of the alloy sidecar
 └── backups/config/               ← Copies taken before a config migration
 ```
 
@@ -239,6 +240,22 @@ kubectl exec deploy/hermes-agent -n hermes-agent -c hermes-agent -- \
 ## Maintenance Tasks
 
 ### Viewing Logs
+
+In this image `gateway run` hands the gateway to s6 supervision, so its logs never reach container stdout: Python logging goes to
+`/opt/data/logs/agent.log` and its stdout/stderr to s6-log in `/opt/data/logs/gateways/<slot>/current`. Container stdout only carries the
+dashboard and the s6 boot lines. The `alloy` sidecar (`templates/alloy-configmap.yaml`) tails the files and pushes them to Loki:
+
+| LogQL                                                                             | What                                                    |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `{job="hermes-agent/files", filename="/opt/data/logs/agent.log"}`                 | Agent and gateway Python logs, INFO+, tracebacks joined |
+| `{job="hermes-agent/files", level=~"WARNING\|ERROR\|CRITICAL"}`                   | What `errors.log` holds (that file is not shipped)      |
+| `{job="hermes-agent/files", filename=~".*/gateways/.*/current"}`                  | Gateway process stdout/stderr (crashes, prints)         |
+| `{job="hermes-agent/files", profile="worker"}`                                    | Files under `profiles/worker/logs/`                     |
+| `{namespace="hermes-agent", container="hermes-agent", job!="hermes-agent/files"}` | Container stdout (dashboard, s6), via alloy-k8s-logs    |
+
+`errors.log` and `gateway.log` are subsets of `agent.log` and are skipped. The dashboard's `TERMINAL_CWD does not exist` warning
+(every 2 seconds) is dropped from the file stream; container stdout still carries it. Positions live on the PVC, so a restart resumes where it stopped; a file seen for the first time is read from
+its end.
 
 ```bash
 # Main agent

@@ -23,6 +23,8 @@ spec:
           {{include (print $.Template.BasePath "/profile-overlays-configmap.yaml") . | sha256sum}}
         checksum/skills:
           {{include (print $.Template.BasePath "/skills-configmap.yaml") . | sha256sum}}
+        checksum/alloy:
+          {{include (print $.Template.BasePath "/alloy-configmap.yaml") . | sha256sum}}
     spec:
       initContainers:
         - name: fix-kanban-db-permissions
@@ -34,6 +36,9 @@ spec:
               find /opt/data -name 'kanban.db*' | while read f; do
                 chown 10000:10000 "$f" && chmod 644 "$f" || true
               done
+              # Read positions for the alloy sidecar (subPath mount, written as hermes).
+              mkdir -p /opt/data/.alloy
+              chown 10000:10000 /opt/data/.alloy
           volumeMounts:
             - name: data
               mountPath: /opt/data
@@ -370,6 +375,45 @@ spec:
               mountPath: /etc/hermes/config.yaml
               subPath: config.yaml
               readOnly: true
+        # Ships the file logs on the PVC to Loki (config in templates/alloy-configmap.yaml).
+        - name: alloy
+          image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
+          args:
+            - run
+            - /etc/alloy/config.alloy
+            - --storage.path=/var/lib/alloy
+            - --server.http.listen-addr=127.0.0.1:12345
+            - --disable-reporting
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          securityContext:
+            # The hermes user: log files are 0660 hermes:hermes.
+            runAsUser: 10000
+            runAsGroup: 10000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/alloy
+              subPath: .alloy
+            - name: alloy-config
+              mountPath: /etc/alloy
+              readOnly: true
         - name: nginx
           image: nginx:1.31-alpine@sha256:713fc2ebfd92e8217db451477182ee91944b123d2b1ee9fd5a8c6e91ca6c3a11
           ports:
@@ -396,6 +440,9 @@ spec:
         - name: nginx-config
           configMap:
             name: hermes-agent-nginx
+        - name: alloy-config
+          configMap:
+            name: hermes-agent-alloy
         - name: honcho-config
           configMap:
             name: hermes-agent-honcho

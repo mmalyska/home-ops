@@ -1,0 +1,109 @@
+---
+# Config for the alloy sidecar: ships Hermes's file logs from the PVC to Loki.
+# In the s6 image the gateway runs under s6 supervision, so its Python logs
+# (logs/agent.log) and its stdout/stderr (s6-log, logs/gateways/<slot>/current)
+# never reach container stdout. The alloy-k8s-logs DaemonSet only sees the
+# dashboard and the s6 boot lines.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-alloy
+  namespace: hermes-agent
+data:
+  config.alloy: |
+    // errors.log (WARNING+) and gateway.log (gateway loggers, INFO+) are
+    // subsets of agent.log, so they are skipped. Rotated files (*.log.1)
+    // do not match the globs.
+    local.file_match "hermes" {
+      path_targets = [
+        {"__path__" = "/opt/data/logs/*.log", "__path_exclude__" = "/opt/data/logs/{errors,gateway}.log"},
+        {"__path__" = "/opt/data/logs/gateways/*/current"},
+        {"__path__" = "/opt/data/profiles/*/logs/*.log", "__path_exclude__" = "/opt/data/profiles/*/logs/{errors,gateway}.log"},
+      ]
+      sync_period = "30s"
+    }
+
+    discovery.relabel "hermes" {
+      targets = local.file_match.hermes.targets
+
+      rule {
+        target_label = "namespace"
+        replacement  = "hermes-agent"
+      }
+
+      rule {
+        target_label = "pod"
+        replacement  = sys.env("POD_NAME")
+      }
+
+      rule {
+        target_label = "container"
+        replacement  = "hermes-agent"
+      }
+
+      rule {
+        target_label = "job"
+        replacement  = "hermes-agent/files"
+      }
+
+      rule {
+        target_label = "profile"
+        replacement  = "default"
+      }
+
+      rule {
+        source_labels = ["__path__"]
+        regex         = "/opt/data/profiles/([^/]+)/logs/.*"
+        target_label  = "profile"
+      }
+
+      rule {
+        source_labels = ["__path__"]
+        regex         = "/opt/data/logs/gateways/([^/]+)/current"
+        target_label  = "profile"
+      }
+    }
+
+    // tail_from_end only applies to a file with no stored position, so the
+    // first start does not backfill old files with read-time timestamps.
+    loki.source.file "hermes" {
+      targets       = discovery.relabel.hermes.output
+      forward_to    = [loki.process.hermes.receiver]
+      tail_from_end = true
+    }
+
+    loki.process "hermes" {
+      forward_to = [loki.write.loki.receiver]
+
+      // Python logging lines start with "YYYY-MM-DD HH:MM:SS,mmm LEVEL";
+      // join tracebacks to the record that logged them.
+      stage.match {
+        selector = "{filename=~\".*\\\\.log\"}"
+
+        stage.multiline {
+          firstline     = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+          max_wait_time = "3s"
+        }
+      }
+
+      // s6-log prefixes each line with a TAI64N stamp (@4000...).
+      stage.regex {
+        expression = "^(?:@\\S+ )?\\d{4}-\\d{2}-\\d{2} \\S+ (?P<level>DEBUG|INFO|WARNING|ERROR|CRITICAL)\\b"
+      }
+
+      stage.labels {
+        values = { level = "" }
+      }
+
+      // The dashboard logs this every 2 seconds (about 30,000 lines a day):
+      // the ssh terminal backend's cwd exists in the Coder workspace, not here.
+      stage.drop {
+        expression = "TERMINAL_CWD does not exist"
+      }
+    }
+
+    loki.write "loki" {
+      endpoint {
+        url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+      }
+    }
