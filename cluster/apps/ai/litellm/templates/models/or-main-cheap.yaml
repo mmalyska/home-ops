@@ -1,0 +1,18 @@
+# OpenRouter fallback for the main-cheap subscription tier: cheaper per-token model,
+# charged against the shared openrouter provider budget (see litellmproxy.yaml).
+apiVersion: litellm.home-operations.com/v1alpha1
+kind: LiteLLMModel
+metadata:
+  name: or-main-cheap
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  modelName: or-main-cheap
+  proxyRef: litellm
+  params:
+    model: openrouter/deepseek/deepseek-v4.1-flash
+    apiKeyRef:
+      name: litellm-secrets
+      key: OPENROUTER_API_KEY
+  info:
+    mode: chat
