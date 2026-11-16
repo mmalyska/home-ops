@@ -31,3 +31,7 @@ Chart.lock
 .zed/
 .superpowers/
 .worktrees/
+
+# Local MkDocs docs environment and build output
+.github/mkdocs/.venv/
+/site/
