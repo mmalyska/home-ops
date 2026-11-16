@@ -131,7 +131,7 @@ Those cards can show, create and complete cards, but not list or unblock them; t
 The Renovate run uses its own board, `renovate`.
 
 `kanban.auto_subscribe_on_create` is on for `default`. A card created from a Discord chat subscribes that chat, thread included, and the cards created from it copy the subscription.
-When such a card blocks, finishes, gives up or crashes, Hermes posts a short notice in that thread and wakes the agent there, with the thread's context. Spec-driven work runs
+When such a card blocks, finishes, gives up or crashes, Hermes posts a short notice in that thread and wakes the agent there, with the thread's context. The woken turn starts with `[kanban] Task <id> <status>.`; when it needs nothing from the agent, `soul-default.md` tells it to reply `[SILENT]`, which the gateway does not post. Spec-driven work runs
 this way: every card of the execution phase reports back in its spec thread. Cards started by cron or by the dispatcher have no chat, so they post nothing. Hermes has no per-board
 switch for this (checked in v0.23.1 and upstream `main` on 2026-11-16).
 Jobs removed from `hermes.cronJobs` stay in Hermes until they are listed in `hermes.retiredCronJobs`, which the cron seeder deletes at start (today `kanban-post`, the earlier

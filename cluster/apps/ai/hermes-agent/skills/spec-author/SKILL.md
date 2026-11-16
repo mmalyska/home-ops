@@ -139,8 +139,8 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
 ### While the work runs
 
 - Every card you create in the spec thread subscribes the thread, and the cards created from it copy the subscription. When a card blocks, finishes, gives up or crashes,
-  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. A notice for a human card you
-  have just created and blocked needs no reply.
+  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. Reply with exactly `[SILENT]` when the
+  notice needs nothing from you, such as a human card you have just created and blocked.
 - When the owner confirms in a Discord message that a human task is done, check it if you can. Then call `kanban_unblock` and `kanban_complete` on that card. If the tools refuse, tell the owner to close
   it with `/kanban` in Discord.
 - When a worker card is blocked with `needs_input`, read it with `kanban_show`, including its comments, where the worker puts its evidence. If the evidence is not there, say so in the spec thread and do not decide from the block reason alone. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer
