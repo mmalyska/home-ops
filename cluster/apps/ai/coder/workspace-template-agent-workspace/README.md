@@ -37,6 +37,12 @@ volume. Session environment comes from `~/.ssh/environment` (a symlink to a file
 The image must contain `openssh-server` (`mmalyska/containers`, `dev-workstation`, since #783); the digest in `main.tf` is a build
 that has it. With an older image the log reads "sshd is not in this image" and only the Coder agent works.
 
+## Caches
+
+`XDG_CACHE_HOME` (`/cache/xdg`: mise, uv, pre-commit, go-build, helm) and `NPM_CONFIG_CACHE` (`/cache/npm`, npx included) point at the
+rebuildable `/cache` volume, as does `KUBECACHEDIR`. They are empty after a pod restart and refill on use. Left in `~/.cache` and `~/.npm`
+they filled the 5Gi home volume and were backed up for nothing.
+
 ## Deploying
 
 ```sh
