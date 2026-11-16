@@ -18,7 +18,7 @@ app-template:
         main:
           image:
             repository: ghcr.io/matter-js/matterjs-server
-            tag: 1.5.5@sha256:ee149c7c67eff0e90f131e8f0d628f7b099591ec58473c8cda1209e8ae4df66e
+            tag: 1.6.0@sha256:9eb98c839d0b4b07f9230b96ad52de570f7f2a7c286c5992b4c04b6b26c08a3f
           # --fabricid/--vendorid must match the HA Matter Server addon (it passes 2 and 4939,
           # i.e. 0x134b): together they select the stored fabric (server-2-134b). Without them
           # the server defaults to fabric 1 / vendor 0xfff1 and creates a new, empty fabric.
