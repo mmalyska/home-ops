@@ -20,8 +20,7 @@ Status: T1 direct/indirect evidence accepted under the H2 revision (see
 spec.md for the owner's decision); evidence recorded on kanban cards.
 T2/T3 stopped pending revision merge and explicit thread approval. Prior
 incomplete T2 delivery does not satisfy this plan. Reconcile existing cards
-rather than recreating the graph. Human-only tasks stay with the owner. Per default-branch AGENTS.md, workers work in separate workspaces and cannot
-affect each other. Workers commit and push their branch
+rather than recreating the graph. Human-only tasks stay with the owner. Workers commit and push their branch
 `chore/docs-build-supply-chain`, post the commit SHA and evidence as card
 comments, and open no PR. The conductor reviews the pushed branch and opens
 the only implementation PR.
@@ -53,7 +52,7 @@ version's config validator and extraction dry-run against controlled fixture
 requirements.in/requirements.txt, `.python-version` and mise.toml. Configure
 compiled-output matching and parseable uv compile headers. Accept the recorded direct/indirect command-equivalent regeneration from
 `t_a17002ef`; run local extraction with `--platform=local --dry-run=extract`.
-Do not investigate Python/uv-triggered regeneration further. Compare lock headers, hashes, selected binaries and source
+Do not investigate Python/uv-triggered regeneration further. Compare lock headers, hashes and source
 versions; confirm no duplicate pip_requirements updates. Read credentials only
 through tool-supported authentication; never print tokens or invoke Renovate
 write mode. Do not dispatch workflows. Extraction alone is not regeneration proof.
@@ -171,7 +170,7 @@ versions and regenerated hashed changes where required, with no remote write. Ru
 format/lint, actionlint, Renovate config validation, `.agents/bin/check-plans`,
 `git diff --check` and pre-commit. Do not claim unrun CI as passing.
 
-Done: worker amends and pushes to `chore/docs-build-supply-chain`, posts the
+Done: worker adds commits and pushes to `chore/docs-build-supply-chain`, posts the
 final commit SHA and per-acceptance PASS/FAIL/NOT RUN report as card comments.
 The conductor reviews the pushed branch, opens the implementation PR as
 rudi-the-brain with `triage/owner`, and reports its checks. Missing revised
