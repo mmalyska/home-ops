@@ -220,15 +220,27 @@ spec:
             - -c
             - |
               set -eu
-              # Skills: a file is written from git only when the profile has no copy. A copy that differs from git
-              # holds Hermes' own edits (self-improvement) and is kept; the weekly skill-sync job proposes it for git.
+              # Skills: the sha256 of each file as last written from git is kept under /opt/data/.skill-seed, outside the
+              # skills directory. A copy that still has that hash was not edited by Hermes and takes the git version; a
+              # copy with any other hash holds Hermes' own edits (self-improvement) and is kept. The weekly skill-sync job
+              # proposes kept edits for git. A copy equal to git just records the hash.
               seed_file() {
+                mark="/opt/data/.skill-seed/${2#/opt/data/}.sha256"
+                mkdir -p "$(dirname "$mark")"
+                new=$(sha256sum "$1" | cut -d' ' -f1)
                 if [ ! -e "$2" ]; then
                   cp "$1" "$2"
                   echo "seeded: $2"
-                elif ! cmp -s "$1" "$2"; then
+                elif cmp -s "$1" "$2"; then
+                  :
+                elif [ -e "$mark" ] && [ "$(sha256sum "$2" | cut -d' ' -f1)" = "$(cat "$mark")" ]; then
+                  cp "$1" "$2"
+                  echo "updated from git: $2"
+                else
                   echo "kept local edits: $2"
+                  return 0
                 fi
+                echo "$new" > "$mark"
               }
               {{- range $profile, $skills := .Values.hermes.profileSkills }}
               {{- $dir := ternary "/opt/data" (printf "/opt/data/profiles/%s" $profile) (eq $profile "default") }}

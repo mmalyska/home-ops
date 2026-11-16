@@ -148,8 +148,9 @@ hermes:
       model: main
       deliver: "discord:881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
       prompt: "Run the skill-sync skill on the script output above."
-  # Skills from skills/ are written only where a profile has no copy (a differing copy holds Hermes' own edits and is
-  # kept; skill-sync proposes it for git). SOUL files from files/ are written over the volume copy at every start.
+  # Skills from skills/ take the git version unless Hermes edited the copy (its hash differs from the one recorded when it
+  # was last written); an edited copy is kept and skill-sync proposes it for git. SOUL files from files/ are written over
+  # the volume copy at every start.
   profileSkills:
     default:
       - renovate-triage
