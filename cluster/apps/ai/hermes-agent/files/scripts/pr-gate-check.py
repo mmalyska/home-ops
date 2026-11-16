@@ -8,7 +8,8 @@ pod, where `hermes kanban show <id> --json` reads the board. Two modes:
   pr-gate-check.py --hook         A pre_tool_call shell hook on the terminal tool (the default profile's overlay in
                                   values.yaml). Reads the hook payload on stdin and prints {} or a block.
 
-In hook mode the command is split into simple commands and each is tokenized like a shell would (quotes removed).
+In hook mode backslash-newline pairs outside single quotes are removed first, as bash does. Then the command is split
+into simple commands and each is tokenized like a shell would (quotes removed).
 A `gh` invocation whose non-flag words hold `pr` directly followed by `create` opens a PR, whatever global flags come first
 (`gh -R owner/repo pr create`) and however the words are quoted (`gh "pr" create`). A PR may be opened only by exactly
 one such command, at the top level, whose command word is literally `gh` and whose leading assignment is GATE_CARDS:
@@ -174,10 +175,36 @@ def split_heredocs(command):
     return "\n".join(out), bodies
 
 
+def join_continuations(text):
+    """Removes each backslash-newline pair outside single quotes, as bash does before it splits words, so
+    `gh pr \\<newline>create` is read as `gh pr create`. An escaped backslash (`\\\\`) does not continue the line."""
+    out, i, single, double = [], 0, False, False
+    while i < len(text):
+        c = text[i]
+        if single:
+            out.append(c)
+            single = c != "'"
+        elif c == "\\":
+            if text[i + 1:i + 2] == "\n":
+                i += 2
+                continue
+            out.append(text[i:i + 2])
+            i += 2
+            continue
+        else:
+            out.append(c)
+            if c == '"':
+                double = not double
+            elif c == "'" and not double:
+                single = True
+        i += 1
+    return "".join(out)
+
+
 def segments(command):
     """Splits a command line into simple commands at ; & | ( ) < > and newlines, as (words, in_subshell) pairs; a
     command inside ( ) or $( ) is in a subshell. Raises ValueError on bad quoting."""
-    lexer = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=True)
+    lexer = shlex.shlex(join_continuations(command).replace("\n", " ; "), posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     lexer.commenters = ""  # a '#' stays in the words, so `gh pr create # GATE_CARDS=none` is still seen
     result, current, level, start_level = [], [], 0, 0

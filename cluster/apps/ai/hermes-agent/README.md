@@ -247,7 +247,8 @@ A written rule did not stop PR #6311, which was opened before its verification c
 The hook runs `files/scripts/pr-gate-check.py --hook` in the pod before every terminal command. The terminal itself runs in the Coder workspace, which has no `hermes` command and no
 board, so the check cannot run there.
 
-The script splits the command into simple commands and tokenizes each like a shell, so quotes are removed. A `gh` command whose non-flag words hold `pr` directly followed by `create` opens a PR,
+The script first removes each backslash-newline outside single quotes, as bash does, so `gh pr \` and `create` on the next line are one command. Then it splits the command into
+simple commands and tokenizes each like a shell, so quotes are removed. A `gh` command whose non-flag words hold `pr` directly followed by `create` opens a PR,
 whatever global flags come first (`gh -R owner/repo pr create`) and however it is quoted (`gh "pr" create`). The hook lets a PR through only from exactly one such command, at the top
 level, whose first word is literally `gh` and whose leading assignment is `GATE_CARDS`. That is `GATE_CARDS=none` for spec, plan and skill-sync PRs, or `GATE_CARDS="<worker card id> …"`
 for an implementation PR. It refuses:
@@ -273,7 +274,10 @@ To run it by hand in the pod: `/opt/data/scripts/pr-gate-check.py <card id> …`
 
 Known bypasses: the hook sees only the text of a terminal command.
 
-- `GATE_CARDS=none` is a claim that the hook cannot verify; the `spec-author` skill decides when it may be used.
+- `GATE_CARDS=none` is a claim that the hook cannot verify; the `spec-author` skill decides when it may be used. Checking it against the PR's changed files (allow `none` only when
+  every file is under `.plans/` or the Hermes `skills/`) would need GitHub API access from the pod, which has none: the image has no `gh`, and the pod deliberately holds no GitHub
+  token (the tokens live only in the workspaces). It would need a read-only token (contents read on the owner's repositories) as a new ExternalSecret item in the pod, `gh` or a
+  small HTTP client in the script, and the head branch named in the command (`--head`), since the hook cannot see the workspace's current branch.
 - A PR created by a script file that Hermes wrote and then ran, by a program reading `gh pr create` from a file or stdin, or by `execute_code`.
 - Any PR-creating call that none of the rules above recognise: another HTTP client or API path, a binary copied under another name, or a command assembled at run time from pieces
   that never spell `pr create`.

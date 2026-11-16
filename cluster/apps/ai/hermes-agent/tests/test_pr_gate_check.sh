@@ -161,6 +161,18 @@ blocks "a command substitution in a gh title" 'GATE_CARDS=none gh issue create -
   "must be a plain command"
 allows "printf text that mentions pr create" 'printf "%s\n" "use pr create with GATE" > /tmp/note.txt'
 
+# --- hook mode: line continuations (bash joins backslash-newline before splitting words) ----------
+nl=$'\\\n'
+blocks "gh pr \\<newline>create" "gh pr ${nl}create -t x" "GATE_CARDS appears 0 times"
+blocks "gh \\<newline>pr create" "gh ${nl}pr create -t x" "GATE_CARDS appears 0 times"
+blocks "gh -R repo pr \\<newline>create" "gh -R mmalyska/home-ops pr ${nl}create -t x" "GATE_CARDS appears 0 times"
+blocks "gh -R repo \\<newline>pr create" "gh -R mmalyska/home-ops ${nl}pr create -t x" "GATE_CARDS appears 0 times"
+allows "GATE_CARDS=none gh pr \\<newline>create" "GATE_CARDS=none gh pr ${nl}create -t x --body-file b.md"
+blocks "a continued line after a passing gate card cannot add a second PR" \
+  "GATE_CARDS=t_0000aaaa gh pr create -t a; gh pr ${nl}create -t b" "holds more than one PR command"
+allows "a backslash-newline inside single quotes is kept (no command)" "echo 'gh pr ${nl}create' > /tmp/note.txt"
+allows "an escaped backslash before a newline does not join lines" "echo gh pr \\\\"$'\n'"create"
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures test(s) failed"
   exit 1
