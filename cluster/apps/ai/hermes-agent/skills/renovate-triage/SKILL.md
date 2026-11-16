@@ -1,7 +1,7 @@
 ---
 name: renovate-triage
 description: Start the daily Renovate run on the renovate kanban board, and act on the owner's Discord replies to its summary, such as "merge home-ops#6183", "fix home-ops#6183", "I merge home-ops#6183", "reject home-ops#6183" or "resume home-ops".
-version: 1.0.1
+version: 1.0.2
 author: mmalyska
 metadata:
   hermes:
@@ -224,18 +224,17 @@ Tell the owner it is closed. If the PR updates a group of dependencies, add that
 
 ### `resume`
 
-1. Call `kanban_list(board="renovate", tenant="renovate-block", status="blocked", limit=200) and pick every card titled `auto-merge-blocked <repo>`.
+1. Call `kanban_list(board="renovate", tenant="renovate-block", status="blocked", limit=200)` and pick every card titled `auto-merge-blocked <repo>`.
 2. For each one, call `kanban_unblock(board="renovate", task_id=<id>)` and then `kanban_complete(board="renovate", task_id=<id>, summary="The owner resumed auto-merge.")`.
 3. Tell the owner auto-merge is resumed there. Do not touch the revert PR. Hermes never merges a revert.
 
 ### Card notices
 
 A card you create in Part B subscribes this chat, so Hermes posts a short notice here and wakes you when that card, or a card created from it, finishes or blocks.
-On such a wake, reply in one line at most: nothing more for a card that finished, or what went wrong for one that blocked, gave up or crashed.
+`renovate-post` already posts the merge report. On such a wake, reply with exactly `[SILENT]` for a card that finished: Hermes then posts nothing more. For a card
+that blocked, gave up or crashed, say in one line what went wrong. Do not repeat the report.
 
 ## Pitfalls
 
 - A merge never happens in this session: Part B creates a merge card, and the `renovate-merge` skill on that card re-checks the gates and merges.
 - `kanban_list` and `kanban_unblock` work here but not on cards started by the dispatcher, which is why closing stale checks and `resume` happen in this session.
-- **Dependency regeneration:** When manual reproduction of `pip-compile` is required (T1 gate), if `requirements.in` is missing, you MUST create a representative `requirements.in` from the existing `requirements.txt` to trigger a valid `pip-compile` run.
-- **Strict builds and plugin dependencies:** If an MkDocs build fails with a "plugin not installed" error during a strict build, ensure all required plugins (e.g., `git-revision-date-localized-plugin`) are explicitly listed in `requirements.in` and that `requirements.txt` has been regenerated with `uv pip compile --generate-hashes`. Do not assume dependencies are satisfied by the environment; always verify `requirements.txt` consistency.

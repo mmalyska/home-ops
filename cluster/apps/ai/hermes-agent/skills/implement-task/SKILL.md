@@ -1,7 +1,7 @@
 ---
 name: implement-task
 description: Implement one kanban card in a repository worktree, run the repository's checks, push the branch and hand it back to the orchestrator. Use for every card assigned to the worker profile that changes code or files.
-version: 1.0.0
+version: 1.1.0
 author: mmalyska
 metadata:
   hermes:
@@ -59,8 +59,14 @@ Set these shell variables in every command block that follows, since the shell d
 1. If `/workspaces/repos/$REPO` does not exist, create it: `mkdir -p /workspaces/repos && gh repo clone mmalyska/$REPO /workspaces/repos/$REPO`.
 2. Update it: `git -C /workspaces/repos/$REPO fetch origin`.
 3. Find the default branch: `git -C /workspaces/repos/$REPO symbolic-ref --short refs/remotes/origin/HEAD`. The result is `origin/<default>`.
-4. Create the task worktree: `git -C /workspaces/repos/$REPO worktree add /workspaces/repos/$REPO/.worktrees/$TASK -b $BRANCH origin/<default>`.
-5. Do all work inside `/workspaces/repos/$REPO/.worktrees/$TASK`, with `git -C` or after `cd` in each command. Never edit the main clone or another task's worktree.
+4. Clear what an earlier run of this card left: `git -C /workspaces/repos/$REPO worktree remove --force /workspaces/repos/$REPO/.worktrees/$TASK` (an error
+   that it is not a working tree is fine), then `git -C /workspaces/repos/$REPO worktree prune`. Never `rm` the folder and never `git branch -D`.
+5. Create the task worktree with `-B`, which resets a leftover local branch of that name instead of failing with "already exists":
+   - If `git -C /workspaces/repos/$REPO ls-remote origin refs/heads/$BRANCH` prints a line, the card continues a pushed branch (for example T3 after T2):
+     `git -C /workspaces/repos/$REPO worktree add /workspaces/repos/$REPO/.worktrees/$TASK -B $BRANCH origin/$BRANCH`. Add commits on top; never amend or
+     rebase what is already pushed.
+   - Otherwise: `git -C /workspaces/repos/$REPO worktree add /workspaces/repos/$REPO/.worktrees/$TASK -B $BRANCH origin/<default>`.
+6. Do all work inside `/workspaces/repos/$REPO/.worktrees/$TASK`, with `git -C` or after `cd` in each command. Never edit the main clone or another task's worktree.
 
 ### 3. Do the work
 
