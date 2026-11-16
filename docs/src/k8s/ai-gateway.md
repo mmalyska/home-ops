@@ -9,9 +9,9 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 | `main`                   | ChatGPT (Codex) subscription, see below                                                    | none per token    |
 | `main-cheap`             | ChatGPT (Codex) subscription, `chatgpt/gpt-6.1-terra`, same login as `main`                | none per token    |
 | `main-lite`              | ChatGPT (Codex) subscription, `chatgpt/gpt-6-luna`, same login as `main`                   | none per token    |
-| `or-deepseek-v4-pro`     | OpenRouter, `deepseek/deepseek-v4-pro`, fallback for `main`                                | per token, capped |
-| `or-deepseek-v4.1-flash` | OpenRouter, `deepseek/deepseek-v4.1-flash`, fallback for `main-cheap`                      | per token, capped |
-| `cheap`                  | OpenRouter, `google/gemini-3.1-flash-lite`, also the fallback for `main-lite`              | per token, capped |
+| `or-deepseek-v4-pro`     | OpenRouter, `deepseek/deepseek-v4-pro`, first fallback for `main`, own daily cap           | per token, capped |
+| `or-deepseek-v4.1-flash` | OpenRouter, `deepseek/deepseek-v4.1-flash`, fallback for every agent tier                  | per token, capped |
+| `cheap`                  | OpenRouter, `google/gemini-3.1-flash-lite`, for chat and background clients                | per token, capped |
 | `local`                  | llama-server on nv1 (`llm` namespace, LFM3-1.7B, alias `lfm3-1.7b`), thinking off          | none              |
 | `local-think`            | same llama-server, thinking on, reasoning capped at 256 tokens (`max_tokens` 1024 is safe) | none              |
 | `embed`                  | CPU llama.cpp embeddings server (nomic-embed-text)                                         | none              |
@@ -20,13 +20,20 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 
 ## Fallbacks and budget
 
-- Each subscription tier falls back to the OpenRouter model of the same tier, then to `local`; chains never cross tiers:
-  `main` → `or-deepseek-v4-pro` → `local-think` (the top tier gets the reasoning variant as its last resort; callers need `max_tokens` of about 1024), `main-cheap` → `or-deepseek-v4.1-flash` → `local`, `main-lite` → `cheap` → `local`. `cheap`, `or-deepseek-v4-pro` and `or-deepseek-v4.1-flash` fall back to `local`. `local-think` has no fallback.
+- The agent tiers fail closed: they fall back to OpenRouter models only, never to `local` or `local-think`, and an exhausted chain returns the last error to the caller, so an agent pauses instead of working on the 1.7B Jetson model (it cannot see which model answered):
+  `main` → `or-deepseek-v4-pro` → `or-deepseek-v4.1-flash` → error, `main-cheap` → `or-deepseek-v4.1-flash` → error, `main-lite` → `or-deepseek-v4.1-flash` → error.
+- Only `cheap` (Honcho, Lingarr) still falls back to `local`. `local`, `local-think`, `embed` and the `or-deepseek-*` aliases have no fallback.
+- LiteLLM (v1.109.1, checked in its source) chains fallbacks: a fallback hop runs with the hop's own chain, so `main` → `or-deepseek-v4-pro` would still reach `local` if `or-deepseek-v4-pro` had an entry ending there. That is why the `or-deepseek-*` aliases have no entry and `main-lite` does not go through `cheap`. A model already tried in the request is not tried again; at most 5 fallbacks run per request (`max_fallbacks` default).
 - A failed deployment is skipped for 300 s (`cooldown_time`) instead of being retried on every request.
 - The pay-per-token cap is `routerSettings.provider_budget_config.openrouter` in `templates/litellmproxy.yaml`: 13 USD per 30 days, about 50 zl. It is per provider on purpose: `litellm_settings.max_budget` is proxy-wide and would also block the free models.
+- `or-deepseek-v4-pro` also has its own cap, 1.12 USD per day (1 EUR at 2026-11 rates), set as `max_budget` and `budget_duration` in `params.additional` of `templates/models/or-deepseek-v4-pro.yaml`. At Hermes's call size (about 60K input tokens) it costs about 0.03 USD per call against about 0.003 USD for `or-deepseek-v4.1-flash`, and on 2026-11-16 it spent 2.82 USD in a few hours of ChatGPT rate limits. Once the day's cap is spent the deployment is skipped and `main` continues on the flash model; the 13 USD provider cap still applies to both. LiteLLM exports no remaining-budget metric for a single model, only per provider.
 - The spend counters live in a small Dragonfly (`litellm-dragonfly`), so a proxy restart does not reset the cap. Dragonfly itself has no persistence here; the prepaid OpenRouter balance is the hard ceiling.
 - Alerts: `LiteLLMBudgetNearlyUsed` (under 20% left), `LiteLLMModelFailing` (over half of calls to one alias failing for 15 min; requests rejected before routing, such as keyless `/v1/models` probes, have no model group and are ignored). It groups by `model_group` (the alias): a request rejected before the provider call, such as an `UnsupportedParamsError`, is labelled with the alias in `litellm_model_name` while successful calls carry the upstream model, so a per-name ratio reads 100% on the first rejection.
-- `chatgpt/gpt-6.1-sol` (`main`) does not accept `reasoning_effort: none`; `chatgpt/gpt-6.1-terra` (`main-cheap`) does. A client that turns thinking off that way (Hermes's smart-approval verdict) must use `main-cheap`, or every call is rejected with a 400 and falls back to `cheap`.
+- Fallback alerts, thresholds set from 2026-11-09 to 11-16, when ChatGPT 429s came in bursts of 6 to 100 an hour:
+  - `LiteLLMSubscriptionRateLimited`: 5 or more 429s on `main`, `main-cheap` or `main-lite` in 30 min, for 10 min. While a deployment sits in cooldown the requests it rejects count as 429 too.
+  - `LiteLLMServingFallbacks`: 5 or more successful fallbacks for one key and requested alias in 30 min, for 10 min. This is the only sign that an agent ran on a fallback model.
+  - `LiteLLMFallbackChainExhausted`: any failed hop to `or-deepseek-v4.1-flash`, the last hop of every agent chain, in 15 min; the caller got an error. The failed-fallback counter counts every failed hop, so the filter names the last one; change it together with the chains.
+- `chatgpt/gpt-6.1-sol` (`main`) does not accept `reasoning_effort: none`; `chatgpt/gpt-6.1-terra` (`main-cheap`) does. A client that turns thinking off that way (Hermes's smart-approval verdict) must use `main-cheap`, or every call is rejected with a 400 and falls back to OpenRouter.
 - Dashboard: Grafana folder "AI", dashboard "AI gateway (LiteLLM)" (`cluster/apps/system/prometheus-stack/dashboards/litellm.json`, provisioned by the `ai-dashboards` ConfigMap). It shows traffic, tokens, latency, failures, fallbacks, deployment state and the OpenRouter budget. Counters restart with the proxy pod, so read it with `rate()`/`increase()`; calls made with the master key show up under team `None`.
 
 ## Teams and virtual keys
@@ -39,7 +46,7 @@ A key's `models` must list every alias in the team's list, fallback targets incl
 | ---------- | ------------------------------------------------------------------------------------------------------------------ |
 | `hermes`   | `main`, `main-cheap`, `main-lite`, `or-deepseek-v4-pro`, `or-deepseek-v4.1-flash`, `cheap`, `local`, `local-think` |
 | `honcho`   | `cheap`, `local`, `embed`                                                                                          |
-| `opencode` | `main`, `or-deepseek-v4-pro`, `cheap`, `local`, `local-think`                                                      |
+| `opencode` | `main`, `or-deepseek-v4-pro`, `or-deepseek-v4.1-flash`, `cheap`, `local`, `local-think`                            |
 | `lingarr`  | `cheap`, `local`                                                                                                   |
 
 What each client is set to call (the team list above is what it may call):
@@ -61,7 +68,7 @@ opencode in the Coder workspace is installed by the template startup script from
 
 - **One account:** every request uses the single login stored on the `litellm-chatgpt` PVC (`CHATGPT_TOKEN_DIR=/app/chatgpt_tokens`), whichever virtual key calls. Usage counts against that account's subscription limits.
 - **No cost tracking:** LiteLLM records $0 for these models, so budgets never trigger on `main`. Fallback happens on errors (usage limit, 429), not on spend.
-- **Fallbacks:** `main` to `cheap` to `local`.
+- **Fallbacks:** `main` to `or-deepseek-v4-pro` to `or-deepseek-v4.1-flash`, then an error (see Fallbacks and budget).
 - **Terms:** OpenAI has no explicit rule for using the Codex login in a self-hosted gateway, and its sanctioned route ("Sign in with ChatGPT") is approval-gated for hosted apps. This is a gray area; the account could be restricted. Anthropic's subscription is excluded for the opposite reason: its terms forbid it.
 - **Single replica:** refresh tokens are single use, so `auth.json` must be writable and shared; the proxy runs one replica on a ReadWriteMany CephFS volume (`ceph-filesystem`), so the surge pod of a rollout can start on another node.
 

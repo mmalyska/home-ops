@@ -1,5 +1,8 @@
 # OpenRouter fallback for the main subscription tier: cheaper per-token model,
 # charged against the shared openrouter provider budget (see litellmproxy.yaml).
+# It also has its own daily cap: about 0.03 USD per Hermes call, so a long ChatGPT
+# rate limit drained the monthly provider budget in hours. Once the cap is spent the
+# deployment is skipped and `main` falls on to or-deepseek-v4.1-flash.
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMModel
 metadata:
@@ -14,5 +17,10 @@ spec:
     apiKeyRef:
       name: litellm-secrets
       key: OPENROUTER_API_KEY
+    additional:
+      # 1 EUR per day as USD (1 EUR is about 1.12 USD in 2026-11); review when the rate moves.
+      # Deployment budget, counted in Dragonfly like the provider budget.
+      max_budget: 1.12
+      budget_duration: 1d
   info:
     mode: chat

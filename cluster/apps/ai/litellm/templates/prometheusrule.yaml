@@ -18,8 +18,10 @@ spec:
           annotations:
             summary: Less than 20% of the monthly OpenRouter budget is left
             description: >-
-              When it runs out the gateway skips `cheap` and falls back to
-              `local`. Raise budget_limit in values.yaml or wait for the reset.
+              When it runs out the gateway skips every OpenRouter model: `cheap`
+              falls back to `local`, and the agent tiers (`main`, `main-cheap`,
+              `main-lite`) return an error once the subscription fails. Raise
+              budget_limit in litellmproxy.yaml or wait for the reset.
         # Requests rejected before routing (e.g. keyless /v1/models probes, 401)
         # are counted with an empty model group; they are not a model failing.
         # Grouped by model_group (the alias), not litellm_model_name: a request
@@ -41,3 +43,49 @@ spec:
               Check exception_class on litellm_deployment_failure_responses_total:
               UnsupportedParamsError means a client sends a parameter the model
               does not accept.
+        # Thresholds from 2026-11-09..16: ChatGPT 429s came in bursts of 6 to 100
+        # an hour; 5 in 30 min caught every burst and no stray single 429.
+        # While `main` sits in cooldown (300 s) the requests it rejects count as 429 too.
+        - alert: LiteLLMSubscriptionRateLimited
+          expr: >-
+            sum by (model_group) (increase(litellm_deployment_failure_responses_total{exception_status="429",model_group=~"main|main-cheap|main-lite"}[30m])) >= 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: The ChatGPT subscription is rate-limiting {{ "{{ $labels.model_group }}" }}
+            description: >-
+              {{ "{{ $value | humanize }}" }} 429 responses in 30 min. Calls run on the
+              OpenRouter fallbacks (per-token cost) until the limit lifts, and
+              fail once those are out of budget.
+        # Per key: an agent run on fallback models is otherwise invisible, as the
+        # client cannot see which model answered.
+        - alert: LiteLLMServingFallbacks
+          expr: >-
+            sum by (api_key_alias, requested_model) (increase(litellm_deployment_successful_fallbacks_total[30m])) >= 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Key {{ "{{ $labels.api_key_alias }}" }} is served by fallbacks for {{ "{{ $labels.requested_model }}" }}
+            description: >-
+              {{ "{{ $value | humanize }}" }} requests in 30 min were answered by a
+              fallback model instead of {{ "{{ $labels.requested_model }}" }}. Check
+              fallback_model and exception_status on
+              litellm_deployment_successful_fallbacks_total.
+        # Agent-tier chains end in an error on purpose; this is the client getting it.
+        # The failed-fallback counter counts every failed hop (fallback_model is the
+        # hop), so only the last hop of the agent chains (litellmproxy.yaml) means
+        # the whole chain is exhausted. Keep the filter in step with the chains.
+        - alert: LiteLLMFallbackChainExhausted
+          expr: >-
+            sum by (api_key_alias, requested_model) (increase(litellm_deployment_failed_fallbacks_total{requested_model=~"main|main-cheap|main-lite",fallback_model="or-deepseek-v4.1-flash"}[15m])) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: Every fallback for {{ "{{ $labels.requested_model }}" }} failed for key {{ "{{ $labels.api_key_alias }}" }}
+            description: >-
+              The caller got an error: the subscription and its OpenRouter
+              fallbacks all failed (for example a rate limit plus a spent
+              budget). Hermes pauses until a model answers again. Check
+              LiteLLMBudgetNearlyUsed and exception_status.
