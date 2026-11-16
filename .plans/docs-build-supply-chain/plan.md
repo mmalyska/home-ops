@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 3633f41aff58b5e53f66744f52369bd8ebcf2354
 branch: chore/docs-build-supply-chain
 worktree: .worktrees/chore/docs-build-supply-chain
-pr: not-opened
+pr: "#6315"
 started: 2026-11-16
 updated: 2026-11-16
 ---
