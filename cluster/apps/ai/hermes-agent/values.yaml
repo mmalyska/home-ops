@@ -131,6 +131,13 @@ hermes:
       timezone: Europe/Warsaw
       script: renovate-cleanup.sh
       deliver: "discord:1569307898860015628" # #hermes-renovate
+    # Script only, no model: posts each blocked or finished card of every other board once, so a worker card of a
+    # spec-driven piece of work that blocks is seen. auto_subscribe_on_create is off, so nothing else reports it.
+    - name: kanban-post
+      schedule: "*/10 * * * *"
+      timezone: Europe/Warsaw
+      script: kanban-post.sh
+      deliver: "discord:881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
   # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
   profileSkills:
     default:
@@ -188,7 +195,8 @@ hermes:
         max_in_progress_per_profile: 2
         # A Discord session that creates a card would subscribe its channel to it, and the cards created from that
         # card inherit the subscription: each done card then posts a short notice and wakes the agent. renovate-post
-        # already posts the full summaries and merge reports, so no session subscribes itself.
+        # already posts the full summaries and merge reports, so no session subscribes itself. kanban-post reports blocked
+        # and finished cards of the other boards in #hermes instead.
         auto_subscribe_on_create: false
       # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
       # the `discord` set for create_thread; the admin set stays disabled.

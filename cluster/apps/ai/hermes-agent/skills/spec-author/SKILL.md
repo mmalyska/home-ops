@@ -122,6 +122,7 @@ Create one card per implementation task, in the order of `tasks.md`, with the `k
 
 ### While the work runs
 
+- Nothing wakes you when a card blocks or finishes: no session subscribes to cards. The `kanban-post` job posts each blocked and finished card to `#hermes`, and the owner then writes in the spec thread. Whenever the owner writes in the thread during execution, check the cards you created for the work with `kanban_list` and `kanban_show`, and act on any that is blocked or done.
 - When the owner confirms in a Discord message that a human task is done, check it if you can. Then call `kanban_unblock` and `kanban_complete` on that card. If the tools refuse, tell the owner to close
   it with `/kanban` in Discord.
 - When a worker card is blocked with `needs_input`, read it with `kanban_show`. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer

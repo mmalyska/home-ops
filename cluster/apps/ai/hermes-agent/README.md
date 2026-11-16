@@ -127,6 +127,9 @@ Kanban tools are opt-in per platform: the `default` overlay turns them on for Di
 Those cards can show, create and complete cards, but not list or unblock them; that is left to a cron or Discord session.
 The Renovate run uses its own board, `renovate`.
 
+No session is told when a card blocks or finishes, because `auto_subscribe_on_create` is off. The script-only job `kanban-post` (every 10 minutes, no model) posts each blocked and each finished card of every board except `renovate` to `#hermes`, once: the block reason, or the start of the result.
+It does not wake the agent. To get a blocked card of a spec-driven piece of work moving, reply in its spec thread, and `default` reads the card and answers it or asks you. Its first run records the done cards already on the boards without posting them.
+
 ### Command policy
 
 `approvals.deny` in each overlay holds case-insensitive `fnmatch` globs matched against the whole command and each executable in it.
@@ -151,7 +154,7 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
 | Job `renovate-cleanup`, 05:30             | script only, no model   | Archives done cards older than 14 days; posts only if it fails                                                            |
 
-`renovate-post` is the only thing that posts about cards. `kanban.auto_subscribe_on_create` is off for `default`, so a card created from a Discord reply, such as a merge card, posts no done notice and does not wake the agent.
+`kanban.auto_subscribe_on_create` is off for `default`, so a card created from a Discord reply, such as a merge card, posts no done notice and does not wake the agent. Two script jobs post about cards instead: `renovate-post` for the `renovate` board, and `kanban-post` for every other board (see [Kanban wiring](#kanban-wiring)).
 
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
 means the run failed or a check is stuck: look at the `renovate` board.
