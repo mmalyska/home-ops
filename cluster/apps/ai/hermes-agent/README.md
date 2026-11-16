@@ -247,17 +247,23 @@ A written rule did not stop PR #6311, which was opened before its verification c
 The hook runs `files/scripts/pr-gate-check.py --hook` in the pod before every terminal command. The terminal itself runs in the Coder workspace, which has no `hermes` command and no
 board, so the check cannot run there.
 
-The hook lets a PR through only from exactly one plain `gh pr create` whose leading assignment is `GATE_CARDS`. That is `GATE_CARDS=none` for spec, plan and skill-sync PRs, or
-`GATE_CARDS="<worker card id> …"` for an implementation PR. It refuses:
+The script splits the command into simple commands and tokenizes each like a shell, so quotes are removed. A `gh` command whose non-flag words hold `pr` directly followed by `create` opens a PR,
+whatever global flags come first (`gh -R owner/repo pr create`) and however it is quoted (`gh "pr" create`). The hook lets a PR through only from exactly one such command, at the top
+level, whose first word is literally `gh` and whose leading assignment is `GATE_CARDS`. That is `GATE_CARDS=none` for spec, plan and skill-sync PRs, or `GATE_CARDS="<worker card id> …"`
+for an implementation PR. It refuses:
 
 - `GATE_CARDS` anywhere else (an earlier command, an `export`, a comment, the PR text) or more than once;
-- a second `gh pr create`, or one inside a subshell, quotes, backticks or `$( )`;
+- a second PR command;
+- `pr create` behind another command word: a variable (`$g pr create`), an alias, `env`, `xargs`;
+- a PR command inside `( )`, `$( )`, backticks or a string or here-document run as code (`bash -c`, `python3 -c`, `bash <<EOF`). Code that does not tokenize as shell is searched as raw text for `pr … create`.
+  Text read as data is not searched: quoted arguments of `gh`, `git`, `echo` or `printf`, and here-documents read by `cat`, `tee` or `gh`. So PR bodies and skill-sync patches may quote the command;
 - every other way to create a PR: `gh api …/pulls` with fields or `POST`, GraphQL `createPullRequest`, `curl …/pulls`;
 - a payload it cannot read, a terminal call with no command, and a command it cannot parse.
 
 For each named card the script runs `hermes kanban show <id> --json`. A card passes when it is `done` and its latest comment whose first line is `EVIDENCE` was written by the
 `worker` profile, with a `- <check>: PASS` line and no `- <check>: FAIL` line. Kanban records the author from the runtime profile, not from tool arguments, so `default` cannot
-write it for the worker. The `implement-task` skill tells the worker to write that comment. A crash, a timeout or output that is not JSON refuses the command (fail closed).
+write it for the worker. Only the `kanban_comment` tool does that: the `hermes kanban comment --author` CLI could fake an author, but the CLI runs only in the pod and `default`'s
+terminal is the Coder workspace, which has no board. The `implement-task` skill tells the worker to write that comment. A crash, a timeout or output that is not JSON refuses the command (fail closed).
 `hooks_auto_accept` gives the consent that a gateway cannot ask for.
 
 The block message carries the whole instruction, so Hermes can follow it even while its kept copy of `spec-author` predates the rule.
@@ -269,7 +275,8 @@ Known bypasses: the hook sees only the text of a terminal command.
 
 - `GATE_CARDS=none` is a claim that the hook cannot verify; the `spec-author` skill decides when it may be used.
 - A PR created by a script file that Hermes wrote and then ran, by a program reading `gh pr create` from a file or stdin, or by `execute_code`.
-- Any PR-creating call spelled so that none of the patterns above match (another HTTP client, an alias, a variable holding `gh`).
+- Any PR-creating call that none of the rules above recognise: another HTTP client or API path, a binary copied under another name, or a command assembled at run time from pieces
+  that never spell `pr create`.
 
 The hook config is seeded from git at every start, so the check holds even while Hermes keeps its own edits of `spec-author`.
 

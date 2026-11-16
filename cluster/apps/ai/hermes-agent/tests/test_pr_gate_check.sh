@@ -84,7 +84,7 @@ blocks "GATE_CARDS=none in an earlier command" 'GATE_CARDS=none; echo; gh pr cre
 blocks "GATE_CARDS=none in a comment" 'gh pr create --title x # GATE_CARDS=none' \
   "GATE_CARDS is not the leading assignment of gh pr create"
 blocks "a second gh pr create after a passing one" 'GATE_CARDS=t_0000aaaa gh pr create --title a; gh pr create --title b' \
-  "contains gh pr create more than once"
+  "holds more than one PR command"
 blocks "a gate card whose evidence was written by default" 'GATE_CARDS=t_0000eeee gh pr create --title x' \
   "the latest evidence comment is by default, not the worker profile"
 blocks "a gate card the CLI crashes on" 'GATE_CARDS=t_00001111 gh pr create --title x' "could not read the card (exit 1"
@@ -107,7 +107,7 @@ blocks "gh pr create in a subshell" 'GATE_CARDS=none bash -c "gh pr create --tit
 # shellcheck disable=SC2016
 blocks "gh pr create in backticks" 'GATE_CARDS=none echo `gh pr create --title x`' "must be a plain command"
 # shellcheck disable=SC2016
-blocks "gh pr create in \$( )" 'GATE_CARDS=none x=$(gh pr create --title x)' "GATE_CARDS is not the leading assignment"
+blocks "gh pr create in \$( )" 'GATE_CARDS=none x=$(gh pr create --title x)' "must be a plain command"
 blocks "creating a PR through gh api" 'gh api repos/mmalyska/home-ops/pulls -f title=x -f head=b -f base=main' \
   "creates a PR without gh pr create"
 blocks "creating a PR through gh api, method first" 'gh api -X POST repos/mmalyska/home-ops/pulls --input b.json' \
@@ -118,6 +118,48 @@ blocks "creating a PR through GraphQL" \
 blocks "creating a PR through curl" 'curl -X POST -d @b.json https://api.github.com/repos/mmalyska/home-ops/pulls' \
   "creates a PR without gh pr create"
 blocks "unbalanced quotes" 'GATE_CARDS=none gh pr create --title "x' "could not be parsed"
+
+# --- hook mode: gh spelled differently (second review) -------------------------------------------------
+blocks "gh -R before pr create, no GATE_CARDS" 'gh -R mmalyska/home-ops pr create --title x --body-file b.md' \
+  "GATE_CARDS appears 0 times"
+allows "gh -R before pr create, with a passing gate card" \
+  'GATE_CARDS=t_0000aaaa gh -R mmalyska/home-ops pr create --title x --body-file b.md'
+blocks "gh -R before pr create, with a gate card lacking evidence" \
+  'GATE_CARDS=t_0000bbbb gh -R mmalyska/home-ops pr create --title x' "t_0000bbbb (T2 implement): no evidence comment"
+blocks "gh --repo= and pr -R create, no GATE_CARDS" 'gh --repo=mmalyska/home-ops pr -R mmalyska/home-ops create' \
+  "GATE_CARDS appears 0 times"
+blocks "a quoted pr, no GATE_CARDS" 'gh "pr" create --title x' "GATE_CARDS appears 0 times"
+blocks "quoted pr and create, no GATE_CARDS" "gh 'pr' 'create' --title x" "GATE_CARDS appears 0 times"
+allows "a quoted pr with GATE_CARDS=none" 'GATE_CARDS=none gh "pr" create --title x --body-file b.md'
+allows "gh by its full path with GATE_CARDS=none" 'GATE_CARDS=none /usr/bin/gh pr create --title x --body-file b.md'
+# shellcheck disable=SC2016
+blocks "gh held in a variable" 'g=gh; $g pr create --title x' "must be a plain command"
+# shellcheck disable=SC2016
+blocks "gh held in a variable, with GATE_CARDS" 'g=gh; GATE_CARDS=none $g pr create --title x' "must be a plain command"
+blocks "an alias for gh" 'alias g=gh; g pr create --title x' "must be a plain command"
+blocks "gh behind env" 'GATE_CARDS=none env gh pr create --title x' "must be a plain command"
+blocks "gh pr create in a quoted bash -c, quoted pr" "bash -c 'gh \"pr\" create --title x'" "must be a plain command"
+blocks "gh pr create in a subshell ( )" '( GATE_CARDS=none gh pr create --title x )' "must be a plain command"
+# shellcheck disable=SC2016
+blocks "gh pr create in \$( ) with its own GATE_CARDS" 'echo $(GATE_CARDS=none gh pr create --title x)' "must be a plain command"
+blocks "gh pr create in a here-document fed to bash" "$(printf '%s\n' "bash <<'EOF'" "gh -R mmalyska/home-ops pr create --title x" "EOF")" \
+  "must be a plain command"
+allows "gh pr view with create as an argument" 'gh pr view 12 --json title --jq .title | grep create'
+allows "a PR title that mentions pr create, read with gh pr list" 'gh pr list --search "pr create"'
+blocks "a here-document fed to bash, with a multi-line quoted title" "$(printf '%s\n' "bash <<'EOF'" 'gh pr create --title "a' 'b"' "EOF")" \
+  "must be a plain command"
+allows "a PR body here-document that quotes gh pr create" "$(printf '%s\n' "GATE_CARDS=none gh pr create --title x --body-file - <<'EOF'" "Hermes' gate: run gh pr create later." "EOF")"
+# shellcheck disable=SC2016
+allows "writing a patch that quotes gh pr create with cat (skill-sync)" "$(printf '%s\n' "cat > /tmp/skill-sync.patch <<'HERMES_SKILL_SYNC_EOF'" '+8. Open the PR with \`GATE_CARDS=none gh pr create\`.' "HERMES_SKILL_SYNC_EOF")"
+blocks "a here-document fed to python" "$(printf '%s\n' "python3 - <<'EOF'" "import subprocess; subprocess.run(['gh', 'pr', 'create'])" "EOF")" \
+  "must be a plain command"
+blocks "gh pr create run from python -c" "python3 -c \"import subprocess; subprocess.run(['gh', 'pr', 'create'])\"" \
+  "must be a plain command"
+allows "a commit message that mentions pr create" 'git commit -m "feat: gate on pr create"'
+# shellcheck disable=SC2016
+blocks "a command substitution in a gh title" 'GATE_CARDS=none gh issue create --title "$(gh pr create --title x)"' \
+  "must be a plain command"
+allows "printf text that mentions pr create" 'printf "%s\n" "use pr create with GATE" > /tmp/note.txt'
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures test(s) failed"
