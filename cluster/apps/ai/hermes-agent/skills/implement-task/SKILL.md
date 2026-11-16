@@ -88,7 +88,9 @@ Where the evidence goes: the orchestrator runs in its own workspace and cannot r
 orchestrator can read it:
 
 - In the card: `kanban_comment` for the full evidence (commands run, tool versions, output excerpts, PASS, FAIL or NOT RUN for each check), then the `summary` or block `reason` pointing to that comment.
-  Use several comments if one gets long. Cut long output down to the lines that prove the result.
+  Every comment is read back into the orchestrator's context, so keep it short: one evidence comment of about 40 lines or fewer, with each check as one line (command, PASS, FAIL or NOT RUN,
+  and the line of output that proves it). Cut long output down to the lines that prove the result; put a full log on the branch only if the card asks for it. Add a second comment only when a
+  failure needs more lines to explain.
 - On the pushed branch, for evidence that belongs in the repository, such as a file the task asked for. Name the file and the branch in the summary.
 - Never point to a path in your workspace as the evidence, and never only say a file was written. If the card asks for a handoff file, also put its content in a comment.
 - Evidence holds names and references only: no token, secret value, private domain or Bitwarden identifier.

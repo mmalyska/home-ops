@@ -1,6 +1,6 @@
 # TODO
 
-General backlog items not tied to a specific plan. Last reviewed 2026-11-13. Finished items are moved to `.archive/TODO.md`.
+General backlog items not tied to a specific plan. Last reviewed 2026-11-16. Finished items are moved to `.archive/TODO.md`.
 
 ---
 
@@ -48,8 +48,8 @@ General backlog items not tied to a specific plan. Last reviewed 2026-11-13. Fin
   - [ ] **3. Wake `default` only when a card needs it.** Every card event wakes `default` with full context (about 60K tokens) even when the answer is `[SILENT]` (#6310 stops the Discord noise, not the cost). `kanban.auto_subscribe_on_create` is profile-wide and chat-created cards get `notify+wake` (Hermes v0.23.1). Look for a way to wake only on blocked, gave up, crashed or timed out, and send finished-card notices without a wake; otherwise let a scheduled run pick up finished cards.
   - [ ] **4. Cap fallback spend.** deepseek-v4-pro used 2.82 USD in a few hours, so a long ChatGPT rate limit drains the 13 USD cap in about a day, and everything then falls to the Jetson again. Give it its own budget, or put the cheaper `or-deepseek-v4.1-flash` first in the `main` chain.
   - [ ] **5. Scale the spec-driven process to the task.** The docs lock change produced a spec, a plan, a tasks file of about 400 lines, H1 to H4 gates and three revision PRs; all of it is read back as input tokens and costs owner review time. Add a QUICK path to the `spec-author` skill (`cluster/apps/ai/hermes-agent/skills/spec-author/SKILL.md`) for changes under about 200 lines: one plan file, no H2/H4, one PR; cap the length of plan and PR text.
-  - [ ] **6. Check gate evidence with a script before a PR.** A pre-PR script (in `cluster/apps/ai/hermes-agent/files/scripts/`) that refuses `gh pr create` unless the gate card has the required evidence comments would have stopped #6311; a prose rule in the skill did not. Replaces the `spec-author` "read evidence with `kanban_show` before delivery" rule offered on 2026-11-16.
-  - [ ] **7. Reconsider the two separate workspaces.** `default` (hermes-main) and `worker` (hermes-worker) run in separate Coder workspaces: good isolation, but it lost T1 evidence and forced the push-to-hand-off rules. Weigh a shared volume, or one workspace with a worktree per profile, against the isolation it gives.
+  - [ ] **6. Check gate evidence with a script before a PR.** A pre-PR script (in `cluster/apps/ai/hermes-agent/files/scripts/`) that refuses `gh pr create` unless the gate card has the required evidence comments would have stopped #6311; a prose rule in the skill did not. It should also refuse when a worker card that fed the PR has no evidence comment (the handoff rule kept by 7). Replaces the `spec-author` "read evidence with `kanban_show` before delivery" rule offered on 2026-11-16.
+  - [x] **7. Reconsider the two separate workspaces.** `default` (hermes-main) and `worker` (hermes-worker) run in separate Coder workspaces: good isolation, but it lost T1 evidence and forced the push-to-hand-off rules. Weigh a shared volume, or one workspace with a worktree per profile, against the isolation it gives. *(Decided 2026-11-16: keep two workspaces, plan decision P17 in `hermes-orchestration`, reasons in `docs/src/k8s/agent-workspaces.md`. Revisit a worker-writes, default-reads-only handoff volume only if 2 shows evidence comments are a real share of input tokens.)*
 
 ## Waiting on something external
 

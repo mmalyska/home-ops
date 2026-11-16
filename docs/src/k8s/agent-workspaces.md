@@ -61,6 +61,15 @@ Hermes runs in the `hermes-agent` namespace and uses SSH. It has two workspaces,
 
 Both have read-only Kubernetes access and no Talos access. `hermes-worker` has a larger `/workspaces` volume (50 Gi).
 
+**Why two workspaces and not one.** Each pod holds exactly one GitHub token and one signing key, under one unix user, and
+the workspaces cannot reach each other. That keeps the split between pushing (`agent-rosie`, not a code owner) and
+approving (`rudi-the-brain`, a code owner) enforced by GitHub: the ruleset needs a code-owner approval of the latest push,
+and the worker, which reads most of the untrusted text (diffs, changelogs, CI logs), never holds the token that can give
+it. The Hermes command deny lists are a policy, not a sandbox, so one shared workspace (a worktree per profile) would let
+the worker use the other token. A shared handoff volume was also weighed and not adopted. The cost is that the profiles
+cannot read each other's files: the worker hands back evidence in kanban comments and code on a pushed branch
+(`implement-task` skill, "Hand back"). Owner decision 2026-11-16, plan decision P17 in `.plans/hermes-orchestration/plan.md`.
+
 - **Network.** The namespace has an ingress deny-all. `allow-ssh-from-agents` opens port 2222 of the workspace pods to the
   pods listed in `sshClients` (values.yaml): the Hermes pod (`app=hermes-agent`) in `hermes-agent`. Nothing else reaches it.
 - **Keys.** Each workspace has its own SSH key pair. The private keys are Bitwarden items `HERMES_MAIN_WS_SSH_KEY` and
