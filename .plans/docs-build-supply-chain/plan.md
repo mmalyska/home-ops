@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 6e641cd1139e3883a33799894fbc54eda4a901ad
 branch: docs/docs-build-supply-chain-plan
 worktree: .worktrees/docs/docs-build-supply-chain-plan
-pr: not-opened
+pr: "#6301"
 started: 2026-11-16
 updated: 2026-11-16
 ---
