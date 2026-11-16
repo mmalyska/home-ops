@@ -77,9 +77,16 @@ spec:
         # The failed-fallback counter counts every failed hop (fallback_model is the
         # hop), so only the last hop of the agent chains (litellmproxy.yaml) means
         # the whole chain is exhausted. Keep the filter in step with the chains.
+        # A label set's series appears only on its first failure (value 1), and
+        # increase() of a new series is 0, so the second branch catches series created
+        # in the last 15 min, e.g. the first exhaustion after a LiteLLM restart. It reads
+        # the counter's _created timestamp instead of `unless ... offset 15m`, which
+        # would fire on every existing series after a Prometheus restart or scrape gap.
         - alert: LiteLLMFallbackChainExhausted
           expr: >-
             sum by (api_key_alias, requested_model) (increase(litellm_deployment_failed_fallbacks_total{requested_model=~"main|main-cheap|main-lite",fallback_model="or-deepseek-v4.1-flash"}[15m])) > 0
+            or
+            count by (api_key_alias, requested_model) (time() - litellm_deployment_failed_fallbacks_created{requested_model=~"main|main-cheap|main-lite",fallback_model="or-deepseek-v4.1-flash"} < 900)
           labels:
             severity: warning
           annotations:
