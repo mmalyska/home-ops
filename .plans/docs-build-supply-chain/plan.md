@@ -26,22 +26,8 @@ regeneration works. This PR revises the spec explicitly at the owner's request.
 
 ## Owner H2 decision - 2026-11-16
 
-Misiek (repository owner) decided in Discord message `1571957410518667386`
-to revise the strategy, with no further cross-manager trigger investigation:
-
-- Pin target Python in the uv lock header using `--python-version=<exact version>`.
-  The fourth invariant in `.github/tests/docs-workflows.sh` requires that version
-  to equal `.github/mkdocs/.python-version`; missing or malformed values fail.
-  A pyenv bump PR fails CI until `task mkdocs:lock` is run on its branch and the
-  regenerated lock is committed. Do not assume pyenv triggers pip-compile.
-- A mise uv bump requires a green locked install and strict build, not lock
-  regeneration. Do not assume mise triggers pip-compile.
-- Accept the direct/indirect command-equivalent evidence from `t_a17002ef`, plus
-  local Renovate extraction (`--platform=local --dry-run=extract`, no remote
-  writes) showing pip-compile picks up requirements.txt with indirect dependencies.
-  Proof of an actual Renovate update PR remains in T4, not the pre-T2 gate.
-- T2 stays stopped until the owner merges this spec/plan/tasks revision PR and
-  explicitly approves it in the Discord thread. This decision is not that approval.
+The owner revised the strategy on 2026-11-16; the full decision text is in
+[spec.md](spec.md#owner-h2-decision---2026-11-16).
 
 ## Requirements and limits
 
@@ -212,71 +198,3 @@ recover publication. Completion requires local/CI evidence, an owner-merged
 implementation, successful normal Pages publication, and a real consistent native
 Renovate update observed read-only. Until then, leave missing evidence explicit
 and the plan open; archive only through a separate owner-merged documentation PR.
-
-## Revised T1 evidence - 2026-11-16
-
-The conductor read `t_a17002ef` evidence comments with `kanban_show`. Quoted
-results: direct `pymdown-extensions 13.0 -> 13.1`, header command exit 0,
-34 packages, both artifact hashes changed; indirect `click 8.5.0 -> 8.5.1`,
-`--upgrade-package=click==8.5.1`, exit 0, direct pins unchanged and both artifact
-hashes changed. These are accepted as command-equivalent evidence under the
-owner's H2 decision, not as proof of a real Renovate PR. Earlier Python/uv
-experiments remain failed evidence under the old gate, not newly relabeled PASS.
-
-The conductor repeated extraction in a fresh disposable local Git fixture at
-`/workspaces/docs-h2-extraction`, because the previous worker fixture was not
-present in Coder. Exact versions: Python 3.15.2, uv 0.13.7, Renovate 44.242.0,
-Node v26.13.0. Direct pins: mkdocs 1.6.1, Material 9.8.1, revision plugin 1.7.0,
-autolinks 0.7.1, pymdown-extensions 13.1.
-
-```sh
-uv pip compile --generate-hashes --python-version=3.15.2 --output-file=.github/mkdocs/requirements.txt .github/mkdocs/requirements.in
-npx --yes --package=renovate@44.242.0 renovate-config-validator renovate.json
-LOG_LEVEL=debug RENOVATE_BINARY_SOURCE=global npx --yes --package=renovate@44.242.0 renovate --platform=local --dry-run=extract
-```
-
-All three commands exited 0. The minimal fixture config was:
-
-```json
-{
-  "pip-compile": {
-    "managerFilePatterns": ["/^\\.github\\/mkdocs\\/requirements\\.txt$/"]
-  },
-  "pip_requirements": {"ignorePaths": [".github/mkdocs/**"]},
-  "packageRules": [
-    {
-      "matchManagers": ["pip-compile"],
-      "matchDepTypes": ["indirect"],
-      "enabled": true
-    }
-  ]
-}
-```
-
-Inputs were staged locally so Renovate's Git file listing could see them; no
-fixture commit, remote writes, branches, PRs or workflow dispatch occurred.
-The first attempt with untracked files exited 0 but extracted zero dependencies;
-it is not passing evidence. After staging, the actual output included:
-
-```text
-Matched 1 file(s) for manager pip-compile
-fileName: .github/mkdocs/requirements.txt
-commandType: uv
-.github/mkdocs/requirements.in --> .github/mkdocs/requirements.txt
-pip-compile: fileCount=1, depCount=34
-mise: fileCount=1, depCount=1
-pyenv: fileCount=1, depCount=1
-```
-
-The extracted pip-compile graph contained five direct and 29 indirect entries,
-including `babel`, lockedVersion `2.18.0`, depType `indirect`. No competing
-pip_requirements package file was extracted. Raw extraction marks indirect entries
-`enabled: false` before update-rule application; this is discovery evidence, not
-proof of enabled update selection. The fixture rule opts them in. uv extraction
-warned `GitHub token is required for some dependencies` and skipped its lookup;
-that does not affect pip-compile discovery, and is not uv update proof. Full
-production-preset validation and actual update PR generation remain for T2/T3
-and T4 respectively. T1's revised local evidence is satisfied; T2 remains gated
-on owner merge and explicit thread approval of this revision.
-
-Reference: <https://docs.renovatebot.com/modules/manager/pip-compile/>.
