@@ -1,12 +1,12 @@
 ---
-status: draft
+status: blocked
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
-base_sha: 6e641cd1139e3883a33799894fbc54eda4a901ad
-branch: docs/docs-build-supply-chain-plan
-worktree: .worktrees/docs/docs-build-supply-chain-plan
-pr: "#6301"
+base_sha: 3633f41aff58b5e53f66744f52369bd8ebcf2354
+branch: chore/docs-build-supply-chain
+worktree: .worktrees/chore/docs-build-supply-chain
+pr: "#6315"
 started: 2026-11-16
 updated: 2026-11-16
 ---
@@ -16,12 +16,18 @@ updated: 2026-11-16
 ## Authority and current state
 
 The owner approved the merged spec PR #6300 in the Discord spec thread on
-2026-11-16. [spec.md](spec.md) is the requirements authority. This plan is a draft
-for review, not approval to implement. No worker cards are created in this phase.
+2026-11-16 and subsequently approved plan PR #6301. [spec.md](spec.md) is the
+requirements authority. Execution is now stopped pending merge and explicit thread
+approval of this H2 spec/plan/tasks revision; no T2 work is authorized.
 
 The default-branch baseline strict build passed on Python 3.15.2 with the current
 unlocked dependency inputs. That is not evidence that a future lock or Renovate
-regeneration works. Keep the spec unchanged in this PR.
+regeneration works. This PR revises the spec explicitly at the owner's request.
+
+## Owner H2 decision - 2026-11-16
+
+The owner revised the strategy on 2026-11-16; the full decision text is in
+[spec.md](spec.md#owner-h2-decision---2026-11-16).
 
 ## Requirements and limits
 
@@ -47,7 +53,9 @@ requirements rather than relying on incidental transitive availability.
 
 Use the native Renovate `pip-compile` manager with `uv pip compile`, which the
 manager documentation explicitly supports. Generate the standard command header
-with `--generate-hashes`, explicit input/output paths and no private index URL.
+with `--generate-hashes`, `--python-version=<exact version>`, explicit input/output
+paths and no private index URL. The target comes from `.python-version`;
+`task mkdocs:lock` writes it into the header and regenerates the hashed lock.
 Normal installs use `uv pip sync --require-hashes` into a dedicated virtualenv;
 never compile or resolve an unlocked graph as part of normal build or serve.
 
@@ -100,18 +108,16 @@ not requirements.in. Exclude only these docs files from competing
 `pip_requirements` extraction; do not disable unrelated dependency management.
 Enable docs-scoped indirect updates/lock maintenance explicitly because indirect
 updates are disabled by default. Validate extraction of the Python and uv files
-using their native managers. Pin changes must regenerate compatible locks in the
-same PR, including runtime/tool changes that affect compilation.
+using their native managers. Dependency changes regenerate the matching lock.
+Python-file updates require branch-local `task mkdocs:lock`; CI rejects header
+version drift. uv updates require only locked install and strict build.
 
-The current scheduled job calls a reusable workflow in github-workflows, which
-runs renovatebot/github-action. No inspected repository config supplies explicit
-Python/uv binary constraints. Matching the runtime/tool pins inside Renovate and
-regenerating on their updates is therefore a feasibility gate, not an assumption.
-T1 must inspect the installed Renovate version's supported configuration and
-exercise it without remote writes. If native manager constraints, binary setup or
-cross-manager lock regeneration cannot meet this contract using home-ops changes,
-stop and return to the owner. Do not silently use floating Renovate tooling,
-post-upgrade arbitrary commands, a regex manager or cross-repository edits.
+T1 accepts the direct/indirect source-derived command and hash diffs recorded on
+`t_a17002ef`, plus the local extraction evidence below. No further investigation
+of pyenv/mise cross-manager triggers is required or authorized. Native automatic
+Python/uv lock regeneration is not promised. The real Renovate PR is observed in
+T4; do not dispatch write-mode Renovate, add arbitrary post-upgrade commands,
+replace the manager or edit another repository.
 
 Reference: <https://docs.renovatebot.com/modules/manager/pip-compile/>. The manager
 requires explicit output-file matching and a recognizable compile-command header;
@@ -120,8 +126,8 @@ actual deployed version must be checked during T1.
 
 ## Delivery and task ordering
 
-1. H1: owner approves and merges this plan, then approves the merged plan in the
-   spec thread. This blocks all execution.
+1. H1 was satisfied by #6301. The active H2 revision gate now requires the owner
+   to merge this revision and approve it in the thread before T2.
 2. T1: worker performs a bounded native-Renovate feasibility check and hands back
    reproducible evidence. No production source edits or external mutations.
 3. T2: worker builds the complete atomic implementation on one feature branch,
@@ -144,14 +150,14 @@ are verified; H2/H4 must not be treated as unconditional work or permission.
 
 ## Validation and acceptance evidence
 
-Per the owner's 2026-11-16 design revision, persistent tests cover only three
-workflow invariants: full action SHAs, strict build mode in both workflows, and
-publication deploy `needs: build`. Put these focused checks in
+Per the owner's 2026-11-16 H2 revision, persistent tests cover four invariants:
+full action SHAs, strict build mode in both workflows, publication deploy
+`needs: build`, and exact header Python equality with `.python-version`. Put these focused checks in
 `.github/tests/docs-workflows.sh` and run them in PR CI. Do not add docs.py, its
-unittest suite, or automated tests for the uv CLI, version checks, hash enforcement,
+unittest suite, or automated tests for the uv CLI, other version checks, hash enforcement,
 path filters or other workflow properties. Review those properties directly.
-This narrows the spec's regression-coverage implementation, not the locked-input
-or fail-closed build requirements; the merged spec remains unchanged.
+This revises spec regression coverage without weakening locked-input or
+fail-closed build requirements.
 
 Retain bounded acceptance exercises as recorded command evidence, not a maintained
 test framework: fresh hashed installs twice with equal installed versions, missing
@@ -162,10 +168,10 @@ copies or publish their artifacts. A missing nav entry in a disposable copy must
 fail strict build; inspect normal upload/deploy conditions without dispatching Pages.
 
 Run real native Renovate extraction and local artifact regeneration on controlled
-fixtures using the actual configured version. Cover direct, indirect, runtime and
-tool updates separately; record sanitized commands, versions and output. A config
-validator alone or extraction-only dry run is insufficient. If authenticated full
-dry-run needs access not available, report the limitation and request owner help;
+fixtures using Renovate 44.242.0. Direct/indirect evidence plus extraction meet
+T1; a Python mismatch fails until explicit regeneration, and a uv bump requires
+locked install plus strict build only. Record sanitized commands and versions.
+Real PR proof remains in T4;
 never print tokens, run write-mode Renovate or invent an updated lock.
 
 For this plan PR run diff whitespace, targeted Prettier and markdownlint,
@@ -176,7 +182,7 @@ YAML lint and Renovate config validation. Report PASS, FAIL or NOT RUN with reas
 
 ## Risks, rollback and completion
 
-Python 3.15/tool compatibility and native manager runtime selection can block
+Python 3.15/tool compatibility and failed locked installs or strict builds can block
 implementation. Hashing source archives does not automatically lock build-time
 isolation dependencies: prefer wheels and fail closed on missing wheels, or bring
 an explicit hashed build-dependency design back to the owner. Do not claim a
