@@ -1,11 +1,14 @@
 {
   "argocd": {
-    "fileMatch": ["cluster/.+\\.ya?ml$"]
+    "fileMatch": ["cluster/.+\.ya?ml$"]
   },
   "helm-values": {
-    "fileMatch": ["cluster/.+\\.ya?ml$"]
+    "fileMatch": ["cluster/.+\.ya?ml$"]
   },
   "kubernetes": {
-    "fileMatch": ["cluster/.+\\.ya?ml$"]
+    "fileMatch": ["cluster/.+\.ya?ml$"]
+  },
+  "pip-compile": {
+    "fileMatch": ["^\.github/mkdocs/requirements\.in$"]
   }
 }

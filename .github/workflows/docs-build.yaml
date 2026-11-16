@@ -1,10 +1,6 @@
 ---
 name: Docs build
 
-# Pull-request build of the public docs site. publish-pages.yaml only builds on a push to main, so a
-# broken nav entry or link would otherwise surface after the merge, on the publication path.
-# Builds only: nothing is deployed, the token is read-only and no secret is used.
-
 on: # yamllint disable-line rule:truthy
   pull_request:
     branches:
@@ -30,16 +26,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # The git-revision-date-localized plugin warns on a shallow clone, and --strict turns a warning into a failure.
           fetch-depth: 0
           persist-credentials: false
-      - name: Setup Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5 # Using a stable tag would be safer but keeping as requested
         with:
-          python-version: "3.15"
-      - name: Install MkDocs
-        run: pip install mkdocs[i18n]
-      - name: Install requirements
-        run: pip install -r .github/mkdocs/requirements.txt
+          version: "latest"
+          enable-cache: true
+      - name: Setup Python
+        run: uv python install 3.13
+      - name: Install dependencies
+        run: uv pip install --system -r .github/mkdocs/requirements.txt
       - name: Build site (strict, not deployed)
-        run: mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml --site-dir "${RUNNER_TEMP}/site"
+        run: uv run mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml --site-dir "${RUNNER_TEMP}/site"
