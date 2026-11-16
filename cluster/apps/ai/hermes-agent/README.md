@@ -152,7 +152,8 @@ pod (`mode=notify+wake` is shown, `notify` is not).
 
 The job checks each subscription once: it keeps the checked keys in `/opt/data/cron/kanban-wake-trim.txt` and reads a card (`kanban show`, read-only) only for a new
 subscription. It never runs `kanban list`, which writes to the board (`recompute_ready`). A mode changed by hand after the check stays as it is; delete the key from the file to
-check it again. Test the script against a fake `hermes` CLI with `bash cluster/apps/ai/hermes-agent/tests/kanban-wake-trim.test.sh`.
+check it again. A failed step is retried every run and posted to `#hermes` only on its first failure, once an hour while it still fails, and once when it recovers.
+Test the script against a fake `hermes` CLI with `bash cluster/apps/ai/hermes-agent/tests/kanban-wake-trim.test.sh`.
 
 Jobs removed from `hermes.cronJobs` stay in Hermes until they are listed in `hermes.retiredCronJobs`, which the cron seeder deletes at start (today `kanban-post`, the earlier
 script that posted these notices in `#hermes`).
