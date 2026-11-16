@@ -51,9 +51,11 @@ hermes:
         model: local
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
+      # The smart-approval verdict asks for reasoning_effort "none"; main's model rejects that level
+      # (UnsupportedParamsError, then a fallback to cheap), main-cheap's model accepts it.
       approval:
         provider: custom
-        model: main
+        model: main-cheap
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       mcp:

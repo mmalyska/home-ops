@@ -21,16 +21,23 @@ spec:
               When it runs out the gateway skips `cheap` and falls back to
               `local`. Raise budget_limit in values.yaml or wait for the reset.
         # Requests rejected before routing (e.g. keyless /v1/models probes, 401)
-        # are counted with an empty model name; they are not a model failing.
+        # are counted with an empty model group; they are not a model failing.
+        # Grouped by model_group (the alias), not litellm_model_name: a request
+        # rejected before the provider call (e.g. UnsupportedParamsError) is
+        # labelled with the alias, a successful one with the upstream model, so
+        # per-name ratios read 100% on the first rejected request.
         - alert: LiteLLMModelFailing
           expr: >-
-            sum by (litellm_model_name) (rate(litellm_deployment_failure_responses_total{litellm_model_name!=""}[15m]))
-            / sum by (litellm_model_name) (rate(litellm_deployment_total_requests_total{litellm_model_name!=""}[15m])) > 0.5
+            sum by (model_group) (rate(litellm_deployment_failure_responses_total{model_group!=""}[15m]))
+            / sum by (model_group) (rate(litellm_deployment_total_requests_total{model_group!=""}[15m])) > 0.5
           for: 15m
           labels:
             severity: warning
           annotations:
-            summary: More than half of the calls to {{ "{{ $labels.litellm_model_name }}" }} are failing
+            summary: More than half of the calls to {{ "{{ $labels.model_group }}" }} are failing
             description: >-
               For `main` this is usually the subscription usage limit or an
               expired login; the gateway is already falling back to `cheap`.
+              Check exception_class on litellm_deployment_failure_responses_total:
+              UnsupportedParamsError means a client sends a parameter the model
+              does not accept.
