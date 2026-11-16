@@ -62,7 +62,10 @@ What each size does:
 The owner leads. You assist and you do not decide.
 
 1. Open one Discord thread for this spec in the `#hermes` channel and keep all spec talk there. One thread per spec.
-2. Ask questions, take notes, record each decision the owner states, and point out gaps or contradictions. Never fill a gap with your own choice: write it under open questions instead.
+2. Read the named source files before asking questions. Ask questions, take notes, record each decision the owner states, and point out gaps or contradictions. Never fill a gap with your own choice: write it under open questions instead. When continuing an existing thread, recover its discussion and originating request before repeating questions or creating another thread.
+   - If the owner asks to inspect a baseline before choosing a policy, run that bounded check before asking them to accept remediation or exceptions; an assumed failure can create an unnecessary policy decision. Follow [Baseline evidence](references/baseline-evidence.md).
+   - Separate a failing CI result from enforced merge protection when the owner asks to block PRs. Ask whether required-check settings are in scope; if the owner excludes them, state explicitly that a red check does not prevent merging. Do not silently add repository-settings work.
+   - Treat answers approving individual requirements as decisions for the spec, not approval to advance phases. Record later qualifications in the requirements and acceptance criteria so the spec does not retain contradictory promises.
 3. Pick a lowercase kebab-case slug that is not used in `.plans/` or `.archive/.plans/` of the repository.
 4. Work in a linked worktree, never the primary checkout: `git worktree add .worktrees/docs/<slug> -b docs/<slug> origin/main`, run from the repository's clone under `/workspaces/repos/<repo>`.
 5. Write `.plans/<slug>/spec.md` using the terminal (for example `cat > .plans/<slug>/spec.md <<'DOC'`). Only the spec file exists at this point: no front matter, no `plan.md`, no row in
@@ -87,9 +90,13 @@ Then:
 1. Create a new worktree and branch from the updated default branch, as in phase 1.
 2. Build `plan.md` (with the front matter described in `.plans/README.md`) and `tasks.md` from the merged spec. Add a row to `.plans/list.md`. Each task is self-contained: the worker has no memory, so a
    task states its goal, files, commands, checks, what it depends on and what "done" means without pointing at the plan.
-3. In `tasks.md`, mark every task that only a person can do, including any cluster change that is not a merged PR. Mark any human task that blocks everything.
-4. Run the repository's checks, including `.agents/bin/check-plans` if the repository has it, then commit, push and open the PR with the label `triage/owner`.
-5. Stop. The owner verifies and merges. Medium work is the same, starting from the owner's request with no spec.
+3. When the owner simplifies a design, revise both `plan.md` and every affected task before updating the PR body. Prefer direct native tool commands over a custom orchestration helper when requested; remove the helper, its test suite, obsolete commands and stale acceptance references together. Distinguish maintained regression tests from bounded acceptance exercises: narrowing the former does not silently remove required evidence from the latter. Do not generalize a project-specific test limit to unrelated projects.
+4. In `tasks.md`, mark every task that only a person can do, including any cluster change that is not a merged PR. State its trigger, dependencies, confirmation evidence and exactly which work it blocks. Distinguish unconditional approval gates from conditional prerequisite/recovery tasks; a hypothetical failure must not become an unconditional blocker.
+   - When an integration's feasibility is unproven, put a bounded evidence task before implementation. Require the actual update/regeneration path, not merely config validation or documentation. If only merged configuration can show that path (for example a bot that reads its config from the default branch), prove what can be proven before the merge and move the real proof to a post-merge observation task. Define an owner decision gate if the approved approach needs external changes; do not authorize another repository or a substitute strategy implicitly.
+   - Separate local acceptance from post-merge observation. For evidence dependent on a future scheduled event, define a bounded read-only check and a pending handoff; absence of an eligible event is not permission to manufacture one or poll indefinitely.
+5. Run the repository's checks, including `.agents/bin/check-plans` if the repository has it, then commit, push and open the PR with the label `triage/owner`. After GitHub assigns the PR number, update the plan front matter and index together when the repository requires it, rerun checks, commit normally and push the metadata follow-up. Keep the merged spec unchanged unless the owner explicitly requests a requirements revision.
+6. Verify the remote branch contains the final local commit before reporting checks for that revision; an immediately queried PR may still show its previous head. Report pending CI separately from successful local checks.
+7. Stop. The owner verifies and merges. Medium work is the same, starting from the owner's request with no spec.
 
 ## Phase 3: execution
 
@@ -97,19 +104,21 @@ Start only when the owner has sent a Discord message saying the plan is approved
 
 ### Human tasks first
 
-When execution starts, post every human task from `tasks.md` at once, before any worker card, so problems surface early.
+When execution starts, post every human task from `tasks.md` at once, before any worker card, so problems surface early. Reconcile already-satisfied phase gates against the owner's message and merged PR first; do not re-block execution on approval already verified. Label conditional tasks with their activation trigger and do not make inactive contingencies parents of ordinary worker tasks.
 
 1. For each human task, create a card with the `kanban_create` tool: `title`, a `body` that says exactly what the person must do and how to confirm it, and `assignee` set to `default`. The dispatcher
    does not run `default`, so no worker claims the card.
 2. Do not set `parents` on a human card. A card with an open parent waits in `todo`, and a card in `todo` cannot be blocked. If a human task depends on another human task, write that dependency in its body instead.
-3. Block the card straight away with the `kanban_block` tool: `task_id` is the new card, `kind` is `needs_input`, and `reason` says in one or two sentences what the owner must do. You may instead pass
+3. For an already-verified approval gate, record the evidence and complete its card immediately instead of blocking it or asking again. For outstanding human work, block the card straight away with the `kanban_block` tool: `task_id` is the new card, `kind` is `needs_input`, and `reason` says in one or two sentences what the owner must do. You may instead pass
    `initial_status` set to `blocked` when creating the card.
 4. Post the list of human cards in the spec thread.
-5. If a human task is marked as blocking everything, do not create any worker card. Tell the owner the whole work is stopped until it is done.
+5. If an unsatisfied, active human task is marked as blocking everything, do not create any worker card. Tell the owner the whole work is stopped until it is done.
 
 ### Cards for the worker
 
-Create one card per implementation task, in the order of `tasks.md`, with the `kanban_create` tool:
+Honor the owner's current execution boundary before dispatch: if they authorize only a feasibility task, create only that worker card, not a prequeued downstream graph. Give the worker an explicit stop condition, required evidence and the conditional owner-decision card to invoke on failure. Queueing work is not evidence that it ran; report queued, running and verified outcomes distinctly.
+
+Create one card per authorized task, in the order of `tasks.md`, with the `kanban_create` tool:
 
 - `title`: the task title.
 - `assignee`: `worker`.
@@ -118,7 +127,8 @@ Create one card per implementation task, in the order of `tasks.md`, with the `k
 - `body`: everything the worker needs, because it has no memory. Include the repository (`mmalyska/<repo>`), the base branch, the branch name to use, the task text copied from `tasks.md`, links to the
   merged spec and plan files on the default branch, the files in scope, the checks to run, what "done" means, and what it must not touch. Never include secret values.
 - `idempotency_key`: `<slug>-<task-id>`, so a retry never makes a duplicate.
-- Leave `completion_contract` unset. The worker pushes a branch and does not open a PR.
+- Leave `completion_contract` unset. Implementation workers push a branch and do not open a PR, subject to stricter repository delivery rules. Evidence-only feasibility tasks need no production
+  edits, commits or push: require sanitized commands, exact versions and PASS, FAIL or NOT RUN results instead, posted as card comments.
 - Evidence comes back in the card's comments and summary, or on the pushed branch. You cannot read files in the worker's workspace, so never ask for a handoff file there. If a task in `tasks.md` asks for
   one, write in the body that its content goes in a card comment instead.
 

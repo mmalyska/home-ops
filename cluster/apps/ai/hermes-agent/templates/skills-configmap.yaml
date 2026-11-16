@@ -8,6 +8,11 @@ data:
   {{ base (dir $path) }}.md: |
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
+{{- /* A skill's reference files: key ref-<skill>--<file>, written to skills/<skill>/references/<file>. */}}
+{{- range $path, $_ := .Files.Glob "skills/*/references/*" }}
+  ref-{{ base (dir (dir $path)) }}--{{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
 {{- range $path, $_ := .Files.Glob "files/soul-*.md" }}
   {{ base $path }}: |
 {{ $.Files.Get $path | indent 4 }}

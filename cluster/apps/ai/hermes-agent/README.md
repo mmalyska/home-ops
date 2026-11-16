@@ -93,13 +93,16 @@ Nothing a profile needs is set by hand, except creating the `worker` profile onc
 | Per-profile settings | `hermes.profileOverlays`, deep-merged by `profile-config-seeder`                                                 | `/opt/data/config.yaml` for `default`, `/opt/data/profiles/<name>/config.yaml` for the others                 |
 | Profile `.env` keys  | `hermes.profileEnv` (plain values) and `hermes.profileSecretEnv` (secrets), written by `profile-env-seeder`      | the profile's `.env`: the `TERMINAL_SSH_*` target, `DISCORD_HOME_CHANNEL`, and `LITELLM_API_KEY` for `worker` |
 | Workspace SSH keys   | ExternalSecret items `HERMES_MAIN_WS_SSH_KEY` and `HERMES_WORKER_WS_SSH_KEY`, mounted only into `ssh-key-seeder` | `/opt/data/ssh/hermes-main.key` and `/opt/data/ssh/hermes-worker.key` (mode 600)                              |
-| Skills               | `skills/<name>/SKILL.md`, listed per profile in `hermes.profileSkills`                                           | `<profile home>/skills/<name>/SKILL.md`                                                                       |
+| Skills               | `skills/<name>/SKILL.md` and `skills/<name>/references/*`, listed per profile in `hermes.profileSkills`          | `<profile home>/skills/<name>/SKILL.md` and its `references/`                                                 |
 | SOUL files           | `files/soul-<profile>.md`                                                                                        | `<profile home>/SOUL.md`                                                                                      |
 | Honcho settings      | ConfigMap `hermes-agent-honcho`, merged by `honcho-seeder`                                                       | `honcho.json` of each profile except `worker`                                                                 |
 
 Rules that follow from this:
 
 - Seeders only add or overwrite keys, never delete. To change a value for good, overwrite it explicitly.
+- Hermes edits its own skills ("Self-improvement review: Skill … patched" in the gateway log, and a `patch` row in `/opt/data/skills/.curator_ledger.jsonl`). An edit to a skill seeded from git is
+  overwritten at the next start. To keep it, copy the edited file into git in a PR before the pod restarts. A copy also sits in the `hermes-main` workspace at `~/.hermes/skills/<name>/`
+  until the next file sync.
 - A non-default profile resolves `${VAR}` in its config from its own `.env`, not from the pod environment. A secret that the profile's config uses must be listed in `hermes.profileSecretEnv` (today
   `LITELLM_API_KEY` for `worker`). `default` and Managed Scope read the pod environment.
 - A seeded skill or SOUL file overwrites the copy on the volume, so edit them in `skills/` and `files/`, not in the pod.
