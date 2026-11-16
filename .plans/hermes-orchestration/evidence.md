@@ -275,3 +275,12 @@ Three report-only runs with `merge_enabled: false`. Nothing merged. The owner ac
   - The summary was done at 14:42 UTC and posted at 14:50 UTC: 11 "would merge", 15 waiting for the owner, nothing skipped or failed. `argocd-secret-replacer#170` was the first PR from that repository after its move to Renovate.
   - Of 402 tool calls in the last hour, no `terminal` or `kanban_create` call had empty arguments.
 - **Not met:** "a summary by 07:00 each day" on run 3, accepted by the owner. "No worker task for an unchanged diff" was not checked one by one on run 3: two days of new PRs and the new repository explain most of the 22 cards.
+
+## T19 runs
+
+Merging has been on since #6278 (2026-11-13 17:40 UTC). #6280 then created the post-merge card together with the merge cards. These are checked from the PR timelines on GitHub; the kanban board was not read.
+
+- **Clean PRs merged:** `rudi-the-brain` approved and merged `home-ops` bot PRs at every run: #6267 and #6269 (2026-11-13, first run after the switch), #6259, #6281 and #6283 (11-14), #6260, #6285 and #6287 (11-15), #6289 and #6291 (11-16). Merges in one run are two to five minutes apart, one PR at a time.
+- **A changed diff was checked again:** on `#6259` the worker said `owner` on 11-13 (G7, AWS CLI notes lowering EMR limits). Renovate pushed 2.40.3 on 11-14 01:17, the next run checked the new diff as `clean`, and it merged at 05:13. The old verdict was not reused.
+- **Denylist override:** `#6271` (CoreDNS chart, denylisted as `coredns`) got `owner` on 11-13 and again on 11-15 for the current head, because the render adds `terminationMessagePolicy` (G8). It was not auto-merged. After the owner's `merge` reply, `rudi-the-brain` approved and merged it on 2026-11-16 at 10:52 UTC, with `triage/owner` still on it.
+- **Approvals:** `approvals.cron_mode: deny` blocked no `gh pr review` or `gh pr merge` command, so `command_allowlist` was not changed.

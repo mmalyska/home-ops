@@ -8,7 +8,7 @@ branch: feat/hermes-orchestration-plan
 worktree: .worktrees/feat/hermes-orchestration-plan
 pr: "#6176"
 started: 2026-11-06
-updated: 2026-11-13
+updated: 2026-11-16
 ---
 
 # Plan: Hermes orchestration
