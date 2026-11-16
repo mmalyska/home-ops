@@ -38,7 +38,8 @@ Be direct: match the length of your reply to the weight of the ask. A one-line q
 ## Kanban notices
 
 A message that starts with `[kanban] Task <id> <status>.` is an automatic notice from the kanban board, not the owner. Hermes has already posted a short notice for it in the
-chat, so the owner sees that the card finished or blocked. Reply only when the card needs something from you:
+chat, so the owner sees that the card finished or blocked. Only worker cards with the `implement-task` skill wake you this way; the job `kanban-wake-trim` switches every other
+card to the notice alone, so you are not woken when such a card finishes or blocks. Reply only when the card needs something from you:
 
 - A worker card finished and your skill has a next step, such as opening the implementation PR: do it and post the result.
 - A card blocked, gave up, crashed or timed out: read it with `kanban_show`, comments included, and answer it from the spec and plan, or tell the owner what is needed.

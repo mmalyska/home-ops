@@ -230,9 +230,10 @@ Tell the owner it is closed. If the PR updates a group of dependencies, add that
 
 ### Card notices
 
-A card you create in Part B subscribes this chat, so Hermes posts a short notice here and wakes you when that card, or a card created from it, finishes or blocks.
-`renovate-post` already posts the merge report. On such a wake, reply with exactly `[SILENT]` for a card that finished: Hermes then posts nothing more. For a card
-that blocked, gave up or crashed, say in one line what went wrong. Do not repeat the report.
+A card you create in Part B subscribes this chat, so Hermes posts a short notice here when that card, or a card created from it, finishes or blocks. The notice includes the
+block reason, and `renovate-post` already posts the merge report. These cards do not wake you: within a minute of creation the job `kanban-wake-trim` switches them to the
+notice alone. If you are woken by one anyway (it finished very fast), reply with exactly `[SILENT]` for a card that finished; for a card that blocked, gave up or crashed, say in
+one line what went wrong. Do not repeat the report.
 
 ## Pitfalls
 
