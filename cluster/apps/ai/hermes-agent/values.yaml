@@ -138,13 +138,25 @@ hermes:
       timezone: Europe/Warsaw
       script: kanban-post.sh
       deliver: "discord:881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
-  # Skills and SOUL files from skills/ and files/, written over the copies on the volume at every start.
+    # Weekly: the script lists Hermes' own edits to the skills seeded from git; the skill opens one PR with them. No
+    # edit, no output: Hermes then skips the model run.
+    - name: skill-sync
+      schedule: "30 7 * * 1"
+      timezone: Europe/Warsaw
+      script: skill-sync.sh
+      skill: skill-sync
+      model: main
+      deliver: "discord:881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
+      prompt: "Run the skill-sync skill on the script output above."
+  # Skills from skills/ are written only where a profile has no copy (a differing copy holds Hermes' own edits and is
+  # kept; skill-sync proposes it for git). SOUL files from files/ are written over the volume copy at every start.
   profileSkills:
     default:
       - renovate-triage
       - renovate-summary
       - renovate-merge
       - spec-author
+      - skill-sync
     worker:
       - renovate-coordinator
       - renovate-pr-check
