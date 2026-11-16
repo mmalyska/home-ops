@@ -1,7 +1,7 @@
 ---
 name: skill-sync
 description: Propose Hermes' own edits to the skills seeded from git as one home-ops PR for the owner to review. Use only in the weekly skill-sync cron job, which supplies the patch in its script output.
-version: 1.0.0
+version: 1.1.0
 author: mmalyska
 metadata:
   hermes:
@@ -27,6 +27,9 @@ and the owner sees what you learned.
   path (`rm /tmp/x` is refused too) or with `-r`, and never run inline scripts with `-c` or `-e` (`python -c`, `node -e`, `bash -c`). Remove a worktree with `git worktree remove --force`
   and then `git worktree prune`; delete a single file with `cd <its directory> && rm -f <name>`; write a script to a file and run the file. Never delete a repository clone: if one
   is broken, stop and say so.
+- Never pass the patch to `git` on stdin (`git apply <<'EOF'`, `git apply -`, a pipe). The deny rule `git *push* +*` matches
+  the whole command text, and a patch that contains the word "push" and lines starting with `+` matches it. Write the
+  patch to a file in one terminal call and run `git apply` on the file in the next.
 
 ## Procedure
 
@@ -41,23 +44,37 @@ possibly `CONFLICT` and `NOT SEEDED` lines. If the block says "Script Error" ins
 3. Update the clone: if `/workspaces/repos/home-ops` does not exist, run
    `mkdir -p /workspaces/repos && gh repo clone mmalyska/home-ops /workspaces/repos/home-ops`. Then
    `git -C /workspaces/repos/home-ops fetch origin`.
-4. Create the worktree, with today's date as `<date>` (YYYY-MM-DD):
-   `git -C /workspaces/repos/home-ops worktree add .worktrees/chore/hermes-skill-sync-<date> -b chore/hermes-skill-sync-<date> origin/main`.
+4. Clear what an earlier run left behind. A run that stopped before step 8 (a rate limit, a refused command) leaves the
+   worktree and the local branch, and `worktree add -b` then fails with "a branch named … already exists".
+   - `git -C /workspaces/repos/home-ops ls-remote origin refs/heads/chore/hermes-skill-sync-<date>`. If it prints a line, the branch
+     was pushed but has no open PR (step 2): stop and report the branch; open no PR. The owner decides.
+   - Otherwise run, each as its own command: `git -C /workspaces/repos/home-ops worktree remove --force .worktrees/chore/hermes-skill-sync-<date>`
+     (an error that it is not a working tree is fine), `git -C /workspaces/repos/home-ops worktree prune`, and
+     `cd /tmp && rm -f skill-sync-<date>.patch skill-sync-<date>.sha256`. Never use `rm` on the worktree directory, and
+     do not delete the local branch: `git branch -D` is refused in a cron run, and `-B` below resets it.
+
+   Then create the worktree, with today's date as `<date>` (YYYY-MM-DD). `-B` (not `-b`) resets a leftover local branch
+   of that name to `origin/main`:
+   `git -C /workspaces/repos/home-ops worktree add .worktrees/chore/hermes-skill-sync-<date> -B chore/hermes-skill-sync-<date> origin/main`.
    Work only in `/workspaces/repos/home-ops/.worktrees/chore/hermes-skill-sync-<date>`, and run
    `.agents/bin/worktree-preflight` there first. Stop unless it exits 0.
+
 5. Write the lines between the two patch markers, without the markers, to `/tmp/skill-sync-<date>.patch` with a quoted
-   heredoc: `cat > /tmp/skill-sync-<date>.patch <<'HERMES_SKILL_SYNC_EOF'`. Then run `git apply --check` and
-   `git apply` with that file in the worktree. If it does not apply (`main` changed the same lines since the last
+   heredoc: `cat > /tmp/skill-sync-<date>.patch <<'HERMES_SKILL_SYNC_EOF'`, as a terminal call of its own with nothing
+   else in it. Then, in separate calls in the worktree, run `git apply --check /tmp/skill-sync-<date>.patch` and
+   `git apply /tmp/skill-sync-<date>.patch`. If it does not apply (`main` changed the same lines since the last
    restart), stop and report the failing files; open no PR.
 6. Write the `=== SHA256 AFTER APPLY` lines as `<sha256>  <path>` (two spaces, path only) to
    `/tmp/skill-sync-<date>.sha256` and run `sha256sum -c` on it in the worktree. Every line must say `OK`. If one does
-   not, the patch was not copied exactly: stop, remove the worktree and report it; open no PR.
+   not, the patch was not copied exactly: do step 8, report it and open no PR.
 7. Commit with `chore(hermes): sync Hermes' own skill edits (<date>)`, push the branch over HTTPS, and open the PR with
    `gh pr create --label triage/owner`. In the body, for each file: its path, the profile, and one or two sentences on
    what the edit changes and why it helps, from the diff. Add the `CONFLICT` and `NOT SEEDED` lines, if any, under
    "Not in this PR". End the body with: merging changes the skills ConfigMap, so Argo CD restarts the Hermes pod.
-8. Remove the worktree: `git -C /workspaces/repos/home-ops worktree remove --force .worktrees/chore/hermes-skill-sync-<date>`.
-   Delete the two files with `cd /tmp && rm -f skill-sync-<date>.patch skill-sync-<date>.sha256`.
+8. Clean up, also after any stop from step 4 on: `git -C /workspaces/repos/home-ops worktree remove --force .worktrees/chore/hermes-skill-sync-<date>`
+   and `git -C /workspaces/repos/home-ops worktree prune`. Leave the local branch: the next run's `-B` resets it. Delete
+   the two files with `cd /tmp && rm -f skill-sync-<date>.patch skill-sync-<date>.sha256`. If a cleanup command is
+   refused, report it and continue; step 4 of the next run clears what is left.
 9. Your final reply is posted in `#hermes`: the PR link and the list of files, or why no PR was opened.
 
 ## What happens next

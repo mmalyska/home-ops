@@ -155,7 +155,9 @@ Hermes improves its skills as it works, and the owner wants those edits kept. Tw
 - **A weekly PR brings them to git.** The job `skill-sync` (Mondays 07:30 Europe/Warsaw, `default`, model `main`) first runs `files/scripts/skill-sync.sh` in the pod. The script compares every
   seeded skill in every profile with its git copy, mounted read-only at `/opt/skills-git`, and prints one patch plus the sha256 each file must have afterwards. No difference prints
   nothing, and Hermes then skips the model run. Otherwise the `skill-sync` skill applies the patch in a `chore/hermes-skill-sync-<date>` worktree of `home-ops`, checks every sha256,
-  and opens one PR as `rudi-the-brain` with the label `triage/owner`, then posts the link in `#hermes`. It opens no new PR while one is still open.
+  and opens one PR as `rudi-the-brain` with the label `triage/owner`, then posts the link in `#hermes`. It opens no new PR while one is still open. A run that stops halfway (a rate limit, a refused command) leaves its worktree;
+  the next run removes it with `git worktree remove` and recreates the branch with `worktree add -B`, because `rm` on a path and `git branch -D` are refused in cron runs. The
+  patch is written to a file before `git apply`: sent on stdin, its text matches the `git *push* +*` deny rule.
 
 The owner reviews the PR. Merging it makes git match Hermes' copies, so nothing is kept at the next start (merging also changes the skills ConfigMap, which restarts the pod).
 To reject an edit, the owner closes the PR and tells Hermes in Discord what to undo; Hermes decides how to change its skill.
