@@ -10,7 +10,7 @@ metadata:
 spec:
   alias: hermes
   proxyRef: litellm
-  models: [main, main-cheap, main-lite, or-main, or-main-cheap, cheap, local, local-think]
+  models: [main, main-cheap, main-lite, or-deepseek-v4-pro, or-deepseek-v4.1-flash, cheap, local, local-think]
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMTeam
@@ -32,7 +32,7 @@ metadata:
 spec:
   alias: opencode
   proxyRef: litellm
-  models: [main, or-main, cheap, local, local-think]
+  models: [main, or-deepseek-v4-pro, cheap, local, local-think]
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMTeam

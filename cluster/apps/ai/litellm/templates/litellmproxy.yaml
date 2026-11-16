@@ -61,11 +61,11 @@ spec:
     fallbacks:
       # Each subscription tier falls to the OpenRouter model of the same tier
       # (cheaper per token), then to the Jetson. Chains never cross tiers.
-      - main: ["or-main", "local-think"]
-      - main-cheap: ["or-main-cheap", "local"]
+      - main: ["or-deepseek-v4-pro", "local-think"]
+      - main-cheap: ["or-deepseek-v4.1-flash", "local"]
       - main-lite: ["cheap", "local"]
-      - or-main: ["local"]
-      - or-main-cheap: ["local"]
+      - or-deepseek-v4-pro: ["local"]
+      - or-deepseek-v4.1-flash: ["local"]
       - cheap: ["local"]
   resources:
     requests:
