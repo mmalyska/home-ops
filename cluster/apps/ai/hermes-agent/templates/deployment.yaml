@@ -228,6 +228,11 @@ spec:
                 {{- range $skills }}
                 mkdir -p {{ printf "%s/skills/%s" $dir . | squote }}
                 cp {{ printf "/seed/%s.md" . | squote }} {{ printf "%s/skills/%s/SKILL.md" $dir . | squote }}
+                for f in {{ printf "/seed/ref-%s--" . }}*; do
+                  [ -e "$f" ] || continue
+                  mkdir -p {{ printf "%s/skills/%s/references" $dir . | squote }}
+                  cp "$f" {{ printf "%s/skills/%s/references/" $dir . | squote }}"${f#{{ printf "/seed/ref-%s--" . }}}"
+                done
                 chown -R 10000:10000 {{ printf "%s/skills/%s" $dir . | squote }}
                 {{- end }}
               else
