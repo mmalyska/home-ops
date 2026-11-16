@@ -59,13 +59,17 @@ spec:
         budget_limit: 13
         time_period: 30d
     fallbacks:
-      # Each subscription tier falls to the OpenRouter model of the same tier
-      # (cheaper per token), then to the Jetson. Chains never cross tiers.
-      - main: ["or-deepseek-v4-pro", "local-think"]
-      - main-cheap: ["or-deepseek-v4.1-flash", "local"]
-      - main-lite: ["cheap", "local"]
-      - or-deepseek-v4-pro: ["local"]
-      - or-deepseek-v4.1-flash: ["local"]
+      # Agent tiers fail closed: each subscription tier falls to OpenRouter models
+      # only, and an exhausted chain returns the last error, so an agent pauses
+      # instead of working on the 1.7B Jetson model. Fallbacks chain: a fallback
+      # target's own entry is used too, so the or-deepseek-* aliases must have none
+      # (and main-lite must not go through `cheap`, which ends at `local`).
+      # or-deepseek-v4-pro has its own daily budget (models/or-deepseek-v4-pro.yaml);
+      # once it is spent, `main` continues on the flash model.
+      - main: ["or-deepseek-v4-pro", "or-deepseek-v4.1-flash"]
+      - main-cheap: ["or-deepseek-v4.1-flash"]
+      - main-lite: ["or-deepseek-v4.1-flash"]
+      # Chat and background clients (Honcho, Lingarr) may still degrade to the Jetson.
       - cheap: ["local"]
   resources:
     requests:
