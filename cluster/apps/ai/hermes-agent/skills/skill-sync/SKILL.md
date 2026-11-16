@@ -23,6 +23,10 @@ and the owner sees what you learned.
 - You open the PR. You never merge or approve it, and you never push to `main`.
 - Add no AI attribution to the commit or the PR. Never print, log or write secret values.
 - Use the terminal for every step: the file tools cannot write in the workspace.
+- Commands that Hermes flags as dangerous are refused without a prompt in a card or cron run, because nobody is there to approve them. So never run `rm` with an absolute
+  path (`rm /tmp/x` is refused too) or with `-r`, and never run inline scripts with `-c` or `-e` (`python -c`, `node -e`, `bash -c`). Remove a worktree with `git worktree remove --force`
+  and then `git worktree prune`; delete a single file with `cd <its directory> && rm -f <name>`; write a script to a file and run the file. Never delete a repository clone: if one
+  is broken, stop and say so.
 
 ## Procedure
 
@@ -53,7 +57,7 @@ possibly `CONFLICT` and `NOT SEEDED` lines. If the block says "Script Error" ins
    what the edit changes and why it helps, from the diff. Add the `CONFLICT` and `NOT SEEDED` lines, if any, under
    "Not in this PR". End the body with: merging changes the skills ConfigMap, so Argo CD restarts the Hermes pod.
 8. Remove the worktree: `git -C /workspaces/repos/home-ops worktree remove --force .worktrees/chore/hermes-skill-sync-<date>`.
-   Delete the two files in `/tmp`.
+   Delete the two files with `cd /tmp && rm -f skill-sync-<date>.patch skill-sync-<date>.sha256`.
 9. Your final reply is posted in `#hermes`: the PR link and the list of files, or why no PR was opened.
 
 ## What happens next
