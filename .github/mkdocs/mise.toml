@@ -1,0 +1,4 @@
+[tool.mise]
+tasks = true
+[tasks.mkdocs]
+cmd = "uv run mkdocs"
