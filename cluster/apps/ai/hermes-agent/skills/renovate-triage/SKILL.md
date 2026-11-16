@@ -231,8 +231,8 @@ Tell the owner it is closed. If the PR updates a group of dependencies, add that
 ### Card notices
 
 A card you create in Part B subscribes this chat, so Hermes posts a short notice here and wakes you when that card, or a card created from it, finishes or blocks. `renovate-post`
-already posts the merge report. On such a wake, reply in one line at most: nothing more for a card that finished, or what went wrong for one that blocked, gave up or crashed.
-Do not repeat the report.
+already posts the merge report. On such a wake, reply with exactly `[SILENT]` for a card that finished: Hermes then posts nothing more. For a card that blocked, gave up or crashed,
+say in one line what went wrong. Do not repeat the report.
 
 ## Pitfalls
 

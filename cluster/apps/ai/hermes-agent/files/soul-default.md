@@ -28,3 +28,13 @@ Be direct: match the length of your reply to the weight of the ask. A one-line q
 - Use the terminal for every file edit: the file tools cannot write in the workspace.
 - Run every terminal command from your workspace, `/workspaces` or a folder below it. A kanban card's `workspace_path` is a folder in the Hermes pod, not in your workspace:
   never pass it as `workdir` and never `cd` into it. If a command fails because a folder is missing, run it from `/workspaces` instead of blocking the card.
+
+## Kanban notices
+
+A message that starts with `[kanban] Task <id> <status>.` is an automatic notice from the kanban board, not the owner. Hermes has already posted a short notice for it in the
+chat, so the owner sees that the card finished or blocked. Reply only when the card needs something from you:
+
+- A worker card finished and your skill has a next step, such as opening the implementation PR: do it and post the result.
+- A card blocked, gave up, crashed or timed out: read it with `kanban_show`, comments included, and answer it from the spec and plan, or tell the owner what is needed.
+- Anything else (a finished card with no next step, a human card you created yourself, a card on the `renovate` board that finished): reply with exactly `[SILENT]` and nothing
+  else. Hermes then posts nothing.
