@@ -100,9 +100,9 @@ Nothing a profile needs is set by hand, except creating the `worker` profile onc
 Rules that follow from this:
 
 - Seeders only add or overwrite keys, never delete. To change a value for good, overwrite it explicitly.
-- Skills are the exception to "restored from git": a skill file is written from git only where the profile has no copy. Hermes edits its own skills ("Self-improvement
-  review: Skill … patched" in the gateway log, a `patch` row in `/opt/data/skills/.curator_ledger.jsonl`), and a copy that differs from git is kept at every start; `skills-seeder`
-  logs `kept local edits: <path>`. A change made in git to such a skill does not reach Hermes either, until the two match again. See [Hermes' own skill edits](#hermes-own-skill-edits).
+- Skills are the exception to "restored from git": a skill file that Hermes edited is kept. The seeder records the sha256 of each file it writes, under `/opt/data/.skill-seed`.
+  A copy that still has that hash takes the new git version (`updated from git: <path>`); a copy with any other hash holds Hermes' own edits ("Self-improvement review: Skill …
+  patched" in the gateway log, a `patch` row in `/opt/data/skills/.curator_ledger.jsonl`) and is kept (`kept local edits: <path>`). See [Hermes' own skill edits](#hermes-own-skill-edits).
 - A non-default profile resolves `${VAR}` in its config from its own `.env`, not from the pod environment. A secret that the profile's config uses must be listed in `hermes.profileSecretEnv` (today
   `LITELLM_API_KEY` for `worker`). `default` and Managed Scope read the pod environment.
 - A seeded skill or SOUL file overwrites the copy on the volume, so edit them in `skills/` and `files/`, not in the pod.
@@ -145,8 +145,9 @@ approves and merges the PRs the merge policy allows.
 
 Hermes improves its skills as it works, and the owner wants those edits kept. Two pieces make that safe:
 
-- **The seeder keeps them.** `skills-seeder` writes a skill file (`SKILL.md` or a file in `references/`) only where the profile has no copy. A copy equal to git is left alone, and a copy
-  that differs is kept and logged as `kept local edits: <path>`. SOUL files are still written from git at every start.
+- **The seeder keeps them.** `skills-seeder` records the sha256 of each skill file (`SKILL.md` or a file in `references/`) it writes from git, under `/opt/data/.skill-seed`, outside
+  the skills directory. At the next start a copy with that hash was not edited and takes the git version, so changes made in git deploy as usual. A copy with another hash holds
+  Hermes' edits and is kept, logged as `kept local edits: <path>`. A copy equal to git only records the hash. SOUL files are still written from git at every start.
 - **A weekly PR brings them to git.** The job `skill-sync` (Mondays 07:30 Europe/Warsaw, `default`, model `main`) first runs `files/scripts/skill-sync.sh` in the pod. The script compares every
   seeded skill in every profile with its git copy, mounted read-only at `/opt/skills-git`, and prints one patch plus the sha256 each file must have afterwards. No difference prints
   nothing, and Hermes then skips the model run. Otherwise the `skill-sync` skill applies the patch in a `chore/hermes-skill-sync-<date>` worktree of `home-ops`, checks every sha256,
@@ -155,7 +156,8 @@ Hermes improves its skills as it works, and the owner wants those edits kept. Tw
 The owner reviews the PR. Merging it makes git match Hermes' copies, so nothing is kept at the next start (merging also changes the skills ConfigMap, which restarts the pod).
 To reject an edit, the owner closes the PR and tells Hermes in Discord what to undo; Hermes decides how to change its skill.
 
-Limits: a change made in git to a skill that Hermes has edited reaches Hermes only once the copies match, so merge the open sync PR first, or tell Hermes about the change.
+Limits: a change made in git to a file that Hermes has edited does not reach Hermes until the copies match. The next sync PR then shows Hermes' copy against the new git version, so it
+would undo that git change: edit the PR, or tell Hermes about the change and close it.
 Different edits of one skill in two profiles, and files other than `SKILL.md` and `references/*`, are listed in the job's output but left out of the patch.
 
 ## Daily Renovate run
