@@ -4,22 +4,24 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 
 ## Models
 
-| Alias         | Backend                                                                                    | Cost              |
-| ------------- | ------------------------------------------------------------------------------------------ | ----------------- |
-| `main`        | ChatGPT (Codex) subscription, see below                                                    | none per token    |
-| `main-cheap`  | ChatGPT (Codex) subscription, `chatgpt/gpt-6.1-terra`, same login as `main`                | none per token    |
-| `main-lite`   | ChatGPT (Codex) subscription, `chatgpt/gpt-6-luna`, same login as `main`                   | none per token    |
-| `cheap`       | OpenRouter, `google/gemini-3.1-flash-lite`                                                 | per token, capped |
-| `local`       | llama-server on nv1 (`llm` namespace, LFM3-1.7B, alias `lfm3-1.7b`), thinking off          | none              |
-| `local-think` | same llama-server, thinking on, reasoning capped at 256 tokens (`max_tokens` 1024 is safe) | none              |
-| `embed`       | CPU llama.cpp embeddings server (nomic-embed-text)                                         | none              |
+| Alias                    | Backend                                                                                    | Cost              |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ----------------- |
+| `main`                   | ChatGPT (Codex) subscription, see below                                                    | none per token    |
+| `main-cheap`             | ChatGPT (Codex) subscription, `chatgpt/gpt-6.1-terra`, same login as `main`                | none per token    |
+| `main-lite`              | ChatGPT (Codex) subscription, `chatgpt/gpt-6-luna`, same login as `main`                   | none per token    |
+| `or-deepseek-v4-pro`     | OpenRouter, `deepseek/deepseek-v4-pro`, fallback for `main`                                | per token, capped |
+| `or-deepseek-v4.1-flash` | OpenRouter, `deepseek/deepseek-v4.1-flash`, fallback for `main-cheap`                      | per token, capped |
+| `cheap`                  | OpenRouter, `google/gemini-3.1-flash-lite`, also the fallback for `main-lite`              | per token, capped |
+| `local`                  | llama-server on nv1 (`llm` namespace, LFM3-1.7B, alias `lfm3-1.7b`), thinking off          | none              |
+| `local-think`            | same llama-server, thinking on, reasoning capped at 256 tokens (`max_tokens` 1024 is safe) | none              |
+| `embed`                  | CPU llama.cpp embeddings server (nomic-embed-text)                                         | none              |
 
 `embed` is the `LiteLLMModel` in `templates/models/embed.yaml` (768-dimension vectors; Honcho depends on the dimension).
 
 ## Fallbacks and budget
 
-- `main` falls back to `cheap`, then `local`; `cheap` falls back to `local`.
-- `main-cheap` falls back to `main`, `cheap`, then `local`; `main-lite` falls back to `main-cheap`, `main`, `cheap`, then `local`. Both are written in full, not chained.
+- Each subscription tier falls back to the OpenRouter model of the same tier, then to `local`; chains never cross tiers:
+  `main` → `or-deepseek-v4-pro` → `local-think` (the top tier gets the reasoning variant as its last resort; callers need `max_tokens` of about 1024), `main-cheap` → `or-deepseek-v4.1-flash` → `local`, `main-lite` → `cheap` → `local`. `cheap`, `or-deepseek-v4-pro` and `or-deepseek-v4.1-flash` fall back to `local`. `local-think` has no fallback.
 - A failed deployment is skipped for 300 s (`cooldown_time`) instead of being retried on every request.
 - The pay-per-token cap is `routerSettings.provider_budget_config.openrouter` in `templates/litellmproxy.yaml`: 13 USD per 30 days, about 50 zl. It is per provider on purpose: `litellm_settings.max_budget` is proxy-wide and would also block the free models.
 - The spend counters live in a small Dragonfly (`litellm-dragonfly`), so a proxy restart does not reset the cap. Dragonfly itself has no persistence here; the prepaid OpenRouter balance is the hard ceiling.
@@ -31,12 +33,12 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 
 One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is a `LiteLLMVirtualKey` (`proxyRef: litellm`, `proxyNamespace: ai`, `teamID`, `secretName`) kept next to the client app, so the operator writes the Secret into the client's namespace. No key is created by hand.
 
-| Team       | Models                                                             |
-| ---------- | ------------------------------------------------------------------ |
-| `hermes`   | `main`, `main-cheap`, `main-lite`, `cheap`, `local`, `local-think` |
-| `honcho`   | `cheap`, `local`, `embed`                                          |
-| `opencode` | `main`, `cheap`, `local`                                           |
-| `lingarr`  | `cheap`, `local`                                                   |
+| Team       | Models                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `hermes`   | `main`, `main-cheap`, `main-lite`, `or-deepseek-v4-pro`, `or-deepseek-v4.1-flash`, `cheap`, `local`, `local-think` |
+| `honcho`   | `cheap`, `local`, `embed`                                                                                          |
+| `opencode` | `main`, `or-deepseek-v4-pro`, `cheap`, `local`, `local-think`                                                      |
+| `lingarr`  | `cheap`, `local`                                                                                                   |
 
 What each client is set to call (the team list above is what it may call):
 

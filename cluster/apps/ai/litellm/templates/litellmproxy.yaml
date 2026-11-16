@@ -59,11 +59,13 @@ spec:
         budget_limit: 13
         time_period: 30d
     fallbacks:
-      # main is the subscription: on a usage limit or error it falls to the
-      # pay-per-token model, and to the Jetson once that budget is spent.
-      - main: ["cheap", "local"]
-      - main-cheap: ["main", "cheap", "local"]
-      - main-lite: ["main-cheap", "main", "cheap", "local"]
+      # Each subscription tier falls to the OpenRouter model of the same tier
+      # (cheaper per token), then to the Jetson. Chains never cross tiers.
+      - main: ["or-deepseek-v4-pro", "local-think"]
+      - main-cheap: ["or-deepseek-v4.1-flash", "local"]
+      - main-lite: ["cheap", "local"]
+      - or-deepseek-v4-pro: ["local"]
+      - or-deepseek-v4.1-flash: ["local"]
       - cheap: ["local"]
   resources:
     requests:
