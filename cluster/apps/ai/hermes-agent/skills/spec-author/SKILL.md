@@ -1,7 +1,7 @@
 ---
 name: spec-author
 description: Size work as small, medium or big, then run the spec, plan and execution phases with the owner's approval between them. Use for any request that adds, changes or removes behaviour in the owner's repositories.
-version: 1.1.0
+version: 1.1.1
 author: mmalyska
 metadata:
   hermes:
@@ -26,9 +26,10 @@ through kanban cards. It never implements work itself and does not use `claude-p
   path (`rm /tmp/x` is refused too) or with `-r`, and never run inline scripts with `-c` or `-e` (`python -c`, `node -e`, `bash -c`). Remove a worktree with `git worktree remove --force`
   and then `git worktree prune`; delete a single file with `cd <its directory> && rm -f <name>`; write a script to a file and run the file. Never delete a repository clone: if one
   is broken, stop and say so.
-- When an execution-phase worker fails due to branch management (e.g. branch already exists, force-update needed), first check `git branch -a` and `git remote update origin --prune` to verify the state. If the branch exists locally but not in remote, inform the user and request cleanup/new branch name before force-resetting; only reset when the worker has clear, validated permission.
-
-- When an execution-phase task reports missing required files (e.g., `requirements.in` or specific headers) for native tooling reproduction, instruct the worker to create a representative fixture or temporary mock to demonstrate the toolchain's behavior, rather than blocking the task indefinitely. Validate the feasibility using this reproduction.
+- When a worker card fails on a branch that already exists, check with `git ls-remote origin refs/heads/<branch>`. A branch that exists only locally is a
+  leftover: `implement-task` resets it with `git worktree add -B`, so retry the card. A pushed branch is real work: never reset it; continue on it or ask the owner.
+- When a feasibility task lacks input files (for example `requirements.in`), have the worker build a disposable fixture of real files and run the real tool on it.
+  Never accept a mock or stub of the tool's output as evidence: if the real tool cannot run, the card blocks.
 
 ## When to Use
 
@@ -143,25 +144,21 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
 ### While the work runs
 
 - Every card you create in the spec thread subscribes the thread, and the cards created from it copy the subscription. When a card blocks, finishes, gives up or crashes,
-  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. A notice for a human card you
-  have just created and blocked needs no reply.
+  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. Reply with exactly `[SILENT]` when the
+  notice needs nothing from you, such as a human card you have just created and blocked.
 - When the owner confirms in a Discord message that a human task is done, check it if you can. Then call `kanban_unblock` and `kanban_complete` on that card. If the tools refuse, tell the owner to close
   it with `/kanban` in Discord.
 - When a worker card is blocked with `needs_input`, read it with `kanban_show`, including its comments, where the worker puts its evidence. If the evidence is not there, say so in the spec thread and do not decide from the block reason alone. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer
   it, post the question in the spec thread and wait for the owner. Do not guess.
-
 - You never merge or approve implementation, spec or plan PRs. You run no deployments and no cluster changes. Anything that needs one is a human task.
 
 ## Pitfalls
 
 - Audit feasibility handoffs against each required exercise before accepting PASS. Read evidence comments with kanban_show and quote the actual commands/results before passing any gate or opening a PR; a worker summary is not evidence. An initial hashed compile is not evidence of update regeneration; require the source-derived native command and before/after version/hash diffs for every required update type. Never defer a required runtime/tool update proof without explicit current owner authorization. Correct unsupported PASS comments durably and stop downstream delivery when the owner requires a passing gate.
-
 - When the owner issues an H2-type revision decision that changes the strategy, keep the full decision text in spec.md only — it is the single source of truth. plan.md and tasks.md point to it with a short reference (e.g. "see spec.md#owner-h2-decision"), never duplicate the full block. Likewise, evidence from worker cards stays in kanban comments; do not copy verbatim extraction output into plan or tasks files.
-
 - A phase that starts without the owner's Discord message, or on an unmerged PR, is a mistake. Stop and say so.
 - Do not lower the size yourself, and do not skip the spec because the change looks small.
 - Do not decide for the owner during the spec. Record the question instead.
-
 - When a follow-on task (e.g. T3) continues on the same branch as its predecessor (T2), use "adds commits and pushes" in the Done section, not "amends and pushes." Amending would rewrite the T2 commit SHA that evidence comments reference; the T2 SHA must survive so T3's evidence chain is auditable.
 
 ## Verification

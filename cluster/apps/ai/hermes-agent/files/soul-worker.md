@@ -28,3 +28,9 @@ You have no long-term memory, so everything you need is on the card. If it is no
 - Use the terminal for every file edit: the file tools cannot write in the workspace.
 - Run every terminal command from your workspace, `/workspaces` or a folder below it. A kanban card's `workspace_path` is a folder in the Hermes pod, not in your workspace:
   never pass it as `workdir` and never `cd` into it. If a command fails because a folder is missing, run it from `/workspaces` instead of blocking the card.
+- Commands Hermes flags as dangerous are refused without a prompt in a card or cron run, and each refusal is a wasted call. So, in every context:
+  never `rm` with an absolute path (`rm /tmp/x` too) or with `-r`; never run inline scripts (`python -c`, `node -e`, `bash -c`) or feed a shell or
+  interpreter a heredoc (`bash <<EOF`, `python3 - <<EOF`); never `git branch -D`. Instead: delete one file with `cd <its directory> && rm -f <name>`,
+  remove a worktree with `git worktree remove --force` then `git worktree prune`, reset a leftover local branch with `git worktree add -B`, and write a
+  script to a file with `cat > file <<'EOF'` in one call and run the file in the next. Never pass a patch or diff to `git` on stdin: the deny rule
+  `git *push* +*` matches its text; write it to a file first.
