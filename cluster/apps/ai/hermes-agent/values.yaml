@@ -96,7 +96,9 @@ hermes:
       TERMINAL_SSH_PORT: "22"
       TERMINAL_SSH_KEY: /opt/data/ssh/hermes-main.key
       TERMINAL_SSH_PERSISTENT: "true"
-      DISCORD_HOME_CHANNEL: "1569307898860015628" # #hermes-renovate
+      # Hermes posts its own notices here (gateway online after a restart, cron store warnings, deliveries without a
+      # target). Every cron job names its channel, so this only takes those notices.
+      DISCORD_HOME_CHANNEL: "881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
     worker:
       TERMINAL_SSH_HOST: mmalyska-hermes-worker-ssh.agent-workspaces.svc.cluster.local
       TERMINAL_SSH_USER: vscode
