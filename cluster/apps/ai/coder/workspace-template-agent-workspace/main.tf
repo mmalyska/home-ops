@@ -163,14 +163,14 @@ locals {
   env_secrets   = merge(local.extra_secrets, local.github_token ? { GITHUB_TOKEN = data.coder_parameter.github_token_ref.value } : {})
   env_names     = sort(keys(local.env_secrets))
   has_env       = length(local.env_secrets) > 0
-  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|KUBERNETES_.*|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY|GIT_USER_NAME|GIT_USER_EMAIL)$"
+  reserved_env  = "^(PATH|HOME|PWD|SHELL|USER|LOGNAME|IFS|BASH_ENV|ENV|TALOSCONFIG|KUBECACHEDIR|XDG_CACHE_HOME|NPM_CONFIG_CACHE|KUBERNETES_.*|LD_.*|CODER.*|SSH_.*|AUTHORIZED_KEY|GIT_USER_NAME|GIT_USER_EMAIL)$"
 
   # Variables copied for SSH sessions. sshd gives a login a fresh environment, so the startup script writes these
   # (when set) to a file that sshd reads (PermitUserEnvironment). kubectl's in-cluster configuration needs the
   # KUBERNETES_SERVICE_* pair: without it an SSH session falls back to localhost:8080 and gets "connection refused".
   ssh_env_names = concat(
     local.env_names,
-    ["TALOSCONFIG", "KUBECACHEDIR", "SSH_AUTH_SOCK"],
+    ["TALOSCONFIG", "KUBECACHEDIR", "XDG_CACHE_HOME", "NPM_CONFIG_CACHE", "SSH_AUTH_SOCK"],
     local.kubernetes_access ? ["KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT"] : [],
   )
 
@@ -216,6 +216,10 @@ resource "coder_agent" "main" {
       SSH_AUTH_SOCK = "${local.signing_dir}/agent.sock"
       # kubectl's discovery cache goes to the rebuildable /cache, not to ~/.kube on the backed-up home volume.
       KUBECACHEDIR = "/cache/kube"
+      # Tool caches go to the rebuildable /cache too: mise, uv, pre-commit, go-build and helm follow XDG_CACHE_HOME, npm
+      # (including npx) has its own variable. On the 5Gi home volume they filled it to 100% and were backed up for nothing.
+      XDG_CACHE_HOME   = "/cache/xdg"
+      NPM_CONFIG_CACHE = "/cache/npm"
     },
     # Talos: the mounted Secret holds a read-only (os:reader) talosconfig that Talos renews every few hours.
     # The config has no nodes list: pass --nodes.
