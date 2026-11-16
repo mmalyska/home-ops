@@ -1,0 +1,30 @@
+{
+  "task": {
+    "id": "t_0000aaaa",
+    "title": "T3 verify and hand off",
+    "status": "done",
+    "assignee": "worker"
+  },
+  "latest_summary": "Branch pushed, evidence in comment.",
+  "parents": [],
+  "children": [],
+  "comments": [
+    {
+      "author": "worker",
+      "body": "Started, reading the plan.",
+      "created_at": 1763300000
+    },
+    {
+      "author": "worker",
+      "body": "EVIDENCE\ncommit: 0123abcd\n- helm template: FAIL (missing value)\n",
+      "created_at": 1763300100
+    },
+    {
+      "author": "worker",
+      "body": "EVIDENCE\ncommit: 4567cdef\n- helm template: PASS\n- task lint:all: PASS\n- live sync: NOT RUN (needs the owner's merge)\n",
+      "created_at": 1763300200
+    }
+  ],
+  "events": [],
+  "runs": []
+}

@@ -1,0 +1,25 @@
+{
+  "task": {
+    "id": "t_0000eeee",
+    "title": "T2 implement",
+    "status": "done",
+    "assignee": "worker"
+  },
+  "latest_summary": "Done.",
+  "parents": [],
+  "children": [],
+  "comments": [
+    {
+      "author": "worker",
+      "body": "EVIDENCE\n- helm template: FAIL (render error)\n",
+      "created_at": 1763300600
+    },
+    {
+      "author": "default",
+      "body": "EVIDENCE\n- helm template: PASS (checked by the orchestrator)\n",
+      "created_at": 1763300700
+    }
+  ],
+  "events": [],
+  "runs": []
+}

@@ -1,0 +1,19 @@
+#!/bin/bash
+# Stands in for `hermes kanban show <id> --json`. For card <id> it prints the fixture next to this file:
+# <id>.json as JSON output, <id>.txt as non-JSON output (exit 0), <id>.crash on stderr with exit 1 (a CLI crash).
+dir=$(dirname "$0")
+if [ "$1 $2 $4" != "kanban show --json" ]; then
+  echo "fake-hermes: unexpected arguments: $*" >&2
+  exit 64
+fi
+if [ -f "$dir/$3.json" ]; then
+  cat "$dir/$3.json"
+elif [ -f "$dir/$3.txt" ]; then
+  cat "$dir/$3.txt"
+elif [ -f "$dir/$3.crash" ]; then
+  cat "$dir/$3.crash" >&2
+  exit 1
+else
+  echo "no such task: $3" >&2
+  exit 1
+fi

@@ -1,0 +1,3 @@
+Traceback (most recent call last):
+  File "/opt/hermes/hermes_cli/kanban.py", line 480, in _cmd_show
+sqlite3.OperationalError: database is locked

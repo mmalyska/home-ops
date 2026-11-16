@@ -103,6 +103,19 @@ orchestrator can read it:
 
 This applies to every card, including one that produces no branch, one that fails and one that blocks.
 
+That one evidence comment takes exactly this form, because a script in the Hermes pod reads it before the orchestrator may open a PR:
+
+```text
+EVIDENCE
+commit: <the last commit SHA you pushed, or none>
+- <check>: PASS
+- <check>: FAIL (<what failed>)
+- <check>: NOT RUN (<reason>)
+```
+
+The first line is the word `EVIDENCE` alone. Each check gets one line of the form `- <check>: <result>`, where the result is PASS, FAIL, NOT RUN or N/A. Only the latest such comment counts. A FAIL line
+stops the PR. Write PASS only for a check you ran and saw pass. Put the proving output line after the result, for example `- helm template: PASS (rendered 12 objects)`.
+
 On success, call `kanban_complete` with:
 
 - `summary`: what changed and why, in a few sentences.
@@ -129,4 +142,4 @@ When you need a decision or information that the card, spec, plan and repository
 
 ## Verification
 
-Before calling `kanban_complete` or `kanban_block`, confirm that the evidence is in a card comment or on the pushed branch, not only in a file in the workspace. Before `kanban_complete`, also confirm that the branch is on the remote (`git ls-remote --heads origin $BRANCH`), that every check has a result, that no secret value appears in the diff, and that the worktree is gone.
+Before calling `kanban_complete` or `kanban_block`, confirm that the evidence is in a card comment or on the pushed branch, not only in a file in the workspace. Before `kanban_complete`, also confirm that the `EVIDENCE` comment is posted, that the branch is on the remote (`git ls-remote --heads origin $BRANCH`), that every check has a result, that no secret value appears in the diff, and that the worktree is gone.

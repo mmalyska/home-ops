@@ -22,6 +22,9 @@ One convention for every harness. A plan is a folder, `.plans/<slug>/`, written 
 
 A spec can be reviewed before its plan exists: the folder then holds `spec.md` alone, with no front matter and no row in the index. Adding the plan adds `plan.md` with its front matter, `tasks.md` and the row.
 
+A plan with `profile: QUICK` is the one exception to `tasks.md`: Hermes' `spec-author` QUICK path ships a small change and its plan in one PR,
+so the folder holds `plan.md` alone (front matter and index row as usual) and is archived after that PR merges.
+
 ## Front matter of `plan.md`
 
 Every field is required and non-empty. The index row repeats status, owner, profile and topology, branch, started and updated, and `check-plans` fails when they differ.
