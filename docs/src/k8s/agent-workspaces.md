@@ -66,9 +66,19 @@ the workspaces cannot reach each other. That keeps the split between pushing (`a
 approving (`rudi-the-brain`, a code owner) enforced by GitHub: the ruleset needs a code-owner approval of the latest push,
 and the worker, which reads most of the untrusted text (diffs, changelogs, CI logs), never holds the token that can give
 it. The Hermes command deny lists are a policy, not a sandbox, so one shared workspace (a worktree per profile) would let
-the worker use the other token. A shared handoff volume was also weighed and not adopted. The cost is that the profiles
-cannot read each other's files: the worker hands back evidence in kanban comments and code on a pushed branch
-(`implement-task` skill, "Hand back"). Owner decision 2026-11-16, plan decision P17 in `.plans/hermes-orchestration/plan.md`.
+the worker use the other token. The cost is that the profiles cannot read each other's files: the worker hands back
+evidence in kanban comments and code on a pushed branch (`implement-task` skill, "Hand back"). Owner decision 2026-11-16,
+plan decision P17 in `.plans/hermes-orchestration/plan.md`.
+
+**Why no shared handoff volume.** A volume mounted in both workspaces was the middle option, and it is feasible: the
+CephFS StorageClass `ceph-filesystem` serves ReadWriteMany, while the workspace PVCs today are ReadWriteOnce on
+`ceph-block`. It keeps the tokens apart, so isolation of credentials is unchanged. It does not reduce the blast radius,
+it widens it: anything the worker writes there is untrusted text that `default` reads and may act on, a second
+prompt-injection path next to the card comments. Handoff would be easier only for large outputs. It saves only the tokens
+of the evidence comments, which the 40-line cap in `implement-task` already keeps small. In return it adds a mount to the
+workspace template and a cleanup job to maintain. A volume the worker writes and `default` mounts read-only is
+reconsidered only if TODO sub-item 2 (context cost per call, PR #6321) shows that evidence comments are a large share of
+the input tokens.
 
 - **Network.** The namespace has an ingress deny-all. `allow-ssh-from-agents` opens port 2222 of the workspace pods to the
   pods listed in `sshClients` (values.yaml): the Hermes pod (`app=hermes-agent`) in `hermes-agent`. Nothing else reaches it.
