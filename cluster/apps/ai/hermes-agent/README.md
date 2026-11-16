@@ -130,8 +130,12 @@ Kanban tools are opt-in per platform: the `default` overlay turns them on for Di
 Those cards can show, create and complete cards, but not list or unblock them; that is left to a cron or Discord session.
 The Renovate run uses its own board, `renovate`.
 
-No session is told when a card blocks or finishes, because `auto_subscribe_on_create` is off. The script-only job `kanban-post` (every 10 minutes, no model) posts each blocked and each finished card of every board except `renovate` to `#hermes`, once: the block reason, or the start of the result.
-It does not wake the agent. To get a blocked card of a spec-driven piece of work moving, reply in its spec thread, and `default` reads the card and answers it or asks you. Its first run records the done cards already on the boards without posting them.
+`kanban.auto_subscribe_on_create` is on for `default`. A card created from a Discord chat subscribes that chat, thread included, and the cards created from it copy the subscription.
+When such a card blocks, finishes, gives up or crashes, Hermes posts a short notice in that thread and wakes the agent there, with the thread's context. Spec-driven work runs
+this way: every card of the execution phase reports back in its spec thread. Cards started by cron or by the dispatcher have no chat, so they post nothing. Hermes has no per-board
+switch for this (checked in v0.23.1 and upstream `main` on 2026-11-16).
+Jobs removed from `hermes.cronJobs` stay in Hermes until they are listed in `hermes.retiredCronJobs`, which the cron seeder deletes at start (today `kanban-post`, the earlier
+script that posted these notices in `#hermes`).
 
 ### Command policy
 
@@ -176,7 +180,9 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
 | Job `renovate-cleanup`, 05:30             | script only, no model   | Archives done cards older than 14 days; posts only if it fails                                                            |
 
-`kanban.auto_subscribe_on_create` is off for `default`, so a card created from a Discord reply, such as a merge card, posts no done notice and does not wake the agent. Two script jobs post about cards instead: `renovate-post` for the `renovate` board, and `kanban-post` for every other board (see [Kanban wiring](#kanban-wiring)).
+The daily run is started by cron, so its cards post no notices; `renovate-post` posts the summaries and merge reports. A card created from an owner's reply in `#hermes-renovate`
+(`merge`, `fix`) posts a short notice in that thread when it, or a card created from it, finishes or blocks, and the agent answers in one line at most. Start a manual run with
+`hermes cron run renovate-daily`, not from a Discord message, or every card of the run reports back in the chat.
 
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
 means the run failed or a check is stuck: look at the `renovate` board.

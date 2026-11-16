@@ -111,6 +111,10 @@ hermes:
   # Scheduled jobs of the default profile, created at pod start and replaced when their definition here changes
   # (a paused job stays paused). A job with `script` runs that script from files/scripts/ with no model.
   # `hermes cron pause` survives a restart; merge_enabled in the merge policy is what turns merging on.
+  # Jobs once declared in cronJobs and since removed: the cron seeder deletes them at start. A job left out of cronJobs
+  # is otherwise kept as it is.
+  retiredCronJobs:
+    - kanban-post
   cronJobs:
     - name: renovate-daily
       schedule: "0 6 * * *"
@@ -131,13 +135,6 @@ hermes:
       timezone: Europe/Warsaw
       script: renovate-cleanup.sh
       deliver: "discord:1569307898860015628" # #hermes-renovate
-    # Script only, no model: posts each blocked or finished card of every other board once, so a worker card of a
-    # spec-driven piece of work that blocks is seen. auto_subscribe_on_create is off, so nothing else reports it.
-    - name: kanban-post
-      schedule: "*/10 * * * *"
-      timezone: Europe/Warsaw
-      script: kanban-post.sh
-      deliver: "discord:881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
     # Weekly: the script lists Hermes' own edits to the skills seeded from git; the skill opens one PR with them. No
     # edit, no output: Hermes then skips the model run.
     - name: skill-sync
@@ -206,11 +203,11 @@ hermes:
           - worker
           - default
         max_in_progress_per_profile: 2
-        # A Discord session that creates a card would subscribe its channel to it, and the cards created from that
-        # card inherit the subscription: each done card then posts a short notice and wakes the agent. renovate-post
-        # already posts the full summaries and merge reports, so no session subscribes itself. kanban-post reports blocked
-        # and finished cards of the other boards in #hermes instead.
-        auto_subscribe_on_create: false
+        # A card created from a Discord chat subscribes that chat (thread included) to its terminal events, and the cards
+        # created from it copy the subscription: a block or a finished card posts in that thread and wakes the agent there.
+        # Cards started by cron or by the dispatcher have no chat, so the daily Renovate run posts nothing this way;
+        # renovate-post posts its summaries. No per-board switch exists (checked v0.23.1 and upstream main, 2026-11-16).
+        auto_subscribe_on_create: true
       # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
       # the `discord` set for create_thread; the admin set stays disabled.
       platform_toolsets:

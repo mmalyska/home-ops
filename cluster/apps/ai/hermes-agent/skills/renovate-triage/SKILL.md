@@ -228,6 +228,12 @@ Tell the owner it is closed. If the PR updates a group of dependencies, add that
 2. For each one, call `kanban_unblock(board="renovate", task_id=<id>)` and then `kanban_complete(board="renovate", task_id=<id>, summary="The owner resumed auto-merge.")`.
 3. Tell the owner auto-merge is resumed there. Do not touch the revert PR. Hermes never merges a revert.
 
+### Card notices
+
+A card you create in Part B subscribes this chat, so Hermes posts a short notice here and wakes you when that card, or a card created from it, finishes or blocks. `renovate-post`
+already posts the merge report. On such a wake, reply in one line at most: nothing more for a card that finished, or what went wrong for one that blocked, gave up or crashed.
+Do not repeat the report.
+
 ## Pitfalls
 
 - A merge never happens in this session: Part B creates a merge card, and the `renovate-merge` skill on that card re-checks the gates and merges.

@@ -325,6 +325,9 @@ spec:
                           current = {j.get('name'): j for j in json.load(f).get('jobs', [])}
                   except FileNotFoundError:
                       current = {}
+                  for name in json.loads(os.environ.get('RETIRED_CRON_JOBS') or '[]'):
+                      if name in current:
+                          print(f"{'removed' if run(['remove', current[name]['id']]) else 'could not remove'}: {name}")
                   for job in json.loads(os.environ['CRON_JOBS']):
                       existing = current.get(job['name'])
                       if existing and same(existing, job):
@@ -358,6 +361,8 @@ spec:
               value: /opt/data
             - name: CRON_JOBS
               value: {{ .Values.hermes.cronJobs | toJson | quote }}
+            - name: RETIRED_CRON_JOBS
+              value: {{ .Values.hermes.retiredCronJobs | default list | toJson | quote }}
           volumeMounts:
             - name: data
               mountPath: /opt/data
