@@ -1,7 +1,7 @@
 ---
 name: spec-author
 description: Size work as small, medium or big, then run the spec, plan and execution phases with the owner's approval between them. Use for any request that adds, changes or removes behaviour in the owner's repositories.
-version: 1.0.0
+version: 1.1.0
 author: mmalyska
 metadata:
   hermes:
@@ -26,6 +26,9 @@ through kanban cards. It never implements work itself and does not use `claude-p
   path (`rm /tmp/x` is refused too) or with `-r`, and never run inline scripts with `-c` or `-e` (`python -c`, `node -e`, `bash -c`). Remove a worktree with `git worktree remove --force`
   and then `git worktree prune`; delete a single file with `cd <its directory> && rm -f <name>`; write a script to a file and run the file. Never delete a repository clone: if one
   is broken, stop and say so.
+- When an execution-phase worker fails due to branch management (e.g. branch already exists, force-update needed), first check `git branch -a` and `git remote update origin --prune` to verify the state. If the branch exists locally but not in remote, inform the user and request cleanup/new branch name before force-resetting; only reset when the worker has clear, validated permission.
+
+- When an execution-phase task reports missing required files (e.g., `requirements.in` or specific headers) for native tooling reproduction, instruct the worker to create a representative fixture or temporary mock to demonstrate the toolchain's behavior, rather than blocking the task indefinitely. Validate the feasibility using this reproduction.
 
 ## When to Use
 
@@ -131,30 +134,35 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
 - `body`: everything the worker needs, because it has no memory. Include the repository (`mmalyska/<repo>`), the base branch, the branch name to use, the task text copied from `tasks.md`, links to the
   merged spec and plan files on the default branch, the files in scope, the checks to run, what "done" means, and what it must not touch. Never include secret values.
 - `idempotency_key`: `<slug>-<task-id>`, so a retry never makes a duplicate.
-- Leave `completion_contract` unset. Implementation workers push a branch and do not open a PR, subject to stricter repository delivery rules. Evidence-only feasibility tasks need no production
+- Leave `completion_contract` unset. Implementation workers push a branch, post the commit SHA and evidence as card comments, and do not open a PR. Workers run in separate Coder workspaces so uncommitted edits cannot cross between them; the pushed branch is safe for the conductor to review. Evidence-only feasibility tasks need no production
   edits, commits or push: require sanitized commands, exact versions and PASS, FAIL or NOT RUN results instead, posted as card comments.
 - Evidence comes back in the card's comments and summary, or on the pushed branch. You cannot read files in the worker's workspace, so never ask for a handoff file there. If a task in `tasks.md` asks for
   one, write in the body that its content goes in a card comment instead.
+- When a worker completes a card with a branch, read the commits from the pushed branch and verify the check results. Then open the implementation PR yourself as `rudi-the-brain` with `gh pr create`, so that the owner is the only possible approver. Add the label `triage/owner`, put the check results in the PR body, and post the link in the spec thread. You never open a PR from an uncommitted or unpushed worker handoff.
 
 ### While the work runs
 
 - Every card you create in the spec thread subscribes the thread, and the cards created from it copy the subscription. When a card blocks, finishes, gives up or crashes,
-  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. Reply with exactly `[SILENT]` when the
-  notice needs nothing from you, such as a human card you have just created and blocked.
+  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. A notice for a human card you
+  have just created and blocked needs no reply.
 - When the owner confirms in a Discord message that a human task is done, check it if you can. Then call `kanban_unblock` and `kanban_complete` on that card. If the tools refuse, tell the owner to close
   it with `/kanban` in Discord.
 - When a worker card is blocked with `needs_input`, read it with `kanban_show`, including its comments, where the worker puts its evidence. If the evidence is not there, say so in the spec thread and do not decide from the block reason alone. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer
   it, post the question in the spec thread and wait for the owner. Do not guess.
-- When a worker completes a card with a branch, read the commits and the check results. Then open the implementation PR yourself as `rudi-the-brain` with `gh pr create`, so that the owner is the only
-  possible approver. Add the label `triage/owner`, put the check results in the PR body, and post the link in the spec thread.
+
 - You never merge or approve implementation, spec or plan PRs. You run no deployments and no cluster changes. Anything that needs one is a human task.
 
 ## Pitfalls
 
+- Audit feasibility handoffs against each required exercise before accepting PASS. Read evidence comments with kanban_show and quote the actual commands/results before passing any gate or opening a PR; a worker summary is not evidence. An initial hashed compile is not evidence of update regeneration; require the source-derived native command and before/after version/hash diffs for every required update type. Never defer a required runtime/tool update proof without explicit current owner authorization. Correct unsupported PASS comments durably and stop downstream delivery when the owner requires a passing gate.
+
+- When the owner issues an H2-type revision decision that changes the strategy, keep the full decision text in spec.md only — it is the single source of truth. plan.md and tasks.md point to it with a short reference (e.g. "see spec.md#owner-h2-decision"), never duplicate the full block. Likewise, evidence from worker cards stays in kanban comments; do not copy verbatim extraction output into plan or tasks files.
+
 - A phase that starts without the owner's Discord message, or on an unmerged PR, is a mistake. Stop and say so.
-- Do not use `claude-plugins` or read it for workflow.
 - Do not lower the size yourself, and do not skip the spec because the change looks small.
 - Do not decide for the owner during the spec. Record the question instead.
+
+- When a follow-on task (e.g. T3) continues on the same branch as its predecessor (T2), use "adds commits and pushes" in the Done section, not "amends and pushes." Amending would rewrite the T2 commit SHA that evidence comments reference; the T2 SHA must survive so T3's evidence chain is auditable.
 
 ## Verification
 
