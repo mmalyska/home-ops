@@ -68,7 +68,7 @@ possibly `CONFLICT` and `NOT SEEDED` lines. If the block says "Script Error" ins
    `/tmp/skill-sync-<date>.sha256` and run `sha256sum -c` on it in the worktree. Every line must say `OK`. If one does
    not, the patch was not copied exactly: do step 8, report it and open no PR.
 7. Commit with `chore(hermes): sync Hermes' own skill edits (<date>)`, push the branch over HTTPS, and open the PR with
-   `gh pr create --label triage/owner`. In the body, for each file: its path, the profile, and one or two sentences on
+   `GATE_CARDS=none gh pr create --label triage/owner` (the pod's gate check refuses a PR command without `GATE_CARDS`). In the body, for each file: its path, the profile, and one or two sentences on
    what the edit changes and why it helps, from the diff. Add the `CONFLICT` and `NOT SEEDED` lines, if any, under
    "Not in this PR". End the body with: merging changes the skills ConfigMap, so Argo CD restarts the Hermes pod.
 8. Clean up, also after any stop from step 4 on: `git -C /workspaces/repos/home-ops worktree remove --force .worktrees/chore/hermes-skill-sync-<date>`

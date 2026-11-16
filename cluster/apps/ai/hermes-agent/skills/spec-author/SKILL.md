@@ -1,7 +1,7 @@
 ---
 name: spec-author
-description: Size work as small, medium or big, then run the spec, plan and execution phases with the owner's approval between them. Use for any request that adds, changes or removes behaviour in the owner's repositories.
-version: 1.1.1
+description: Size work as small, quick, medium or big, then run the spec, plan and execution phases with the owner's approval between them. Use for any request that adds, changes or removes behaviour in the owner's repositories.
+version: 1.2.0
 author: mmalyska
 metadata:
   hermes:
@@ -39,11 +39,12 @@ Load this skill when the owner asks for any work that changes a repository, or w
 
 Do this before anything else, and tell the owner two things in your first reply: the size you chose and why.
 
-| Size   | When                 | Documents                            |
-| ------ | -------------------- | ------------------------------------ |
-| Small  | Not medium or big    | None; the owner's request and the PR |
-| Medium | Needs a durable plan | Plan PR, with a Requirements section |
-| Big    | Any trigger below    | Spec PR, then plan PR                |
+| Size   | When                                                         | Documents                                   |
+| ------ | ------------------------------------------------------------ | ------------------------------------------- |
+| Small  | Not medium or big                                            | None; the owner's request and the PR        |
+| Quick  | Medium or big, fits "Quick path", and the owner agreed to it | One `plan.md`, in the same PR as the change |
+| Medium | Needs a durable plan                                         | Plan PR, with a Requirements section        |
+| Big    | Any trigger below                                            | Spec PR, then plan PR                       |
 
 The work is big if any one of these five triggers is true. Size in lines or files is never a trigger.
 
@@ -56,14 +57,59 @@ The work is big if any one of these five triggers is true. Size in lines or file
 Size rules:
 
 - The owner can raise the size at any time. Do it when asked.
-- Only the owner's word can lower the size. Never lower it yourself.
+- Only the owner's word can lower the size. Never lower it yourself. Quick is lower than medium or big: you may propose it, but never start it without the owner's agreement.
 - If a trigger appears during the work, stop. Write the spec from what is known (phase 1), and wait for the owner's approval. A spec once written stays, even if the work later looks smaller.
 
 What each size does:
 
 - Small: go straight from the owner's request to an implementation PR. Create one kanban card for the worker (see "Cards for the worker") and, when the worker hands back, open the PR yourself. The owner merges it.
+- Quick: only after the owner agreed, follow "Quick path" below instead of the phases.
 - Medium: start at phase 2 from the owner's request, with a Requirements section in the plan.
 - Big: run all three phases below in order.
+
+## Quick path
+
+The full phases cost far more than a small change needs: every document is read back on each turn and the owner reviews each PR. You may propose this path for medium or big work only when all of these hold:
+
+- The change is about 200 changed lines or fewer, not counting the plan file and generated or lock files.
+- It adds no permission, policy or automation: trigger 2 is false (no new automation, agent, scheduled job, service, permission or policy).
+- One repository, one PR, one session, nothing hard to undo: triggers 3, 4 and 5 are false. Only trigger 1 may be true, and its decisions are settled in the thread and recorded in the plan.
+- It does not touch runtime or the cluster: no files whose merge deploys (in `home-ops`: `cluster/`, `provision/`, Terraform), and no step that changes live state (cluster, Talos, Terraform, Bitwarden, external
+  settings).
+
+In your first reply, give the size the triggers call for, say that the work fits the Quick path and why, and ask the owner whether to take it. Start it only on the owner's yes in Discord; otherwise run the full phases.
+The owner can ask for the full phases at any time.
+
+Stop the Quick path, tell the owner and go back to the full phases when any of these appear: the estimate passes about 200 lines; trigger 2, 3, 4 or 5; anything that touches runtime or the cluster.
+Use what you have written as the start of the spec. Only the owner's word can take the work back to Quick.
+
+1. Open one Discord thread in `#hermes`, as in phase 1. Ask questions and record the owner's decisions. Never fill a gap yourself.
+2. Create the implementation worktree and branch (`feat/`, `fix/` or `chore/<slug>`) from the default branch, as in phase 1. Write `.plans/<slug>/plan.md`, at most 80 lines, with these parts:
+   - front matter with `profile: QUICK` and `topology: HANDOFF`;
+   - goal;
+   - the owner's decisions;
+   - files in scope;
+   - at most three self-contained tasks;
+   - checks;
+   - human tasks.
+
+   Write no `spec.md` or `tasks.md`. Add the row in `.plans/list.md`. If the repository has no rule for a QUICK plan, follow its plan rules.
+
+3. Run the repository's checks, commit and push. Post the link to `plan.md` on the branch, with the commit SHA, in the thread. Open no PR yet.
+4. Wait for the owner's Discord message approving the plan. On changes, revise, push and ask again. On this path that approval, naming the plan's commit, takes the place of a merged plan PR.
+   The owner's decisions live in `plan.md`; the rule that keeps decision text in `spec.md` applies to the full phases.
+5. Create the worker cards as in "Cards for the worker", on the same branch, with these differences:
+   - the task text comes from `plan.md`, and the body links `plan.md` on the branch at the approved commit, not files on the default branch;
+   - a human card only for unconditional work the change cannot be done without, and none for the owner's merge;
+   - no conditional human or owner-decision cards ("if T1 fails, the owner decides"). When a card fails, the worker blocks it and you ask the owner in the thread.
+6. When the cards are done, open one PR with the plan and the change, as in "Opening a PR". Keep the body to 25 lines or fewer:
+   - what changes and why, linking `plan.md`;
+   - each check as PASS, FAIL or NOT RUN;
+   - the human tasks left after the merge.
+
+   Then set `pr` in `plan.md` and the index, and push.
+
+7. Stop. The owner reviews and merges. Post-merge human tasks and archiving the plan follow the repository's rules.
 
 ## Phase 1: spec
 
@@ -80,7 +126,7 @@ The owner leads. You assist and you do not decide.
    `.plans/list.md`. Layout rules are in the repository's `.plans/README.md`.
 6. Name references, never the private domain, Bitwarden identifiers or secret values.
 7. Run the repository's own checks (see its `AGENTS.md`) and report each as PASS, FAIL or NOT RUN with the reason.
-8. Commit, push the branch over HTTPS, and open the PR with `gh pr create`. Add the label `triage/owner`. Post the PR link in the spec thread.
+8. Commit, push the branch over HTTPS, and open the PR with `GATE_CARDS=none gh pr create` (see "Opening a PR"). Add the label `triage/owner`. Post the PR link in the spec thread.
 9. Stop. The owner reviews and merges. You never merge or approve spec PRs.
 
 ## Phase 2: plan
@@ -102,7 +148,7 @@ Then:
 4. In `tasks.md`, mark every task that only a person can do, including any cluster change that is not a merged PR. State its trigger, dependencies, confirmation evidence and exactly which work it blocks. Distinguish unconditional approval gates from conditional prerequisite/recovery tasks; a hypothetical failure must not become an unconditional blocker.
    - When an integration's feasibility is unproven, put a bounded evidence task before implementation. Require the actual update/regeneration path, not merely config validation or documentation. If only merged configuration can show that path (for example a bot that reads its config from the default branch), prove what can be proven before the merge and move the real proof to a post-merge observation task. Define an owner decision gate if the approved approach needs external changes; do not authorize another repository or a substitute strategy implicitly.
    - Separate local acceptance from post-merge observation. For evidence dependent on a future scheduled event, define a bounded read-only check and a pending handoff; absence of an eligible event is not permission to manufacture one or poll indefinitely.
-5. Run the repository's checks, including `.agents/bin/check-plans` if the repository has it, then commit, push and open the PR with the label `triage/owner`. After GitHub assigns the PR number, update the plan front matter and index together when the repository requires it, rerun checks, commit normally and push the metadata follow-up. Keep the merged spec unchanged unless the owner explicitly requests a requirements revision.
+5. Run the repository's checks, including `.agents/bin/check-plans` if the repository has it, then commit, push and open the PR with `GATE_CARDS=none gh pr create` and the label `triage/owner`. After GitHub assigns the PR number, update the plan front matter and index together when the repository requires it, rerun checks, commit normally and push the metadata follow-up. Keep the merged spec unchanged unless the owner explicitly requests a requirements revision.
 6. Verify the remote branch contains the final local commit before reporting checks for that revision; an immediately queried PR may still show its previous head. Report pending CI separately from successful local checks.
 7. Stop. The owner verifies and merges. Medium work is the same, starting from the owner's request with no spec.
 
@@ -139,7 +185,7 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
   edits, commits or push: require sanitized commands, exact versions and PASS, FAIL or NOT RUN results instead, posted as card comments.
 - Evidence comes back in the card's comments and summary, or on the pushed branch. You cannot read files in the worker's workspace, so never ask for a handoff file there. If a task in `tasks.md` asks for
   one, write in the body that its content goes in a card comment instead.
-- When a worker completes a card with a branch, read the commits from the pushed branch and verify the check results. Then open the implementation PR yourself as `rudi-the-brain` with `gh pr create`, so that the owner is the only possible approver. Add the label `triage/owner`, put the check results in the PR body, and post the link in the spec thread. You never open a PR from an uncommitted or unpushed worker handoff.
+- When a worker completes a card with a branch, read the commits from the pushed branch and verify the check results. Then open the implementation PR yourself as `rudi-the-brain`, as in "Opening a PR", so that the owner is the only possible approver. Add the label `triage/owner`, put the check results in the PR body, and post the link in the spec thread. You never open a PR from an uncommitted or unpushed worker handoff.
 
 ### While the work runs
 
@@ -155,14 +201,36 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
   it, post the question in the spec thread and wait for the owner. Do not guess.
 - You never merge or approve implementation, spec or plan PRs. You run no deployments and no cluster changes. Anything that needs one is a human task.
 
+## Opening a PR
+
+Every PR you open passes a gate check that runs in the Hermes pod (`pr-gate-check`). Open a PR only with exactly one plain `gh pr create` command whose leading assignment is `GATE_CARDS`:
+
+- Implementation PRs: `GATE_CARDS="<card id> <card id>" gh pr create ...`, naming every worker card whose work is in the PR. A human card a worker card depends on is its parent, so the worker card is
+  not done before it.
+- Spec, plan and skill-sync PRs: `GATE_CARDS=none gh pr create ...`.
+
+Write `GATE_CARDS` nowhere else: not in a comment, another command or the PR text. Write the PR body to a file first and pass `--body-file`. Other ways to create a PR (`gh api`, GraphQL, `curl`) are refused.
+A gate card passes when it is `done` and its latest comment whose first line is `EVIDENCE` was written by the worker and has at least one `PASS` line and no `FAIL` line:
+
+```text
+EVIDENCE
+commit: <sha>
+- <check>: PASS
+- <check>: NOT RUN (<reason>)
+```
+
+Only the worker's comment counts, so never write one yourself.
+If the check refuses the PR, it names the card and the reason. Do not retry with other cards or with `none`. Fix the cause: ask the worker for the evidence, or wait for the owner. Then tell the thread.
+
 ## Pitfalls
 
 - Audit feasibility handoffs against each required exercise before accepting PASS. Read evidence comments with kanban_show and quote the actual commands/results before passing any gate or opening a PR; a worker summary is not evidence. An initial hashed compile is not evidence of update regeneration; require the source-derived native command and before/after version/hash diffs for every required update type. Never defer a required runtime/tool update proof without explicit current owner authorization. Correct unsupported PASS comments durably and stop downstream delivery when the owner requires a passing gate.
 - When the owner issues an H2-type revision decision that changes the strategy, keep the full decision text in spec.md only — it is the single source of truth. plan.md and tasks.md point to it with a short reference (e.g. "see spec.md#owner-h2-decision"), never duplicate the full block. Likewise, evidence from worker cards stays in kanban comments; do not copy verbatim extraction output into plan or tasks files.
-- A phase that starts without the owner's Discord message, or on an unmerged PR, is a mistake. Stop and say so.
-- Do not lower the size yourself, and do not skip the spec because the change looks small.
+- A phase that starts without the owner's Discord message, or on an unmerged PR, is a mistake. Stop and say so. On the Quick path the owner's approval of the plan commit is the gate.
+- Do not lower the size yourself, and do not skip the spec because the change looks small. Only the owner's yes moves work onto the Quick path.
 - Do not decide for the owner during the spec. Record the question instead.
 - When a follow-on task (e.g. T3) continues on the same branch as its predecessor (T2), use "adds commits and pushes" in the Done section, not "amends and pushes." Amending would rewrite the T2 commit SHA that evidence comments reference; the T2 SHA must survive so T3's evidence chain is auditable.
+- A PR opened before its gate cards are done is a mistake (#6311). The gate check exists because a written rule did not stop it.
 
 ## Verification
 

@@ -288,6 +288,19 @@ hermes:
           - "kubectl * patch *"
           - "kubectl exec*"
           - "kubectl * exec *"
+      # Runs in the pod before every terminal command of this profile. A PR may be opened only by one plain gh pr create
+      # whose leading assignment is GATE_CARDS: none, or worker cards that are done with the worker's EVIDENCE comment.
+      # The terminal is the Coder workspace, which cannot read the board, so the check runs here.
+      # A crash or timeout blocks the command (fail_closed). The config is seeded from git, so this holds even when Hermes
+      # keeps its own edits of the spec-author skill. Script: files/scripts/pr-gate-check.py.
+      hooks:
+        pre_tool_call:
+          - matcher: terminal
+            command: /opt/data/scripts/pr-gate-check.py --hook
+            timeout: 120
+            fail_closed: true
+      # Shell hooks need consent; a gateway has no prompt, so the hooks above are accepted from this file.
+      hooks_auto_accept: true
     worker:
       model:
         provider: custom

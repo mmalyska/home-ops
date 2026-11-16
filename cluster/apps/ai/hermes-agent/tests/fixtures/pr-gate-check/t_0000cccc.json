@@ -1,0 +1,20 @@
+{
+  "task": {
+    "id": "t_0000cccc",
+    "title": "H2 owner approves the plan revision",
+    "status": "blocked",
+    "assignee": "default"
+  },
+  "latest_summary": null,
+  "parents": [],
+  "children": [],
+  "comments": [
+    {
+      "author": "default",
+      "body": "EVIDENCE\n- owner approval: PASS (Discord message)\n",
+      "created_at": 1763300400
+    }
+  ],
+  "events": [],
+  "runs": []
+}

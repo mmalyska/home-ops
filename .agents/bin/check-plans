@@ -136,7 +136,10 @@ if [ -d "$PLANS" ]; then
     SLUG_DIR[$slug]=1
     [[ "$slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || err "$PLANS/$slug" "folder name is not a lowercase kebab-case slug"
     if [ -f "$PLANS/$slug/plan.md" ]; then
-      [ -f "$PLANS/$slug/tasks.md" ] || err "$PLANS/$slug" "tasks.md is missing"
+      # A QUICK plan (Hermes spec-author, one PR for plan and change) is one file: plan.md without tasks.md.
+      if [ ! -f "$PLANS/$slug/tasks.md" ] && [ "$(fm_get "$PLANS/$slug/plan.md" profile)" != QUICK ]; then
+        err "$PLANS/$slug" "tasks.md is missing (only a plan with profile QUICK may omit it)"
+      fi
       check_front_matter "$PLANS/$slug/plan.md" "$PLANS/$slug/plan.md"
       st="$(fm_get "$PLANS/$slug/plan.md" status)"
       if in_list "$st" "$TERMINAL"; then warn "$PLANS/$slug/plan.md" "status '$st': archive the plan (see .plans/README.md)"; fi

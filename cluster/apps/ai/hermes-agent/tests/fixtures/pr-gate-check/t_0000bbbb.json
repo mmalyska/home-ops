@@ -1,0 +1,20 @@
+{
+  "task": {
+    "id": "t_0000bbbb",
+    "title": "T2 implement",
+    "status": "done",
+    "assignee": "worker"
+  },
+  "latest_summary": "Done, all checks pass.",
+  "parents": [],
+  "children": [],
+  "comments": [
+    {
+      "author": "worker",
+      "body": "helm template PASS, lint PASS. Branch pushed.",
+      "created_at": 1763300300
+    }
+  ],
+  "events": [],
+  "runs": []
+}

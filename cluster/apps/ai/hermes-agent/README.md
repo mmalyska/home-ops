@@ -235,6 +235,44 @@ message from the owner's Discord account after the earlier PR is merged on the d
 2. **Plan.** Hermes builds `plan.md` and `tasks.md` from the merged spec in a PR.
 3. **Execution.** Hermes turns the tasks into kanban cards, posts every human task at once and drives the rest through the `worker`. The implementation PR goes to the owner.
 
+**Quick path.** Hermes may propose it for medium or big work of about 200 changed lines or fewer, in one repository, one PR and one session. The work must add no permission,
+policy or automation, be nothing hard to undo, and not touch runtime or the cluster (no files whose merge deploys, no live-state step). It starts only on the owner's yes, because it
+lowers the size. Hermes writes a single `.plans/<slug>/plan.md` (`profile: QUICK`, at most 80 lines, no `tasks.md`; `check-plans` accepts that) on the implementation branch and
+waits for the owner's Discord approval. Then the worker implements on the same branch, and Hermes opens one PR with the plan and the change, its body 25 lines at most. There are
+no conditional human cards, and the owner still merges. If the change grows or one of those conditions appears, Hermes stops and returns to the full phases.
+
+### PR gate check
+
+A written rule did not stop PR #6311, which was opened before its verification card had finished. So the `default` profile has a `pre_tool_call` shell hook, `hooks` in its overlay.
+The hook runs `files/scripts/pr-gate-check.py --hook` in the pod before every terminal command. The terminal itself runs in the Coder workspace, which has no `hermes` command and no
+board, so the check cannot run there.
+
+The hook lets a PR through only from exactly one plain `gh pr create` whose leading assignment is `GATE_CARDS`. That is `GATE_CARDS=none` for spec, plan and skill-sync PRs, or
+`GATE_CARDS="<worker card id> …"` for an implementation PR. It refuses:
+
+- `GATE_CARDS` anywhere else (an earlier command, an `export`, a comment, the PR text) or more than once;
+- a second `gh pr create`, or one inside a subshell, quotes, backticks or `$( )`;
+- every other way to create a PR: `gh api …/pulls` with fields or `POST`, GraphQL `createPullRequest`, `curl …/pulls`;
+- a payload it cannot read, a terminal call with no command, and a command it cannot parse.
+
+For each named card the script runs `hermes kanban show <id> --json`. A card passes when it is `done` and its latest comment whose first line is `EVIDENCE` was written by the
+`worker` profile, with a `- <check>: PASS` line and no `- <check>: FAIL` line. Kanban records the author from the runtime profile, not from tool arguments, so `default` cannot
+write it for the worker. The `implement-task` skill tells the worker to write that comment. A crash, a timeout or output that is not JSON refuses the command (fail closed).
+`hooks_auto_accept` gives the consent that a gateway cannot ask for.
+
+The block message carries the whole instruction, so Hermes can follow it even while its kept copy of `spec-author` predates the rule.
+
+To run it by hand in the pod: `/opt/data/scripts/pr-gate-check.py <card id> …`. It prints one line per card and exits 1 when one fails. The fixture tests are run with
+`bash cluster/apps/ai/hermes-agent/tests/test_pr_gate_check.sh`.
+
+Known bypasses: the hook sees only the text of a terminal command.
+
+- `GATE_CARDS=none` is a claim that the hook cannot verify; the `spec-author` skill decides when it may be used.
+- A PR created by a script file that Hermes wrote and then ran, by a program reading `gh pr create` from a file or stdin, or by `execute_code`.
+- Any PR-creating call spelled so that none of the patterns above match (another HTTP client, an alias, a variable holding `gh`).
+
+The hook config is seeded from git at every start, so the check holds even while Hermes keeps its own edits of `spec-author`.
+
 The design is in [`.plans/hermes-orchestration/spec.md`](../../../../.plans/hermes-orchestration/spec.md) and [`plan.md`](../../../../.plans/hermes-orchestration/plan.md); `tasks.md` in the same folder tracks the build.
 The `default` profile may approve and merge only the Renovate PRs the merge policy allows. Every other PR is merged by the owner, and the repository rules (see [New repository
 requirements](../../../../docs/src/contributing/new-repository.md)) enforce that.
