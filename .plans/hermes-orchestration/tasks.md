@@ -401,6 +401,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T19 — Turn merging on
 
+- **Status:** done, 2026-11-16 (#6278, #6280). Clean PRs merge in the daily run, and the owner's `merge` overrode the denylist on `#6271`; see [evidence.md](evidence.md), section "T19 runs". `cron_mode: deny` blocked no merge command.
 - **Branch:** `chore/hermes-merge-enable`. **Depends on:** T18.
 - **Files:** `.agents/policy/hermes-merge-policy.md` (`merge_enabled: true`).
 - **Do:** the owner merges this one-line PR, then watches the first run with merges.
