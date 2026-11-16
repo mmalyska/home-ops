@@ -33,6 +33,8 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 
 One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is a `LiteLLMVirtualKey` (`proxyRef: litellm`, `proxyNamespace: ai`, `teamID`, `secretName`) kept next to the client app, so the operator writes the Secret into the client's namespace. No key is created by hand.
 
+A key's `models` must list every alias in the team's list, fallback targets included. LiteLLM silently skips a fallback the key may not use and moves to the next one in the chain: after #6312 added the OpenRouter models to the teams but not the keys, a ChatGPT 429 on `main` went straight to `local-think`.
+
 | Team       | Models                                                                                                             |
 | ---------- | ------------------------------------------------------------------------------------------------------------------ |
 | `hermes`   | `main`, `main-cheap`, `main-lite`, `or-deepseek-v4-pro`, `or-deepseek-v4.1-flash`, `cheap`, `local`, `local-think` |

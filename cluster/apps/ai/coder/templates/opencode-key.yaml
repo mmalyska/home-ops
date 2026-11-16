@@ -14,4 +14,4 @@ spec:
   proxyNamespace: ai
   teamID: opencode
   secretName: opencode-litellm
-  models: [main, cheap, local]
+  models: [main, or-deepseek-v4-pro, cheap, local, local-think]
