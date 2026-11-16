@@ -32,7 +32,7 @@ metadata:
 spec:
   alias: opencode
   proxyRef: litellm
-  models: [main, or-main, cheap, local]
+  models: [main, or-main, cheap, local, local-think]
 ---
 apiVersion: litellm.home-operations.com/v1alpha1
 kind: LiteLLMTeam

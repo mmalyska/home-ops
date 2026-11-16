@@ -21,7 +21,7 @@ One OpenAI-compatible endpoint for every AI client in the cluster: `http://litel
 ## Fallbacks and budget
 
 - Each subscription tier falls back to the OpenRouter model of the same tier, then to `local`; chains never cross tiers:
-  `main` → `or-main` → `local`, `main-cheap` → `or-main-cheap` → `local`, `main-lite` → `cheap` → `local`. `cheap`, `or-main` and `or-main-cheap` fall back to `local`.
+  `main` → `or-main` → `local-think` (the top tier gets the reasoning variant as its last resort; callers need `max_tokens` of about 1024), `main-cheap` → `or-main-cheap` → `local`, `main-lite` → `cheap` → `local`. `cheap`, `or-main` and `or-main-cheap` fall back to `local`. `local-think` has no fallback.
 - A failed deployment is skipped for 300 s (`cooldown_time`) instead of being retried on every request.
 - The pay-per-token cap is `routerSettings.provider_budget_config.openrouter` in `templates/litellmproxy.yaml`: 13 USD per 30 days, about 50 zl. It is per provider on purpose: `litellm_settings.max_budget` is proxy-wide and would also block the free models.
 - The spend counters live in a small Dragonfly (`litellm-dragonfly`), so a proxy restart does not reset the cap. Dragonfly itself has no persistence here; the prepaid OpenRouter balance is the hard ceiling.
@@ -37,7 +37,7 @@ One `LiteLLMTeam` per client lives in `templates/teams.yaml`. The key itself is 
 | ---------- | ---------------------------------------------------------------------------------------------- |
 | `hermes`   | `main`, `main-cheap`, `main-lite`, `or-main`, `or-main-cheap`, `cheap`, `local`, `local-think` |
 | `honcho`   | `cheap`, `local`, `embed`                                                                      |
-| `opencode` | `main`, `or-main`, `cheap`, `local`                                                            |
+| `opencode` | `main`, `or-main`, `cheap`, `local`, `local-think`                                             |
 | `lingarr`  | `cheap`, `local`                                                                               |
 
 What each client is set to call (the team list above is what it may call):
