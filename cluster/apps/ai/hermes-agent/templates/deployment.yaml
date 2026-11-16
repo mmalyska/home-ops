@@ -220,6 +220,16 @@ spec:
             - -c
             - |
               set -eu
+              # Skills: a file is written from git only when the profile has no copy. A copy that differs from git
+              # holds Hermes' own edits (self-improvement) and is kept; the weekly skill-sync job proposes it for git.
+              seed_file() {
+                if [ ! -e "$2" ]; then
+                  cp "$1" "$2"
+                  echo "seeded: $2"
+                elif ! cmp -s "$1" "$2"; then
+                  echo "kept local edits: $2"
+                fi
+              }
               {{- range $profile, $skills := .Values.hermes.profileSkills }}
               {{- $dir := ternary "/opt/data" (printf "/opt/data/profiles/%s" $profile) (eq $profile "default") }}
               if [ -d {{ $dir | squote }} ]; then
@@ -227,11 +237,11 @@ spec:
                 chown 10000:10000 {{ printf "%s/SOUL.md" $dir | squote }}
                 {{- range $skills }}
                 mkdir -p {{ printf "%s/skills/%s" $dir . | squote }}
-                cp {{ printf "/seed/%s.md" . | squote }} {{ printf "%s/skills/%s/SKILL.md" $dir . | squote }}
+                seed_file {{ printf "/seed/%s.md" . | squote }} {{ printf "%s/skills/%s/SKILL.md" $dir . | squote }}
                 for f in {{ printf "/seed/ref-%s--" . }}*; do
                   [ -e "$f" ] || continue
                   mkdir -p {{ printf "%s/skills/%s/references" $dir . | squote }}
-                  cp "$f" {{ printf "%s/skills/%s/references/" $dir . | squote }}"${f#{{ printf "/seed/ref-%s--" . }}}"
+                  seed_file "$f" {{ printf "%s/skills/%s/references/" $dir . | squote }}"${f#{{ printf "/seed/ref-%s--" . }}}"
                 done
                 chown -R 10000:10000 {{ printf "%s/skills/%s" $dir . | squote }}
                 {{- end }}
@@ -283,7 +293,9 @@ spec:
                   return result.returncode == 0
 
 
-              # A job runs a skill with a model, or (with `script`) only a script whose stdout is delivered.
+              # A job runs a skill with a model, or (with `script` and no `skill`) only a script whose stdout is
+              # delivered. With both, the script runs first and its stdout is put into the model's prompt; an empty
+              # stdout skips the model run.
               def same(existing, job):
                   return (existing.get('schedule', {}).get('expr') == job['schedule']
                           and existing.get('model') == job.get('model')
@@ -292,7 +304,7 @@ spec:
                           and existing.get('timezone') == job['timezone']
                           and (existing.get('prompt') or '') == job.get('prompt', '')
                           and (existing.get('script') or '') == job.get('script', '')
-                          and bool(existing.get('no_agent')) == bool(job.get('script')))
+                          and bool(existing.get('no_agent')) == bool(job.get('script') and not job.get('skill')))
 
 
               def main():
@@ -312,9 +324,11 @@ spec:
                           continue
                       args = ['create', '--name', job['name'], '--deliver', job['deliver'], '--timezone', job['timezone']]
                       if job.get('script'):
-                          args += ['--script', job['script'], '--no-agent']
-                      else:
+                          args += ['--script', job['script']]
+                      if job.get('skill'):
                           args += ['--skill', job['skill'], '--model', job['model'], '--pin']
+                      else:
+                          args.append('--no-agent')
                       if paused:
                           args.append('--paused')
                       ok = run(args + [job['schedule']] + ([job['prompt']] if job.get('prompt') else []))
@@ -375,6 +389,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
+            # The git copies of the skills, read by the skill-sync job's script to find Hermes' own edits.
+            - name: skills-seed
+              mountPath: /opt/skills-git
+              readOnly: true
             # Managed Scope, single file: the image already keeps other files in /etc/hermes.
             - name: managed-config
               mountPath: /etc/hermes/config.yaml
