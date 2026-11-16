@@ -119,13 +119,15 @@ Create one card per implementation task, in the order of `tasks.md`, with the `k
   merged spec and plan files on the default branch, the files in scope, the checks to run, what "done" means, and what it must not touch. Never include secret values.
 - `idempotency_key`: `<slug>-<task-id>`, so a retry never makes a duplicate.
 - Leave `completion_contract` unset. The worker pushes a branch and does not open a PR.
+- Evidence comes back in the card's comments and summary, or on the pushed branch. You cannot read files in the worker's workspace, so never ask for a handoff file there. If a task in `tasks.md` asks for
+  one, write in the body that its content goes in a card comment instead.
 
 ### While the work runs
 
 - Nothing wakes you when a card blocks or finishes: no session subscribes to cards. The `kanban-post` job posts each blocked and finished card to `#hermes`, and the owner then writes in the spec thread. Whenever the owner writes in the thread during execution, check the cards you created for the work with `kanban_list` and `kanban_show`, and act on any that is blocked or done.
 - When the owner confirms in a Discord message that a human task is done, check it if you can. Then call `kanban_unblock` and `kanban_complete` on that card. If the tools refuse, tell the owner to close
   it with `/kanban` in Discord.
-- When a worker card is blocked with `needs_input`, read it with `kanban_show`. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer
+- When a worker card is blocked with `needs_input`, read it with `kanban_show`, including its comments, where the worker puts its evidence. If the evidence is not there, say so in the spec thread and do not decide from the block reason alone. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer
   it, post the question in the spec thread and wait for the owner. Do not guess.
 - When a worker completes a card with a branch, read the commits and the check results. Then open the implementation PR yourself as `rudi-the-brain` with `gh pr create`, so that the owner is the only
   possible approver. Add the label `triage/owner`, put the check results in the PR body, and post the link in the spec thread.

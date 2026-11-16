@@ -80,6 +80,17 @@ push, and also after any failure. Keep the long-lived clone.
 
 ### 6. Hand back
 
+Where the evidence goes: the orchestrator runs in its own workspace and cannot read files in yours, and step 5 deletes the task worktree. So evidence that stays only in a file is lost. Put it where the
+orchestrator can read it:
+
+- In the card: `kanban_comment` for the full evidence (commands run, tool versions, output excerpts, PASS, FAIL or NOT RUN for each check), then the `summary` or block `reason` pointing to that comment.
+  Use several comments if one gets long. Cut long output down to the lines that prove the result.
+- On the pushed branch, for evidence that belongs in the repository, such as a file the task asked for. Name the file and the branch in the summary.
+- Never point to a path in your workspace as the evidence, and never only say a file was written. If the card asks for a handoff file, also put its content in a comment.
+- Evidence holds names and references only: no token, secret value, private domain or Bitwarden identifier.
+
+This applies to every card, including one that produces no branch, one that fails and one that blocks.
+
 On success, call `kanban_complete` with:
 
 - `summary`: what changed and why, in a few sentences.
@@ -93,7 +104,8 @@ If any check is FAIL, still push the branch if the work is useful, and say plain
 When you need a decision or information that the card, spec, plan and repository do not give:
 
 1. Remove the worktree as in step 5, after pushing any useful work.
-2. Call `kanban_block` with `kind` set to `needs_input` and a `reason` of one or two sentences that states the exact question and what you tried. The orchestrator answers it, or sends it to the spec
+2. Post what you found so far with `kanban_comment`, as in step 6.
+3. Call `kanban_block` with `kind` set to `needs_input` and a `reason` of one or two sentences that states the exact question and what you tried. The orchestrator answers it, or sends it to the spec
    thread for the owner. Do not message the owner yourself.
 
 ## Pitfalls
@@ -104,4 +116,4 @@ When you need a decision or information that the card, spec, plan and repository
 
 ## Verification
 
-Before calling `kanban_complete`, confirm that the branch is on the remote (`git ls-remote --heads origin $BRANCH`), that every check has a result, that no secret value appears in the diff, and that the worktree is gone.
+Before calling `kanban_complete` or `kanban_block`, confirm that the evidence is in a card comment or on the pushed branch, not only in a file in the workspace. Before `kanban_complete`, also confirm that the branch is on the remote (`git ls-remote --heads origin $BRANCH`), that every check has a result, that no secret value appears in the diff, and that the worktree is gone.
