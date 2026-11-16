@@ -136,8 +136,9 @@ thread this way. Cards started by cron or by the dispatcher have no chat, so the
 
 Hermes subscribes these chats as `notify+wake`: each notice would also start a full `default` turn (about 60K input tokens), even when the answer is `[SILENT]`. Hermes cannot
 limit the wake to some statuses or boards (`_WAKE_KINDS` is a constant in `gateway/kanban_watchers_notifier.py`; checked in v0.23.1 and upstream `main` on 2026-11-16), but each
-subscription has its own mode. The script-only job `kanban-wake-trim` (every minute, `files/scripts/kanban-wake-trim.sh`, silent unless it fails) sets every `notify+wake`
-subscription on every board to `notify`, except on worker cards with the `implement-task` skill:
+subscription has its own mode, and a card created with parents copies their subscriptions, mode included. The script-only job `kanban-wake-trim` (every minute,
+`files/scripts/kanban-wake-trim.sh`, silent unless it fails) gives every subscription on every board the mode below. It also promotes an `implement-task` card that inherited
+`notify` from a human parent card back to `notify+wake`. Subscriptions in mode `wake` and TUI subscriptions are left alone.
 
 | Card                                                             | Notice | Wakes `default`                                                  |
 | ---------------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
@@ -148,6 +149,11 @@ subscription on every board to `notify`, except on worker cards with the `implem
 A card that finishes within about a minute of its creation, before the job runs, can still wake once; the woken turn starts with `[kanban] Task <id> <status>.` and
 `soul-default.md` tells it to reply `[SILENT]` when nothing is needed, which the gateway does not post. To check the modes, run `hermes kanban --board <board> notify-list` in the
 pod (`mode=notify+wake` is shown, `notify` is not).
+
+The job checks each subscription once: it keeps the checked keys in `/opt/data/cron/kanban-wake-trim.txt` and reads a card (`kanban show`, read-only) only for a new
+subscription. It never runs `kanban list`, which writes to the board (`recompute_ready`). A mode changed by hand after the check stays as it is; delete the key from the file to
+check it again. Test the script against a fake `hermes` CLI with `bash cluster/apps/ai/hermes-agent/tests/kanban-wake-trim.test.sh`.
+
 Jobs removed from `hermes.cronJobs` stay in Hermes until they are listed in `hermes.retiredCronJobs`, which the cron seeder deletes at start (today `kanban-post`, the earlier
 script that posted these notices in `#hermes`).
 

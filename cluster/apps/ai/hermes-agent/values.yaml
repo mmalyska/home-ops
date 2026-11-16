@@ -145,8 +145,9 @@ hermes:
       timezone: Europe/Warsaw
       script: renovate-cleanup.sh
       deliver: "discord:1569307898860015628" # #hermes-renovate
-    # Script only, no model: sets card subscriptions from notify+wake to notify, except on worker implement-task cards,
-    # so a card notice wakes `default` only when it has a next step or needs an answer. Silent unless it fails.
+    # Script only, no model: sets card subscriptions to notify, and worker implement-task cards (also those that inherited
+    # notify from a human parent) to notify+wake, so a card notice wakes `default` only when it has a next step or needs an
+    # answer. Reads a card only for a new subscription and never runs `kanban list`. Silent unless it fails.
     - name: kanban-wake-trim
       schedule: "* * * * *"
       timezone: Europe/Warsaw
