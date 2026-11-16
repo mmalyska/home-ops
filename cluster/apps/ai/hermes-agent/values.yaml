@@ -248,8 +248,10 @@ hermes:
           # service outside the AI gateway. Applied after platform_toolsets, so the
           # hermes-discord and hermes-cron bundles lose it too.
           - tts
-          # Not used by any seeded skill; about 15 KB of tool schemas on every Discord and cron call.
-          - browser-use
+          # Not used by any seeded skill; 4 tools and about 15 KB of tool schemas on every Discord and cron call
+          # (prompt-size, 2026-11-16). `browser` is the static toolset and covers every core browser_* tool;
+          # browser_exec registers under `browser-use`, which disables only that one tool.
+          - browser
           - connections
           - delegation
           - code_execution
