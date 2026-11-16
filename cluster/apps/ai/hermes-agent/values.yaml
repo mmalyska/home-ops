@@ -30,6 +30,14 @@ hermes:
     dashboard:
       show_token_analytics: true
     timezone: "Europe/Warsaw"
+    # Prompt-cache routing for the ChatGPT subscription. Without a caller session id LiteLLM's chatgpt provider
+    # sends a new Codex session_id on every request, so a session's calls land on different caches (main got
+    # 13-21 % cache hits, 2026-11-16). With this header Hermes sends its session key on every call to the gateway
+    # (matched by base_url) and LiteLLM uses it as the Codex session_id.
+    providers:
+      ai-gateway:
+        base_url: http://litellm.ai.svc.cluster.local:4000/v1
+        session_affinity_header: x-litellm-session-id
     auxiliary:
       vision:
         provider: custom
@@ -187,6 +195,13 @@ hermes:
         streaming: false
       memory:
         provider: honcho
+      # The #hermes channel session lives until /new, and every chat turn and kanban wake replays it. With the
+      # 0.75 floor Hermes applies below a 512K window, compression would start only at 150K (session averaged
+      # 92K per call, 2026-11-16); threshold_tokens is applied after that floor. Idle compaction shrinks a
+      # session that resumes after 30 minutes before the first reply (skipped when it is already small).
+      compression:
+        threshold_tokens: 100000
+        idle_compact_after_seconds: 1800
       terminal:
         backend: ssh
         cwd: /workspaces
@@ -233,6 +248,11 @@ hermes:
           # service outside the AI gateway. Applied after platform_toolsets, so the
           # hermes-discord and hermes-cron bundles lose it too.
           - tts
+          # Not used by any seeded skill; about 15 KB of tool schemas on every Discord and cron call.
+          - browser-use
+          - connections
+          - delegation
+          - code_execution
       approvals:
         deny:
           - "git *push*--force*"
