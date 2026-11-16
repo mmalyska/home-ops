@@ -9,6 +9,10 @@ change cluster state, change required checks, freeze OS images, migrate themes,
 merge PRs, bypass hooks or write to main. Source requirements are the merged
 `.plans/docs-build-supply-chain/spec.md` from #6300. Exact pins and hashed locks,
 shared local/CI inputs, strict builds and native Renovate regeneration are mandatory.
+The owner revised the design on 2026-11-16: direct uv commands, no docs.py or its
+unittest suite, and persistent tests only for SHA pins, strict mode and deploy
+needs build. Keep the merged spec unchanged; use recorded command evidence for
+the remaining acceptance checks.
 
 These are future tasks, not cards created by the plan PR. Status: all pending.
 Post all human-only tasks when execution is approved, marking conditional tasks
@@ -69,7 +73,7 @@ Owner: worker. Dependencies: successful T1; H2 confirmation if invoked. Branch:
 `chore/docs-build-supply-chain` from updated origin/main. Files: add
 `.github/mkdocs/requirements.in`, generate `.github/mkdocs/requirements.txt`, add
 `.github/mkdocs/.python-version`, `.github/mkdocs/mise.toml`,
-`.github/mkdocs/docs.py` and `.github/mkdocs/tests/`; edit
+and `.github/tests/docs-workflows.sh` for the three workflow invariants; edit
 `.taskfiles/mkdocs.yml`, `.github/workflows/docs-build.yaml`,
 `.github/workflows/publish-pages.yaml` and docs-scoped native Renovate config in
 `.github/renovate/managers.json5` plus related local config only if necessary.
@@ -77,39 +81,44 @@ Document usage in `docs/src/contributing/docs-build.md` and add its nav entry in
 `.github/mkdocs/mkdocs.yml`. Update `.gitignore` only for local docs environments.
 Do not touch spec/plan status or unrelated application/workflow configuration.
 
-Goal: exact direct source pins and complete hashed lock; shared version-checked
-uv/Python installation, compilation, strict build and serve paths; all action
+Goal: exact direct source pins and complete hashed lock; direct uv commands using
+shared Python/uv pins for installation, compilation, strict build and serve; all action
 SHAs; native Renovate updates including transitive maintenance.
 
 Use Python 3.15.2 as the initial compatibility candidate, selecting exact uv and
 dependency pins after testing. Follow T1's demonstrated manager configuration;
 stop on unsupported runtime/tool regeneration instead of using floating tools.
-The helper reads runtime files without shell evaluation, rejects mismatched tools,
-syncs a dedicated environment with `uv pip sync --require-hashes`, and compiles
-only on explicit lock operations using `uv pip compile --generate-hashes` with
-standard headers and explicit input/output. No hidden unpinned sdist build
-dependencies: require wheels or return the conflict to the owner. Cache only as
-an optimization, never skipping hash checks or stale lock changes.
+Taskfile and workflow steps read the same runtime files without shell evaluation.
+Use simple Task preconditions and explicit uv Python selection to report version
+mismatches; do not create a wrapper script. Call `uv pip sync --require-hashes`
+directly with the committed lock and explicit environment interpreter. Call
+`uv pip compile --generate-hashes` directly for explicit lock/update operations,
+using standard headers and explicit Python/input/output paths. Normal builds do
+not compile. No docs.py, helper unittest suite or replacement orchestration layer.
+No hidden unpinned sdist build dependencies: require wheels or return the conflict
+to the owner. Cache only as an optimization, never skipping hashes or stale inputs.
 
-Keep local build/serve task names; add `mkdocs:lock` and `mkdocs:check`. Setup Python
+Keep local build/serve task names; add `mkdocs:lock`. Setup Python
 and uv in CI from the same declared versions via SHA-pinned setup actions. Both
 workflows use full git history and strict builds; PR permissions stay read-only,
 publish deploy remains dependent on successful build. Expand docs PR and publish
 path filters for shared files. Never dispatch publication as a test. Keep OS and
 required-check settings unchanged.
 
-Commands/checks: write failing standard-library tests first and record RED, then
-implement and record GREEN using
-`python3 -m unittest discover -s .github/mkdocs/tests -v`. Cover exact version
-checks, lock synchronization, hash failures and workflow invariants. Run
-`task mkdocs:lock`, `task mkdocs:check`, `task mkdocs:build`; smoke-test
-`task mkdocs:serve` with bounded startup, HTTP request and cleanup. Run targeted
+Commands/checks: add only `.github/tests/docs-workflows.sh`, covering full SHA
+pins, strict mode in both workflows and publication deploy `needs: build`; invoke
+it in PR CI. Demonstrate that each invariant check rejects a corresponding
+mutated workflow copy, then run it against the implementation. Do not add tests
+for uv behavior, version checking, hashes, path filters or a helper.
+Run `task mkdocs:lock` and `task mkdocs:build`; smoke-test `task mkdocs:serve` with
+bounded startup, HTTP request and cleanup. Record direct CLI checks and installed
+versions, rather than introducing another check task or framework. Run targeted
 Prettier, markdownlint, YAML lint, actionlint, Renovate validator,
 `git diff --check`, `.agents/bin/check-plans` and pre-commit including gitleaks.
 Inspect advisory task output rather than relying on its exit code.
 
 Done: tested implementation pushed to the named branch, no PR opened. Return
-commit, exact pins, generated lock counts, RED/GREEN output, all check statuses
+commit, exact pins, generated lock counts, workflow-invariant check output, all check statuses
 and reproducible commands. Include docs for local bootstrap, compilation,
 Renovate updates, mismatches and the non-enforced red-check limitation. New locked
 strict failures go to the owner; never weaken strict mode to finish.
@@ -121,13 +130,16 @@ at the exact T2 handoff commit in a linked worktree, not main. Scope: the T2 fil
 only, plus fixes within that scope. No independent implementation branch or PR.
 
 Goal: exercise acceptance criteria rather than merely inspecting configuration.
-Run standard-library tests, `task mkdocs:check`, strict build and bounded serve
-HTTP smoke check. Install the unchanged committed lock twice into fresh isolated
+Run `bash .github/tests/docs-workflows.sh`, strict build and a bounded serve
+HTTP smoke check. Keep automated tests limited to the three workflow invariants;
+record remaining acceptance exercises as one-off command evidence. Install the unchanged committed lock twice into fresh isolated
 environments and compare installed versions. Corrupt/remove hashes in disposable
-copies and require nonzero installs; test Python/uv mismatches similarly. Compile
+copies and require nonzero installs; verify declared Python/uv selection and
+actionable Task precondition failures directly. Compile
 unchanged inputs and require no lock diff. Introduce a missing nav page in a copy
 and verify strict build fails; validate upload/deploy cannot run after that build
-failure using workflow dependency tests, not an actual Pages dispatch.
+failure by the deploy-needs-build invariant check and direct review of upload
+and deploy conditions, not an actual Pages dispatch.
 
 Repeat T1's native manager extraction/regeneration with final paths and config
 for direct, transitive, Python and uv updates. Record exact Renovate/compiler

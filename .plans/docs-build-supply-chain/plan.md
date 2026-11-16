@@ -54,37 +54,42 @@ never compile or resolve an unlocked graph as part of normal build or serve.
 Keep the exact Python patch version in `.github/mkdocs/.python-version`, detected
 by the native pyenv manager. Keep the exact uv version in a docs-only
 `.github/mkdocs/mise.toml`, detected by the native mise manager. Do not change the
-workspace-wide runtime or require installing mise for docs. A shared helper reads
-these files, verifies Python and uv versions, and emits actionable errors if the
-local tools do not match. Start from the passing Python 3.15.2 baseline; select
-and record the uv and dependency versions only after compatibility verification.
+workspace-wide runtime or require installing mise for docs. Start from the passing
+Python 3.15.2 baseline; select and record uv and dependency versions only after
+compatibility verification. Read the version files directly in Task variables and
+workflow setup steps without shell evaluation of configuration. Use native Task
+preconditions and explicit uv Python selection for actionable version mismatches;
+do not introduce a Python wrapper or a replacement orchestration script.
 
-CI uses SHA-pinned setup-python and setup-uv actions. Read Python from its version
-file and uv from the docs mise file using a narrow, validated version reader, not
-shell evaluation of configuration. The helper verifies the tools after setup.
-The initial uv executable is bootstrapped by the pinned action in CI or the
-user's existing version manager locally; no unversioned curl installer is added.
-
-Place the shared helper at `.github/mkdocs/docs.py`. It provides install, build,
-serve, compile and check operations. Use only the standard library for version
-reading/bootstrap checks, so running the helper requires no unlocked helper
-packages. Handle stale environments after a pin update by recreating or syncing
-them; a Task up-to-date cache must not skip changed lock/runtime inputs.
+CI uses SHA-pinned setup-python and setup-uv actions, reading Python from its
+version file and uv from the docs mise file. The initial uv executable is
+bootstrapped by the pinned action in CI or the user's existing version manager
+locally; no unversioned curl installer is added.
 
 ### CI and local commands
 
-Have `.taskfiles/mkdocs.yml` and both workflows call the shared helper. Preserve
-`task mkdocs:build` and `task mkdocs:serve`; add `task mkdocs:lock` and
-`task mkdocs:check`. Keep the old internal prerequisites task compatible or update
-all callers. Build uses strict mode and an explicit output path; serving uses the
-same environment. Keep caches limited to downloads, keyed by runtime/tool/lock
-inputs, never as a substitute for hashed synchronization.
+The Taskfile and both workflows invoke `uv pip sync --require-hashes` directly
+against the same committed requirements.txt and explicit virtualenv interpreter.
+Lock regeneration invokes `uv pip compile --generate-hashes` directly against the
+same requirements.in with explicit Python and output paths. Normal build/serve
+runs only synchronize the committed lock; compilation is an explicit lock/update
+operation, not fresh resolution during a build. Workflow regeneration/check steps,
+where needed, use the same direct compile command, not a helper.
+
+Preserve `task mkdocs:build` and `task mkdocs:serve`; add `task mkdocs:lock` for
+explicit compilation. Keep the old internal prerequisites task compatible or
+update all callers. Run the environment's MkDocs executable directly, with strict
+mode for build and an explicit output path. No docs.py, helper unittest suite or
+custom mkdocs:check orchestration layer is planned. Recreate or synchronize stale
+environments after pin updates; Task caching must not skip changed inputs. Keep
+caches limited to downloads keyed by runtime/tool/lock inputs, never as a
+substitute for hashed synchronization.
 
 Both workflows use full history and disable persisted checkout credentials.
 Pin all publication actions, preserve read-only PR permissions, existing Pages
 concurrency/environment and deploy `needs: build`. Never use `always()` or ignored
 build failures to permit upload/deploy after a failed strict build. Add workflow
-path filters for publication workflow, docs tasks, helper/tests, locks and version
+path filters for publication workflow, docs tasks, workflow-invariant tests, locks and version
 files; publication also reacts to changed shared build inputs. Keep publication
 on main or its existing manual path, not on PRs.
 
@@ -139,22 +144,22 @@ are verified; H2/H4 must not be treated as unconditional work or permission.
 
 ## Validation and acceptance evidence
 
-TDD for helper/contract behavior: first demonstrate failing tests, then implement.
-Use standard-library tests under `.github/mkdocs/tests/` because no existing
-`test_docs_page` file was located in this checkout. Wire them into PR CI rather
-than claiming an absent suite covers the change.
+Per the owner's 2026-11-16 design revision, persistent tests cover only three
+workflow invariants: full action SHAs, strict build mode in both workflows, and
+publication deploy `needs: build`. Put these focused checks in
+`.github/tests/docs-workflows.sh` and run them in PR CI. Do not add docs.py, its
+unittest suite, or automated tests for the uv CLI, version checks, hash enforcement,
+path filters or other workflow properties. Review those properties directly.
+This narrows the spec's regression-coverage implementation, not the locked-input
+or fail-closed build requirements; the merged spec remains unchanged.
 
-Require fresh hashed installs twice with equal installed versions; reject missing
-and corrupt hashes; reject Python/uv mismatches; exercise build and bounded HTTP
-serve smoke test; compile unchanged inputs without lock drift; and prove that a
-controlled dependency update regenerates a consistent hashed lock. Never commit
-the intentionally broken test copy or publish its artifact.
-
-Static workflow tests must enforce strict mode, full SHAs, full history, read-only
-PR permissions, complete path filters, shared install source and no deployment
-bypass. A synthetic broken nav/config fixture must cause a nonzero strict build;
-combine that with build/upload/deploy dependency tests to verify fail-closed
-publication without actually dispatching Pages.
+Retain bounded acceptance exercises as recorded command evidence, not a maintained
+test framework: fresh hashed installs twice with equal installed versions, missing
+and corrupt hash rejection, runtime/tool selection, actual strict build and HTTP
+serve smoke check, unchanged-input compilation without lock drift, and a controlled
+dependency update with a consistent hashed lock. Never commit disposable broken
+copies or publish their artifacts. A missing nav entry in a disposable copy must
+fail strict build; inspect normal upload/deploy conditions without dispatching Pages.
 
 Run real native Renovate extraction and local artifact regeneration on controlled
 fixtures using the actual configured version. Cover direct, indirect, runtime and
@@ -165,7 +170,8 @@ never print tokens, run write-mode Renovate or invent an updated lock.
 
 For this plan PR run diff whitespace, targeted Prettier and markdownlint,
 `.agents/bin/check-plans`, and pre-commit across all files including gitleaks.
-Implementation adds Python tests, actual installs/build/serve checks, actionlint,
+Implementation adds only focused workflow-invariant tests, recorded build/serve
+acceptance exercises, actionlint,
 YAML lint and Renovate config validation. Report PASS, FAIL or NOT RUN with reasons.
 
 ## Risks, rollback and completion
