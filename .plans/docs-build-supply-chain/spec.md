@@ -2,10 +2,10 @@
 
 ## Status and scope
 
-Spec for owner review. Size: big, because the requirements needed owner decisions,
+Spec revision for owner review. Size: big, because the requirements needed owner decisions,
 the build policy outlives this change, and delivery has separate spec, plan and
-implementation phases. This PR contains the spec only; it does not authorize or
-start planning, implementation, publication or repository-settings changes.
+implementation phases. This revision updates the spec, plan and tasks together under the owner's H2
+decision. It does not authorize implementation, publication or settings changes.
 
 The source item is "Docs build supply chain and reproducibility" in `.plans/TODO.md`.
 
@@ -48,6 +48,25 @@ an entirely hermetic build, frozen external assets or offline availability.
   a GitHub-enforced prohibition on merging; this qualifies the earlier request
   to "block PR".
 
+## Owner H2 decision - 2026-11-16
+
+Misiek (repository owner) decided in Discord message `1571957410518667386`
+to revise the strategy, with no further cross-manager trigger investigation:
+
+- Pin target Python in the uv lock header using `--python-version=<exact version>`.
+  The fourth invariant in `.github/tests/docs-workflows.sh` requires that version
+  to equal `.github/mkdocs/.python-version`; missing or malformed values fail.
+  A pyenv bump PR fails CI until `task mkdocs:lock` is run on its branch and the
+  regenerated lock is committed. Do not assume pyenv triggers pip-compile.
+- A mise uv bump requires a green locked install and strict build, not lock
+  regeneration. Do not assume mise triggers pip-compile.
+- Accept the direct/indirect command-equivalent evidence from `t_a17002ef`, plus
+  local Renovate extraction (`--platform=local --dry-run=extract`, no remote
+  writes) showing pip-compile picks up requirements.txt with indirect dependencies.
+  Proof of an actual Renovate update PR remains in T4, not the pre-T2 gate.
+- T2 stays stopped until the owner merges this spec/plan/tasks revision PR and
+  explicitly approves it in the Discord thread. This decision is not that approval.
+
 ## Requirements
 
 1. Commit a dependency source with explicit direct pins and a generated lock that
@@ -62,8 +81,10 @@ an entirely hermetic build, frozen external assets or offline availability.
    report an actionable incompatibility rather than silently using another set.
 4. Support Renovate updates of direct pins, transitive lock dependencies, Python,
    tooling and action SHAs. Dependency updates and their regenerated lock must
-   remain consistent in the same PR. Verify the native update/regeneration path
-   against the actual Renovate configuration; do not assume it works.
+   remain consistent in the same PR. Python updates require explicit branch-local
+   lock regeneration and header/version-file equality enforced in CI. uv updates
+   require locked installation and strict build, not regeneration. Verify local
+   direct/indirect reproduction and extraction before T2; observe a real PR in T4.
 5. Pin every action in the publication workflow to a full commit SHA, retaining
    readable version comments. Preserve the PR workflow's existing SHA pinning.
 6. Run both validation and publication builds with `--strict` and equivalent
@@ -74,7 +95,9 @@ an entirely hermetic build, frozen external assets or offline availability.
    Preserve the build-only, read-only PR workflow and publish only on the existing
    authorized publication path.
 8. Document local installation/build/serve and lock regeneration. Add regression
-   coverage for shared locked installs, enforced hashes, pins and strict builds.
+   coverage through four maintained invariants: full action SHAs, strict build
+   mode, publication deploy needs build, and lock-header Python equals the version
+   file. Other acceptance properties use bounded recorded command exercises.
 
 ## Baseline evidence
 
@@ -106,8 +129,11 @@ is evidence, not a selection of the final dependency pins.
   dependency lock and declared Python/tooling pins without extra unpinned installs.
 - Repeated installation of unchanged inputs selects the same locked package
   versions; a hash mismatch fails rather than falling back to an unlocked install.
-- A demonstrated Renovate update regenerates the appropriate lock alongside the
-  changed source; transitive updates and Python/tooling pins have an update path.
+- Direct/indirect source-derived reproduction and local pip-compile extraction
+  satisfy T1; an actual consistent Renovate dependency update PR is observed in T4.
+- A Python-file-only bump fails CI; branch-local `task mkdocs:lock` restores header
+  equality and a compatible hashed lock. A uv bump passes locked install and strict
+  build without a lock-regeneration requirement.
 - Both workflows use full action SHAs and strict builds. A deliberately introduced
   strict-build warning or error fails PR validation and prevents publication.
 - The initial locked strict build passes, or any new incompatibility is brought
@@ -126,12 +152,16 @@ is evidence, not a selection of the final dependency pins.
 
 ## Open questions and phase gates
 
-No unresolved owner policy decision remains after the passing baseline. Exact
+The H2 decision above supersedes any requirement for automatic Python/uv-triggered
+lock regeneration or all-four native update proof before T2. No further trigger
+investigation is authorized. No unresolved owner policy decision remains. Exact
 file layout, initial versions, tooling bootstrap and native Renovate configuration
 are plan-phase design work subject to the requirements above. If that work exposes
 a conflict or unsupported update path, return to the owner instead of substituting
 another dependency-management approach.
 
-Planning begins only after the owner approves this spec in the Discord spec thread
+This revision must be merged and explicitly approved in the Discord thread before
+T2 resumes. The original phase gates remain: planning begins only after the owner
+approves the spec in the Discord spec thread
 and this spec PR is merged. Implementation begins only after the separate plan is
 approved in that thread and its PR is merged. The owner merges these PRs.
