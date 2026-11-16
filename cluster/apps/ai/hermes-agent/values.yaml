@@ -145,6 +145,15 @@ hermes:
       timezone: Europe/Warsaw
       script: renovate-cleanup.sh
       deliver: "discord:1569307898860015628" # #hermes-renovate
+    # Script only, no model: sets card subscriptions to notify, and worker implement-task cards (also those that inherited
+    # notify from a human parent) to notify+wake, so a card notice wakes `default` only when it has a next step or needs an
+    # answer. Reads a card only for a new subscription and never runs `kanban list`. Posts a failure once, hourly while it
+    # lasts, and once on recovery; otherwise silent.
+    - name: kanban-wake-trim
+      schedule: "* * * * *"
+      timezone: Europe/Warsaw
+      script: kanban-wake-trim.sh
+      deliver: "discord:881886312574107758" # #hermes, a channel ID, not a secret #gitleaks:allow
     # Weekly: the script lists Hermes' own edits to the skills seeded from git; the skill opens one PR with them. No
     # edit, no output: Hermes then skips the model run.
     - name: skill-sync
@@ -222,8 +231,10 @@ hermes:
         max_in_progress_per_profile: 2
         # A card created from a Discord chat subscribes that chat (thread included) to its terminal events, and the cards
         # created from it copy the subscription: a block or a finished card posts in that thread and wakes the agent there.
+        # The job kanban-wake-trim keeps the wake only on worker implement-task cards; other cards post the notice only.
         # Cards started by cron or by the dispatcher have no chat, so the daily Renovate run posts nothing this way;
-        # renovate-post posts its summaries. No per-board switch exists (checked v0.23.1 and upstream main, 2026-11-16).
+        # renovate-post posts its summaries. No per-board or per-status wake switch exists (checked v0.23.1 and upstream
+        # main, 2026-11-16).
         auto_subscribe_on_create: true
       # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
       # the `discord` set for create_thread; the admin set stays disabled.

@@ -131,9 +131,30 @@ Those cards can show, create and complete cards, but not list or unblock them; t
 The Renovate run uses its own board, `renovate`.
 
 `kanban.auto_subscribe_on_create` is on for `default`. A card created from a Discord chat subscribes that chat, thread included, and the cards created from it copy the subscription.
-When such a card blocks, finishes, gives up or crashes, Hermes posts a short notice in that thread and wakes the agent there, with the thread's context. The woken turn starts with `[kanban] Task <id> <status>.`; when it needs nothing from the agent, `soul-default.md` tells it to reply `[SILENT]`, which the gateway does not post. Spec-driven work runs
-this way: every card of the execution phase reports back in its spec thread. Cards started by cron or by the dispatcher have no chat, so they post nothing. Hermes has no per-board
-switch for this (checked in v0.23.1 and upstream `main` on 2026-11-16).
+When such a card blocks, finishes, gives up or crashes, Hermes posts a short notice in that thread. Every card of the execution phase of spec-driven work reports back in its spec
+thread this way. Cards started by cron or by the dispatcher have no chat, so they post nothing.
+
+Hermes subscribes these chats as `notify+wake`: each notice would also start a full `default` turn (about 60K input tokens), even when the answer is `[SILENT]`. Hermes cannot
+limit the wake to some statuses or boards (`_WAKE_KINDS` is a constant in `gateway/kanban_watchers_notifier.py`; checked in v0.23.1 and upstream `main` on 2026-11-16), but each
+subscription has its own mode, and a card created with parents copies their subscriptions, mode included. The script-only job `kanban-wake-trim` (every minute,
+`files/scripts/kanban-wake-trim.sh`, silent unless it fails) gives every subscription on every board the mode below. It also promotes an `implement-task` card that inherited
+`notify` from a human parent card back to `notify+wake`. Subscriptions in mode `wake` and TUI subscriptions are left alone.
+
+| Card                                                             | Notice | Wakes `default`                                                  |
+| ---------------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
+| Worker card with `implement-task` (spec-driven tasks)            | yes    | on finish (opens the PR) and on block, give-up, crash or timeout |
+| Human card (`assignee: default`), created blocked by spec-author | yes    | no; a card created with `initial_status: blocked` never wakes    |
+| Any other card, both boards (Renovate merge and fix cards too)   | yes    | no; the notice carries the block reason                          |
+
+A card that finishes within about a minute of its creation, before the job runs, can still wake once; the woken turn starts with `[kanban] Task <id> <status>.` and
+`soul-default.md` tells it to reply `[SILENT]` when nothing is needed, which the gateway does not post. To check the modes, run `hermes kanban --board <board> notify-list` in the
+pod (`mode=notify+wake` is shown, `notify` is not).
+
+The job checks each subscription once: it keeps the checked keys in `/opt/data/cron/kanban-wake-trim.txt` and reads a card (`kanban show`, read-only) only for a new
+subscription. It never runs `kanban list`, which writes to the board (`recompute_ready`). A mode changed by hand after the check stays as it is; delete the key from the file to
+check it again. A failed step is retried every run and posted to `#hermes` only on its first failure, once an hour while it still fails, and once when it recovers.
+Test the script against a fake `hermes` CLI with `bash cluster/apps/ai/hermes-agent/tests/kanban-wake-trim.test.sh`.
+
 Jobs removed from `hermes.cronJobs` stay in Hermes until they are listed in `hermes.retiredCronJobs`, which the cron seeder deletes at start (today `kanban-post`, the earlier
 script that posted these notices in `#hermes`).
 
@@ -183,7 +204,7 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | Job `renovate-cleanup`, 05:30             | script only, no model   | Archives done cards older than 14 days; posts only if it fails                                                            |
 
 The daily run is started by cron, so its cards post no notices; `renovate-post` posts the summaries and merge reports. A card created from an owner's reply in `#hermes-renovate`
-(`merge`, `fix`) posts a short notice in that thread when it, or a card created from it, finishes or blocks, and the agent answers in one line at most. Start a manual run with
+(`merge`, `fix`) posts a short notice in that thread when it, or a card created from it, finishes or blocks; `kanban-wake-trim` keeps those notices from waking the agent (see "Kanban wiring"). Start a manual run with
 `hermes cron run renovate-daily`, not from a Discord message, or every card of the run reports back in the chat.
 
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning

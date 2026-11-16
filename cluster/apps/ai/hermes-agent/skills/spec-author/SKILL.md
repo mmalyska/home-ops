@@ -117,8 +117,8 @@ When execution starts, post every human task from `tasks.md` at once, before any
 1. For each human task, create a card with the `kanban_create` tool: `title`, a `body` that says exactly what the person must do and how to confirm it, and `assignee` set to `default`. The dispatcher
    does not run `default`, so no worker claims the card.
 2. Do not set `parents` on a human card. A card with an open parent waits in `todo`, and a card in `todo` cannot be blocked. If a human task depends on another human task, write that dependency in its body instead.
-3. For an already-verified approval gate, record the evidence and complete its card immediately instead of blocking it or asking again. For outstanding human work, block the card straight away with the `kanban_block` tool: `task_id` is the new card, `kind` is `needs_input`, and `reason` says in one or two sentences what the owner must do. You may instead pass
-   `initial_status` set to `blocked` when creating the card.
+3. For an already-verified approval gate, record the evidence and complete its card immediately instead of blocking it or asking again. For outstanding human work, create the card with `initial_status` set to `blocked` and put what the owner must do in the first lines of the `body`. Do not
+   create it open and block it with `kanban_block` afterwards: that block wakes you for nothing, and a blocked-at-creation card does not.
 4. Post the list of human cards in the spec thread.
 5. If an unsatisfied, active human task is marked as blocking everything, do not create any worker card. Tell the owner the whole work is stopped until it is done.
 
@@ -130,7 +130,7 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
 
 - `title`: the task title.
 - `assignee`: `worker`.
-- `skills`: `["implement-task"]`.
+- `skills`: `["implement-task"]`. Always include it, also on evidence-only tasks: only worker cards with this skill wake you when they finish or block (see below).
 - `parents`: the ids of every card this task depends on, human cards included. A card with an open parent waits in `todo` until all parents are `done`. A blocked human card is not done, so everything that depends on it waits.
 - `body`: everything the worker needs, because it has no memory. Include the repository (`mmalyska/<repo>`), the base branch, the branch name to use, the task text copied from `tasks.md`, links to the
   merged spec and plan files on the default branch, the files in scope, the checks to run, what "done" means, and what it must not touch. Never include secret values.
@@ -144,8 +144,11 @@ Create one card per authorized task, in the order of `tasks.md`, with the `kanba
 ### While the work runs
 
 - Every card you create in the spec thread subscribes the thread, and the cards created from it copy the subscription. When a card blocks, finishes, gives up or crashes,
-  Hermes posts a short notice in the thread and wakes you there. On each wake, read that card with `kanban_show`, comments included, and act as below. Reply with exactly `[SILENT]` when the
-  notice needs nothing from you, such as a human card you have just created and blocked.
+  Hermes posts a short notice in the thread. Only a worker card with the `implement-task` skill also wakes you there; within a minute of creation every other card (human cards
+  included) is switched to the notice alone. On each wake, read that card with `kanban_show`, comments included, and act as below. Reply with exactly `[SILENT]` when the
+  notice needs nothing from you.
+- A notice without a wake still needs a look when you next speak in the thread: a human card that the owner did not close through you, or another card that blocked. Check the
+  thread's cards with `kanban_show` before you post the next status.
 - When the owner confirms in a Discord message that a human task is done, check it if you can. Then call `kanban_unblock` and `kanban_complete` on that card. If the tools refuse, tell the owner to close
   it with `/kanban` in Discord.
 - When a worker card is blocked with `needs_input`, read it with `kanban_show`, including its comments, where the worker puts its evidence. If the evidence is not there, say so in the spec thread and do not decide from the block reason alone. Answer from the spec and plan with `kanban_comment` and `kanban_unblock` when you can. If the spec and plan do not answer
