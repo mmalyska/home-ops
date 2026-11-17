@@ -23,6 +23,11 @@ hermes:
   # (subscription, no budget cap); only small background ones stay on local. Managed ${VAR} references
   # expand against the pod environment only, not a profile .env.
   config:
+    # Keep 10 recent messages verbatim at compression instead of the default 20. With 20, large tool results stayed in
+    # the tail, a compressed #hermes session still held 45 to 72K tokens, and compression ran again every few minutes
+    # against the 100K threshold (22 runs between 09:40 and 11:56 on 2026-11-17). Hermes never keeps fewer than 8.
+    compression:
+      protect_last_n: 10
     approvals:
       mode: smart
     display:
@@ -49,9 +54,11 @@ hermes:
         model: main
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
+      # main-cheap, not main: on main a summary took 150 to 260 s (median 168 s, 35 runs on 2026-11-16/17) while the
+      # conversation waited; summaries do not need main's reasoning.
       compression:
         provider: custom
-        model: main
+        model: main-cheap
         base_url: http://litellm.ai.svc.cluster.local:4000/v1
         api_key: ${LITELLM_API_KEY}
       skills_hub:
@@ -204,6 +211,9 @@ hermes:
         streaming: false
       memory:
         provider: honcho
+        # USER.md (the owner profile in every prompt) is full at the default 1375 characters: four writes were refused
+        # on 2026-11-16. Twice the default adds at most about 350 tokens per call.
+        user_char_limit: 2750
       # The #hermes channel session lives until /new, and every chat turn and kanban wake replays it. With the
       # 0.75 floor Hermes applies below a 512K window, compression would start only at 150K (session averaged
       # 92K per call, 2026-11-16); threshold_tokens is applied after that floor. Idle compaction shrinks a
@@ -373,6 +383,23 @@ hermes:
           - "gh api*-X DELETE*"
           - "gh api*--method DELETE*"
           - "argocd app sync*"
+      # Dangerous-command classes the worker may run without a person to approve them (kanban runs are unattended, so
+      # Hermes blocks every flagged command outright). Owner decision 2026-11-17, accepting the risk: the worker runs in
+      # its own Coder workspace, whose token can push but not merge or approve. These were the classes that blocked
+      # real work (python -c and heredoc scripts for render diffs, rm -rf of its own worktrees and temp dirs, resetting
+      # its own branches). Rule keys, not globs: a glob never matches a command with &&, ;, | or a heredoc.
+      # Still enforced before this list: the deny rules above and Hermes' hard floor (deleting /, system directories
+      # or the home directory, sudo and the like).
+      command_allowlist:
+        - "script execution via -e/-c flag"
+        - "script execution via heredoc"
+        - "shell execution via heredoc"
+        - "recursive delete"
+        - "recursive delete (long flag)"
+        - "recursive delete (flags after operands)"
+        - "delete in root path"
+        - "git branch force delete"
+        - "git reset --hard (destroys uncommitted changes)"
 
 externalSecrets:
   - secretName: DISCORD_BOT_TOKEN
