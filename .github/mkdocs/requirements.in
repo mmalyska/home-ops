@@ -1,0 +1,5 @@
+mkdocs[i18n]==1.6.1
+mkdocs-material==9.8.1
+mkdocs-git-revision-date-localized-plugin==1.7.0
+mkdocs-autolinks-plugin==0.7.1
+pymdown-extensions==13.1

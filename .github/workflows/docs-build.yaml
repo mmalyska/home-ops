@@ -4,6 +4,7 @@ name: Docs build
 # Pull-request build of the public docs site. publish-pages.yaml only builds on a push to main, so a
 # broken nav entry or link would otherwise surface after the merge, on the publication path.
 # Builds only: nothing is deployed, the token is read-only and no secret is used.
+# Inputs are the committed hashed lock, .github/mkdocs/.python-version and .github/mkdocs/mise.toml.
 
 on: # yamllint disable-line rule:truthy
   pull_request:
@@ -12,7 +13,10 @@ on: # yamllint disable-line rule:truthy
     paths:
       - "docs/**"
       - ".github/mkdocs/**"
+      - ".github/tests/docs-workflows.sh"
+      - ".taskfiles/mkdocs.yml"
       - ".github/workflows/docs-build.yaml"
+      - ".github/workflows/publish-pages.yaml"
   workflow_dispatch:
 
 concurrency:
@@ -23,6 +27,17 @@ permissions:
   contents: read
 
 jobs:
+  invariants:
+    name: Docs workflow invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Check docs workflow invariants
+        run: bash .github/tests/docs-workflows.sh
+
   build:
     name: MkDocs strict build
     runs-on: ubuntu-latest
@@ -33,13 +48,31 @@ jobs:
           # The git-revision-date-localized plugin warns on a shallow clone, and --strict turns a warning into a failure.
           fetch-depth: 0
           persist-credentials: false
+      - name: Read docs tool pins
+        id: pins
+        # Plain reads of the version files: no shell evaluation of the configuration.
+        run: |
+          echo "python=$(cat .github/mkdocs/.python-version)" >> "$GITHUB_OUTPUT"
+          echo "uv=$(sed -n 's/^uv = "\([^"]*\)"$/\1/p' .github/mkdocs/mise.toml)" >> "$GITHUB_OUTPUT"
       - name: Setup Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
-          python-version: "3.15"
-      - name: Install MkDocs
-        run: pip install mkdocs[i18n]
-      - name: Install requirements
-        run: pip install -r .github/mkdocs/requirements.txt
+          python-version-file: .github/mkdocs/.python-version
+      - name: Setup uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ steps.pins.outputs.uv }}
+          enable-cache: true
+          cache-dependency-glob: ".github/mkdocs/requirements.txt"
+      - name: Create docs virtualenv
+        run: uv venv --python "${{ steps.pins.outputs.python }}" .github/mkdocs/.venv
+      - name: Install locked docs requirements
+        run: >-
+          uv pip sync --require-hashes
+          --python .github/mkdocs/.venv/bin/python
+          .github/mkdocs/requirements.txt
       - name: Build site (strict, not deployed)
-        run: mkdocs build --strict --config-file .github/mkdocs/mkdocs.yml --site-dir "${RUNNER_TEMP}/site"
+        run: >-
+          .github/mkdocs/.venv/bin/mkdocs build --strict
+          --config-file .github/mkdocs/mkdocs.yml
+          --site-dir "${RUNNER_TEMP}/site"

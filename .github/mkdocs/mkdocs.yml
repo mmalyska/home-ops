@@ -159,3 +159,4 @@ nav:
   - "Contributing":
       - "AI workflow": contributing/ai-workflow.md
       - "New repository requirements": contributing/new-repository.md
+      - "Docs build": contributing/docs-build.md

@@ -1,20 +1,72 @@
 ---
 version: "3"
 
+# The docs dependency lock, the Python interpreter and uv are pinned in files so local runs and CI
+# use the same inputs. See docs/src/contributing/docs-build.md.
+
+vars:
+  MKDOCS_DIR: .github/mkdocs
+  MKDOCS_VENV: .github/mkdocs/.venv
+  PYTHON_VERSION:
+    sh: cat .github/mkdocs/.python-version
+  UV_VERSION:
+    sh: sed -n 's/^uv = "\([^"]*\)"$/\1/p' .github/mkdocs/mise.toml
+
 tasks:
   build:
-    desc: Build mkdocs
+    desc: Build mkdocs strict with the locked docs environment
+    deps: [prerequesites]
     cmds:
-      - task: prerequesites
-      - mkdocs build --config-file .github/mkdocs/mkdocs.yml --site-dir ./../../site
+      - >-
+        {{.MKDOCS_VENV}}/bin/mkdocs build --strict
+        --config-file {{.MKDOCS_DIR}}/mkdocs.yml
+        --site-dir ./../../site
 
   serve:
-    desc: Build mkdocs
+    desc: Serve mkdocs locally with the locked docs environment
+    deps: [prerequesites]
     cmds:
-      - task: prerequesites
-      - mkdocs serve --config-file .github/mkdocs/mkdocs.yml
+      - >-
+        {{.MKDOCS_VENV}}/bin/mkdocs serve
+        --config-file {{.MKDOCS_DIR}}/mkdocs.yml
+
+  lock:
+    desc: Regenerate the hashed docs lock for the Python in .github/mkdocs/.python-version
+    cmds:
+      - >-
+        uv pip compile --generate-hashes
+        --python-version={{.PYTHON_VERSION}}
+        --output-file={{.MKDOCS_DIR}}/requirements.txt
+        {{.MKDOCS_DIR}}/requirements.in
+    preconditions:
+      - sh: uv python find "{{.PYTHON_VERSION}}" > /dev/null
+        msg: >-
+          Python {{.PYTHON_VERSION}} (from .github/mkdocs/.python-version) is not installed.
+          Install it, for example with "mise install python@{{.PYTHON_VERSION}}", then rerun
+          "task mkdocs:lock".
+      - sh: test "$(uv --version | cut -d' ' -f2)" = "{{.UV_VERSION}}"
+        msg: >-
+          uv {{.UV_VERSION}} (from .github/mkdocs/mise.toml) is required, and
+          another uv is on PATH. Install the pinned version, for example with
+          "mise install uv@{{.UV_VERSION}}", then rerun "task mkdocs:lock".
 
   prerequesites:
+    desc: Create the docs virtualenv and install the hashed lock
     internal: true
+    preconditions:
+      - sh: uv python find "{{.PYTHON_VERSION}}" > /dev/null
+        msg: >-
+          Python {{.PYTHON_VERSION}} (from .github/mkdocs/.python-version) is not installed.
+          Install it, for example with "mise install python@{{.PYTHON_VERSION}}", then rerun
+          the task.
+      - sh: test "$(uv --version | cut -d' ' -f2)" = "{{.UV_VERSION}}"
+        msg: >-
+          uv {{.UV_VERSION}} (from .github/mkdocs/mise.toml) is required, and
+          another uv is on PATH. Install the pinned version, for example with
+          "mise install uv@{{.UV_VERSION}}", then rerun the task.
     cmds:
-      - python3 -m pip install -r .github/mkdocs/requirements.txt
+      - uv venv --python "{{.PYTHON_VERSION}}" --allow-existing {{.MKDOCS_VENV}}
+      - >-
+        uv pip sync --require-hashes
+        --python {{.MKDOCS_VENV}}/bin/python
+        {{.MKDOCS_DIR}}/requirements.txt

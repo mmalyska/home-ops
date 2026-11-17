@@ -7,6 +7,8 @@ on:
     paths:
       - ".github/workflows/publish-pages.yaml"
       - ".github/mkdocs/**"
+      - ".github/tests/docs-workflows.sh"
+      - ".taskfiles/mkdocs.yml"
       - "docs/**"
 
   workflow_dispatch:
@@ -30,25 +32,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
-      - name: Setup Python
-        uses: actions/setup-python@v7
         with:
-          python-version: "3.15"
-      - name: Install MkDocs
-        run: pip install mkdocs[i18n]
-      - name: Install requirements
-        run: pip install -r .github/mkdocs/requirements.txt
+          # The git-revision-date-localized plugin warns on a shallow clone, and --strict turns a warning into a failure.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Read docs tool pins
+        id: pins
+        # Plain reads of the version files: no shell evaluation of the configuration.
+        run: |
+          echo "python=$(cat .github/mkdocs/.python-version)" >> "$GITHUB_OUTPUT"
+          echo "uv=$(sed -n 's/^uv = "\([^"]*\)"$/\1/p' .github/mkdocs/mise.toml)" >> "$GITHUB_OUTPUT"
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version-file: .github/mkdocs/.python-version
+      - name: Setup uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ steps.pins.outputs.uv }}
+          enable-cache: true
+          cache-dependency-glob: ".github/mkdocs/requirements.txt"
+      - name: Create docs virtualenv
+        run: uv venv --python "${{ steps.pins.outputs.python }}" .github/mkdocs/.venv
+      - name: Install locked docs requirements
+        run: >-
+          uv pip sync --require-hashes
+          --python .github/mkdocs/.venv/bin/python
+          .github/mkdocs/requirements.txt
       - name: Setup caching
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           key: ${{ github.sha }}
           path: .cache
       - name: Build site (_site directory name is used for Jekyll compatiblity)
-        run: mkdocs build --config-file .github/mkdocs/mkdocs.yml --site-dir ./../../site
+        run: >-
+          .github/mkdocs/.venv/bin/mkdocs build --strict
+          --config-file .github/mkdocs/mkdocs.yml
+          --site-dir ./../../site
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: ./site
 
@@ -62,4 +86,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
