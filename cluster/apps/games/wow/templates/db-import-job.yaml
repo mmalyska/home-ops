@@ -31,7 +31,7 @@ spec:
                   key: MYSQL_ROOT_PASSWORD
       containers:
         - name: db-import
-          image: ghcr.io/mmalyska/azerothcore-db-import:rolling@sha256:e0b35c7e8106d3e9ece00adbcc11835426fcc37a92644f97fcf186cc117b5d3a
+          image: ghcr.io/mmalyska/azerothcore-db-import:rolling@sha256:e5fcf50fe43e123ab6a2fa27a710a3eb3739a62752f6fc7ba22fa2e5a7316fa1
           env:
             - name: AC_DATA_DIR
               value: /azerothcore/env/dist/data
