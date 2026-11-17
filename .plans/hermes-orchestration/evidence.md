@@ -284,3 +284,14 @@ Merging has been on since #6278 (2026-11-13 17:40 UTC). #6280 then created the p
 - **A changed diff was checked again:** on `#6259` the worker said `owner` on 11-13 (G7, AWS CLI notes lowering EMR limits). Renovate pushed 2.40.3 on 11-14 01:17, the next run checked the new diff as `clean`, and it merged at 05:13. The old verdict was not reused.
 - **Denylist override:** `#6271` (CoreDNS chart, denylisted as `coredns`) got `owner` on 11-13 and again on 11-15 for the current head, because the render adds `terminationMessagePolicy` (G8). It was not auto-merged. After the owner's `merge` reply, `rudi-the-brain` approved and merged it on 2026-11-16 at 10:52 UTC, with `triage/owner` still on it.
 - **Approvals:** `approvals.cron_mode: deny` blocked no `gh pr review` or `gh pr merge` command, so `command_allowlist` was not changed.
+
+## T20 restart check (2026-11-17)
+
+Read-only checks on the running pod, with the owner's consent for `kubectl exec` that changes nothing. No restart was made: the pod started at 2026-11-16 21:11 UTC after the merges of that evening, and nothing was set by hand since.
+
+- **Seeders:** all seven init containers exited 0. `profile-config-seeder` merged both profile overlays; `skills-seeder` wrote the git versions of the changed skills; `cron-seeder` found all five jobs unchanged.
+- **Settings:** `/etc/hermes/config.yaml` (Managed Scope) equals the `hermes-agent-config` ConfigMap rendered from `main` at `a2ee4b5f`. Argo CD: `Synced`, `Healthy` at that revision.
+- **Skills:** the five `default` and five `worker` skills from `profileSkills` are present. Nine match git byte for byte. `spec-author` differs: Hermes edited its copy at 22:16 UTC, an hour after the seeder wrote the git version, which P15 keeps for `skill-sync`.
+- **SOUL files:** both match `files/soul-default.md` and `files/soul-worker.md`.
+- **Scheduled jobs:** `renovate-daily`, `renovate-post`, `renovate-cleanup`, `kanban-wake-trim` and `skill-sync` are active on `default` with next run times; `renovate-daily` ran on time at 06:00 on 2026-11-17. `worker` has no jobs, as declared.
+- **Version:** the pod runs Hermes v0.23.1; the v0.23.2 update is open as #6333.

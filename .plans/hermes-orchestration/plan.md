@@ -8,7 +8,7 @@ branch: feat/hermes-orchestration-plan
 worktree: .worktrees/feat/hermes-orchestration-plan
 pr: "#6176"
 started: 2026-11-06
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Plan: Hermes orchestration
@@ -137,22 +137,22 @@ T14, T17 --> T21 --> T22 --> T23 --> T18 --> T19 --> T20   (P13; T22 replaces T1
 
 ## Quality gates
 
-Results are filled in during Build. Everything is NOT RUN today.
+Results as of 2026-11-17. Evidence is in [evidence.md](evidence.md), in the section named in each row.
 
-| Spec success criterion                       | Method                                  | Task |
-| -------------------------------------------- | --------------------------------------- | ---- |
-| Both workspaces healthy                      | `coder list`, `kubectl get deploy`      | T07  |
-| Commands run in the right workspace          | `hostname` through each profile         | T10  |
-| Own account, HTTPS push, verified commit     | Scratch commit per account              | T08  |
-| `agent-rosie` cannot merge alone             | Throwaway PR, that approval only        | T16  |
-| Three report-only runs by 07:00              | Summaries and PR labels                 | T18  |
-| 0 wrong "clean" verdicts in those runs       | Owner review, recorded in `evidence.md` | T18  |
-| Clean PR merged and checked; denylisted asks | First runs with merging on              | T19  |
-| Unchanged diff causes no worker task         | Second run, kanban board                | T18  |
-| Spec, plan, implementation flow              | One real small piece of work            | T20  |
-| Restored after a pod restart                 | Restart, then re-run the checks above   | T20  |
-| Summary after every check, without polling   | Card timestamps on the board            | T18  |
-| Each merge in its own card, one PR per card  | Board and PR timeline                   | T19  |
+| Spec success criterion                       | Method                                  | Task | Result                                                                                                                |
+| -------------------------------------------- | --------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------- |
+| Both workspaces healthy                      | `coder list`, `kubectl get deploy`      | T07  | PASS: T07 status; both workspace pods still running on 2026-11-17                                                     |
+| Commands run in the right workspace          | `hostname` through each profile         | T10  | PASS: "T11 results", V1 and V2                                                                                        |
+| Own account, HTTPS push, verified commit     | Scratch commit per account              | T08  | PASS: V8 in "Merge requirements"                                                                                      |
+| `agent-rosie` cannot merge alone             | Throwaway PR, that approval only        | T16  | PASS: T16 marked done on its checks; the throwaway PR result itself is not written in `evidence.md`                   |
+| Three report-only runs by 07:00              | Summaries and PR labels                 | T18  | PASS with an accepted deviation: run 3 posted at 14:50 UTC after a manual unblock, accepted by the owner ("T18 runs") |
+| 0 wrong "clean" verdicts in those runs       | Owner review, recorded in `evidence.md` | T18  | PASS: "T18 runs"                                                                                                      |
+| Clean PR merged and checked; denylisted asks | First runs with merging on              | T19  | PASS: "T19 runs" (#6267 onwards; `#6271` merged on the owner's `merge`)                                               |
+| Unchanged diff causes no worker task         | Second run, kanban board                | T18  | PASS: "Pipeline run", 10 check cards for 37 open PRs (7 new, 3 changed diffs); not checked one by one on T18 run 3    |
+| Spec, plan, implementation flow              | One real small piece of work            | T20  | PENDING: `docs-build-supply-chain` (spec #6300, plan #6301, revision #6315); T2 passed, T3 running on 2026-11-17      |
+| Restored after a pod restart                 | Restart, then re-run the checks above   | T20  | PASS: "T20 restart check", on the pod started 2026-11-16 21:11 UTC; no restart made for the check                     |
+| Summary after every check, without polling   | Card timestamps on the board            | T18  | PASS: "Pipeline run" and "T18 runs", the summary card starts when the last check finishes                             |
+| Each merge in its own card, one PR per card  | Board and PR timeline                   | T19  | PASS from PR timelines only (one PR at a time, minutes apart); the kanban board was not read ("T19 runs")             |
 
 Every PR also runs the matching rows of `.agents/policy/validation.md`, and reports PASS, FAIL, NOT RUN or N/A.
 
