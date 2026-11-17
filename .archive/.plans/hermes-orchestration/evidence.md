@@ -284,3 +284,20 @@ Merging has been on since #6278 (2026-11-13 17:40 UTC). #6280 then created the p
 - **A changed diff was checked again:** on `#6259` the worker said `owner` on 11-13 (G7, AWS CLI notes lowering EMR limits). Renovate pushed 2.40.3 on 11-14 01:17, the next run checked the new diff as `clean`, and it merged at 05:13. The old verdict was not reused.
 - **Denylist override:** `#6271` (CoreDNS chart, denylisted as `coredns`) got `owner` on 11-13 and again on 11-15 for the current head, because the render adds `terminationMessagePolicy` (G8). It was not auto-merged. After the owner's `merge` reply, `rudi-the-brain` approved and merged it on 2026-11-16 at 10:52 UTC, with `triage/owner` still on it.
 - **Approvals:** `approvals.cron_mode: deny` blocked no `gh pr review` or `gh pr merge` command, so `command_allowlist` was not changed.
+
+## T20 restart check (2026-11-17)
+
+Read-only checks on the running pod, with the owner's consent for `kubectl exec` that changes nothing. No restart was made: the pod started at 2026-11-16 21:11 UTC after the merges of that evening, and nothing was set by hand since.
+
+- **Seeders:** all seven init containers exited 0. `profile-config-seeder` merged both profile overlays; `skills-seeder` wrote the git versions of the changed skills; `cron-seeder` found all five jobs unchanged.
+- **Settings:** `/etc/hermes/config.yaml` (Managed Scope) equals the `hermes-agent-config` ConfigMap rendered from `main` at `a2ee4b5f`. Argo CD: `Synced`, `Healthy` at that revision.
+- **Skills:** the five `default` and five `worker` skills from `profileSkills` are present. Nine match git byte for byte. `spec-author` differs: Hermes edited its copy at 22:16 UTC, an hour after the seeder wrote the git version, which P15 keeps for `skill-sync`.
+- **SOUL files:** both match `files/soul-default.md` and `files/soul-worker.md`.
+- **Scheduled jobs:** `renovate-daily`, `renovate-post`, `renovate-cleanup`, `kanban-wake-trim` and `skill-sync` are active on `default` with next run times; `renovate-daily` ran on time at 06:00 on 2026-11-17. `worker` has no jobs, as declared.
+- **Version:** the pod runs Hermes v0.23.1; the v0.23.2 update is open as #6333.
+
+## T20 spec-driven flow (2026-11-16 to 11-17)
+
+- **Run:** `docs-build-supply-chain`: spec #6300, plan #6301, revised spec and plan #6315 after the owner's H2 decision, implementation PR #6339 by `rudi-the-brain` at `b21e598c`, CI green on 2026-11-17. The first implementation PR, #6311, was closed after a false gate PASS; the fixes from that are the items under "Hermes: cut model cost" in `.plans/TODO.md`.
+- **Block loop on T3 (card `t_a4d00a11`):** from 10:19 UTC the card was blocked for an owner decision, routed to `triage` by `block_loop_detected`, rewritten and put back to `ready` by the auto-decomposer, and blocked again: 9 loops, 12 worker runs and 8 title/body rewrites until the owner blocked it by hand. Upstream bug NousResearch/hermes-agent#75444; `kanban.auto_decompose: false` in #6338.
+- **Owner decision on T3:** the transformed-fixture Renovate extraction (branch-SHA presets) was accepted as the full-config extraction evidence; the real Renovate runner is that plan's T4.
