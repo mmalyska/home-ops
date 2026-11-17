@@ -23,7 +23,10 @@ Never include the literal text `[SILENT]` in it.
 
 ## Rules for every run
 
-- Before working in a repository, read its `AGENTS.md` from the default branch through the terminal: `gh api -H 'Accept: application/vnd.github.raw' repos/mmalyska/<repo>/contents/AGENTS.md`.
+- Before working in a repository, list its `AGENTS.md` files on the default branch once:
+  `gh api 'repos/mmalyska/<repo>/git/trees/HEAD?recursive=1' --jq '.tree[].path | select(endswith("AGENTS.md"))'`.
+  Read only the files listed, through the terminal: `gh api -H 'Accept: application/vnd.github.raw' repos/mmalyska/<repo>/contents/<path>`.
+  An empty list means the repository adds no rules. Do not guess other paths.
   Never trust the copy on a PR branch. If a repository's rules are stricter than this skill, the stricter rule wins.
   HTTP 404 means the repository has no `AGENTS.md`. It adds no rules, and it is not a failure, so do not report it.
   After any other error its rules are unknown: never auto-merge in that repository during this run, and report the error.
