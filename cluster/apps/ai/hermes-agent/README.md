@@ -130,6 +130,15 @@ Kanban tools are opt-in per platform: the `default` overlay turns them on for Di
 Those cards can show, create and complete cards, but not list or unblock them; that is left to a cron or Discord session.
 The Renovate run uses its own board, `renovate`.
 
+Kanban limits found while building the Renovate pipeline (checked on v0.23.0, 2026-11-10; source: `.archive/.plans/hermes-orchestration/evidence.md`, "Pipeline checks"):
+
+- The kanban notifier posts at most about 200 characters of a card's result. For a full result, a cron job with `--no-agent --script` delivers the script's stdout as it
+  is, and the script reads the card with `hermes kanban --board <board> show <id> --json` (this is what `renovate-post` does).
+- A child card stays in `todo` while its parent is `blocked`, and starts once the parent is archived. `--max-runtime` re-queues a card that runs too long, and
+  `kanban.failure_limit` (default 2) blocks it after repeated failures.
+- Hermes never archives done cards; `hermes kanban gc` only trims events and logs. `renovate-cleanup` archives done cards of the `renovate` board after 14 days.
+- A per-card `--model` is honoured; kanban has no per-card reasoning effort (cron jobs and profiles do).
+
 `kanban.auto_decompose` is off as a workaround for an upstream bug ([NousResearch/hermes-agent#75444](https://github.com/NousResearch/hermes-agent/issues/75444)). A card
 that blocks twice in a row for the same reason goes to `triage` for the owner (`block_loop_detected`), but the auto-decomposer takes every `triage` card, rewrites its title
 and body and puts it back to `ready`, so it runs and blocks again every one to two minutes. With the setting off, such a card waits in `triage`; read it with
@@ -289,7 +298,7 @@ Known bypasses: the hook sees only the text of a terminal command.
 
 The hook config is seeded from git at every start, so the check holds even while Hermes keeps its own edits of `spec-author`.
 
-The design is in [`.plans/hermes-orchestration/spec.md`](../../../../.plans/hermes-orchestration/spec.md) and [`plan.md`](../../../../.plans/hermes-orchestration/plan.md); `tasks.md` in the same folder tracks the build.
+The design history (archived, not instructions) is in [`.archive/.plans/hermes-orchestration/spec.md`](../../../../.archive/.plans/hermes-orchestration/spec.md) and [`plan.md`](../../../../.archive/.plans/hermes-orchestration/plan.md).
 The `default` profile may approve and merge only the Renovate PRs the merge policy allows. Every other PR is merged by the owner, and the repository rules (see [New repository
 requirements](../../../../docs/src/contributing/new-repository.md)) enforce that.
 
@@ -413,7 +422,7 @@ Hermes holds no provider key. `model.base_url` is the gateway, `model.api_key` i
 - Idle compaction is a quality trade-off: after 30 minutes idle it also compresses the `#hermes` chat history of any session above about 20K tokens (the post-compression target, 100K × `target_ratio` 0.2), history that was previously kept word for word until `/new`; each compaction is one summary call on `main`.
 - Prompt caching on `main`/`main-cheap`: Managed Scope declares the gateway under `providers.ai-gateway` with `session_affinity_header: x-litellm-session-id`, so Hermes sends its session key on every call and LiteLLM passes it on as the ChatGPT `session_id` (see the prompt-caching note under "Fallbacks and budget" in `docs/src/k8s/ai-gateway.md`). Without it `main` got 13 to 21 % cache hits. Check with the `cache=` field of the `API call #` lines in `agent.log` (calls without `upstream=` went to the subscription or the Jetson).
 - `model.streaming` is `false` in both overlays. LiteLLM `v1.109.1` drops the arguments of parallel tool calls in a streamed response, so Hermes received empty tool calls
-  (390 failed calls in 7 days, and the failed run on 2026-11-13). Unstreamed responses arrive intact. Turn streaming back on only after a LiteLLM version passes the test in `.plans/hermes-orchestration/evidence.md`.
+  (390 failed calls in 7 days, and the failed run on 2026-11-13). Unstreamed responses arrive intact. Turn streaming back on only after a LiteLLM version passes the test in `.archive/.plans/hermes-orchestration/evidence.md`.
 - Auxiliary tasks follow "prefer `main`" (subscription, no budget cap): `web_extract`, `compression`, `approval`, `mcp`, `kanban_decomposer` and `vision` use `main`. `vision` was on `local-think` from 2026-10-29 to 2026-11-13, while nv1 served LFM3-VL-2B; the text-only LFM3-1.7B reads no images. Small background tasks (`title_generation`, `triage_specifier`, `profile_describer`, `curator`, `skills_hub`) stay on `local`, which is free and keeps them off the subscription limits. Nothing in Hermes depends on `cheap` directly, so it can be retired without touching this file.
 - **Hermes refuses to build an agent for any model with less than 64,000 tokens of context** (`agent_init._enforce_minimum_context`). `local` is llama-server with `-c 262144 -np 2`: two slots of 131072 tokens (LFM3-1.7B is trained to 262144), so it stays usable as an auxiliary model while a slot stays at or above 64000 (see `.claude/memory/reference_hermes_64k_context_floor.md`). It serves two requests at a time.
 - Text-to-speech is off (2026-11-13): there is no `tts` section and both profiles list `tts` in `agent.disabled_toolsets`. Removing the section alone is not enough, because Hermes then falls back to Edge TTS, a cloud service outside the AI gateway. To bring voice back, run an OpenAI-compatible Piper server behind the gateway and point `tts.provider: openai` with `tts.openai.base_url` at the gateway; the Home Assistant Piper speaks only the Wyoming protocol, which Hermes cannot use. Speech-to-text (Speaches) is not restored either.

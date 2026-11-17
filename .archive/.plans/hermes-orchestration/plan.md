@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: shipped
 owner: repository owner
 profile: DEEP
 topology: PARALLEL

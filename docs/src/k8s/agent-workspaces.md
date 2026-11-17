@@ -68,7 +68,7 @@ and the worker, which reads most of the untrusted text (diffs, changelogs, CI lo
 it. The Hermes command deny lists are a policy, not a sandbox, so one shared workspace (a worktree per profile) would let
 the worker use the other token. The cost is that the profiles cannot read each other's files: the worker hands back
 evidence in kanban comments and code on a pushed branch (`implement-task` skill, "Hand back"). Owner decision 2026-11-16,
-plan decision P17 in `.plans/hermes-orchestration/plan.md`.
+plan decision P17 in `.archive/.plans/hermes-orchestration/plan.md`.
 
 **Why no shared handoff volume.** A volume mounted in both workspaces was the middle option, and it is feasible: the
 CephFS StorageClass `ceph-filesystem` serves ReadWriteMany, while the workspace PVCs today are ReadWriteOnce on
