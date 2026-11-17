@@ -130,6 +130,11 @@ Kanban tools are opt-in per platform: the `default` overlay turns them on for Di
 Those cards can show, create and complete cards, but not list or unblock them; that is left to a cron or Discord session.
 The Renovate run uses its own board, `renovate`.
 
+`kanban.auto_decompose` is off as a workaround for an upstream bug ([NousResearch/hermes-agent#75444](https://github.com/NousResearch/hermes-agent/issues/75444)). A card
+that blocks twice in a row for the same reason goes to `triage` for the owner (`block_loop_detected`), but the auto-decomposer takes every `triage` card, rewrites its title
+and body and puts it back to `ready`, so it runs and blocks again every one to two minutes. With the setting off, such a card waits in `triage`; read it with
+`hermes kanban show <id>`, answer the question and move it on by hand. Remove the setting once the issue is fixed.
+
 `kanban.auto_subscribe_on_create` is on for `default`. A card created from a Discord chat subscribes that chat, thread included, and the cards created from it copy the subscription.
 When such a card blocks, finishes, gives up or crashes, Hermes posts a short notice in that thread. Every card of the execution phase of spec-driven work reports back in its spec
 thread this way. Cards started by cron or by the dispatcher have no chat, so they post nothing.

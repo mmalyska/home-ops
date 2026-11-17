@@ -236,6 +236,12 @@ hermes:
         # renovate-post posts its summaries. No per-board or per-status wake switch exists (checked v0.23.1 and upstream
         # main, 2026-11-16).
         auto_subscribe_on_create: true
+        # Workaround for an upstream bug: remove once NousResearch/hermes-agent#75444 is fixed (duplicates #79728,
+        # #109453, #152738). The auto-decomposer takes every `triage` card, including a card a repeated block sent there
+        # for a human (`block_loop_detected`), rewrites its title and body and puts it back to `ready`, so the card
+        # blocks again every one to two minutes (t_a4d00a11, 2026-11-17). Nothing here creates triage cards on purpose.
+        # Not fixed in v0.23.2 or upstream main on 2026-11-17.
+        auto_decompose: false
       # Kanban tools are opt-in per platform. Saving a list for Discord also turns on the Discord tools. spec-author needs
       # the `discord` set for create_thread; the admin set stays disabled.
       platform_toolsets:
