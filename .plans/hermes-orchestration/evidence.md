@@ -295,3 +295,9 @@ Read-only checks on the running pod, with the owner's consent for `kubectl exec`
 - **SOUL files:** both match `files/soul-default.md` and `files/soul-worker.md`.
 - **Scheduled jobs:** `renovate-daily`, `renovate-post`, `renovate-cleanup`, `kanban-wake-trim` and `skill-sync` are active on `default` with next run times; `renovate-daily` ran on time at 06:00 on 2026-11-17. `worker` has no jobs, as declared.
 - **Version:** the pod runs Hermes v0.23.1; the v0.23.2 update is open as #6333.
+
+## T20 spec-driven flow (2026-11-16 to 11-17)
+
+- **Run:** `docs-build-supply-chain`: spec #6300, plan #6301, revised spec and plan #6315 after the owner's H2 decision, implementation PR #6339 by `rudi-the-brain` at `b21e598c`, CI green on 2026-11-17. The first implementation PR, #6311, was closed after a false gate PASS; the fixes from that are the items under "Hermes: cut model cost" in `.plans/TODO.md`.
+- **Block loop on T3 (card `t_a4d00a11`):** from 10:19 UTC the card was blocked for an owner decision, routed to `triage` by `block_loop_detected`, rewritten and put back to `ready` by the auto-decomposer, and blocked again: 9 loops, 12 worker runs and 8 title/body rewrites until the owner blocked it by hand. Upstream bug NousResearch/hermes-agent#75444; `kanban.auto_decompose: false` in #6338.
+- **Owner decision on T3:** the transformed-fixture Renovate extraction (branch-SHA presets) was accepted as the full-config extraction evidence; the real Renovate runner is that plan's T4.

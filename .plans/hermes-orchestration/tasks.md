@@ -412,7 +412,7 @@ done criterion. Update a task's status and evidence in place as it is done.
 
 ## T20 — Final acceptance and ship
 
-- **Status:** in progress, 2026-11-17. Restart check PASS (see [evidence.md](evidence.md), section "T20 restart check"); "Quality gates" in `plan.md` filled in. Waiting on the spec, plan and implementation flow: `docs-build-supply-chain`, T3 running.
+- **Status:** done, 2026-11-17. Restart check PASS (see [evidence.md](evidence.md), section "T20 restart check"). The spec, plan and implementation flow ran on `docs-build-supply-chain` and ended in implementation PR #6339; its T3 card looped on an upstream auto-decompose bug, worked around in #6338. "Quality gates" in `plan.md` all PASS.
 - **Depends on:** T19. **Files:** `plan.md` status, `.plans/list.md`, then the archive per `.plans/README.md`.
 - **Do:** run the spec, plan and implementation flow once on a small real task. Restart the Hermes pod and confirm the
   settings, skills and job return. Fill in "Quality gates" in `plan.md`.
