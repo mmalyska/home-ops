@@ -6,8 +6,6 @@ General backlog items not tied to a specific plan. Last reviewed 2026-11-18. Fin
 
 ## To do
 
-- [ ] **Add `promtool` to the workspace image and check PrometheusRules with it (2026-11-18).** `promtool` is not in `ghcr.io/mmalyska/dev-workstation` (built in `mmalyska/containers`, tools through mise) and the repository has no rule tests, so #6355 (`LiteLLMFallbackChainExhausted`, which could never fire for `main`) could only be checked by running the expression against live Prometheus. Add `promtool` (Prometheus release binary) to the image, then a `task lint` step or CI job that renders the charts' PrometheusRules and runs `promtool check rules`, and a `promtool test rules` case for the LiteLLM fallback alerts with the 2026-11-16 20:24 UTC series as input (`main` → `or-deepseek-v4-pro` 429, `or-deepseek-v4-pro` → `or-deepseek-v4.1-flash` 403).
-
 - [ ] **Hermes cost follow-ups (from the 2026-11-18 measurement; the parent item is in `.archive/TODO.md`, "Moved 2026-11-18").** Results are in `cluster/apps/ai/hermes-agent/README.md` ("Result of the 2026-11-16 cost changes").
   - [ ] **Measure again after a day with a long ChatGPT rate limit or heavy use.** Not yet seen in real traffic: the `or-deepseek-v4-pro` 1.12 USD daily cap and the move to `or-deepseek-v4.1-flash` (it spent 1.03 USD in 36 h), compression on `main-cheap` with `protect_last_n: 10` (#6343; before it 22 compressions in 2h20m, each cut only to 38 to 89K against the 100K threshold), and idle compaction (no `#hermes` turn resumed after 30 idle minutes yet). Also check that `LiteLLMFallbackChainExhausted` fires on a real exhaustion.
   - [x] **Renovate check cards wait in 5-minute model turns.** *(Done 2026-11-18: `post-merge-check` waits in one terminal command of up to 9 minutes that polls every minute and returns when all pass; Hermes caps a foreground call at 600 s (`TERMINAL_MAX_FOREGROUND_TIMEOUT`), a card's claim lasts 15 min and every tool result renews it, so no `kanban_heartbeat` turns. About 9 turns instead of about 48 for an 80-minute wait.)* On 2026-11-18 06:00 to 06:40 a `renovate-daily` card ran a 300 s `terminal` wait, a `kanban_heartbeat`, then a ~50K-token call (99 % cached), over and over. Use one bounded `gh pr checks --watch`, or end the card and let the next run pick it up.
@@ -77,14 +75,3 @@ General backlog items not tied to a specific plan. Last reviewed 2026-11-18. Fin
 - [ ] **LiteLLM admin UI is master-key only (2026-10-26).** No users, roles or audit trail; LAN-only route. Options: disable the UI route, or OIDC login through the existing Keycloak in `identity` (admin/viewer roles; check the free-tier user limit first).
 - [ ] **`local` thinks by default: check the consumers that use it (from the LFM3 close-out, 2026-10-29).** Honcho (deriver, summary, dialectic) and Hermes aux tasks (`title_generation`, `skills_hub`, `triage_specifier`, `profile_describer`, `curator`) call `local` with small `max_tokens`; a one-line test on `local` burned 500 tokens on reasoning and returned empty content (Gemma ran with thinking off). Not seen in real traffic yet (both were idle). Options: `--reasoning-budget` on the server, or point the short tasks at `local-fast` (add it to the Honcho and Hermes team and virtual key `models` lists, both are needed). Check LiteLLM/Honcho logs after real use.
 - [ ] **Optional LFM3 experiments, only with a workload:** f16 KV, QAD Q4_0, multi-model layout, two simultaneous image requests, a prompt that fills the 128K window. *(`-np 2` done and live 2026-10-29; the unused LFM2.5 file was deleted from the PVC the same day.)*
-- [ ] **Working kubeconform for `cluster/` (found 2026-11-18, PR 2 of the argocd-github-webhook plan).** CI's MegaLinter kubeconform checks almost nothing:
-  - `KUBERNETES_KUBECONFORM_FILTER_REGEX_INCLUDE: "(kubernetes)"` in `.github/workflows/lint.yaml` matches no file under `cluster/apps/`.
-  - `-ignore-missing-schemas` with no CRD catalog skips every custom resource (HTTPRoute, ExternalSecret, ...).
-  - It reads raw files, not rendered Helm or Kustomize output.
-
-  Locally, the devcontainer has no `kubeconform`; the only schema check available is `kubectl explain` against the live cluster. Steps:
-  1. Add a pinned `kubeconform` to the `dev-workstation` image's mise config in `mmalyska/containers`, kept up to date by Renovate.
-  2. Add `task lint:kubeconform` here. It renders each app the way ArgoCD does (`helm template` or `kubectl kustomize`) and pipes the output to `kubeconform -strict`, with the datree CRDs-catalog as a second schema location. `<secret:...>` tokens are plain strings, so they pass.
-  3. Make CI run the same task, or at least drop the filter and add the catalog.
-
-  The catalog download needs network, or a cached copy.

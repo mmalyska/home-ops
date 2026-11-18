@@ -40,7 +40,6 @@ jobs:
                 fromJSON('
                   [
                     "ACTION_ACTIONLINT",
-                    "KUBERNETES_KUBECONFORM",
                     "MARKDOWN_MARKDOWNLINT",
                     "REPOSITORY_GIT_DIFF",
                     "REPOSITORY_SECRETLINT",
@@ -52,9 +51,6 @@ jobs:
                 ','
               )
             }}
-          KUBERNETES_DIRECTORY: cluster
-          KUBERNETES_KUBECONFORM_ARGUMENTS: -ignore-missing-schemas
-          KUBERNETES_KUBECONFORM_FILTER_REGEX_INCLUDE: "(kubernetes)"
           MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.yaml
           MARKDOWN_MARKDOWNLINT_RULES_PATH: .github/
           YAML_YAMLLINT_CONFIG_FILE: .github/linters/.yamllint.yaml

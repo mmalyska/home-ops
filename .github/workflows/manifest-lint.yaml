@@ -1,0 +1,44 @@
+---
+name: Manifest lint
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "cluster/**"
+      - "charts/**"
+      - ".taskfiles/lint/**"
+      - ".github/workflows/manifest-lint.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Render, kubeconform and promtool
+    runs-on: ubuntu-latest
+    # The devcontainer image (.devcontainer/devcontainer.json), so CI uses the same helm, kustomize, kubeconform and
+    # promtool versions as `task lint:manifests`.
+    container:
+      image: ghcr.io/mmalyska/dev-workstation:1.0.0@sha256:3eb7c7b430cb0d52844157dd73fdb1c725a77a46206bbb2f880381f953443ce0
+      # The image runs as uid 1000, which cannot write the runner's mounted workspace. The tools are mise shims in
+      # /usr/local/bin and work for any user.
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # The workspace belongs to the runner's user, not root; the scripts call git.
+      - name: Trust the workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Check manifests
+        run: .taskfiles/lint/resources/check-manifests.sh

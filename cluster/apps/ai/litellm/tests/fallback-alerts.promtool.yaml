@@ -1,0 +1,97 @@
+# promtool rule tests for templates/prometheusrule.yaml, run by `task lint:manifests` and CI
+# (.taskfiles/lint/resources/check-manifests.sh). The script renders the chart and writes this app's
+# PrometheusRule groups to rules.yaml next to a copy of this file.
+rule_files:
+  - rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # 2026-11-16 20:24 UTC: `main` exhausted its chain. LiteLLM labels the last hop with the alias that hop was asked
+  # for, so it shows up as or-deepseek-v4-pro -> or-deepseek-v4.1-flash. The series exists since t=0 and rises at 20m.
+  # At 18m it is old and unchanged, so nothing fires.
+  - name: chain exhausted, existing series rises
+    interval: 1m
+    input_series:
+      - series: 'litellm_deployment_failed_fallbacks_total{api_key_alias="hermes",requested_model="or-deepseek-v4-pro",fallback_model="or-deepseek-v4.1-flash"}'
+        values: "1x20 2x20"
+      - series: 'litellm_deployment_failed_fallbacks_created{api_key_alias="hermes",requested_model="or-deepseek-v4-pro",fallback_model="or-deepseek-v4.1-flash"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: LiteLLMFallbackChainExhausted
+        exp_alerts: []
+      - eval_time: 25m
+        alertname: LiteLLMFallbackChainExhausted
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              api_key_alias: hermes
+              requested_model: or-deepseek-v4-pro
+            exp_annotations: &exhausted-annotations
+              summary: An agent-tier fallback chain ended in an error for key hermes
+              description: >-
+                The caller got an error: the subscription and its OpenRouter fallbacks all failed (for example a rate
+                limit plus a spent budget). Hermes pauses until a model answers again. requested_model is the alias
+                of the last hop (or-deepseek-v4-pro; or-deepseek-v4-pro means `main`). Check LiteLLMBudgetNearlyUsed
+                and exception_status.
+
+  # The first failure of a label set creates its series with value 1, so increase() is 0. The _created timestamp
+  # (20m = 1200 s) catches it for 900 s.
+  - name: chain exhausted, brand-new series
+    interval: 1m
+    input_series:
+      - series: 'litellm_deployment_failed_fallbacks_total{api_key_alias="hermes",requested_model="or-deepseek-v4-pro",fallback_model="or-deepseek-v4.1-flash"}'
+        values: "_x20 1x30"
+      - series: 'litellm_deployment_failed_fallbacks_created{api_key_alias="hermes",requested_model="or-deepseek-v4-pro",fallback_model="or-deepseek-v4.1-flash"}'
+        values: "_x20 1200x30"
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: LiteLLMFallbackChainExhausted
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              api_key_alias: hermes
+              requested_model: or-deepseek-v4-pro
+            exp_annotations: *exhausted-annotations
+      # 960 s after creation, still no increase.
+      - eval_time: 36m
+        alertname: LiteLLMFallbackChainExhausted
+        exp_alerts: []
+
+  # A failed hop that is not the last one: the chain goes on to the next fallback.
+  - name: chain not exhausted, earlier hop fails
+    interval: 1m
+    input_series:
+      - series: 'litellm_deployment_failed_fallbacks_total{api_key_alias="hermes",requested_model="main",fallback_model="or-deepseek-v4-pro"}'
+        values: "_x20 1 2 3 4 5 6 7 8 9 10"
+      - series: 'litellm_deployment_failed_fallbacks_created{api_key_alias="hermes",requested_model="main",fallback_model="or-deepseek-v4-pro"}'
+        values: "_x20 1200x10"
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: LiteLLMFallbackChainExhausted
+        exp_alerts: []
+
+  # 1 429 a minute on `main` (>= 5 in 30 min, held for 10 min) fires; 4 429s on `main`, and many on `cheap`
+  # (not a subscription tier), do not.
+  - name: subscription rate limited
+    interval: 1m
+    input_series:
+      - series: 'litellm_deployment_failure_responses_total{model_group="main",exception_status="429"}'
+        values: "0+1x40"
+      - series: 'litellm_deployment_failure_responses_total{model_group="main-cheap",exception_status="429"}'
+        values: "0 1 2 3 4x40"
+      - series: 'litellm_deployment_failure_responses_total{model_group="cheap",exception_status="429"}'
+        values: "0+1x40"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: LiteLLMSubscriptionRateLimited
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              model_group: main
+            exp_annotations:
+              summary: The ChatGPT subscription is rate-limiting main
+              description: >-
+                20 429 responses in 30 min. Calls run on the OpenRouter fallbacks (per-token cost) until the limit
+                lifts, and fail once those are out of budget.

@@ -13,46 +13,6 @@ on: # yamllint disable-line rule:truthy
 env:
   conf_live_branch: main
   conf_ignore_known_labels_containing_versions: true
-  # renovate: datasource=github-releases depName=siderolabs/kubelet
-  kube_version: v1.36.6
-  kube_api_versions: |
-    acme.cert-manager.io/v1
-    admissionregistration.k8s.io/v1
-    apiextensions.k8s.io/v1
-    apiregistration.k8s.io/v1
-    apps/v1
-    argoproj.io/v1alpha1
-    authentication.k8s.io/v1
-    authorization.k8s.io/v1
-    autoscaling/v1
-    autoscaling/v2
-    autoscaling/v2beta2
-    batch/v1
-    bitnami.com/v1alpha1
-    ceph.rook.io/v1
-    cert-manager.io/v1
-    certificates.k8s.io/v1
-    coordination.k8s.io/v1
-    deviceplugin.intel.com/v1
-    discovery.k8s.io/v1
-    events.k8s.io/v1
-    flowcontrol.apiserver.k8s.io/v1beta1
-    flowcontrol.apiserver.k8s.io/v1beta2
-    fpga.intel.com/v2
-    metrics.k8s.io/v1beta1
-    monitoring.coreos.com/v1
-    monitoring.coreos.com/v1alpha1
-    networking.k8s.io/v1
-    nfd.k8s-sigs.io/v1alpha1
-    node.k8s.io/v1
-    objectbucket.io/v1alpha1
-    policy/v1
-    rbac.authorization.k8s.io/v1
-    scheduling.k8s.io/v1
-    storage.k8s.io/v1
-    storage.k8s.io/v1beta1
-    traefik.io/v1alpha1
-    v1
 
 jobs:
   changes:
@@ -100,19 +60,16 @@ jobs:
           path: pr
       - id: diff
         run: |
-          hr_live_path="live/${{ matrix.file }}"
-          hr_pr_path="pr/${{ matrix.file }}"
-          # helm dependency update prints progress/status messages to stdout; running it
-          # separately from `helm template` keeps that noise out of the captured YAML
-          # (mixing them in caused intermittent "bad file '-': yaml: ..." failures below).
-          helm dependency update "$hr_live_path" > /dev/null || true
-          helm dependency update "$hr_pr_path" > /dev/null || true
-          resources_live=$(helm template "$hr_live_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
-          # echo "$resources_live"
-          # echo "#####################################################"
-          resources_pr=$(helm template "$hr_pr_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
-          # echo "$resources_pr"
-          # echo "#####################################################"
+          # Render both sides the way ArgoCD does (release name and namespace from app-config.yaml, --include-crds,
+          # the cluster's API list) with the PR's render script and API versions file, so only the chart changes.
+          # Disabled apps are rendered too. A side that does not render (a new app on main) diffs as empty.
+          render="$GITHUB_WORKSPACE/pr/.taskfiles/lint/resources/render-apps.sh"
+          export KUBE_API_VERSIONS_FILE="$GITHUB_WORKSPACE/pr/.taskfiles/lint/resources/kube-api-versions.txt"
+          export RENDER_INCLUDE_DISABLED=1
+          (cd live && "$render" "$RUNNER_TEMP/render-live" "${{ matrix.file }}") || true
+          (cd pr && "$render" "$RUNNER_TEMP/render-pr" "${{ matrix.file }}") || true
+          resources_live=$(cat "$RUNNER_TEMP"/render-live/*.yaml 2>/dev/null || true)
+          resources_pr=$(cat "$RUNNER_TEMP"/render-pr/*.yaml 2>/dev/null || true)
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
             labels='.metadata.labels."helm.sh/chart"'
             labels+=',.metadata.labels.chart'
