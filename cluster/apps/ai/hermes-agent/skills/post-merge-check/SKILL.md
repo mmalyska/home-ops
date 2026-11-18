@@ -74,11 +74,34 @@ If nothing was merged, call `kanban_complete(summary="nothing merged: <repo>#<nu
 
 The deadline is the latest `merged_at` in the batch, plus 35 minutes for the next reconcile (Argo CD reconciles every 30 minutes), plus `H` minutes.
 
-Repeat until every owning Application has passed or the deadline has come:
+An Application passes when, in the same reading, `RECONCILED` is later than the latest `merged_at` of the merges it owns, `SYNC` is `Synced` and `HEALTH` is `Healthy`. Times are UTC in the same format, so they compare as text.
 
-1. Run the `kubectl` command from step 1.
-2. An Application passes when, in the same reading, `RECONCILED` is later than the `merged_at` of every merge it owns, `SYNC` is `Synced` and `HEALTH` is `Healthy`. Times are UTC in the same format, so you can compare them as text.
-3. Run `sleep 300` in the terminal, with a timeout of 360 seconds.
+Wait with this one terminal command, with a timeout of 600 seconds. In its first line set `APPS` to `<application>=<latest merged_at it owns>` for each owning Application, separated by spaces, and
+`DEADLINE` to the deadline in the same time format. Change nothing else. It reads the Applications every minute and returns as soon as all of them pass, or after 9 minutes, or at the deadline,
+whichever comes first:
+
+```sh
+APPS='<application>=<merged_at> <application>=<merged_at>'; DEADLINE='<YYYY-MM-DDTHH:MM:SSZ>'
+END=$(( $(date +%s) + 540 )); D=$(date -u -d "$DEADLINE" +%s); [ "$D" -lt "$END" ] && END=$D
+while :; do
+  ROWS=$(kubectl -n argocd get applications.argoproj.io --no-headers -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,RECONCILED:.status.reconciledAt') || ROWS=
+  WAITING=
+  for A in $APPS; do
+    N=${A%%=*}; M=${A#*=}
+    set -- $(printf '%s\n' "$ROWS" | grep -E "^$N[[:space:]]")
+    if [ "${2:-}" = Synced ] && [ "${3:-}" = Healthy ] && [ "${4:-}" \> "$M" ]; then :; else WAITING="$WAITING $N"; fi
+  done
+  if [ -z "$WAITING" ]; then echo "ALL PASSED"; break; fi
+  LEFT=$(( END - $(date +%s) ))
+  if [ "$LEFT" -le 0 ]; then echo "NOT PASSED YET:$WAITING"; break; fi
+  sleep $(( LEFT < 60 ? LEFT : 60 ))
+done
+for A in $APPS; do printf '%s\n' "$ROWS" | grep -E "^${A%%=*}[[:space:]]" || echo "${A%%=*} not found"; done
+date -u +%Y-%m-%dT%H:%M:%SZ
+```
+
+`ALL PASSED` ends the wait. `NOT PASSED YET` before the deadline (the last line is the time now): run the same command again. Its output and the next call keep the card alive, so do not call
+`kanban_heartbeat` between runs, and do not add a separate `sleep`.
 
 At the deadline, sort each Application that has not passed:
 
@@ -89,13 +112,27 @@ At the deadline, sort each Application that has not passed:
 
 ### 3. Check the default-branch CI
 
-The deadline for each merge is its `merged_at` plus `H` minutes. Repeat until it passes or the deadline has come, with `sleep 300` (timeout 360 seconds) between readings:
+The deadline for each merge is its `merged_at` plus `H` minutes. Wait with this one terminal command per merge, with a timeout of 600 seconds; set `REPO`, `SHA` and `DEADLINE` in its first line and
+change nothing else. It reads the runs every minute and returns as soon as there is at least one run and all are completed, or after 9 minutes, or at the deadline. If it returns before the deadline
+without `ALL RUNS COMPLETED`, run it again; no `kanban_heartbeat` or separate `sleep` in between.
 
 ```sh
-REPO=<repo> SHA=<sha>
+REPO=<repo> SHA=<sha> DEADLINE='<YYYY-MM-DDTHH:MM:SSZ>'
 DEFAULT=$(gh repo view "mmalyska/$REPO" --json defaultBranchRef --jq .defaultBranchRef.name)
+END=$(( $(date +%s) + 540 )); D=$(date -u -d "$DEADLINE" +%s); [ "$D" -lt "$END" ] && END=$D
+while :; do
+  COUNTS=$(gh run list --repo "mmalyska/$REPO" --branch "$DEFAULT" --commit "$SHA" --limit 50 --json status --jq '"\(length) \([.[] | select(.status != "completed")] | length)"') || COUNTS="0 0"
+  set -- $COUNTS
+  if [ "$1" -gt 0 ] && [ "$2" = 0 ]; then echo "ALL RUNS COMPLETED"; break; fi
+  LEFT=$(( END - $(date +%s) ))
+  if [ "$LEFT" -le 0 ]; then echo "NOT COMPLETED YET: $1 runs, $2 not completed"; break; fi
+  sleep $(( LEFT < 60 ? LEFT : 60 ))
+done
 gh run list --repo "mmalyska/$REPO" --branch "$DEFAULT" --commit "$SHA" --limit 50 --json workflowName,status,conclusion,url
+date -u +%Y-%m-%dT%H:%M:%SZ
 ```
+
+Judge the last list:
 
 | Reading                                                              | Result                  |
 | -------------------------------------------------------------------- | ----------------------- |

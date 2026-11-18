@@ -80,6 +80,10 @@ Read the full diff with `gh pr diff "$PR" --repo "mmalyska/$REPO" --color=never`
 1. From the diff, write down each dependency with its old and new version. For a digest change with the same tag there are no versions in between: say so and give PASS for that dependency, unless the digest moved to a different version.
 2. Find the notes for **every** version after the old one, up to and including the new one. Go to the upstream project's GitHub releases or changelog, using `gh release view <tag> --repo <owner>/<project>` or the `web_extract` tool.
    You can use the PR body to find the links, but read the source itself.
+   An image name is not always its GitHub repository, and tags may have a `v` prefix or not. Before the first `gh release view`, list the real tag names with
+   `gh release list --repo <owner>/<project> --limit 30`. If GitHub says the repository does not exist, do not guess other names: read the image's registry page
+   (Docker Hub or the GitHub package page) with `web_extract`, take the source repository it links, and use it only if its `gh release list` has the PR's new version.
+   For example the image `rhasspy/wyoming-whisper` is built from `OHF-Voice/wyoming-faster-whisper`, and a GitHub search does not find it.
 3. Cite the URL of each version's notes in the verdict.
 4. For every option the notes say was removed or renamed, search this repository at the PR head:
 

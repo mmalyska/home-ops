@@ -169,6 +169,11 @@ subscription. It never runs `kanban list`, which writes to the board (`recompute
 check it again. A failed step is retried every run and posted to `#hermes` only on its first failure, once an hour while it still fails, and once when it recovers.
 Test the script against a fake `hermes` CLI with `bash cluster/apps/ai/hermes-agent/tests/kanban-wake-trim.test.sh`.
 
+Limits for long waits in a card (read from the v0.23.x source, 2026-11-18): a foreground terminal call is capped at 600 s (`TERMINAL_MAX_FOREGROUND_TIMEOUT`); a longer
+`timeout` turns the call into a background process. A card's claim lasts 15 minutes, and every tool result renews it (at most once a minute), so a worker needs no
+`kanban_heartbeat` between commands; a run with no heartbeat for 60 minutes is reclaimed as wedged. So a skill that waits polls inside one command of at most 9 minutes
+(`post-merge-check` does this) instead of a `sleep` call and a heartbeat per reading, each of which is a model turn that resends the whole context.
+
 Jobs removed from `hermes.cronJobs` stay in Hermes until they are listed in `hermes.retiredCronJobs`, which the cron seeder deletes at start (today `kanban-post`, the earlier
 script that posted these notices in `#hermes`).
 

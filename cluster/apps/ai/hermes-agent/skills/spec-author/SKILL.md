@@ -125,6 +125,20 @@ The owner leads. You assist and you do not decide.
    - Treat answers approving individual requirements as decisions for the spec, not approval to advance phases. Record later qualifications in the requirements and acceptance criteria so the spec does not retain contradictory promises.
 3. Pick a lowercase kebab-case slug that is not used in `.plans/` or `.archive/.plans/` of the repository.
 4. Work in a linked worktree, never the primary checkout: `git worktree add .worktrees/docs/<slug> -b docs/<slug> origin/main`, run from the repository's clone under `/workspaces/repos/<repo>`.
+   Before you create it, clear the worktrees of earlier work whose PR is merged, so they do not pile up in the workspace. Run this one command, with `REPO` set and nothing else changed. It keeps a
+   worktree with no merged PR, one whose branch also has an open PR, the main clone and detached worktrees:
+
+   ```sh
+   REPO=<repo>; CLONE=/workspaces/repos/$REPO
+   git -C "$CLONE" worktree list | while read -r P SHA B; do B=${B#[}; B=${B%]}; [ "$P" = "$CLONE" ] && continue
+     M=$(gh pr list --repo "mmalyska/$REPO" --head "$B" --state merged --json number --jq '.[0].number')
+     O=$(gh pr list --repo "mmalyska/$REPO" --head "$B" --state open --json number --jq '.[0].number')
+     if [ -n "$M" ] && [ -z "$O" ]; then git -C "$CLONE" worktree remove --force "$P" && echo "removed $P (PR #$M merged)"; fi
+   done; git -C "$CLONE" worktree prune
+   ```
+
+   Leave the local branches: a later `git worktree add -B` resets one if its name comes back.
+
 5. Write `.plans/<slug>/spec.md` using the terminal (for example `cat > .plans/<slug>/spec.md <<'DOC'`). Only the spec file exists at this point: no front matter, no `plan.md`, no row in
    `.plans/list.md`. Layout rules are in the repository's `.plans/README.md`.
 6. Name references, never the private domain, Bitwarden identifiers or secret values.
