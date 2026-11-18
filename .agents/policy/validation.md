@@ -76,7 +76,7 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 
 ### Terraform (`provision/terraform/cloudflare`)
 
-- L0: `terraform fmt -check`; `terraform validate`; `terraform plan` (needs `TF_TOKEN_app_terraform_io`; treat the output as sensitive and do not paste it). Merging triggers an HCP Terraform auto-apply, so record that in the Impact line.
+- L0: `task terraform:fmt:cloudflare`; `task terraform:validate:cloudflare`; `task terraform:plan:cloudflare` (the task maps the devcontainer's `TERRAFORM_TOKEN` to `TF_TOKEN_app_terraform_io`; run `task terraform:init:cloudflare` first in a new worktree; treat the plan output as sensitive and do not paste it). Merging triggers an HCP Terraform auto-apply, so record that in the Impact line.
 - L1: terraform fmt in MegaLinter (tflint is not enabled).
 - L2: `terraform show`, `terraform state list`, `terraform state show`.
 - L3: `terraform apply` (consent). Merging is GITOPS_TRIGGER. Never `terraform destroy`.

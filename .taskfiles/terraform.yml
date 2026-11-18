@@ -4,10 +4,9 @@ version: "3"
 env:
   TF_TOKEN_app_terraform_io:
     sh: echo "$TERRAFORM_TOKEN"
+# Every task gets the HCP Terraform token from the devcontainer's TERRAFORM_TOKEN under the name
+# Terraform's credential lookup expects. Never echo it.
 tasks:
-  test:
-    cmd: "echo $TF_TOKEN_app_terraform_io"
-
   login:
     desc: Login into Terraform cloud
     cmds:
@@ -24,6 +23,24 @@ tasks:
     dir: provision/terraform/cloudflare
     cmds:
       - "terraform init -upgrade"
+
+  fmt:cloudflare:
+    desc: Check terraform formatting (no changes written)
+    dir: provision/terraform/cloudflare
+    cmds:
+      - "terraform fmt -check -diff"
+
+  format:cloudflare:
+    desc: Format terraform files in place
+    dir: provision/terraform/cloudflare
+    cmds:
+      - "terraform fmt"
+
+  validate:cloudflare:
+    desc: Validate terraform configuration (run init:cloudflare first)
+    dir: provision/terraform/cloudflare
+    cmds:
+      - "terraform validate"
 
   plan:cloudflare:
     desc: Plan cloudflare DNS

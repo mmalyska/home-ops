@@ -31,6 +31,10 @@ task argocd:login                     # Login (--sso; use local admin on first b
 task argocd:sync                      # Sync ArgoCD applications          # See local file:// chart gotcha below
 
 # Terraform
+task terraform:init:cloudflare           # Once per worktree (backend + providers)
+task terraform:fmt:cloudflare            # fmt -check -diff, writes nothing
+task terraform:format:cloudflare         # fmt, writes files
+task terraform:validate:cloudflare
 task terraform:plan:cloudflare
 task terraform:apply:cloudflare          # Local/manual only -- see note below
 
@@ -54,11 +58,13 @@ Required secrets for devcontainer: `TERRAFORM_TOKEN`
 
 The `provision/terraform/cloudflare` workspace is VCS-connected to this repo in HCP Terraform (app.terraform.io) with **auto-apply enabled** — merging a PR that touches `provision/terraform/cloudflare/**` to `main` triggers the apply automatically. `task terraform:apply:cloudflare` is only needed for local/manual runs (e.g. testing before opening a PR); don't run it after merging, HCP Terraform already handles it.
 
-To run `task terraform:plan:cloudflare` (or any local terraform command) against this workspace, the CLI needs a token even though `TERRAFORM_TOKEN` is already set as an env var — export it under the name Terraform's credential lookup expects:
+Terraform looks up the HCP token as `TF_TOKEN_app_terraform_io`, but the devcontainer provides it as `TERRAFORM_TOKEN`. The `terraform:*` tasks map one to the other (`.taskfiles/terraform.yml`), so prefer them. A raw `terraform` command needs the mapping inline, or `terraform init` fails with "Required token could not be found":
 ```sh
-export TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN"
+TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN" terraform <command>
 ```
-Without this, `terraform init` fails with "Required token could not be found."
+Never echo or print the token.
+
+MegaLinter runs `terraform fmt` only on the files a PR changes, so an unformatted file nobody touches stays unformatted. Run `task terraform:fmt:cloudflare` over the whole folder before a Terraform PR.
 
 **Gotcha:** `.terraform.lock.hcl` is gitignored (local-only) and its init state is per-directory — each git worktree has its own, independent of the main checkout. If `main.tf`'s provider version constraint was bumped (e.g. by a Renovate PR) since you last ran `terraform init` *in that specific working directory*, you'll get "locked provider ... does not match configured version constraint" on both local and remote (CLI-driven) runs. Fix: `TF_TOKEN_app_terraform_io="$TERRAFORM_TOKEN" terraform init -upgrade` from `provision/terraform/cloudflare/` in the worktree you're actually working in.
 
