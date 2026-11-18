@@ -20,6 +20,19 @@
 #   ip = each.value
 # }
 
+# GitHub webhook delivery ranges (IPv4 and IPv6), refreshed on every plan.
+data "http" "github_meta" {
+  url = "https://api.github.com/meta"
+  request_headers = {
+    Accept = "application/json"
+  }
+}
+
+locals {
+  github_hook_cidrs = jsondecode(data.http.github_meta.response_body).hooks
+  argocd_hook_host  = "argocd-hook.${local.cloudflare_domain}"
+}
+
 resource "cloudflare_ruleset" "zone_level_custom_waf" {
   zone_id     = cloudflare_zone.domain.id
   name        = "Custom WAF ruleset"
@@ -32,30 +45,50 @@ resource "cloudflare_ruleset" "zone_level_custom_waf" {
 
   # Accept UptimeRobot Addresses
   rules = [
-  # {
-  #   action      = "skip"
-  #   action_parameters = {
-  #     ruleset = "current"
-  #   }
-  #   expression  = "(ip.src in $uptimerobot)"
-  #   description = "Expression to allow UptimeRobot IP addresses"
-  #   enabled     = true
-  #   logging = {
-  #     enabled   = true
-  #   }
-  # },
-  # Block Countries
-  {
-    action      = "block"
-    expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
-    description = "Expression to block countries"
-    enabled     = true
-  },
-  # Block Bots
-  {
-    action      = "block"
-    expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
-    description = "Expression to block bots determined by CF"
-    enabled     = true
+    # ArgoCD GitHub webhook host: GitHub's hook ranges skip the rules below,
+    # everything else to that host is blocked.
+    {
+      action = "skip"
+      action_parameters = {
+        ruleset = "current"
+      }
+      expression  = "(http.host eq \"${local.argocd_hook_host}\" and ip.src in {${join(" ", local.github_hook_cidrs)}})"
+      description = "Allow GitHub webhook deliveries to the ArgoCD hook host"
+      enabled     = true
+      logging = {
+        enabled = true
+      }
+    },
+    {
+      action      = "block"
+      expression  = "(http.host eq \"${local.argocd_hook_host}\")"
+      description = "Block all other traffic to the ArgoCD hook host"
+      enabled     = true
+    },
+    # {
+    #   action      = "skip"
+    #   action_parameters = {
+    #     ruleset = "current"
+    #   }
+    #   expression  = "(ip.src in $uptimerobot)"
+    #   description = "Expression to allow UptimeRobot IP addresses"
+    #   enabled     = true
+    #   logging = {
+    #     enabled   = true
+    #   }
+    # },
+    # Block Countries
+    {
+      action      = "block"
+      expression  = "(ip.geoip.country in {\"CN\" \"IN\" \"RU\"})"
+      description = "Expression to block countries"
+      enabled     = true
+    },
+    # Block Bots
+    {
+      action      = "block"
+      expression  = "(cf.client.bot) or (cf.threat_score gt 14)"
+      description = "Expression to block bots determined by CF"
+      enabled     = true
   }]
 }

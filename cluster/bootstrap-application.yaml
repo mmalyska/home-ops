@@ -3,6 +3,9 @@ kind: Application
 metadata:
   name: root-app
   namespace: argocd
+  annotations:
+    # Refresh root-app on a webhook push only when one of its three sources changed.
+    argocd.argoproj.io/manifest-generate-paths: /cluster/projects;/cluster/appsets;/cluster/bootstrap-application.yaml
 spec:
   project: default
   sources:
