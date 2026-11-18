@@ -34,17 +34,17 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 
 ### Plain YAML under `cluster/` (no chart)
 
-- L0: `yamllint -c .github/linters/.yamllint.yaml <files>`; prettier `--check`; gitleaks.
-- L1: Lint, kubeconform (CRDs without a schema are ignored, so this is weak), rendered diff.
+- L0: `yamllint -c .github/linters/.yamllint.yaml <files>`; prettier `--check`; gitleaks; `task lint:manifests -- <app>`.
+- L1: Lint, Manifest lint, rendered diff.
 - L2: `kubectl diff -f <file>` (server-side dry run) on the changed object.
 - L3: none in the repo flow; Argo syncs after merge.
 - Profile: STANDARD.
 
 ### Helm chart, `Chart.yaml`, `values.yaml`, templates
 
-- L0: `helm dependency update . && helm template <release> . -f values.yaml`; confirm the changed field in the rendered output; `helm lint .`; yamllint.
+- L0: `helm dependency update . && helm template <release> . -f values.yaml`; confirm the changed field in the rendered output; `helm lint .`; yamllint; `task lint:manifests -- <app>`.
 - A local `file://` chart (under `charts/`) needs its `Chart.yaml` `version` bumped and the parent dependency version updated, or Argo keeps the cached chart.
-- L1: Lint, helm-lint, rendered diff (`diff-yaml-on-pr`).
+- L1: Lint, helm-lint, Manifest lint, rendered diff (`diff-yaml-on-pr`).
 - L2: `argocd app diff <app>`; `kubectl get` of the resulting object after sync.
 - L3: a Deployment strategy change from RollingUpdate to Recreate needs a live patch of the object before the sync (see the Gotchas section of the `add-app` skill); that patch is RUNTIME_MUTATION.
 - Profile: STANDARD.
@@ -52,8 +52,8 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 
 ### Kustomize
 
-- L0: `kubectl kustomize .` and inspect the changed field; yamllint.
-- L1: Lint, rendered diff.
+- L0: `kubectl kustomize .` and inspect the changed field; yamllint; `task lint:manifests -- <app>`.
+- L1: Lint, Manifest lint, rendered diff.
 - L2: `argocd app diff <app>`.
 - L3: none.
 - Profile: STANDARD.
@@ -61,10 +61,20 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 ### ArgoCD Application, ApplicationSet, AppProject, `app-config.yaml`
 
 - L0: yamllint and prettier; compare the fields with the `add-app` skill; check `enabled`, `syncPolicy`, `syncWave` and `SECRET_PROVIDER`. There is no local ApplicationSet render tool: reason about the generated Application from the template and say so.
-- L1: Lint, kubeconform (weak: no CRD schemas).
+- L1: Lint, Manifest lint (renders every enabled app, so an entry that does not render fails it).
 - L2: `argocd app list`, `argocd app get <app>`, `argocd proj list`.
 - L3: Argo sync or refresh. `syncPolicy` and `enabled` changes are GITOPS_TRIGGER.
 - Profile: DEEP for ApplicationSets, projects and the bootstrap application.
+
+### PrometheusRule and alerts
+
+- L0: `task lint:manifests -- <app>` (`promtool check rules` on every rendered PrometheusRule, and `promtool test rules`
+  for `tests/*.promtool.yaml` in the app folder). A new or changed alert expression gets a rule test where the logic is
+  not obvious.
+- L1: Manifest lint.
+- L2: the rule loaded in Prometheus (`/api/v1/rules`), and a query of the expression against live data.
+- L3: none.
+- Profile: STANDARD.
 
 ### Talos patches, config and generated files
 
@@ -85,7 +95,7 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 ### ExternalSecret and secret handling
 
 - L0: individual `data[]` entries with UUIDs (no `dataFrom.extract`); `ClusterSecretStore` named `bitwarden`; the rule "token in `Secret data/stringData` → ExternalSecret, any other field → `cluster-secrets`"; gitleaks; no value in the diff, a note or the PR text.
-- L1: secretlint, kubeconform.
+- L1: secretlint, Manifest lint.
 - L2: `kubectl get externalsecret` status only. Never `kubectl get secret` (SECRET_ACCESS).
 - L3: Bitwarden changes and rotation.
 - Profile: DEEP for architecture changes.
@@ -114,4 +124,7 @@ The profile lines recommend a workflow profile. A profile never lowers a require
 
 ## `task lint:*` is advisory
 
-`task lint:all`, `lint:markdown`, `lint:yaml` and `lint:prettier:check` always exit 0 (`ignore_error: true` in `.taskfiles/lint.yml`). Read their output; a zero exit code proves nothing. CI (MegaLinter) is the gate. Making the tasks strict is the open decision D6 in the workflow plan and is not part of this change.
+`task lint:all`, `lint:markdown`, `lint:yaml`, `lint:prettier:check` and `lint:manifests` always exit 0 (`ignore_error:
+true` in `.taskfiles/lint.yml`). Read their output; a zero exit code proves nothing. CI is the gate: MegaLinter, and the
+Manifest lint workflow for `lint:manifests`, which runs the same script and fails on any error. Making the tasks strict
+is the open decision D6 in the workflow plan and is not part of this change.

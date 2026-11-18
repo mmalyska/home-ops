@@ -58,3 +58,23 @@ Done: all seven parts shipped on 2026-11-16 and 2026-11-17 (#6318, #6319, #6320,
   - [x] **5. Scale the spec-driven process to the task.** *(Done 2026-11-16: `spec-author` Quick path, one `plan.md` with `profile: QUICK` that `check-plans` accepts without `tasks.md`, plan at most 80 lines, PR body at most 25.)* The docs lock change produced a spec, a plan, a tasks file of about 400 lines, H1 to H4 gates and three revision PRs; all of it is read back as input tokens and costs owner review time. Add a QUICK path to the `spec-author` skill (`cluster/apps/ai/hermes-agent/skills/spec-author/SKILL.md`) for changes under about 200 lines: one plan file, no H2/H4, one PR; cap the length of plan and PR text.
   - [x] **6. Check gate evidence with a script before a PR.** *(Done 2026-11-16: `files/scripts/pr-gate-check.py`, run as a fail-closed `pre_tool_call` hook in the pod, because the terminal is the workspace and cannot read the board; `GATE_CARDS` on every `gh pr create`, `EVIDENCE` comment format in `implement-task`; README "PR gate check".)* A pre-PR script (in `cluster/apps/ai/hermes-agent/files/scripts/`) that refuses `gh pr create` unless the gate card has the required evidence comments would have stopped #6311; a prose rule in the skill did not. It should also refuse when a worker card that fed the PR has no evidence comment (the handoff rule kept by 7). Replaces the `spec-author` "read evidence with `kanban_show` before delivery" rule offered on 2026-11-16.
   - [x] **7. Reconsider the two separate workspaces.** `default` (hermes-main) and `worker` (hermes-worker) run in separate Coder workspaces: good isolation, but it lost T1 evidence and forced the push-to-hand-off rules. Weigh a shared volume, or one workspace with a worktree per profile, against the isolation it gives. *(Decided 2026-11-16: keep two workspaces, plan decision P17 in `hermes-orchestration`, reasons in `docs/src/k8s/agent-workspaces.md`. Revisit a worker-writes, default-reads-only handoff volume only if 2 shows evidence comments are a real share of input tokens.)*
+
+## Moved 2026-11-18 (second move)
+
+Both items are done by the manifest-lint plan: kubeconform and promtool are in the `dev-workstation` image
+(`mmalyska/containers` #816), and `task lint:manifests` plus the `Manifest lint` workflow render every enabled app and
+run kubeconform, `promtool check rules` and the LiteLLM rule tests; the task is named `lint:manifests`, not
+`lint:kubeconform`, and MegaLinter's kubeconform was removed.
+
+- [ ] **Add `promtool` to the workspace image and check PrometheusRules with it (2026-11-18).** `promtool` is not in `ghcr.io/mmalyska/dev-workstation` (built in `mmalyska/containers`, tools through mise) and the repository has no rule tests, so #6355 (`LiteLLMFallbackChainExhausted`, which could never fire for `main`) could only be checked by running the expression against live Prometheus. Add `promtool` (Prometheus release binary) to the image, then a `task lint` step or CI job that renders the charts' PrometheusRules and runs `promtool check rules`, and a `promtool test rules` case for the LiteLLM fallback alerts with the 2026-11-16 20:24 UTC series as input (`main` → `or-deepseek-v4-pro` 429, `or-deepseek-v4-pro` → `or-deepseek-v4.1-flash` 403).
+- [ ] **Working kubeconform for `cluster/` (found 2026-11-18, PR 2 of the argocd-github-webhook plan).** CI's MegaLinter kubeconform checks almost nothing:
+  - `KUBERNETES_KUBECONFORM_FILTER_REGEX_INCLUDE: "(kubernetes)"` in `.github/workflows/lint.yaml` matches no file under `cluster/apps/`.
+  - `-ignore-missing-schemas` with no CRD catalog skips every custom resource (HTTPRoute, ExternalSecret, ...).
+  - It reads raw files, not rendered Helm or Kustomize output.
+
+  Locally, the devcontainer has no `kubeconform`; the only schema check available is `kubectl explain` against the live cluster. Steps:
+  1. Add a pinned `kubeconform` to the `dev-workstation` image's mise config in `mmalyska/containers`, kept up to date by Renovate.
+  2. Add `task lint:kubeconform` here. It renders each app the way ArgoCD does (`helm template` or `kubectl kustomize`) and pipes the output to `kubeconform -strict`, with the datree CRDs-catalog as a second schema location. `<secret:...>` tokens are plain strings, so they pass.
+  3. Make CI run the same task, or at least drop the filter and add the catalog.
+
+  The catalog download needs network, or a cached copy.

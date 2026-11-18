@@ -40,6 +40,8 @@ task terraform:apply:cloudflare          # Local/manual only -- see note below
 
 # Lint / Format (advisory: always exits 0, read the output; CI is the gate)
 task lint:all
+task lint:manifests -- [app ...]         # render like ArgoCD, kubeconform, promtool (about 1 min)
+task lint:api-versions                   # refresh the cluster API list the renders use (reads the cluster)
 task format:all
 ```
 
@@ -78,10 +80,33 @@ Several apps depend on local charts via `repository: file://../../.../charts/<na
 
 When an app has `ApplyOutOfSyncOnly=true` and a field was added by the `argocd-controller` `Update` field manager, deleting that field from git does not remove it from the live object: the app still shows Synced. Seen on the Rook `CephCluster` `spec.monitoring.interval` (2026-10-23). Fix: remove the field live with `kubectl patch <kind> <name> --type json -p '[{"op":"remove","path":"..."}]'` (needs consent), keep git without the field, and check the live object afterwards. Operators may also have written related state elsewhere (Rook set `mgr/prometheus/scrape_interval`), so revert that too.
 
+### Manifest lint (`task lint:manifests`)
+
+`.taskfiles/lint/resources/check-manifests.sh` renders every enabled app the way the ArgoCD CMP does (`render-apps.sh`:
+`helm template` in place with the app's release name and namespace, or `kustomize build`), then:
+
+- replaces `<secret:...>` tokens with placeholders (`<secret:private-domain>` becomes `example.com`), so schema patterns see a plausible value;
+- runs kubeconform in strict mode. Schemas come from kubeconform's default Kubernetes source (v1.34.12, the newest it
+  publishes), then from the CRDs in our own renders (`crd2schema.py`), then the datree CRDs-catalog. A missing schema is
+  an error; a kind with no schema anywhere goes into `kubeconform-skip.txt` with a comment;
+- runs `promtool check rules` on every PrometheusRule, and `promtool test rules` for each app folder with
+  `tests/*.promtool.yaml` (the tests reference `rule_files: [rules.yaml]`, which the script writes from the app's
+  rendered rules; see `cluster/apps/ai/litellm/tests/`).
+
+App names narrow the checks, but every app is still rendered: an app's custom resources can take their schema from
+another app's CRDs. The task exits 0 like every `lint:*` task; the `Manifest lint` workflow runs the same script in the
+`dev-workstation` image and fails the PR. Set `KEEP_TMP=1` to keep the rendered output.
+
+**API versions file.** `--api-versions` comes from the committed `.taskfiles/lint/resources/kube-api-versions.txt` (CI
+cannot reach the cluster); its header sets `--kube-version`. Refresh it with `task lint:api-versions` after a Kubernetes
+upgrade or when an app adds or removes CRDs. It needs `group/version/Kind` lines, not only `group/version`: bjw-s
+app-template picks the `HTTPRoute` version by `Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/HTTPRoute"`,
+and without that line it renders `v1alpha2`, which the cluster does not serve.
+
 ## CI/CD
 
 - **Renovate**: Automated dependency updates (Helm charts, container images, Talos/K8s versions)
-- **GitHub Actions**: lint, YAML diff on PR, devcontainer publish, GitHub Pages publish
+- **GitHub Actions**: lint, manifest lint, YAML diff on PR, devcontainer publish, GitHub Pages publish
 - **Pre-commit**: yamllint, helmlint, gitleaks, prettier
 
 ## Branch & PR Workflow
@@ -89,5 +114,5 @@ When an app has `ApplyOutOfSyncOnly=true` and a field was added by the `argocd-c
 - **Main branch**: `main` — all PRs target this branch
 - **Branch naming**: `feat/`, `fix/`, `chore/`, `docs/` prefixes; work in a linked worktree `.worktrees/<type>/<slug>` (`AGENTS.md`)
 - **Validation per change type**: `.agents/policy/validation.md`; PRs use `.github/pull_request_template.md`
-- **CI on PRs**: MegaLinter (yamllint, markdownlint, prettier, kubeval, secretlint, actionlint, terraform fmt)
+- **CI on PRs**: MegaLinter (yamllint, markdownlint, prettier, secretlint, actionlint, terraform fmt); Manifest lint (render, kubeconform, promtool) on PRs touching `cluster/`, `charts/` or `.taskfiles/lint/`
 - **Labels required**: PRs must have a label — `meta-enforce-labels` blocks merge without one

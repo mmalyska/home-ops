@@ -157,4 +157,16 @@ exit 0, and Sonarr's `HTTPRoute` renders as `v1`.
 - **`tests/` in the chart:** Helm renders only `templates/`, and LiteLLM's resource count is unchanged (26). No
   `.helmignore` was added.
 
-Next: T4.
+**T4 done.** `lint:manifests` and `lint:api-versions` tasks (`manifests` is in `lint:all`), the `Manifest lint`
+workflow, MegaLinter kubeconform removed, devcontainer on the new digest.
+
+- The workflow runs the job in the image as root (`--user root`): the image user (1000) cannot write the runner's
+  workspace, and the tools are mise shims in `/usr/local/bin` that work for any user. A `safe.directory` step lets the
+  scripts call git on a checkout owned by another user.
+- **Checks:** actionlint and yamllint pass; `task lint:manifests -- litellm` passes; `task lint:api-versions`
+  regenerates the file with no diff. The CI run is the test of the container setup.
+
+**T5 done.** `validation.md` (Manifest lint in L0 and L1, a PrometheusRule section), the dev-workflow skill (synced),
+`AGENTS.md` Verification, and both TODO items moved to `.archive/TODO.md`. `check-plans` passes.
+
+Next: the owner's instruction to push and open the PR, then H2.
