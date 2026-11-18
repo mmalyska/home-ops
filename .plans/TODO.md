@@ -75,3 +75,14 @@ General backlog items not tied to a specific plan. Last reviewed 2026-11-18. Fin
 - [ ] **LiteLLM admin UI is master-key only (2026-10-26).** No users, roles or audit trail; LAN-only route. Options: disable the UI route, or OIDC login through the existing Keycloak in `identity` (admin/viewer roles; check the free-tier user limit first).
 - [ ] **`local` thinks by default: check the consumers that use it (from the LFM3 close-out, 2026-10-29).** Honcho (deriver, summary, dialectic) and Hermes aux tasks (`title_generation`, `skills_hub`, `triage_specifier`, `profile_describer`, `curator`) call `local` with small `max_tokens`; a one-line test on `local` burned 500 tokens on reasoning and returned empty content (Gemma ran with thinking off). Not seen in real traffic yet (both were idle). Options: `--reasoning-budget` on the server, or point the short tasks at `local-fast` (add it to the Honcho and Hermes team and virtual key `models` lists, both are needed). Check LiteLLM/Honcho logs after real use.
 - [ ] **Optional LFM3 experiments, only with a workload:** f16 KV, QAD Q4_0, multi-model layout, two simultaneous image requests, a prompt that fills the 128K window. *(`-np 2` done and live 2026-10-29; the unused LFM2.5 file was deleted from the PVC the same day.)*
+- [ ] **Working kubeconform for `cluster/` (found 2026-11-18, PR 2 of the argocd-github-webhook plan).** CI's MegaLinter kubeconform checks almost nothing:
+  - `KUBERNETES_KUBECONFORM_FILTER_REGEX_INCLUDE: "(kubernetes)"` in `.github/workflows/lint.yaml` matches no file under `cluster/apps/`.
+  - `-ignore-missing-schemas` with no CRD catalog skips every custom resource (HTTPRoute, ExternalSecret, ...).
+  - It reads raw files, not rendered Helm or Kustomize output.
+
+  Locally, the devcontainer has no `kubeconform`; the only schema check available is `kubectl explain` against the live cluster. Steps:
+  1. Add a pinned `kubeconform` to the `dev-workstation` image's mise config in `mmalyska/containers`, kept up to date by Renovate.
+  2. Add `task lint:kubeconform` here. It renders each app the way ArgoCD does (`helm template` or `kubectl kustomize`) and pipes the output to `kubeconform -strict`, with the datree CRDs-catalog as a second schema location. `<secret:...>` tokens are plain strings, so they pass.
+  3. Make CI run the same task, or at least drop the filter and add the catalog.
+
+  The catalog download needs network, or a cached copy.

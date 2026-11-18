@@ -149,6 +149,8 @@ The CyberPower UPS is connected by USB to the **QNAP**, which serves it over NUT
 
 `cloudflared` runs 2 replicas in the cluster and connects to Cloudflare's network. Incoming requests from the internet are routed by Cloudflare to the `envoy-external` gateway. No ports need to be forwarded on the home router.
 
+The ArgoCD GitHub webhook host is one of these routes, restricted by a WAF rule to GitHub's delivery ranges: see [ArgoCD GitHub webhooks](../k8s/argocd-webhook.md).
+
 ## IP Allocation
 
 This is the single source of truth for addresses on VLAN 48. **Update it in the same PR that assigns or moves an address**, and run the checks below *before* picking one: the docs have been wrong about free addresses before.

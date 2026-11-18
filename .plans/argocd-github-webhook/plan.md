@@ -4,9 +4,9 @@ owner: repository owner
 profile: STANDARD
 topology: HANDOFF
 base_sha: 585dbafa27e5db97f59d1f87c01aa7506804a944
-branch: feat/argocd-github-webhook
-worktree: .worktrees/feat/argocd-github-webhook
-pr: "#6356"
+branch: feat/argocd-github-webhook-route
+worktree: .worktrees/feat/argocd-github-webhook-route
+pr: "#6356, #6358"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -113,10 +113,17 @@ with an impact statement.
 
 ## Status
 
-Approved 2026-11-18. H1 done (the owner created the Bitwarden secret). T1, T1b and T2 are implemented on
-`feat/argocd-github-webhook` (PR 1, #6356).
+Approved 2026-11-18. H1 done: the owner created the Bitwarden secret.
 
-- `terraform plan` (`task terraform:plan:cloudflare`): PASS. It shows one in-place ruleset update.
-- `terraform fmt -check`: already fails on `main` for `account.tf` and `zone.tf`. Only `firewall.tf` was formatted.
+**PR 1 (#6356), merged 2026-11-18.** It delivered T1, T1b and T2.
 
-Next: H2 (merge #6356 with consent, then confirm the key).
+**H2 done 2026-11-18:**
+
+- `webhook.github.secret` is in the `argocd-secret` key list.
+- The `argocd-oidc-secret` ExternalSecret is `Ready` (`SecretSynced`).
+- The HCP Terraform run for the merge is `applied`.
+- `root-app` picks up its annotation on its next poll.
+
+**PR 2 (#6358; T3, T5)** is on `feat/argocd-github-webhook-route`, in `.worktrees/feat/argocd-github-webhook-route`.
+
+Next: H3 (merge #6358 with consent, then add the two GitHub webhooks), then T4.
