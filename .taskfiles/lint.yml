@@ -6,6 +6,7 @@ tasks:
     - task: markdown
     - task: yaml
     - task: prettier:check
+    - task: manifests
 
   markdown:
     desc: Lint Markdown
@@ -18,6 +19,18 @@ tasks:
     cmds:
       - yamllint -c '.github/linters/.yamllint.yaml' .
     ignore_error: true
+
+  manifests:
+    desc: Render enabled apps like ArgoCD and check them with kubeconform and promtool (task lint:manifests -- [app ...])
+    cmds:
+      - .taskfiles/lint/resources/check-manifests.sh {{.CLI_ARGS}}
+    ignore_error: true
+
+  api-versions:
+    desc: Refresh the cluster API versions the renders use, after a Kubernetes upgrade or a CRD change (reads the cluster)
+    cmds:
+      - .taskfiles/lint/resources/kube-api-versions.sh > .taskfiles/lint/resources/kube-api-versions.txt.tmp
+      - mv .taskfiles/lint/resources/kube-api-versions.txt.tmp .taskfiles/lint/resources/kube-api-versions.txt
 
   prettier:check:
     desc: Lint general formatting (task lint:prettier:check)
