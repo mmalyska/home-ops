@@ -1,6 +1,6 @@
 resource "cloudflare_account" "main" {
-  name              = "main"
+  name = "main"
   settings = {
-      enforce_twofactor = true
+    enforce_twofactor = true
   }
 }
