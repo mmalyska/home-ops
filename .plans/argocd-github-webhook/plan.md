@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 585dbafa27e5db97f59d1f87c01aa7506804a944
 branch: feat/argocd-github-webhook-route
 worktree: .worktrees/feat/argocd-github-webhook-route
-pr: "#6356"
+pr: "#6356, #6358"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -124,6 +124,6 @@ Approved 2026-11-18. H1 done: the owner created the Bitwarden secret.
 - The HCP Terraform run for the merge is `applied`.
 - `root-app` picks up its annotation on its next poll.
 
-**PR 2 (T3, T5)** is on `feat/argocd-github-webhook-route`, in `.worktrees/feat/argocd-github-webhook-route`.
+**PR 2 (#6358; T3, T5)** is on `feat/argocd-github-webhook-route`, in `.worktrees/feat/argocd-github-webhook-route`.
 
-Next: push and open PR 2 on the owner's instruction, then H3.
+Next: H3 (merge #6358 with consent, then add the two GitHub webhooks), then T4.
