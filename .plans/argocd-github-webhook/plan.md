@@ -1,5 +1,5 @@
 ---
-status: draft
+status: in-progress
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
@@ -113,4 +113,10 @@ with an impact statement.
 
 ## Status
 
-Draft, awaiting owner approval. Nothing implemented.
+Approved 2026-11-18. H1 done (the owner created the Bitwarden secret). T1, T1b and T2 are implemented on
+`feat/argocd-github-webhook` (PR 1, not pushed yet).
+
+- `terraform plan`: NOT RUN, because there is no HCP Terraform token in the session.
+- `terraform fmt -check`: already fails on `main` for `account.tf` and `zone.tf`. Only `firewall.tf` was formatted.
+
+Next: the owner's instruction to push and open PR 1, then H2.
