@@ -1,7 +1,9 @@
 # ArgoCD GitHub webhooks
 
 A push to `main` on `mmalyska/home-ops` reaches ArgoCD within seconds through two GitHub webhooks.
-Polling stays as the fallback for a missed delivery.
+Polling stays as the fallback for a missed delivery: Applications every hour (`timeout.reconciliation: "1h"` in
+`argocd-cm`), and the ApplicationSet git generators every hour (`requeueAfterSeconds: 3600`). After a missed delivery a change can
+take up to about an hour to apply; a manual refresh in the UI or `argocd app get <app> --refresh` skips the wait.
 
 ## How it fits together
 
