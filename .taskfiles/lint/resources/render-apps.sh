@@ -4,8 +4,16 @@
 #
 #   render-apps.sh <outdir> [app ...]
 #
-# App names are the Application names: the folder name, or <folder>-<appSubfolder>. With no names,
-# every entry with enabled: "true" in cluster/apps/*/*/app-config.yaml is rendered.
+# Each argument is an Application name (the folder name, or <folder>-<appSubfolder>) or an app's source folder
+# (cluster/apps/<category>/<app>[/<appSubfolder>]). With no arguments, every entry with enabled: "true" in
+# cluster/apps/*/*/app-config.yaml is rendered.
+#
+# Environment:
+#   RENDER_INCLUDE_DISABLED=1   also render entries with enabled: "false" (the PR diff workflow)
+#   KUBE_API_VERSIONS_FILE      API versions file to use instead of the repository's own (the PR diff workflow
+#                               renders the main checkout with the PR's file)
+#
+# The repository is the git checkout of the current directory.
 # Helm apps render in place: `file://../../../../charts/...` dependencies only resolve from there.
 # The Chart.lock and charts/*.tgz this leaves behind are gitignored.
 set -uo pipefail
@@ -19,7 +27,7 @@ shift
 want=("$@")
 
 root=$(git rev-parse --show-toplevel)
-apis_file="$root/.taskfiles/lint/resources/kube-api-versions.txt"
+apis_file=${KUBE_API_VERSIONS_FILE:-$root/.taskfiles/lint/resources/kube-api-versions.txt}
 kube_version=$(sed -n 's/^# kube-version: //p' "$apis_file")
 api_versions=$(grep -v '^#' "$apis_file" | paste -sd, -)
 if [[ -z $kube_version || -z $api_versions ]]; then
@@ -38,7 +46,7 @@ for cfg in cluster/apps/*/*/app-config.yaml; do
   base=$(basename "$dir")
   count=$(yq 'length' "$cfg")
   for ((i = 0; i < count; i++)); do
-    [[ $(yq ".[$i].enabled" "$cfg") == "true" ]] || continue
+    [[ $(yq ".[$i].enabled" "$cfg") == "true" || ${RENDER_INCLUDE_DISABLED:-} == 1 ]] || continue
     ns=$(yq ".[$i].namespace" "$cfg")
     sub=$(yq ".[$i].appSubfolder // \"\"" "$cfg")
     if [[ -n $sub ]]; then
@@ -48,8 +56,12 @@ for cfg in cluster/apps/*/*/app-config.yaml; do
       src=$dir
       app=$base
     fi
-    if [[ ${#want[@]} -gt 0 && ! " ${want[*]} " =~ \ $app\  ]]; then
-      continue
+    if [[ ${#want[@]} -gt 0 ]]; then
+      match=false
+      for w in "${want[@]}"; do
+        [[ ${w%/} == "$app" || ${w%/} == "$src" ]] && match=true
+      done
+      $match || continue
     fi
 
     status=0

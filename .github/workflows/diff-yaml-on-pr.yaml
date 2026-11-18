@@ -60,25 +60,16 @@ jobs:
           path: pr
       - id: diff
         run: |
-          hr_live_path="live/${{ matrix.file }}"
-          hr_pr_path="pr/${{ matrix.file }}"
-          # The cluster's version and API list, from the file `task lint:api-versions` writes (the same one the
-          # Manifest lint workflow uses). Read from the PR checkout so both sides render with the same list.
-          # --api-versions only splits on commas.
-          apis_file=pr/.taskfiles/lint/resources/kube-api-versions.txt
-          kube_version=$(sed -n 's/^# kube-version: //p' "$apis_file")
-          kube_api_versions=$(grep -v '^#' "$apis_file" | paste -sd, -)
-          # helm dependency update prints progress/status messages to stdout; running it
-          # separately from `helm template` keeps that noise out of the captured YAML
-          # (mixing them in caused intermittent "bad file '-': yaml: ..." failures below).
-          helm dependency update "$hr_live_path" > /dev/null || true
-          helm dependency update "$hr_pr_path" > /dev/null || true
-          resources_live=$(helm template "$hr_live_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
-          # echo "$resources_live"
-          # echo "#####################################################"
-          resources_pr=$(helm template "$hr_pr_path" --kube-version "$kube_version" --api-versions "$kube_api_versions" || true)
-          # echo "$resources_pr"
-          # echo "#####################################################"
+          # Render both sides the way ArgoCD does (release name and namespace from app-config.yaml, --include-crds,
+          # the cluster's API list) with the PR's render script and API versions file, so only the chart changes.
+          # Disabled apps are rendered too. A side that does not render (a new app on main) diffs as empty.
+          render="$GITHUB_WORKSPACE/pr/.taskfiles/lint/resources/render-apps.sh"
+          export KUBE_API_VERSIONS_FILE="$GITHUB_WORKSPACE/pr/.taskfiles/lint/resources/kube-api-versions.txt"
+          export RENDER_INCLUDE_DISABLED=1
+          (cd live && "$render" "$RUNNER_TEMP/render-live" "${{ matrix.file }}") || true
+          (cd pr && "$render" "$RUNNER_TEMP/render-pr" "${{ matrix.file }}") || true
+          resources_live=$(cat "$RUNNER_TEMP"/render-live/*.yaml 2>/dev/null || true)
+          resources_pr=$(cat "$RUNNER_TEMP"/render-pr/*.yaml 2>/dev/null || true)
           if [ "$conf_ignore_known_labels_containing_versions" = "true" ]; then
             labels='.metadata.labels."helm.sh/chart"'
             labels+=',.metadata.labels.chart'

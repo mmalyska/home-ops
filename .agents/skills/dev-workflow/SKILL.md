@@ -101,8 +101,11 @@ another app's CRDs. The task exits 0 like every `lint:*` task; the `Manifest lin
 cannot reach the cluster); its header sets `--kube-version`. Refresh it with `task lint:api-versions` after a Kubernetes
 upgrade or when an app adds or removes CRDs. It needs `group/version/Kind` lines, not only `group/version`: bjw-s
 app-template picks the `HTTPRoute` version by `Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/HTTPRoute"`,
-and without that line it renders `v1alpha2`, which the cluster does not serve. The PR diff workflow
-(`diff-yaml-on-pr.yaml`) renders Helm charts with the same file.
+and without that line it renders `v1alpha2`, which the cluster does not serve.
+
+**PR diff.** The Helm job of `diff-yaml-on-pr.yaml` renders the changed chart on `main` and on the PR with the PR's
+`render-apps.sh` and API versions file (`RENDER_INCLUDE_DISABLED=1`, `KUBE_API_VERSIONS_FILE`), so the diff comment
+shows what ArgoCD would apply: same release name, namespace, CRDs and API list.
 
 ## CI/CD
 
