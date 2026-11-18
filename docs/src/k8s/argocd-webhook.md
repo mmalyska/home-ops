@@ -72,3 +72,17 @@ GitHub shows each delivery's response under the webhook's "Recent Deliveries".
 kubectl -n argocd logs deploy/argocd-server | grep -i webhook
 kubectl -n argocd logs deploy/argocd-applicationset-controller | grep -i webhook
 ```
+
+What the logs show:
+
+- **argocd-server:** a `ping` logs `Webhook handler started`, then `Ignoring webhook event`. A push to `main` logs
+  `refreshing app from webhook` with the app name, once for each app whose paths changed.
+- **ApplicationSet controller:** it logs nothing for a `ping`. A push logs `Received push event ... revision: main, touchedHead: true`, then
+  `refresh ApplicationSet ... from webhook`.
+- **Pushes to other branches** (Renovate, feature branches) are delivered as well. They log `touchedHead: false` and change nothing.
+- **Envoy** (`envoy-external`) has no access logs turned on, so it shows nothing about these requests. Use the ArgoCD logs above and GitHub's Recent
+  Deliveries.
+- **The devcontainer's GitHub token** cannot read repository webhooks (403), so check deliveries in the GitHub UI.
+
+Verified on 2026-11-18. For the push of #6348, which changed one file in `cluster/apps/system/tuppr/`, only `tuppr`
+refreshed, 7 s after the push. The other apps stayed on the previous commit.
