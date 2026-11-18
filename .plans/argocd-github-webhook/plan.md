@@ -4,9 +4,9 @@ owner: repository owner
 profile: STANDARD
 topology: HANDOFF
 base_sha: 585dbafa27e5db97f59d1f87c01aa7506804a944
-branch: feat/argocd-github-webhook-route
-worktree: .worktrees/feat/argocd-github-webhook-route
-pr: "#6356, #6358"
+branch: chore/argocd-poll-1h
+worktree: .worktrees/chore/argocd-poll-1h
+pr: "#6356, #6358, #6359"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -117,13 +117,21 @@ Approved 2026-11-18. H1 done: the owner created the Bitwarden secret.
 
 **PR 1 (#6356), merged 2026-11-18.** It delivered T1, T1b and T2.
 
-**H2 done 2026-11-18:**
+**H2 done.** The secret key is present, the ExternalSecret is Ready, and the HCP Terraform run is applied.
 
-- `webhook.github.secret` is in the `argocd-secret` key list.
-- The `argocd-oidc-secret` ExternalSecret is `Ready` (`SecretSynced`).
-- The HCP Terraform run for the merge is `applied`.
-- `root-app` picks up its annotation on its next poll.
+**PR 2 (#6358), merged 2026-11-18.** It delivered T3 and T5.
 
-**PR 2 (#6358; T3, T5)** is on `feat/argocd-github-webhook-route`, in `.worktrees/feat/argocd-github-webhook-route`.
+**H3 done.** The owner added both webhooks.
 
-Next: H3 (merge #6358 with consent, then add the two GitHub webhooks), then T4.
+**T4 passed 2026-11-18.**
+
+- Public DNS resolves to Cloudflare.
+- From a non-GitHub IP, `POST /api/webhook`, `POST /appset/api/webhook` and `GET /` all return 403 from Cloudflare.
+- argocd-server logged the ping at 11:15:11 UTC.
+- On the push of #6348 (one file in `cluster/apps/system/tuppr/`) at 11:21:43 UTC:
+  - argocd-server logged `refreshing app from webhook` for `tuppr` only.
+  - tuppr was on the new commit 7 s later.
+  - The other 72 apps stayed on the old commit; root-app moved too, because the ApplicationSets it owns were refreshed.
+  - The ApplicationSet controller logged `Received push event ... touchedHead: true` and refreshed all 7 ApplicationSets.
+
+**PR 3 (#6359; T6)** is on `chore/argocd-poll-1h`. After it merges, check that one push still refreshes within seconds, then archive the plan ("Archive after Ship").
