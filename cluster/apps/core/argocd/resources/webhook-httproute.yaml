@@ -1,0 +1,44 @@
+---
+# Public receiver for GitHub push webhooks. Only these two POST paths are routed; the ArgoCD
+# UI and API stay on envoy-internal (httproute.yaml). Cloudflare WAF (provision/terraform/cloudflare/firewall.tf)
+# lets only GitHub's hook ranges reach this host, and both receivers check the HMAC
+# signature against webhook.github.secret in argocd-secret. See docs/src/k8s/argocd-webhook.md.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-webhook
+  namespace: argocd
+  annotations:
+    external-dns.alpha.kubernetes.io/controller: dns-controller
+spec:
+  parentRefs:
+    - name: envoy-external
+      namespace: envoy-gateway
+      sectionName: https
+  hostnames:
+    - argocd-hook.<secret:private-domain>
+  rules:
+    # Applications refresh (argocd-server)
+    - matches:
+        - path:
+            type: Exact
+            value: /api/webhook
+          method: POST
+      backendRefs:
+        - name: argocd-server
+          port: 80
+    # ApplicationSet git generators (applicationset-controller listens on /api/webhook too)
+    - matches:
+        - path:
+            type: Exact
+            value: /appset/api/webhook
+          method: POST
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /api/webhook
+      backendRefs:
+        - name: argocd-applicationset-controller
+          port: 7000
