@@ -52,3 +52,4 @@
 - [Bazarr and Lingarr translation behaviour](reference_bazarr_lingarr_translation.md) — 40-line batches, Bazarr upgrades from opensubtitles overwrite translations, read the history DB to see the real origin
 - [Devcontainer env file format](reference_devcontainer_env_file.md) — Docker --env-file keeps a trailing # comment in the value (tokens rejected); read only at container creation, rebuild after a change
 - [Ceph OSD discard](reference_ceph_osd_discard.md) — bdev_async_discard alone does nothing; both options on since 2026-10-29, owner accepted ~2 ms extra write latency; wear check 2026-11-12
+- [ArgoCD GitHub webhooks](reference_argocd_github_webhooks.md) — merges apply in seconds via webhook, polling is a 1h fallback; a merge not applied after a minute = missed delivery, refresh by hand

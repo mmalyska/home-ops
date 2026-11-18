@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: shipped
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
@@ -134,4 +134,11 @@ Approved 2026-11-18. H1 done: the owner created the Bitwarden secret.
   - The other 72 apps stayed on the old commit; root-app moved too, because the ApplicationSets it owns were refreshed.
   - The ApplicationSet controller logged `Received push event ... touchedHead: true` and refreshed all 7 ApplicationSets.
 
-**PR 3 (#6359; T6)** is on `chore/argocd-poll-1h`. After it merges, check that one push still refreshes within seconds, then archive the plan ("Archive after Ship").
+**PR 3 (#6359), merged 2026-11-18.** It delivered T6.
+- `argocd-cm` has `timeout.reconciliation: 1h`, and all 7 ApplicationSets have `requeueAfterSeconds: 3600`.
+- Its own merge push at 11:30:03 UTC refreshed only `argocd` and `root-app` from the webhook. Both were on the new commit by 11:30:22.
+
+**Side work:** #6357 added the `terraform:fmt`, `format` and `validate` tasks, removed the token-printing task and formatted `account.tf` and `zone.tf`.
+
+Shipped 2026-11-18. Knowledge kept in `docs/src/k8s/argocd-webhook.md` and the memory note `reference_argocd_github_webhooks.md`; the
+kubeconform gap is a TODO item.
