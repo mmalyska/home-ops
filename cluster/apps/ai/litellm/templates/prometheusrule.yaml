@@ -77,6 +77,11 @@ spec:
         # The failed-fallback counter counts every failed hop (fallback_model is the
         # hop), so only the last hop of the agent chains (litellmproxy.yaml) means
         # the whole chain is exhausted. Keep the filter in step with the chains.
+        # No requested_model filter: LiteLLM labels a hop with the alias that hop was
+        # asked for, so `main` exhausting shows up as or-deepseek-v4-pro ->
+        # or-deepseek-v4.1-flash, never as main -> or-deepseek-v4.1-flash (seen
+        # 2026-11-16 20:24 UTC, when a `main` filter kept this alert silent). Only
+        # agent chains reach or-deepseek-v4.1-flash; `cheap` ends at `local`.
         # A label set's series appears only on its first failure (value 1), and
         # increase() of a new series is 0, so the second branch catches series created
         # in the last 15 min, e.g. the first exhaustion after a LiteLLM restart. It reads
@@ -84,15 +89,17 @@ spec:
         # would fire on every existing series after a Prometheus restart or scrape gap.
         - alert: LiteLLMFallbackChainExhausted
           expr: >-
-            sum by (api_key_alias, requested_model) (increase(litellm_deployment_failed_fallbacks_total{requested_model=~"main|main-cheap|main-lite",fallback_model="or-deepseek-v4.1-flash"}[15m])) > 0
+            sum by (api_key_alias, requested_model) (increase(litellm_deployment_failed_fallbacks_total{fallback_model="or-deepseek-v4.1-flash"}[15m])) > 0
             or
-            count by (api_key_alias, requested_model) (time() - litellm_deployment_failed_fallbacks_created{requested_model=~"main|main-cheap|main-lite",fallback_model="or-deepseek-v4.1-flash"} < 900)
+            count by (api_key_alias, requested_model) (time() - litellm_deployment_failed_fallbacks_created{fallback_model="or-deepseek-v4.1-flash"} < 900)
           labels:
             severity: warning
           annotations:
-            summary: Every fallback for {{ "{{ $labels.requested_model }}" }} failed for key {{ "{{ $labels.api_key_alias }}" }}
+            summary: An agent-tier fallback chain ended in an error for key {{ "{{ $labels.api_key_alias }}" }}
             description: >-
               The caller got an error: the subscription and its OpenRouter
               fallbacks all failed (for example a rate limit plus a spent
-              budget). Hermes pauses until a model answers again. Check
-              LiteLLMBudgetNearlyUsed and exception_status.
+              budget). Hermes pauses until a model answers again.
+              requested_model is the alias of the last hop
+              ({{ "{{ $labels.requested_model }}" }}; or-deepseek-v4-pro means
+              `main`). Check LiteLLMBudgetNearlyUsed and exception_status.
