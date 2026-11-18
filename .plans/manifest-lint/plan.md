@@ -1,5 +1,5 @@
 ---
-status: draft
+status: in-progress
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
@@ -137,4 +137,16 @@ devcontainer only, and touches nothing ArgoCD syncs.
 
 ## Status
 
-Draft, awaiting owner approval.
+Approved 2026-11-18.
+
+**T1 done.** It is in `mmalyska/containers` on `feat/dev-workstation-kubeconform-promtool`, commit `c8314dd`, not pushed.
+
+- **Changes:** two lines in `mise.toml`, two goss checks.
+- **Checks:**
+  - Both files parse.
+  - Both tools publish linux amd64 and arm64 builds.
+  - Both install and run through mise.
+  - The image build and goss test: NOT RUN, because there is no Docker in this environment. That repository's CI runs
+    them on the PR.
+
+Next: the owner's instruction to push and open the containers PR, then H1.
