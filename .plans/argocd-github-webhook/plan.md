@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 585dbafa27e5db97f59d1f87c01aa7506804a944
 branch: chore/argocd-poll-1h
 worktree: .worktrees/chore/argocd-poll-1h
-pr: "#6356, #6358"
+pr: "#6356, #6358, #6359"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -134,4 +134,4 @@ Approved 2026-11-18. H1 done: the owner created the Bitwarden secret.
   - The other 72 apps stayed on the old commit; root-app moved too, because the ApplicationSets it owns were refreshed.
   - The ApplicationSet controller logged `Received push event ... touchedHead: true` and refreshed all 7 ApplicationSets.
 
-**PR 3 (T6)** is on `chore/argocd-poll-1h`. After it merges, check that one push still refreshes within seconds, then archive the plan ("Archive after Ship").
+**PR 3 (#6359; T6)** is on `chore/argocd-poll-1h`. After it merges, check that one push still refreshes within seconds, then archive the plan ("Archive after Ship").
