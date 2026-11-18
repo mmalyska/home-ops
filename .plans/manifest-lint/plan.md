@@ -139,14 +139,22 @@ devcontainer only, and touches nothing ArgoCD syncs.
 
 Approved 2026-11-18.
 
-**T1 done.** It is in `mmalyska/containers` on `feat/dev-workstation-kubeconform-promtool`, commit `c8314dd`, not pushed.
+**T1 and H1 done.** `mmalyska/containers` #816 merged on 2026-11-18. The rebuild published
+`dev-workstation:1.0.0@sha256:3eb7c7b430cb0d52844157dd73fdb1c725a77a46206bbb2f880381f953443ce0`, and goss passed for
+both tools.
 
-- **Changes:** two lines in `mise.toml`, two goss checks.
-- **Checks:**
-  - Both files parse.
-  - Both tools publish linux amd64 and arm64 builds.
-  - Both install and run through mise.
-  - The image build and goss test: NOT RUN, because there is no Docker in this environment. That repository's CI runs
-    them on the PR.
+**T2 done** (`render-apps.sh`, `kube-api-versions.sh`, `kube-api-versions.txt`). It renders all 73 enabled apps with
+exit 0, and Sonarr's `HTTPRoute` renders as `v1`.
 
-Next: the owner's instruction to push and open the containers PR, then H1.
+**T3 done** (`check-manifests.sh`, `crd2schema.py`, `kubeconform-skip.txt`, the LiteLLM rule tests).
+
+- **Full run:** 73 apps rendered, kubeconform 1,053 valid / 0 invalid / 0 errors / 138 skipped, `promtool check rules`
+  on 44 PrometheusRules, rule tests for 1 app. Exit 0, about 1 minute.
+- **Negative checks:** removing the `_created` branch fails only the brand-new-series test. An invalid Sonarr hostname
+  fails kubeconform with exit 1. Both were reverted.
+- **Change from the task text:** given app names, the script still renders every app and only narrows the checks.
+  LiteLLM's custom resources take their schemas from the operator app's CRDs.
+- **`tests/` in the chart:** Helm renders only `templates/`, and LiteLLM's resource count is unchanged (26). No
+  `.helmignore` was added.
+
+Next: T4.

@@ -1,0 +1,4 @@
+# Kinds kubeconform skips, one per line, in addition to CustomResourceDefinition (always skipped: kubeconform's
+# default source has no full CRD schema, and the API server validates CRDs anyway).
+# Add a kind only when no schema exists for it anywhere (Kubernetes, our rendered CRDs, the datree CRDs-catalog),
+# and say why in a comment above it. A missing schema is otherwise an error.
