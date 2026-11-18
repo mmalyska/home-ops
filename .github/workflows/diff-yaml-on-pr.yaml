@@ -13,46 +13,6 @@ on: # yamllint disable-line rule:truthy
 env:
   conf_live_branch: main
   conf_ignore_known_labels_containing_versions: true
-  # renovate: datasource=github-releases depName=siderolabs/kubelet
-  kube_version: v1.36.6
-  kube_api_versions: |
-    acme.cert-manager.io/v1
-    admissionregistration.k8s.io/v1
-    apiextensions.k8s.io/v1
-    apiregistration.k8s.io/v1
-    apps/v1
-    argoproj.io/v1alpha1
-    authentication.k8s.io/v1
-    authorization.k8s.io/v1
-    autoscaling/v1
-    autoscaling/v2
-    autoscaling/v2beta2
-    batch/v1
-    bitnami.com/v1alpha1
-    ceph.rook.io/v1
-    cert-manager.io/v1
-    certificates.k8s.io/v1
-    coordination.k8s.io/v1
-    deviceplugin.intel.com/v1
-    discovery.k8s.io/v1
-    events.k8s.io/v1
-    flowcontrol.apiserver.k8s.io/v1beta1
-    flowcontrol.apiserver.k8s.io/v1beta2
-    fpga.intel.com/v2
-    metrics.k8s.io/v1beta1
-    monitoring.coreos.com/v1
-    monitoring.coreos.com/v1alpha1
-    networking.k8s.io/v1
-    nfd.k8s-sigs.io/v1alpha1
-    node.k8s.io/v1
-    objectbucket.io/v1alpha1
-    policy/v1
-    rbac.authorization.k8s.io/v1
-    scheduling.k8s.io/v1
-    storage.k8s.io/v1
-    storage.k8s.io/v1beta1
-    traefik.io/v1alpha1
-    v1
 
 jobs:
   changes:
@@ -102,6 +62,12 @@ jobs:
         run: |
           hr_live_path="live/${{ matrix.file }}"
           hr_pr_path="pr/${{ matrix.file }}"
+          # The cluster's version and API list, from the file `task lint:api-versions` writes (the same one the
+          # Manifest lint workflow uses). Read from the PR checkout so both sides render with the same list.
+          # --api-versions only splits on commas.
+          apis_file=pr/.taskfiles/lint/resources/kube-api-versions.txt
+          kube_version=$(sed -n 's/^# kube-version: //p' "$apis_file")
+          kube_api_versions=$(grep -v '^#' "$apis_file" | paste -sd, -)
           # helm dependency update prints progress/status messages to stdout; running it
           # separately from `helm template` keeps that noise out of the captured YAML
           # (mixing them in caused intermittent "bad file '-': yaml: ..." failures below).
