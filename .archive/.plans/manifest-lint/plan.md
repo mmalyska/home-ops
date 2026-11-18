@@ -1,12 +1,12 @@
 ---
-status: in-progress
+status: shipped
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
 base_sha: 1888e14cbdd5feb7a847c66134522c438b0d039d
 branch: feat/manifest-lint
 worktree: .worktrees/feat/manifest-lint
-pr: "#6362"
+pr: "#6362; mmalyska/containers#816"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -169,4 +169,8 @@ workflow, MegaLinter kubeconform removed, devcontainer on the new digest.
 **T5 done.** `validation.md` (Manifest lint in L0 and L1, a PrometheusRule section), the dev-workflow skill (synced),
 `AGENTS.md` Verification, and both TODO items moved to `.archive/TODO.md`. `check-plans` passes.
 
-PR #6362 opened. Next: CI on the PR, then H2.
+**Shipped 2026-11-18.** #6362 merged, after mmalyska/containers#816. Beyond the tasks, #6362 also fixed
+`diff-yaml-on-pr`: its API list was newline-separated, so Helm ignored it. Its Helm job now renders both sides with
+`render-apps.sh` like ArgoCD. First real run on #6347 (litellm-operator): both sides rendered, CRDs included, and the
+diff showed only the image digest. Knowledge kept in the dev-workflow skill ("Manifest lint") and
+`.agents/policy/validation.md`. No live follow-up.
