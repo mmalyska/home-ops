@@ -36,13 +36,15 @@ Polling stays as the fallback.
   appset policy allows 7000 from `namespaceSelector: {}`), so the Envoy proxy in `envoy-gateway` can reach them.
 - All seven ApplicationSets in `cluster/appsets/` already set `argocd.argoproj.io/manifest-generate-paths: .` on the
   generated Applications. A webhook push therefore refreshes only the apps whose path changed; no edit needed.
-  `root-app` (`cluster/bootstrap-application.yaml`) has no annotation and is refreshed on every push. It is one cheap
-  directory app, so this is accepted.
+  `root-app` (`cluster/bootstrap-application.yaml`) has no annotation. It is a multi-source app with three sources
+  (`cluster/projects`, `cluster/appsets`, and `cluster` for itself), so it would refresh on every push. T1b adds it.
+- Polling today: `timeout.reconciliation: "30m"` for Applications. The ApplicationSet git generators set no
+  `requeueAfterSeconds`, so they use the controller default (3 minutes).
 - `cloudflared` sends all tunnel traffic to `envoy-external`; external-dns (`cluster/apps/system/cloudflare-dns`) publishes
-  every hostname of an HTTPRoute attached to `envoy-external` (annotation `external-dns.alpha.kubernetes.io/controller:
-dns-controller`). No tunnel config change is expected; T4 verifies it.
-- The zone WAF ruleset (`provision/terraform/cloudflare/firewall.tf`) blocks some countries and `cf.client.bot or
-cf.threat_score gt 14`. GitHub's delivery IPs could be caught by the bot rule.
+  every hostname of an HTTPRoute attached to `envoy-external` (annotation
+  `external-dns.alpha.kubernetes.io/controller: dns-controller`). No tunnel config change is expected; T4 verifies it.
+- The zone WAF ruleset (`provision/terraform/cloudflare/firewall.tf`) blocks some countries and
+  `cf.client.bot or cf.threat_score gt 14`. GitHub's delivery IPs could be caught by the bot rule.
 - Merging a Terraform change triggers an HCP Terraform auto-apply (`.agents/policy/validation.md`).
 
 ## Decisions
@@ -60,40 +62,50 @@ cf.threat_score gt 14`. GitHub's delivery IPs could be caught by the bot rule.
 
 3. **Shared secret** `webhook.github.secret` in `argocd-secret`, added as a second `data` entry in the existing
    `argocd-oidc-secret` ExternalSecret, from a new Bitwarden secret the owner creates. Both receivers read the same key.
-   Without the key ArgoCD accepts unsigned payloads, so the key must be live **before** the route is published.
+   GitHub does not generate this value: the owner generates a random string, stores it in Bitwarden, and pastes the
+   same string into the "Secret" field of both GitHub webhooks. GitHub signs each delivery with it (HMAC-SHA256,
+   `X-Hub-Signature-256`), and ArgoCD checks the signature. Without the key ArgoCD accepts unsigned payloads, so the key must be live **before** the route is published.
 4. **WAF: an allow-only hostname.**
    - Rule 1 (first in the ruleset): if the request is for the hook hostname and the source IP is in GitHub's `hooks`
      ranges, skip the rest of the custom ruleset, so the bot and country rules cannot block GitHub.
    - Rule 2: block any other request to the hook hostname.
    - The ranges come from `https://api.github.com/meta` (`hooks`, IPv4 and IPv6) through a Terraform `data "http"` and
      `jsondecode`, refreshed on every plan.
-5. **Keep `timeout.reconciliation: "30m"`** and the ApplicationSet requeue as they are. They are the fallback for a missed
-   delivery.
-6. **Webhook events: `push` only**, content type `application/json`, SSL verification on.
+5. **Polling becomes a 1-hour fallback** once webhooks are verified (T6):
+   - `timeout.reconciliation: "1h"` (from 30m).
+   - `requeueAfterSeconds: 3600` on the git generator of each of the seven ApplicationSets (from the 3-minute default).
+   - It goes in last, after T4, so that no window exists in which polling is slow and webhooks are not yet working.
+   - The owner allowed 1-2h. 1h is chosen because it bounds the delay after a missed delivery.
+   - Self-heal of cluster drift does not depend on this interval: it reacts to watch events.
+6. **`root-app` gets `argocd.argoproj.io/manifest-generate-paths`** with absolute repo paths for its three sources:
+   `/cluster/projects;/cluster/appsets;/cluster/bootstrap-application.yaml`. It is harmless before webhooks exist, so it
+   ships in PR 1.
+7. **Webhook events: `push` only**, content type `application/json`, SSL verification on.
 
 ## Delivery
 
-Two PRs, in this order:
+Three PRs, in this order:
 
-1. **PR 1, secret + WAF** (T1, T2): adds the ExternalSecret key and the WAF rules. Nothing is exposed yet. The hostname has
-   no DNS record, so the WAF rules match nothing.
+1. **PR 1, secret + WAF + root-app annotation** (T1, T1b, T2): adds the ExternalSecret key, the WAF rules and the
+   `root-app` annotation. Nothing is exposed yet. The hostname has no DNS record, so the WAF rules match nothing.
 2. **PR 2, route + docs** (T3, T5): publishes the hostname. It is opened only after H2 confirms the key exists in
    `argocd-secret`.
 
-Then the owner adds the two webhooks in GitHub (H3), and T4 verifies end to end.
+3. **PR 3, polling to 1h** (T6): opened only after T4 passes.
 
-Merging either PR deploys (GITOPS_TRIGGER), and PR 1 also auto-applies Terraform. Each merge needs the owner's fresh consent
+Between PR 2 and PR 3, the owner adds the two webhooks in GitHub (H3), and T4 verifies end to end.
+
+Merging any of the PRs deploys (GITOPS_TRIGGER), and PR 1 also auto-applies Terraform. Each merge needs the owner's fresh consent
 with an impact statement.
 
 ## Out of scope
 
-- Raising the polling interval or the ApplicationSet requeue now that webhooks exist. That is a later TODO, once
-  deliveries have been reliable for a while.
 - Webhooks for other repositories (Helm chart repos) or for other git providers.
 - Exposing any other ArgoCD API path.
 
 ## Rollback
 
+- Revert PR 3 first if webhooks are being removed, so polling returns to 30m and 3 minutes.
 - Remove the GitHub webhooks (or mark them inactive in the repo settings): ArgoCD falls back to polling at once.
 - Revert PR 2 to unpublish the hostname. external-dns removes the record (`policy: sync`).
 - Revert PR 1 to drop the WAF rules and the secret key. With `creationPolicy: Merge`, ESO may leave the old key in

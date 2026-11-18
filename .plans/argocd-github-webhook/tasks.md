@@ -23,6 +23,9 @@ Repository `mmalyska/home-ops`.
     ClusterSecretStore reads.
   - Give the conductor the new secret's UUID, never its value. The UUID goes into the ExternalSecret like the other
     `remoteRef.key` entries.
+- **Note:** GitHub does not generate or show this secret. The owner chooses it, and later pastes the same value into the
+  "Secret" field of both GitHub webhooks (H3). GitHub never shows it again after saving. To view it later, read it from
+  Bitwarden.
 - **Done when:** the conductor has the UUID.
 
 ## T1 - Add `webhook.github.secret` to the argocd-oidc-secret ExternalSecret
@@ -39,6 +42,20 @@ Repository `mmalyska/home-ops`.
   - `kubectl kustomize cluster/apps/core/argocd`: the rendered ExternalSecret has both data entries.
   - `task lint:all`: read the output.
 - **Done when:** both checks pass and the diff touches only that file.
+
+## T1b - Add manifest-generate-paths to root-app
+
+- **Owner:** worker (mechanical). **Dependencies:** none. **Branch:** `feat/argocd-github-webhook` (PR 1).
+- **File:** `cluster/bootstrap-application.yaml`.
+- **Change:** add `metadata.annotations`:
+  `argocd.argoproj.io/manifest-generate-paths: /cluster/projects;/cluster/appsets;/cluster/bootstrap-application.yaml`.
+  The leading `/` makes each path relative to the repository root, which is correct for every one of the three sources.
+  Change nothing else.
+- **Checks:**
+  - `yq '.metadata.annotations' cluster/bootstrap-application.yaml` shows the one annotation.
+  - `task lint:all`: read the output.
+- **Done when:** both checks pass. After PR 1 merges, `kubectl -n argocd get application root-app -o yaml` shows the
+  annotation (READ).
 
 ## T2 - Cloudflare WAF rules for the hook hostname
 
@@ -137,3 +154,20 @@ Repository `mmalyska/home-ops`.
 - **If deliveries fail:** check the cloudflared logs and the `envoy-external` access logs for the hostname. Confirm that
   the tunnel ingress has a catch-all to `envoy-external`, and not a fixed hostname list.
 - **Done when:** every step passes, or a failing step is reported with its evidence.
+
+## T6 - Lower polling to a 1-hour fallback
+
+- **Owner:** worker (mechanical). **Dependencies:** T4 passed. **Branch:** a new branch `chore/argocd-poll-1h` from
+  `origin/main` (PR 3).
+- **Files:**
+  - `cluster/apps/core/argocd/patches/argocd-cm.yaml`: `timeout.reconciliation: "1h"` (from `"30m"`).
+  - The seven `cluster/appsets/appset-*.yaml`: add `requeueAfterSeconds: 3600` under each `generators[].git` entry, at the
+    same level as `repoURL` and `revision`.
+- **Checks:**
+  - `kubectl kustomize cluster/apps/core/argocd`: the rendered `argocd-cm` has `timeout.reconciliation: 1h`.
+  - `grep -c requeueAfterSeconds cluster/appsets/*.yaml`: 1 per file.
+  - `task lint:all`: read the output.
+- **Impact for the merge (GITOPS_TRIGGER, fresh consent):** an `argocd-cm` change makes the application controller pick up
+  the new interval. After a missed webhook delivery, a change can now take up to about 1h to apply.
+- **Done when:** the checks pass. After the merge, a push still refreshes within seconds (one webhook delivery in GitHub
+  with 200).
