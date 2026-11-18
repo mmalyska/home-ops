@@ -116,7 +116,7 @@ with an impact statement.
 Approved 2026-11-18. H1 done (the owner created the Bitwarden secret). T1, T1b and T2 are implemented on
 `feat/argocd-github-webhook` (PR 1, #6356).
 
-- `terraform plan`: NOT RUN, because there is no HCP Terraform token in the session.
+- `terraform plan` (`task terraform:plan:cloudflare`): PASS. It shows one in-place ruleset update.
 - `terraform fmt -check`: already fails on `main` for `account.tf` and `zone.tf`. Only `firewall.tf` was formatted.
 
 Next: H2 (merge #6356 with consent, then confirm the key).
