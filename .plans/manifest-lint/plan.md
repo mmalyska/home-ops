@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 1888e14cbdd5feb7a847c66134522c438b0d039d
 branch: feat/manifest-lint
 worktree: .worktrees/feat/manifest-lint
-pr: not-opened
+pr: "#6362"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -169,4 +169,4 @@ workflow, MegaLinter kubeconform removed, devcontainer on the new digest.
 **T5 done.** `validation.md` (Manifest lint in L0 and L1, a PrometheusRule section), the dev-workflow skill (synced),
 `AGENTS.md` Verification, and both TODO items moved to `.archive/TODO.md`. `check-plans` passes.
 
-Next: the owner's instruction to push and open the PR, then H2.
+PR #6362 opened. Next: CI on the PR, then H2.
