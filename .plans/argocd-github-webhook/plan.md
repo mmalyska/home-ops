@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 585dbafa27e5db97f59d1f87c01aa7506804a944
 branch: feat/argocd-github-webhook
 worktree: .worktrees/feat/argocd-github-webhook
-pr: not-opened
+pr: "#6356"
 started: 2026-11-18
 updated: 2026-11-18
 ---
@@ -114,9 +114,9 @@ with an impact statement.
 ## Status
 
 Approved 2026-11-18. H1 done (the owner created the Bitwarden secret). T1, T1b and T2 are implemented on
-`feat/argocd-github-webhook` (PR 1, not pushed yet).
+`feat/argocd-github-webhook` (PR 1, #6356).
 
 - `terraform plan`: NOT RUN, because there is no HCP Terraform token in the session.
 - `terraform fmt -check`: already fails on `main` for `account.tf` and `zone.tf`. Only `firewall.tf` was formatted.
 
-Next: the owner's instruction to push and open PR 1, then H2.
+Next: H2 (merge #6356 with consent, then confirm the key).
