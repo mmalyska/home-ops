@@ -244,6 +244,12 @@ is done), then the per-repository chain with `kanban_link` and the post-merge ca
 no-op, so a retried summary is safe. If a link cannot be made, the summary card blocks, and its merge cards wait on it instead of racing. Before 2026-11-20 it created one
 chained card per turn, re-sending its whole context (about 66K tokens) each time: about half of the summary card's input tokens on 2026-11-19.
 
+The summary splits the PRs waiting for the owner by the date of the verdict or note behind them: **New for the owner** (written in this run) with a one-sentence reason, and
+**Still waiting** (seen in an earlier summary) as one line of PRs with verdict and date. The gates script prints `digest_only=true` when every changed line differs from
+its pair only in a `sha256:` digest; the policy's digest-only exception (github-workflows and the Coder workspace templates) is applied from that flag only.
+Reviewed on 2026-11-19: of 9 owner verdicts without a denylist reason, 6 were right, 1 borderline and 2 stricter than the policy (missing notes on a minor; a transitive
+lockfile major), which the G7 wording in the policy and in `renovate-pr-check` now rules out.
+
 **Merging is on since T19.** The switch is `merge_enabled` in `.agents/policy/hermes-merge-policy.md`. Setting it to `false` in a PR stops every merge, the owner's `merge` replies included, and the summary then says "would merge" instead.
 The gates, the denylist and the limits are in that file; this page does not repeat them.
 

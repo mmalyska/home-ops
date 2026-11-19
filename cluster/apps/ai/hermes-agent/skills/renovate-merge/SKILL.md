@@ -109,7 +109,12 @@ for REPO in $REPOS; do
       case "$STATE" in *mergeable=UNKNOWN*) [ "$TRY" = 4 ] || sleep 20 ;; *) break ;; esac
     done
     HASH="$( ( set -o pipefail; gh pr diff "$PR" --repo "mmalyska/$REPO" --color=never | LC_ALL=C grep -av -E '^(index |@@)' | sha256sum | cut -d' ' -f1 ) )" || HASH=ERROR
-    echo "$REPO#$PR hash=$HASH G5=$G5 $STATE"
+    DIGEST_ONLY="$( ( set -o pipefail; gh pr diff "$PR" --repo "mmalyska/$REPO" --color=never | LC_ALL=C grep -a -E '^[-+]' \
+      | LC_ALL=C grep -av -E '^(\+\+\+ (b/|/dev/null)|--- (a/|/dev/null))' | LC_ALL=C awk '
+        !/sha256:[0-9a-f]+/ { bad = 1 }
+        { s = $0; gsub(/sha256:[0-9a-f]+/, "", s); k = substr(s, 2); if (substr(s, 1, 1) == "-") c[k]++; else c[k]--; n++ }
+        END { for (k in c) if (c[k] != 0) bad = 1; print ((n > 0 && !bad) ? "true" : "false") }' ) )" || DIGEST_ONLY=false
+    echo "$REPO#$PR hash=$HASH G5=$G5 digest_only=$DIGEST_ONLY $STATE"
     gh pr diff "$PR" --repo "mmalyska/$REPO" --color=never | LC_ALL=C grep -a -E '^[-+][^-+]' | head -n 10 | cut -c1-160 | sed 's/^/  changed: /'
     N=$((N + 1))
   done
@@ -135,6 +140,8 @@ Stop at the first row that applies:
 | Every gate passed                                         | Merge it.                                                                       |
 
 For G2, compare `files=` and the dependency names on the `changed:` lines against the policy's denylist for this repository. If you are unsure, treat the PR as denylisted.
+The policy's digest-only exception applies only when the PR's line says `digest_only=true`, and only to the entries and paths the policy names for it. Never decide
+that a PR is digest-only yourself, and never from the `changed:` lines: those show at most 10 lines.
 
 ### 6. Merge
 

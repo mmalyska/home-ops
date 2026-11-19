@@ -78,7 +78,8 @@ Read the full diff with `gh pr diff "$PR" --repo "mmalyska/$REPO" --color=never`
 ### 3. G7 Release notes
 
 1. From the diff, write down each dependency with its old and new version. For a digest change with the same tag there are no versions in between: say so and give PASS for that dependency, unless the digest moved to a different version.
-2. Find the notes for **every** version after the old one, up to and including the new one. Go to the upstream project's GitHub releases or changelog, using `gh release view <tag> --repo <owner>/<project>` or the `web_extract` tool.
+2. Find the notes for **every** version after the old one, up to and including the new one (in a lockfile, of the direct packages only: see 7).
+   Go to the upstream project's GitHub releases or changelog, using `gh release view <tag> --repo <owner>/<project>` or the `web_extract` tool.
    You can use the PR body to find the links, but read the source itself.
    An image name is not always its GitHub repository, and tags may have a `v` prefix or not. Before the first `gh release view`, list the real tag names with
    `gh release list --repo <owner>/<project> --limit 30`. If GitHub says the repository does not exist, do not guess other names: read the image's registry page
@@ -92,6 +93,13 @@ Read the full diff with `gh pr diff "$PR" --repo "mmalyska/$REPO" --color=never`
    ```
 
 5. Apply the policy's "not clean" list for G7. For a major update, name the breaking changes listed upstream and say why none applies. A major whose notes cannot be found is not clean.
+   For a `0.x` package, a minor counts as a major.
+6. Missing or thin notes for a minor or patch are not a failure on their own. Cite what exists, say the notes are thin, and give PASS when nothing in them is on the "not clean"
+   list. Do not turn "could not establish the full impact" into a FAIL for a minor or patch: G6 and, for home-ops apps, G8 already bound what the update changes.
+7. In a lockfile, sort each changed package: **direct** when the repository's manifest (`package.json`, `go.mod`, `pyproject.toml`, ...) declares it, **transitive** otherwise.
+   Read the notes of the direct packages as above. For a transitive package, search the repository for it once (`git grep -n -F -- '<name>'` outside lockfiles). If the
+   repository does not use it, its own notes and breaking changes do not count: the direct package that pulled it in chose that version. Say so in one line and do not read
+   its intermediate versions.
 
 ### 4. G8 Rendered impact
 
@@ -171,7 +179,9 @@ Proposed fix: <only for verdict fix>
 EOF
 ```
 
-Then set exactly one label. A `clean` verdict on a PR that is not on the denylist uses the first line. Every other result, including a `clean` verdict on a denylisted PR, uses the second, because a denylisted PR is never auto-merged:
+Then set exactly one label. A `clean` verdict on a PR that is not on the denylist uses the first line. So does a `clean` verdict on a PR that the policy's digest-only exception
+takes off the denylist: write `Denylist: listed (<entry>), digest-only exception` in the verdict, and the orchestrator re-checks it with a computed flag before any merge.
+Every other result, including a `clean` verdict on a denylisted PR, uses the second, because a denylisted PR is never auto-merged:
 
 ```sh
 gh pr edit "$PR" --repo "mmalyska/$REPO" --add-label triage/clean --remove-label triage/needed --remove-label triage/owner
