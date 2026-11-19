@@ -38,7 +38,9 @@ evidence for each. A `triage/clean` label never authorizes a merge: the orchestr
 - **G6 Diff shape:** only version, tag, digest and chart version lines, and their lock or checksum lines, change.
 - **G7 Release notes:** the worker read the notes for every version in between and cites them. Not clean: a breaking change, a removed or renamed option this repository uses
   (checked by searching it), a required migration or manual step, an unmet minimum version, or a major whose notes cannot be found. For a major, the verdict names the breaking
-  changes listed upstream and says why none applies.
+  changes listed upstream and says why none applies. Missing or thin notes fail only a major; for a `0.x` version a minor counts as a major. A lockfile dependency that the
+  repository neither declares in its manifest nor uses in its own code (a transitive dependency) is judged through the package that pulled it in: its own breaking changes
+  count only when a search shows the repository uses it directly.
 - **G8 Rendered impact (home-ops Helm and Kustomize apps):** rendered output changes only image references, version labels and annotations, and checksum annotations. Not clean:
   CRDs, `volumeClaimTemplates`, PVC specs, Service type or ports, RBAC, NetworkPolicies, added or removed resources, security context changes.
 
@@ -58,6 +60,11 @@ In home-ops:
 - Hermes's own stack: `hermes-agent`, `litellm`, `litellm-operator`, `honcho`, `agent-workspaces`, `coder`
 
 In other repositories: all of `github-workflows` and `renovate-config`, because they change every other repository.
+
+**Digest-only exception.** A digest-only PR is not denylisted by the `github-workflows` entry, nor, for files under `cluster/apps/ai/coder/workspace-template*/`, by the
+"Coder workspace templates" and `coder` entries. Digest-only means every changed line differs from its pair only in an image's `@sha256:` digest: same image, same tag. The
+gates script prints this as `digest_only=true`. Any other denylist entry still applies to the PR's other files. A template change in git reaches no workspace until the owner
+pushes the template.
 
 The denylist only stops auto-merge. The worker still checks denylisted PRs and gives its real verdict in a PR comment, so the owner has the full analysis and decides.
 A repository whose `AGENTS.md` on its default branch reserves merging for people is never
