@@ -239,6 +239,11 @@ The daily run is started by cron, so its cards post no notices; `renovate-post` 
 A PR whose diff hash still matches the worker's earlier verdict keeps its label and gets no new check. A summary arrives after the last check finishes, so a missing summary by mid-morning
 means the run failed or a check is stuck: look at the `renovate` board.
 
+The summary card creates its cards in three model turns, whatever their number: every merge card at once with the summary card as parent (so none starts before the summary
+is done), then the per-repository chain with `kanban_link` and the post-merge card, then the report card. A link adds an edge between existing cards, and repeating one is a
+no-op, so a retried summary is safe. If a link cannot be made, the summary card blocks, and its merge cards wait on it instead of racing. Before 2026-11-20 it created one
+chained card per turn, re-sending its whole context (about 66K tokens) each time: about half of the summary card's input tokens on 2026-11-19.
+
 **Merging is on since T19.** The switch is `merge_enabled` in `.agents/policy/hermes-merge-policy.md`. Setting it to `false` in a PR stops every merge, the owner's `merge` replies included, and the summary then says "would merge" instead.
 The gates, the denylist and the limits are in that file; this page does not repeat them.
 

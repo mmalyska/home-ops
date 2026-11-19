@@ -195,7 +195,13 @@ The limit counts the PRs of that repository already listed under "would merge" o
 
 ### 5. Merge cards
 
-Only when `merge_enabled=true`. One card per PR under "queued to merge". Within a repository, chain them in ascending PR number: each card's parent is the previous card of that repository, so merges never race.
+Only when `merge_enabled=true`. One card per PR under "queued to merge". Within a repository the cards run in ascending PR number, each after the previous card of that repository,
+so merges never race.
+
+Create the cards in three responses, never one card per response. Every response below sends all its tool calls at once, as parallel calls in the same response.
+Your own card id (call it `SELF`) is the `id` from `kanban_show` at the start; call `kanban_show()` with no `task_id` if you do not have it.
+
+**Response 1: every merge card at once.** Each has your own card as its only parent, so none of them can start before you finish:
 
 ```text
 kanban_create(
@@ -205,13 +211,20 @@ kanban_create(
   tenant="renovate",
   skills=["renovate-merge"],
   model="main",
-  parents=[<the previous merge card of this repository, if any>],
+  parents=["<SELF>"],
   idempotency_key="renovate-merge:<repo>#<number>:<verdict_hash>",
   body="repo: <repo>\npr: <number>\nverdict_hash: <verdict_hash>\nowner_consent: no"
 )
 ```
 
-Then the post-merge card, with every merge card as a parent. Create it whenever you created a merge card: it starts when they have all finished, and it finds out itself which of them merged.
+**Response 2: the chains, the post-merge card and nothing else.** For each repository with more than one merge card, link each card to the previous card of that repository
+(ascending PR number). Five cards of one repository need four links:
+
+```text
+kanban_link(board="renovate", parent_id="<previous merge card of this repository>", child_id="<next merge card of this repository>")
+```
+
+In the same response create the post-merge card, with every merge card as a parent. Create it whenever you created a merge card: it starts when they have all finished, and it finds out itself which of them merged.
 
 ```text
 kanban_create(
@@ -226,7 +239,10 @@ kanban_create(
 )
 ```
 
-Then one report card with every merge card as a parent:
+Every `kanban_link` must succeed before you finish: a missing link lets two merges of one repository run at once. If one fails, call it once more. If it still fails, create no
+report card, and call `kanban_block(kind="capability", reason="cannot chain <repo> merge cards: <the error>")` instead of `kanban_complete`. The merge cards then wait for the owner.
+
+**Response 3: the report card**, with every merge card as a parent:
 
 ```text
 kanban_create(
