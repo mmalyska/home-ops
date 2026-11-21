@@ -14,9 +14,9 @@ task lint:manifests -- home-assistant   # read the output, the task always exits
 
 ## T1. PR 1: stop Home Assistant
 
-- [ ] In `APP/values.yaml`, set `replicas: 0` on `controllers.main`, and add `replicas: 0` to `controllers.addons`.
+- [x] In `APP/values.yaml`, set `replicas: 0` on `controllers.main`, and add `replicas: 0` to `controllers.addons`.
       Add the comment `# 0 during the ceph-block migration (.plans/home-assistant-ceph-block)`.
-- [ ] Render. The StatefulSet `home-assistant-main` and the Deployment `home-assistant-addons` have `replicas: 0`.
+- [x] Render. The StatefulSet `home-assistant-main` and the Deployment `home-assistant-addons` have `replicas: 0`.
       Nothing else changes.
 - [ ] Open the PR. Ask the owner to merge it at about hh:45 UTC before a 6-hour mark (hh+1 is one of 00, 06, 12, 18).
       Impact: Home Assistant and code-server are down until T4.

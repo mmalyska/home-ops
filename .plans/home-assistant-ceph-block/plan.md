@@ -1,5 +1,5 @@
 ---
-status: draft
+status: in-progress
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
@@ -117,4 +117,4 @@ written to the new volume after the cutover is lost.
 
 ## Status
 
-2026-11-21: draft written. Nothing changed in the cluster. Waiting for owner review.
+2026-11-21: plan approved (code-server as a sidecar). T1 (PR 1, stop Home Assistant) opened; nothing changed in the cluster yet.
