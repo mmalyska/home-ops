@@ -110,7 +110,7 @@ to UID 568 (checked in T4 from the Home Assistant pod).
       `# existing data: never render the restore-once ReplicationDestination`.
 - [x] Render. The StatefulSet is at replicas 1. No ReplicationDestination remains (with `prune: false`, the live one
       stays as an orphan, and T6 handles it).
-- [ ] Open the PR. Ask the owner to merge it. Impact: Home Assistant starts on the new volume.
+- [x] Open the PR. Ask the owner to merge it. Impact: Home Assistant starts on the new volume.
 - [ ] Check:
   - `home-assistant-main-0` shows 2/2 Ready. `kubectl -n ha-home-assistant exec home-assistant-main-0 -c main -- du -sh /config`
     shows about 28 MiB.
@@ -144,7 +144,7 @@ harmless) and reopen the investigation.
 
   At the next run, the recreated cache is `ceph-block`.
 
-- [ ] Delete the orphaned `addons` Deployment (at 0 replicas since T1, out of git since T3):
+- [x] (Done by the manual Prune sync at 15:46:23 UTC.) Delete the orphaned `addons` Deployment (at 0 replicas since T1, out of git since T3):
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete deployment home-assistant-addons
@@ -156,7 +156,7 @@ harmless) and reopen the investigation.
   kubectl -n ha-home-assistant delete replicationdestination home-assistant-bootstrap
   ```
 
-- [ ] At least 7 days after T4, with Home Assistant healthy and at least one good RBD backup, delete the old claim.
+- [x] (Already deleted by the manual Prune sync at 15:46:23 UTC; see Status in `plan.md`.) At least 7 days after T4, with Home Assistant healthy and at least one good RBD backup, delete the old claim.
       This is DESTRUCTIVE: show the owner the backup evidence first.
 
   ```sh consent-gated

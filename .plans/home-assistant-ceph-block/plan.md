@@ -139,6 +139,16 @@ written to the new volume after the cutover is lost.
 - PR 3 (#6398) was merged at 15:45:16 UTC, and the annotation was live at 15:46:29. With owner consent, the failing
   Job was deleted. VolSync recreated it, and it restored snapshot `1dda3d60` at 15:46:46 UTC, `Successful`, with 0
   errors (no `lchown` failures).
-- PR 4 is prepared: `replicas: 1`, `restore.enabled: false`.
+- PR 4 (#6399) was merged at 15:49:32 UTC. `home-assistant-main-0` was 2/2 Ready at 15:49:57 on the claim
+  `home-assistant` (RBD), with 29.7 MiB in `/config`. Every file is owned by UID 568, except the volume root
+  (`root`, group 568, mode 2775 from `fsGroup`). `:8123/manifest.json` and code-server `:8080/healthz` return 200.
+  Two automation errors ("Unknown device", automations "Jenny screen on/off") also appear in the restored log from
+  before the migration (`home-assistant.log.1`), so they are not caused by it.
+- **The rollback copy is gone.** At 15:46:23 UTC, a manual sync started from the owner's ArgoCD account with
+  `Prune: true` pruned the `home-assistant-config` PVC and the `home-assistant-addons` Deployment. The
+  `ceph-filesystem` reclaim policy is `Delete`, so the PV and the CephFS subvolume were deleted too. Auto-syncs had
+  correctly skipped both ("ignored (requires pruning)"). The data stays in restic: snapshot `1dda3d60` (15:28) and
+  older ones, plus the running volume. The first RBD backup is at 18:00 UTC. Lesson: with `prune: false`, a manual
+  sync with Prune checked still deletes orphans; take the rollback copy from a backup, not from an orphaned claim.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).
