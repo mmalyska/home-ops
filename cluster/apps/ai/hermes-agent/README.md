@@ -125,7 +125,8 @@ Rules that follow from this:
 
 ### Kanban wiring
 
-Kanban settings live in the `default` overlay: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker, default]`, `max_in_progress_per_profile: 2`.
+Kanban settings live in the `default` overlay: `orchestrator_profile: default`, `default_assignee: worker`, `dispatch_profiles: [worker, default]`, `max_in_progress_per_profile: 3`,
+`dispatch_interval_seconds: 20` (since 2026-11-21; before, 2 at once and a 60 s tick ran about one check card a minute).
 Kanban tools are opt-in per platform: the `default` overlay turns them on for Discord, cron and `cli`, and the `worker` overlay under `platform_toolsets.cli`. Cards started by the dispatcher run on `cli`.
 Those cards can show, create and complete cards, but not list or unblock them; that is left to a cron or Discord session.
 The Renovate run uses its own board, `renovate`.
@@ -226,7 +227,7 @@ The run is a chain of short cards on the kanban board `renovate`, so no single s
 | `renovate-coordinator <date>`             | `worker`                | Snapshots open Renovate PRs, sets labels, creates check cards, fix cards for `/hermes fix` comments, and the summary card |
 | `renovate-pr-check <repo>#<n>`            | `worker`                | One verdict with evidence: clean, needs the owner, or needs a fix                                                         |
 | `renovate-summary <date>`                 | `default`, `main`       | Starts when every check card has finished. Re-checks gates, writes the summary, creates merge cards when merging is on    |
-| `renovate-merge <repo>#<n>`               | `default`, `main`       | One PR: re-checks the gates and merges. Cards of one repository are chained, so merges never race                         |
+| `renovate-merge <repo>#<n>`               | `default`, `main-cheap` | One PR: re-checks the gates and merges. Cards of one repository are chained, so merges never race                         |
 | `post-merge-check <date>`                 | `worker`                | Created with the merge cards and started when they finish: checks every merge, opens a revert PR on a failure             |
 | `renovate-merge-report <date>`            | `default`               | After the merges: the report                                                                                              |
 | Job `renovate-post`, every 10 minutes     | script only, no model   | Posts each finished summary and merge report to `#hermes-renovate`, once                                                  |
@@ -243,6 +244,9 @@ The summary card creates its cards in three model turns, whatever their number: 
 is done), then the per-repository chain with `kanban_link` and the post-merge card, then the report card. A link adds an edge between existing cards, and repeating one is a
 no-op, so a retried summary is safe. If a link cannot be made, the summary card blocks, and its merge cards wait on it instead of racing. Before 2026-11-20 it created one
 chained card per turn, re-sending its whole context (about 66K tokens) each time: about half of the summary card's input tokens on 2026-11-19.
+
+Merge cards run on `main-cheap` since 2026-11-21. They were about 27 % of a run's input tokens on `main` (about 290K each, 8 calls), and the decision
+they make comes from the gates script and a fixed table, so they need no stronger model. The summary card stays on `main`: it writes the reasons.
 
 The summary splits the PRs waiting for the owner by the date of the verdict or note behind them: **New for the owner** (written in this run) with a one-sentence reason, and
 **Still waiting** (seen in an earlier summary) as one line of PRs with verdict and date. The gates script prints `digest_only=true` when every changed line differs from

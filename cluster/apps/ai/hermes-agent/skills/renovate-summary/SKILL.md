@@ -217,7 +217,7 @@ kanban_create(
   assignee="default",
   tenant="renovate",
   skills=["renovate-merge"],
-  model="main",
+  model="main-cheap",
   parents=["<SELF>"],
   idempotency_key="renovate-merge:<repo>#<number>:<verdict_hash>",
   body="repo: <repo>\npr: <number>\nverdict_hash: <verdict_hash>\nowner_consent: no"
