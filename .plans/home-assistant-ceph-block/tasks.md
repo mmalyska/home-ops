@@ -150,7 +150,7 @@ harmless) and reopen the investigation.
   kubectl -n ha-home-assistant delete deployment home-assistant-addons
   ```
 
-- [ ] Delete the orphaned ReplicationDestination left from T3:
+- [x] (Already pruned by a manual Prune sync at 15:51:34 UTC.) Delete the orphaned ReplicationDestination left from T3:
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete replicationdestination home-assistant-bootstrap
@@ -163,7 +163,7 @@ harmless) and reopen the investigation.
   kubectl -n ha-home-assistant delete pvc home-assistant-config
   ```
 
-- [ ] Docs PR:
+- [x] Docs PR (opened before T5 at the owner's request; the mgr comment says the 48 h check is pending):
   - Update the mgr comment in `cluster/apps/core/rook-ceph/cluster/values.yaml` with the T5 finding (the cause and
     the date it stopped).
   - Add a note to the `cluster-reference` skill (in `.agents/skills/`, then run `.agents/bin/sync-skills`): VolSync

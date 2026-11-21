@@ -30,6 +30,8 @@ when_to_use: >
 | **CloudNative-PG** | PostgreSQL operator |
 | **VolSync** | PVC backup/restore |
 
+VolSync sources belong on `ceph-block`: snapshot clones from `ceph-filesystem` run in the Ceph mgr and grew it until it was OOM-killed (2026-11-21). Restore and capacity gotchas are in the `add-app` skill.
+
 For egctl debugging commands, see `@docs/src/k8s/egctl.md`.
 
 ## Talos Configuration

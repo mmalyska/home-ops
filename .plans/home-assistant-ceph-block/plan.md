@@ -156,5 +156,10 @@ written to the new volume after the cutover is lost.
   the run at 18:28:26, `Successful`: snapshot `3948e17b` (parent `1dda3d60`), 410 files, 27.903 MiB. That is the
   first backup from RBD. No CephFS PVC is left in `ha-home-assistant`. Lesson for the volsync chart: lowering
   `pvc.capacity` on a live app breaks its cache PVC; delete the cache PVC in the same change.
+- The leftover ReplicationDestination was pruned by another manual Prune sync at 15:51:34 UTC. The app is Synced
+  and Healthy. The T6 cluster cleanup is complete.
+- Docs PR opened before T5, at the owner's request: rook-ceph mgr comment, `charts/volsync` values comments, and
+  `add-app` and `cluster-reference` skill notes. Still open: T5 (48 h mgr check, around 2026-11-23 18:30 UTC), then
+  archive.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).

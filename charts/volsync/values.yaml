@@ -4,10 +4,15 @@ syncWave: "-1"
 pvc:
   existingClaim: "" # If set, skip PVC creation and use this PVC name for source/destination
   accessMode: ReadWriteOnce
+  # also the cache size: lowering it on a live app breaks the backup (the cache PVC
+  # cannot shrink); delete volsync-src-<name>-cache when the change lands
   capacity: 5Gi
+  # keep ceph-block: CephFS snapshot clones run in the Ceph mgr and grow it
   storageClass: ceph-block
   volumeSnapshotClass: csi-ceph-blockpool
 volsync:
+  # runAsUser 0 needs volsync.backube/privileged-movers: "true" on the namespace for a
+  # restore (managedNamespaceMetadata in app-config.yaml); otherwise every lchown fails
   moverSecurityContext:
     runAsUser: 1000
     runAsGroup: 1000
