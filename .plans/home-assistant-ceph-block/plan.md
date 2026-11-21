@@ -136,5 +136,9 @@ written to the new volume after the cutover is lost.
   field must be removed before PR 2 merges, or VolSync keeps ignoring the schedule.
 - PR 2 (#6397) was merged at 15:30:29 UTC. The restore copied the data but failed on `lchown` (D6). PR 3 adds the
   annotation.
+- PR 3 (#6398) was merged at 15:45:16 UTC, and the annotation was live at 15:46:29. With owner consent, the failing
+  Job was deleted. VolSync recreated it, and it restored snapshot `1dda3d60` at 15:46:46 UTC, `Successful`, with 0
+  errors (no `lchown` failures).
+- PR 4 is prepared: `replicas: 1`, `restore.enabled: false`.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).

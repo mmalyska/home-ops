@@ -59,8 +59,7 @@ app-template:
       # old StatefulSet (prune: false); keep the existing name
       forceRename: home-assistant-main
       strategy: RollingUpdate
-      # 0 during the ceph-block migration (.plans/home-assistant-ceph-block)
-      replicas: 0
+      replicas: 1
       pod:
         annotations:
           k8s.v1.cni.cncf.io/networks: '[{"name":"vlan48","ips":["192.168.48.60/24"]}]'
@@ -173,6 +172,6 @@ volsync:
         weekly: 4
         monthly: 2
     restore:
-      # one-off restore into the new ceph-block PVC; set back to false in PR 4
-      enabled: true
+      # existing data: never render the restore-once ReplicationDestination
+      enabled: false
       bootstrap: false
