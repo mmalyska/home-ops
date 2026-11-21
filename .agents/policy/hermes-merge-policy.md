@@ -20,7 +20,7 @@ While this is `false`, Hermes merges nothing, including on the owner's `merge` r
 | Auto-merges per repository per run       | 10         |
 | Wait for a worker verdict                | 2 hours    |
 | Wait for health after the next reconcile | 45 minutes |
-| Worker tasks at once                     | 2          |
+| Worker tasks at once                     | 3          |
 
 A check still open after 2 hours counts as needing the owner.
 

@@ -177,7 +177,7 @@ Anything else that seems to be about a PR gets a clarifying question, and no act
    Create all three: the post-merge card starts when the merge card has finished and finds out itself whether it merged.
 
    ```text
-   kanban_create(board="renovate", title="renovate-merge <repo>#<number>", assignee="default", tenant="renovate", skills=["renovate-merge"], model="main",
+   kanban_create(board="renovate", title="renovate-merge <repo>#<number>", assignee="default", tenant="renovate", skills=["renovate-merge"], model="main-cheap",
      idempotency_key="renovate-merge:<repo>#<number>:<hash>", body="repo: <repo>\npr: <number>\nverdict_hash: <hash>\nowner_consent: yes")
    kanban_create(board="renovate", title="post-merge-check <repo>#<number>", assignee="worker", tenant="renovate", skills=["post-merge-check"],
      parents=[<the merge card id>], idempotency_key="post-merge-check:<repo>#<number>:<hash>", body="merge_cards: <repo>#<number>=<the merge card id>")

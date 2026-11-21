@@ -238,7 +238,10 @@ hermes:
         dispatch_profiles:
           - worker
           - default
-        max_in_progress_per_profile: 2
+        # 3 at once and a 20 s tick: about 2 min per check card, so 27 checks take about 12 min instead of 28 (60 s tick, 2 at once,
+        # measured 2026-11-20). The merge policy's "Worker tasks at once" must match.
+        max_in_progress_per_profile: 3
+        dispatch_interval_seconds: 20
         # A card created from a Discord chat subscribes that chat (thread included) to its terminal events, and the cards
         # created from it copy the subscription: a block or a finished card posts in that thread and wakes the agent there.
         # The job kanban-wake-trim keeps the wake only on worker implement-task cards; other cards post the notice only.
