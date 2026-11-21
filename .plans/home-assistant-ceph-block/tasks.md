@@ -87,16 +87,16 @@ Added after the first restore failed (D6 in `plan.md`).
 
 - [x] In `APP/app-config.yaml`, add `managedNamespaceMetadata.annotations` with
       `volsync.backube/privileged-movers: "true"`.
-- [ ] Open the PR. Ask the owner to merge it. Impact: only the namespace annotation changes; no pod restarts.
-- [ ] After the merge, check the annotation:
+- [x] Open the PR. Ask the owner to merge it. Impact: only the namespace annotation changes; no pod restarts.
+- [x] After the merge, check the annotation:
       `kubectl get ns ha-home-assistant -o jsonpath='{.metadata.annotations}'`.
-- [ ] Delete the failing mover Job so that VolSync recreates it with capabilities:
+- [x] Delete the failing mover Job so that VolSync recreates it with capabilities:
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete job volsync-dst-home-assistant-bootstrap
   ```
 
-- [ ] Check that the new mover pod has added capabilities (`.spec.containers[0].securityContext`), and that the
+- [x] Check that the new mover pod has added capabilities (`.spec.containers[0].securityContext`), and that the
       ReplicationDestination reports `lastManualSync: restore-once` and `Successful`, with no `lchown` errors in
       `.status.latestMoverStatus.logs`.
 
@@ -105,10 +105,10 @@ to UID 568 (checked in T4 from the Home Assistant pod).
 
 ## T4. PR 4: start on ceph-block
 
-- [ ] In `APP/values.yaml`, set `controllers.main.replicas: 1` and remove the migration comment. Set
+- [x] In `APP/values.yaml`, set `controllers.main.replicas: 1` and remove the migration comment. Set
       `volsync.volsync.restore.enabled: false`, and put back the comment
       `# existing data: never render the restore-once ReplicationDestination`.
-- [ ] Render. The StatefulSet is at replicas 1. No ReplicationDestination remains (with `prune: false`, the live one
+- [x] Render. The StatefulSet is at replicas 1. No ReplicationDestination remains (with `prune: false`, the live one
       stays as an orphan, and T6 handles it).
 - [ ] Open the PR. Ask the owner to merge it. Impact: Home Assistant starts on the new volume.
 - [ ] Check:

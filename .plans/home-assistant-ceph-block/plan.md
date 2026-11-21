@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: a77473b173a158d5295154f3a57f822849b41519
 branch: fix/home-assistant-ceph-block
 worktree: .worktrees/fix/home-assistant-ceph-block
-pr: "#6396, #6397, #6398"
+pr: "#6396, #6397, #6398, #6399"
 started: 2026-11-21
 updated: 2026-11-21
 ---
@@ -136,5 +136,9 @@ written to the new volume after the cutover is lost.
   field must be removed before PR 2 merges, or VolSync keeps ignoring the schedule.
 - PR 2 (#6397) was merged at 15:30:29 UTC. The restore copied the data but failed on `lchown` (D6). PR 3 adds the
   annotation.
+- PR 3 (#6398) was merged at 15:45:16 UTC, and the annotation was live at 15:46:29. With owner consent, the failing
+  Job was deleted. VolSync recreated it, and it restored snapshot `1dda3d60` at 15:46:46 UTC, `Successful`, with 0
+  errors (no `lchown` failures).
+- PR 4 is prepared: `replicas: 1`, `restore.enabled: false`.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).
