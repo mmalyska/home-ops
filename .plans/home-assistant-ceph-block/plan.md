@@ -150,5 +150,11 @@ written to the new volume after the cutover is lost.
   correctly skipped both ("ignored (requires pruning)"). The data stays in restic: snapshot `1dda3d60` (15:28) and
   older ones, plus the running volume. The first RBD backup is at 18:00 UTC. Lesson: with `prune: false`, a manual
   sync with Prune checked still deletes orphans; take the rollback copy from a backup, not from an orphaned claim.
+- The 18:00 UTC backup stalled. PR 2 lowered `cacheCapacity` from 10Gi to 5Gi, and the existing CephFS cache PVC
+  cannot shrink ("field can not be less than status.capacity"), so no mover pod started. With owner consent,
+  `volsync-src-home-assistant-cache` was deleted at 18:28:12. VolSync recreated it on `ceph-block` (5Gi) and finished
+  the run at 18:28:26, `Successful`: snapshot `3948e17b` (parent `1dda3d60`), 410 files, 27.903 MiB. That is the
+  first backup from RBD. No CephFS PVC is left in `ha-home-assistant`. Lesson for the volsync chart: lowering
+  `pvc.capacity` on a live app breaks its cache PVC; delete the cache PVC in the same change.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).

@@ -123,7 +123,7 @@ Assistant runs on `home-assistant-config` again.
 
 ## T5. Watch for 48 hours
 
-- [ ] After the next `:00` mark, check that the ReplicationSource ran on RBD (`Successful`, with a new `lastSyncTime`).
+- [x] After the next `:00` mark, check that the ReplicationSource ran on RBD (18:28 UTC, snapshot `3948e17b`, after the cache PVC fix) (`Successful`, with a new `lastSyncTime`).
 - [ ] After 48 hours, query the active mgr's memory at 5-minute steps over the window (port-forward
       `svc/prometheus-stack-kube-prom-prometheus` in `monitoring`). Query:
       `max by (pod) (container_memory_working_set_bytes{namespace="rook-ceph",pod=~"rook-ceph-mgr.*",container="mgr"})`,
@@ -136,7 +136,7 @@ harmless) and reopen the investigation.
 
 ## T6. Clean up (each step consent-gated)
 
-- [ ] After the first good RBD backup (T5), delete the CephFS cache PVC so that VolSync recreates it on `ceph-block`:
+- [x] (Done 18:28 UTC, needed to unblock the first RBD backup.) Delete the CephFS cache PVC so that VolSync recreates it on `ceph-block`:
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete pvc volsync-src-home-assistant-cache
