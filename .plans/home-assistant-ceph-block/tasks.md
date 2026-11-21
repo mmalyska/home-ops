@@ -18,9 +18,9 @@ task lint:manifests -- home-assistant   # read the output, the task always exits
       Add the comment `# 0 during the ceph-block migration (.plans/home-assistant-ceph-block)`.
 - [x] Render. The StatefulSet `home-assistant-main` and the Deployment `home-assistant-addons` have `replicas: 0`.
       Nothing else changes.
-- [ ] Open the PR. Ask the owner to merge it at about hh:45 UTC before a 6-hour mark (hh+1 is one of 00, 06, 12, 18).
+- [x] Open the PR. Ask the owner to merge it at about hh:45 UTC before a 6-hour mark (hh+1 is one of 00, 06, 12, 18).
       Impact: Home Assistant and code-server are down until T4.
-- [ ] After the merge, both pods are gone: `kubectl -n ha-home-assistant get pods`.
+- [x] After the merge, both pods are gone: `kubectl -n ha-home-assistant get pods`.
 
 **Done when:** no `home-assistant-main-0` or `home-assistant-addons-*` pod is running.
 
@@ -37,13 +37,13 @@ report it. Do not start T3.
 
 Edit `APP/`:
 
-- [ ] Delete `templates/pvc.yaml`. Leave the old claim alone: `prune: false` keeps it in the cluster as the rollback
+- [x] Delete `templates/pvc.yaml`. Leave the old claim alone: `prune: false` keeps it in the cluster as the rollback
       copy.
-- [ ] Sidecar: move the `codeserver` container block from `controllers.addons.containers` to
+- [x] Sidecar: move the `codeserver` container block from `controllers.addons.containers` to
       `controllers.main.containers`, and delete `controllers.addons`. Under `service.codeserver`, set
       `controller: main`. The route `addons` already uses `identifier: codeserver` and needs no change.
-- [ ] `persistence.config.existingClaim: home-assistant`.
-- [ ] `volsync:` block:
+- [x] `persistence.config.existingClaim: home-assistant`.
+- [x] `volsync:` block:
 
   ```yaml
   volsync:
@@ -61,7 +61,7 @@ Edit `APP/`:
         bootstrap: false
   ```
 
-- [ ] Render and check:
+- [x] Render and check:
   - PVC `home-assistant`: `ceph-block`, ReadWriteOnce, 5Gi, no `dataSourceRef`, sync wave -1.
   - ReplicationDestination `home-assistant-bootstrap`: `trigger.manual: restore-once`,
     `destinationPVC: home-assistant`, `repository: home-assistant-volsync`, mover running as UID 0.
@@ -121,6 +121,12 @@ harmless) and reopen the investigation.
   ```
 
   At the next run, the recreated cache is `ceph-block`.
+
+- [ ] Delete the orphaned `addons` Deployment (at 0 replicas since T1, out of git since T3):
+
+  ```sh consent-gated
+  kubectl -n ha-home-assistant delete deployment home-assistant-addons
+  ```
 
 - [ ] Delete the orphaned ReplicationDestination left from T3:
 

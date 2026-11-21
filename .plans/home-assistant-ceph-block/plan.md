@@ -117,4 +117,10 @@ written to the new volume after the cutover is lost.
 
 ## Status
 
-2026-11-21: plan approved (code-server as a sidecar). T1 (PR 1, stop Home Assistant) opened; nothing changed in the cluster yet.
+2026-11-21: plan approved (code-server as a sidecar).
+
+- PR 1 (#6396) was merged at 15:21 UTC, earlier than the hh:45 window. Home Assistant is stopped. The last backup is
+  from 12:00 UTC, before the stop. The next scheduled backup is at 18:00 UTC. The owner decides whether to wait for
+  it, take an earlier final backup, or restore from 12:00.
+- PR 2 is prepared. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
+  (added to T3).
