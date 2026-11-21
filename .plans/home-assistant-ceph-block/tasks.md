@@ -81,7 +81,29 @@ Edit `APP/`:
 **Done when:** the destination reports `Successful`, the restored size matches the backup (about 28 MiB), and the
 snapshot is T2's.
 
-## T4. PR 3: start on ceph-block
+## T3b. PR 3: privileged movers and a restore re-run
+
+Added after the first restore failed (D6 in `plan.md`).
+
+- [x] In `APP/app-config.yaml`, add `managedNamespaceMetadata.annotations` with
+      `volsync.backube/privileged-movers: "true"`.
+- [ ] Open the PR. Ask the owner to merge it. Impact: only the namespace annotation changes; no pod restarts.
+- [ ] After the merge, check the annotation:
+      `kubectl get ns ha-home-assistant -o jsonpath='{.metadata.annotations}'`.
+- [ ] Delete the failing mover Job so that VolSync recreates it with capabilities:
+
+  ```sh consent-gated
+  kubectl -n ha-home-assistant delete job volsync-dst-home-assistant-bootstrap
+  ```
+
+- [ ] Check that the new mover pod has added capabilities (`.spec.containers[0].securityContext`), and that the
+      ReplicationDestination reports `lastManualSync: restore-once` and `Successful`, with no `lchown` errors in
+      `.status.latestMoverStatus.logs`.
+
+**Done when:** the restore reports `Successful` with no errors. Spot-check the owners: the files under `/config` belong
+to UID 568 (checked in T4 from the Home Assistant pod).
+
+## T4. PR 4: start on ceph-block
 
 - [ ] In `APP/values.yaml`, set `controllers.main.replicas: 1` and remove the migration comment. Set
       `volsync.volsync.restore.enabled: false`, and put back the comment
@@ -96,7 +118,7 @@ snapshot is T2's.
   - The logs contain no onboarding or "new installation" messages:
     `kubectl -n ha-home-assistant logs home-assistant-main-0 -c main --since=10m`.
 
-**Done when:** all three checks pass. If they fail: revert PR 2 and PR 3 (owner consent), then check that Home
+**Done when:** all three checks pass. If they fail: revert PR 2 and PR 4 (owner consent), then check that Home
 Assistant runs on `home-assistant-config` again.
 
 ## T5. Watch for 48 hours
