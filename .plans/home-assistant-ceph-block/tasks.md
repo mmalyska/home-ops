@@ -110,7 +110,7 @@ to UID 568 (checked in T4 from the Home Assistant pod).
       `# existing data: never render the restore-once ReplicationDestination`.
 - [x] Render. The StatefulSet is at replicas 1. No ReplicationDestination remains (with `prune: false`, the live one
       stays as an orphan, and T6 handles it).
-- [ ] Open the PR. Ask the owner to merge it. Impact: Home Assistant starts on the new volume.
+- [x] Open the PR. Ask the owner to merge it. Impact: Home Assistant starts on the new volume.
 - [ ] Check:
   - `home-assistant-main-0` shows 2/2 Ready. `kubectl -n ha-home-assistant exec home-assistant-main-0 -c main -- du -sh /config`
     shows about 28 MiB.
@@ -123,7 +123,7 @@ Assistant runs on `home-assistant-config` again.
 
 ## T5. Watch for 48 hours
 
-- [ ] After the next `:00` mark, check that the ReplicationSource ran on RBD (`Successful`, with a new `lastSyncTime`).
+- [x] After the next `:00` mark, check that the ReplicationSource ran on RBD (18:28 UTC, snapshot `3948e17b`, after the cache PVC fix) (`Successful`, with a new `lastSyncTime`).
 - [ ] After 48 hours, query the active mgr's memory at 5-minute steps over the window (port-forward
       `svc/prometheus-stack-kube-prom-prometheus` in `monitoring`). Query:
       `max by (pod) (container_memory_working_set_bytes{namespace="rook-ceph",pod=~"rook-ceph-mgr.*",container="mgr"})`,
@@ -136,7 +136,7 @@ harmless) and reopen the investigation.
 
 ## T6. Clean up (each step consent-gated)
 
-- [ ] After the first good RBD backup (T5), delete the CephFS cache PVC so that VolSync recreates it on `ceph-block`:
+- [x] (Done 18:28 UTC, needed to unblock the first RBD backup.) Delete the CephFS cache PVC so that VolSync recreates it on `ceph-block`:
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete pvc volsync-src-home-assistant-cache
@@ -144,26 +144,26 @@ harmless) and reopen the investigation.
 
   At the next run, the recreated cache is `ceph-block`.
 
-- [ ] Delete the orphaned `addons` Deployment (at 0 replicas since T1, out of git since T3):
+- [x] (Done by the manual Prune sync at 15:46:23 UTC.) Delete the orphaned `addons` Deployment (at 0 replicas since T1, out of git since T3):
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete deployment home-assistant-addons
   ```
 
-- [ ] Delete the orphaned ReplicationDestination left from T3:
+- [x] (Already pruned by a manual Prune sync at 15:51:34 UTC.) Delete the orphaned ReplicationDestination left from T3:
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete replicationdestination home-assistant-bootstrap
   ```
 
-- [ ] At least 7 days after T4, with Home Assistant healthy and at least one good RBD backup, delete the old claim.
+- [x] (Already deleted by the manual Prune sync at 15:46:23 UTC; see Status in `plan.md`.) At least 7 days after T4, with Home Assistant healthy and at least one good RBD backup, delete the old claim.
       This is DESTRUCTIVE: show the owner the backup evidence first.
 
   ```sh consent-gated
   kubectl -n ha-home-assistant delete pvc home-assistant-config
   ```
 
-- [ ] Docs PR:
+- [x] Docs PR (opened before T5 at the owner's request; the mgr comment says the 48 h check is pending):
   - Update the mgr comment in `cluster/apps/core/rook-ceph/cluster/values.yaml` with the T5 finding (the cause and
     the date it stopped).
   - Add a note to the `cluster-reference` skill (in `.agents/skills/`, then run `.agents/bin/sync-skills`): VolSync

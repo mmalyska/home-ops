@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: a77473b173a158d5295154f3a57f822849b41519
 branch: fix/home-assistant-ceph-block
 worktree: .worktrees/fix/home-assistant-ceph-block
-pr: "#6396, #6397, #6398, #6399"
+pr: "#6396, #6397, #6398, #6399, #6402"
 started: 2026-11-21
 updated: 2026-11-21
 ---
@@ -139,6 +139,27 @@ written to the new volume after the cutover is lost.
 - PR 3 (#6398) was merged at 15:45:16 UTC, and the annotation was live at 15:46:29. With owner consent, the failing
   Job was deleted. VolSync recreated it, and it restored snapshot `1dda3d60` at 15:46:46 UTC, `Successful`, with 0
   errors (no `lchown` failures).
-- PR 4 is prepared: `replicas: 1`, `restore.enabled: false`.
+- PR 4 (#6399) was merged at 15:49:32 UTC. `home-assistant-main-0` was 2/2 Ready at 15:49:57 on the claim
+  `home-assistant` (RBD), with 29.7 MiB in `/config`. Every file is owned by UID 568, except the volume root
+  (`root`, group 568, mode 2775 from `fsGroup`). `:8123/manifest.json` and code-server `:8080/healthz` return 200.
+  Two automation errors ("Unknown device", automations "Jenny screen on/off") also appear in the restored log from
+  before the migration (`home-assistant.log.1`), so they are not caused by it.
+- **The rollback copy is gone.** At 15:46:23 UTC, a manual sync started from the owner's ArgoCD account with
+  `Prune: true` pruned the `home-assistant-config` PVC and the `home-assistant-addons` Deployment. The
+  `ceph-filesystem` reclaim policy is `Delete`, so the PV and the CephFS subvolume were deleted too. Auto-syncs had
+  correctly skipped both ("ignored (requires pruning)"). The data stays in restic: snapshot `1dda3d60` (15:28) and
+  older ones, plus the running volume. The first RBD backup is at 18:00 UTC. Lesson: with `prune: false`, a manual
+  sync with Prune checked still deletes orphans; take the rollback copy from a backup, not from an orphaned claim.
+- The 18:00 UTC backup stalled. PR 2 lowered `cacheCapacity` from 10Gi to 5Gi, and the existing CephFS cache PVC
+  cannot shrink ("field can not be less than status.capacity"), so no mover pod started. With owner consent,
+  `volsync-src-home-assistant-cache` was deleted at 18:28:12. VolSync recreated it on `ceph-block` (5Gi) and finished
+  the run at 18:28:26, `Successful`: snapshot `3948e17b` (parent `1dda3d60`), 410 files, 27.903 MiB. That is the
+  first backup from RBD. No CephFS PVC is left in `ha-home-assistant`. Lesson for the volsync chart: lowering
+  `pvc.capacity` on a live app breaks its cache PVC; delete the cache PVC in the same change.
+- The leftover ReplicationDestination was pruned by another manual Prune sync at 15:51:34 UTC. The app is Synced
+  and Healthy. The T6 cluster cleanup is complete.
+- Docs PR opened before T5, at the owner's request: rook-ceph mgr comment, `charts/volsync` values comments, and
+  `add-app` and `cluster-reference` skill notes. Still open: T5 (48 h mgr check, around 2026-11-23 18:30 UTC), then
+  archive.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).
