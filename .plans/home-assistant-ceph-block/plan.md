@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: a77473b173a158d5295154f3a57f822849b41519
 branch: fix/home-assistant-ceph-block
 worktree: .worktrees/fix/home-assistant-ceph-block
-pr: not-opened
+pr: "#6396"
 started: 2026-11-21
 updated: 2026-11-21
 ---
