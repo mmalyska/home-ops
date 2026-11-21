@@ -119,8 +119,10 @@ written to the new volume after the cutover is lost.
 
 2026-11-21: plan approved (code-server as a sidecar).
 
-- PR 1 (#6396) was merged at 15:21 UTC, earlier than the hh:45 window. Home Assistant is stopped. The last backup is
-  from 12:00 UTC, before the stop. The next scheduled backup is at 18:00 UTC. The owner decides whether to wait for
-  it, take an earlier final backup, or restore from 12:00.
+- PR 1 (#6396) was merged at 15:21 UTC, earlier than the hh:45 window. Home Assistant is stopped. The last scheduled
+  backup (12:00) came before the stop, so the owner chose a manual backup.
+- T2: manual trigger `final-cephfs-2026-11-21`, run at 15:28:43 UTC, `Successful`: restic snapshot `1dda3d60`,
+  409 files, 28.121 MiB. ArgoCD stayed Synced (its diff ignores a field that git does not manage). The `manual`
+  field must be removed before PR 2 merges, or VolSync keeps ignoring the schedule.
 - PR 2 is prepared. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).

@@ -26,9 +26,9 @@ task lint:manifests -- home-assistant   # read the output, the task always exits
 
 ## T2. Final backup
 
-- [ ] Wait for the scheduled run at the 6-hour mark. Check that it started after T1's merge time:
+- [x] Wait for the scheduled run at the 6-hour mark. Check that it started after T1's merge time:
       `kubectl -n ha-home-assistant get replicationsource home-assistant -o jsonpath='{.status.lastSyncTime} {.status.latestMoverStatus.result}'`
-- [ ] Record the time and result in the Status section of `plan.md`.
+- [x] Record the time and result in the Status section of `plan.md`.
 
 **Done when:** `lastSyncTime` is later than T1's merge and the result is `Successful`. If the run fails, stop and
 report it. Do not start T3.
