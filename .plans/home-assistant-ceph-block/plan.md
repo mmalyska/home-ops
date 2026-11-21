@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: a77473b173a158d5295154f3a57f822849b41519
 branch: fix/home-assistant-ceph-block
 worktree: .worktrees/fix/home-assistant-ceph-block
-pr: "#6396, #6397"
+pr: "#6396, #6397, #6398"
 started: 2026-11-21
 updated: 2026-11-21
 ---
@@ -81,23 +81,33 @@ The current setup:
 - **D5, size 5Gi, RBD ReadWriteOnce, snapshot class `csi-ceph-blockpool`.** 28 MiB is used, and RBD is thin. This
   matches the chart default and the other apps.
 
+- **D6, privileged movers in `ha-home-assistant`** (owner's choice, 2026-11-21). VolSync starts a mover with
+  `runAsUser: 0` but drops every capability unless the namespace has `volsync.backube/privileged-movers: "true"`.
+  The first restore wrote all 409 files (28.121 MiB), but every `lchown` failed ("operation not permitted"), so restic
+  exited with "Fatal: There were 626 errors" and the Job kept retrying. Backups only read files, so they never hit
+  this. The annotation is set through `managedNamespaceMetadata` in `app-config.yaml`, as `hermes-agent` already
+  does. Rejected: a manual `chown -R 568:568` (assumes one owner, several consent steps) and leaving the files
+  root-owned (relies on `fsGroup`; anything that calls chmod or chown would fail).
+
 ## Rollout
 
 Each merge deploys within seconds through the ArgoCD webhook, and each needs fresh consent with an impact statement.
 
 1. **PR 1, stop:** `replicas: 0` on `main` and `addons`. Merge at about hh:45 before a 6-hour mark (UTC). Home
-   Assistant is down from here until PR 3.
+   Assistant is down from here until PR 4.
 2. **Final backup:** the scheduled run at the next `:00` backs up the stopped volume. Check its `lastSyncTime`.
 3. **PR 2, migrate:** sidecar, new `ceph-block` PVC, VolSync on RBD, restore enabled, replicas still 0. Merge away
    from a `:00` mark. Check that the restore has finished.
-4. **PR 3, start:** `replicas: 1` and `restore.enabled: false`. Home Assistant and code-server start on RBD.
-5. **Watch for 48 h:** no mgr step at the 6-hour marks, and Home Assistant healthy.
-6. **Clean up (consent-gated):** delete the CephFS VolSync cache PVC after the first good RBD backup. Delete the old
+4. **PR 3, privileged movers** (added 2026-11-21 after the first restore failed): annotate the namespace with
+   `volsync.backube/privileged-movers: "true"`, then re-run the restore. See D6.
+5. **PR 4, start:** `replicas: 1` and `restore.enabled: false`. Home Assistant and code-server start on RBD.
+6. **Watch for 48 h:** no mgr step at the 6-hour marks, and Home Assistant healthy.
+7. **Clean up (consent-gated):** delete the CephFS VolSync cache PVC after the first good RBD backup. Delete the old
    `home-assistant-config` claim after 7 days. Update the comment and docs.
 
-Expected downtime is about 15 to 30 minutes, between PR 1 and PR 3.
+Expected downtime was planned at 15 to 30 minutes, between PR 1 and PR 4. The failed restore made it longer.
 
-**Rollback:** revert PR 2 and PR 3. Home Assistant goes back to the untouched `home-assistant-config` claim. Anything
+**Rollback:** revert PR 2 and PR 4. Home Assistant goes back to the untouched `home-assistant-config` claim. Anything
 written to the new volume after the cutover is lost.
 
 ## Success criteria
@@ -105,7 +115,7 @@ written to the new volume after the cutover is lost.
 - Home Assistant and code-server run in one pod on `home-assistant` (`ceph-block`, ReadWriteOnce), with the
   restored configuration (same entities, integrations and users).
 - The `home-assistant` ReplicationSource completes on `ceph-block` / `csi-ceph-blockpool`.
-- For 48 h after PR 3, no 5-minute jump of more than 10 MiB in the active mgr's memory at `:00`–`:05` past 00, 06,
+- For 48 h after PR 4, no 5-minute jump of more than 10 MiB in the active mgr's memory at `:00`–`:05` past 00, 06,
   12 or 18 UTC.
 - No CephFS PVC is left in `ha-home-assistant` after cleanup.
 
@@ -124,5 +134,7 @@ written to the new volume after the cutover is lost.
 - T2: manual trigger `final-cephfs-2026-11-21`, run at 15:28:43 UTC, `Successful`: restic snapshot `1dda3d60`,
   409 files, 28.121 MiB. ArgoCD stayed Synced (its diff ignores a field that git does not manage). The `manual`
   field must be removed before PR 2 merges, or VolSync keeps ignoring the schedule.
-- PR 2 is prepared. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
+- PR 2 (#6397) was merged at 15:30:29 UTC. The restore copied the data but failed on `lchown` (D6). PR 3 adds the
+  annotation.
+- PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).
