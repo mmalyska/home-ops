@@ -55,6 +55,9 @@ app-template:
       annotations:
         secret.reloader.stakater.com/reload: "home-assistant-secret"
       type: statefulset
+      # single controller: app-template would drop the -main suffix and orphan the
+      # old StatefulSet (prune: false); keep the existing name
+      forceRename: home-assistant-main
       strategy: RollingUpdate
       # 0 during the ceph-block migration (.plans/home-assistant-ceph-block)
       replicas: 0
@@ -82,10 +85,7 @@ app-template:
               memory: 640Mi
             limits:
               memory: 1Gi
-    addons:
-      # 0 during the ceph-block migration (.plans/home-assistant-ceph-block)
-      replicas: 0
-      containers:
+        # sidecar: shares the ReadWriteOnce config volume, so it must share the pod
         codeserver:
           image:
             repository: ghcr.io/coder/code-server
@@ -111,7 +111,7 @@ app-template:
         http:
           port: 8123
     codeserver:
-      controller: addons
+      controller: main
       ports:
         http:
           port: 8080
@@ -145,15 +145,19 @@ app-template:
             - identifier: codeserver
   persistence:
     config:
-      existingClaim: home-assistant-config
+      # ceph-block PVC rendered by the volsync subchart (volsync.nameOverride)
+      existingClaim: home-assistant
 
 volsync:
+  # names the PVC, ReplicationSource and restic repo; keeps the existing repo
+  nameOverride: home-assistant
+  # RBD, not CephFS: CephFS snapshot clones run in the Ceph mgr volumes module
+  # and grew the active mgr ~110 MiB/day (.plans/home-assistant-ceph-block)
   pvc:
-    existingClaim: home-assistant-config
-    accessMode: ReadWriteMany
-    capacity: 10Gi
-    storageClass: ceph-filesystem
-    volumeSnapshotClass: csi-ceph-filesystem
+    accessMode: ReadWriteOnce
+    capacity: 5Gi
+    storageClass: ceph-block
+    volumeSnapshotClass: csi-ceph-blockpool
   volsync:
     # root mover: reads files of any owner from the snapshot
     moverSecurityContext:
@@ -169,6 +173,6 @@ volsync:
         weekly: 4
         monthly: 2
     restore:
-      # existing data: never render the restore-once ReplicationDestination
-      enabled: false
+      # one-off restore into the new ceph-block PVC; set back to false in PR 3
+      enabled: true
       bootstrap: false

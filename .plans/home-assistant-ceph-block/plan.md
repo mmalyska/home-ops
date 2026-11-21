@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: a77473b173a158d5295154f3a57f822849b41519
 branch: fix/home-assistant-ceph-block
 worktree: .worktrees/fix/home-assistant-ceph-block
-pr: "#6396"
+pr: "#6396, #6397"
 started: 2026-11-21
 updated: 2026-11-21
 ---
@@ -117,4 +117,12 @@ written to the new volume after the cutover is lost.
 
 ## Status
 
-2026-11-21: plan approved (code-server as a sidecar). T1 (PR 1, stop Home Assistant) opened; nothing changed in the cluster yet.
+2026-11-21: plan approved (code-server as a sidecar).
+
+- PR 1 (#6396) was merged at 15:21 UTC, earlier than the hh:45 window. Home Assistant is stopped. The last scheduled
+  backup (12:00) came before the stop, so the owner chose a manual backup.
+- T2: manual trigger `final-cephfs-2026-11-21`, run at 15:28:43 UTC, `Successful`: restic snapshot `1dda3d60`,
+  409 files, 28.121 MiB. ArgoCD stayed Synced (its diff ignores a field that git does not manage). The `manual`
+  field must be removed before PR 2 merges, or VolSync keeps ignoring the schedule.
+- PR 2 is prepared. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
+  (added to T3).
