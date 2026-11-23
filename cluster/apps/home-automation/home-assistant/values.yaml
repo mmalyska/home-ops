@@ -151,7 +151,7 @@ volsync:
   # names the PVC, ReplicationSource and restic repo; keeps the existing repo
   nameOverride: home-assistant
   # RBD, not CephFS: CephFS snapshot clones run in the Ceph mgr volumes module
-  # and grew the active mgr ~110 MiB/day (.plans/home-assistant-ceph-block)
+  # and grew the active mgr ~110 MiB/day (.archive/.plans/home-assistant-ceph-block)
   pvc:
     accessMode: ReadWriteOnce
     capacity: 5Gi

@@ -70,13 +70,13 @@ Edit `APP/`:
   - StatefulSet `home-assistant-main` has the containers `main` and `codeserver`, still at replicas 0, and mounts the
     claim `home-assistant` at `/config`. No `home-assistant-addons` Deployment remains.
   - No PVC `home-assistant-config` in the output.
-- [ ] Open the PR. Ask the owner to merge it at least 15 minutes away from a `:00` mark.
-- [ ] After the merge, watch the restore:
+- [x] Open the PR. Ask the owner to merge it at least 15 minutes away from a `:00` mark.
+- [x] After the merge, watch the restore:
       `kubectl -n ha-home-assistant get replicationdestination home-assistant-bootstrap -o jsonpath='{.status.lastSyncTime} {.status.latestMoverStatus.result}'`.
       Then read the mover's logs: the pod is `volsync-dst-home-assistant-bootstrap-*`
       (`kubectl -n ha-home-assistant get pods`). Look for restic's restored file count and size (the snapshot holds
       about 28 MiB).
-- [ ] Check that the snapshot it restored is the one T2 made: the restic snapshot time in the mover log.
+- [x] Check that the snapshot it restored is the one T2 made: the restic snapshot time in the mover log.
 
 **Done when:** the destination reports `Successful`, the restored size matches the backup (about 28 MiB), and the
 snapshot is T2's.
@@ -111,7 +111,7 @@ to UID 568 (checked in T4 from the Home Assistant pod).
 - [x] Render. The StatefulSet is at replicas 1. No ReplicationDestination remains (with `prune: false`, the live one
       stays as an orphan, and T6 handles it).
 - [x] Open the PR. Ask the owner to merge it. Impact: Home Assistant starts on the new volume.
-- [ ] Check:
+- [x] Check:
   - `home-assistant-main-0` shows 2/2 Ready. `kubectl -n ha-home-assistant exec home-assistant-main-0 -c main -- du -sh /config`
     shows about 28 MiB.
   - The Home Assistant UI loads with the existing users, integrations and entities. code-server opens `/config`.
@@ -124,12 +124,12 @@ Assistant runs on `home-assistant-config` again.
 ## T5. Watch for 48 hours
 
 - [x] After the next `:00` mark, check that the ReplicationSource ran on RBD (18:28 UTC, snapshot `3948e17b`, after the cache PVC fix) (`Successful`, with a new `lastSyncTime`).
-- [ ] After 48 hours, query the active mgr's memory at 5-minute steps over the window (port-forward
+- [x] After 48 hours, query the active mgr's memory at 5-minute steps over the window (port-forward
       `svc/prometheus-stack-kube-prom-prometheus` in `monitoring`). Query:
       `max by (pod) (container_memory_working_set_bytes{namespace="rook-ceph",pod=~"rook-ceph-mgr.*",container="mgr"})`,
       with `ceph_mgr_status` to find the active daemon. Count the jumps of more than 10 MiB at `:00`–`:05` past 00, 06,
       12 and 18 UTC.
-- [ ] Record the result in `plan.md`.
+- [x] Record the result in `plan.md`.
 
 **Done when:** no such jumps. If they continue, the CephFS link is wrong. Record that, keep the migration (it is
 harmless) and reopen the investigation.
@@ -169,6 +169,6 @@ harmless) and reopen the investigation.
   - Add a note to the `cluster-reference` skill (in `.agents/skills/`, then run `.agents/bin/sync-skills`): VolSync
     on CephFS clones through the mgr `volumes` module and grows the mgr. Use `ceph-block` for volumes that are
     backed up.
-- [ ] Archive the plan ("Archive after Ship" in `.plans/README.md`).
+- [x] Archive the plan ("Archive after Ship" in `.plans/README.md`).
 
 **Done when:** no CephFS PVC remains in `ha-home-assistant`, the docs are merged and the plan is archived.

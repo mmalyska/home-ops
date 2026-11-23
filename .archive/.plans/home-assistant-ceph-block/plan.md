@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: shipped
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
@@ -8,7 +8,7 @@ branch: fix/home-assistant-ceph-block
 worktree: .worktrees/fix/home-assistant-ceph-block
 pr: "#6396, #6397, #6398, #6399, #6402"
 started: 2026-11-21
-updated: 2026-11-21
+updated: 2026-11-23
 ---
 
 # Move Home Assistant config from CephFS to ceph-block
@@ -159,7 +159,19 @@ written to the new volume after the cutover is lost.
 - The leftover ReplicationDestination was pruned by another manual Prune sync at 15:51:34 UTC. The app is Synced
   and Healthy. The T6 cluster cleanup is complete.
 - Docs PR opened before T5, at the owner's request: rook-ceph mgr comment, `charts/volsync` values comments, and
-  `add-app` and `cluster-reference` skill notes. Still open: T5 (48 h mgr check, around 2026-11-23 18:30 UTC), then
-  archive.
+  `add-app` and `cluster-reference` skill notes. Merged as #6402.
 - PR 2 was prepared first. app-template renamed the single-controller StatefulSet, and `forceRename` keeps its old name
   (added to T3).
+
+2026-11-23: T5 done, plan shipped.
+
+- The 48 h mgr check (Prometheus, 5-minute steps, the 48 h up to about 21:00 UTC): `mgr.b` is active, `mgr.a` is
+  standby. No jump of more than 10 MiB at `:00`–`:05` past 00, 06, 12 or 18 UTC on the active mgr. Its few steps
+  (+13 to +15 MiB, each undone 5 minutes later) came at 03:18, 12:18 and 13:33 on 11-22 and at 07:58 on 11-23, so they
+  do not line up with the VolSync run. The standby had one such step at 11-23 00:03, also undone, and one at 13:13.
+  The CephFS link holds: with no CephFS-backed VolSync source, the mgr no longer grows at the backup marks.
+- `home-assistant-main-0` has been 2/2 Ready for 2 days, the claim `home-assistant` is `ceph-block`, no CephFS PVC
+  remains in the namespace, and the ReplicationSource ran at 18:00 UTC today.
+- The mgr limit was not changed (out of scope, see Non-goals). `mgr.b` is still 289-439 MiB, well under 1610M.
+- The active mgr still drifted up, 288 to 439 MiB in 48 h (about 75 MiB/day), with no step at the backup marks. The
+  request/limit right-sizing is a TODO item for about 2026-11-30.
