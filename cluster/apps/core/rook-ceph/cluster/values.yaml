@@ -176,9 +176,10 @@ rook-ceph-cluster:
         # VolSync run of the one CephFS-backed source (Home Assistant): a CephFS
         # snapshot clone runs in the mgr volumes module. It was OOM-killed at
         # this limit on 2026-11-21; HA moved to ceph-block the same day
-        # (.plans/home-assistant-ceph-block, 48 h check pending). Keep VolSync
-        # sources off ceph-filesystem. 1610M (~1536 MiB) gave ~4 days between
-        # restarts; a mgr failover resets it.
+        # (.archive/.plans/home-assistant-ceph-block: no step at the backup
+        # marks in the 48 h after). Keep VolSync sources off ceph-filesystem.
+        # 1610M (~1536 MiB) gave ~4 days between restarts; a mgr failover
+        # resets it.
         limits:
           memory: "1610M"
       mon:
