@@ -16,7 +16,11 @@ when_to_use: >
 
 ## Prerequisite: Port-Forward
 
-This assumes a port-forward to Prometheus is already up. Use the correct
+**In the in-cluster Coder workspace skip this section**: `kubectl port-forward` is forbidden there. Use
+`http://prometheus-stack-kube-prom-prometheus.monitoring.svc:9090` instead of `http://localhost:9090` in every command below
+(see `prometheus-portforward-session`, "Where Is the Session Running?").
+
+On a host machine this assumes a port-forward to Prometheus is already up. Use the correct
 service name — `prometheus-stack-kube-prom-prometheus`, not the more
 guessable `kube-prometheus-stack-prometheus` — and see
 `prometheus-portforward-session` for the correct lifecycle across multiple
