@@ -48,6 +48,14 @@ spec:
   routerSettings:
     # A failed deployment sits out five minutes instead of being retried on every request.
     cooldown_time: 300
+    # `embed` has one backend pod (llm-embeddings, strategy Recreate) that is down for
+    # 30 to 60 s whenever it rolls; a connection error surfaces as InternalServerError.
+    # More retries for that model group only, so `main` and the others keep one retry
+    # before their fallback chain. Retries back off up to about 8 s each (LiteLLM default).
+    model_group_retry_policy:
+      embed:
+        InternalServerErrorRetries: 8
+        TimeoutErrorRetries: 8
     redis_host: os.environ/REDIS_HOST
     redis_port: os.environ/REDIS_PORT
     # Pay-per-token cap: about 50 zl as USD, review when the exchange rate moves.
