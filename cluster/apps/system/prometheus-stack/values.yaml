@@ -6,6 +6,9 @@ kube-prometheus-stack:
       # nv1 shares 16 GB between CPU and GPU and normally sits above 90%;
       # replaced by templates/prometheusrule-node-memory.yaml (excludes nv1).
       NodeMemoryHighUtilization: true
+      # replaced by templates/prometheusrule-upgrade-alerts.yaml (ignores the temporary
+      # certificates the Talos upgrade process uses, 30 minutes or less left).
+      KubeClientCertificateExpiration: true
   kubeControllerManager:
     enabled: true
     serviceMonitor:

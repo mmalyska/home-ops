@@ -1,0 +1,69 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-upgrade-alerts
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: kubernetes-system-apiserver-client-cert
+      rules:
+        # The mixin's KubeClientCertificateExpiration (disabled in values.yaml) counts every request. During a Talos
+        # upgrade the upgrade process calls the apiserver about once a minute with a temporary client certificate that
+        # has 30 minutes or less left, so the mixin fired for it on 2026-10-21 and 2026-11-06 and at no other time in
+        # 30 days. The kubelet and apiserver certificates had about 181 days left. These rules count only requests
+        # whose certificate has more than 30 minutes left (bucket 1800.0 is subtracted from the bucket of the
+        # threshold), so a real certificate that runs out still alerts. The name is unchanged on purpose: the tuppr
+        # upgrade silence lists it.
+        - alert: KubeClientCertificateExpiration
+          expr: >-
+            sum without (namespace, service, endpoint, le) (
+              rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",le="604800.0"}[5m])
+              - ignoring (le)
+              rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",le="1800.0"}[5m])
+            ) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Client certificate is about to expire
+            description: >-
+              A client certificate used to authenticate to the Kubernetes API server on {{`{{ $labels.instance }}`}}
+              expires in less than 7 days (and has more than 30 minutes left).
+        - alert: KubeClientCertificateExpiration
+          expr: >-
+            sum without (namespace, service, endpoint, le) (
+              rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",le="86400.0"}[5m])
+              - ignoring (le)
+              rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",le="1800.0"}[5m])
+            ) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Client certificate is about to expire
+            description: >-
+              A client certificate used to authenticate to the Kubernetes API server on {{`{{ $labels.instance }}`}}
+              expires in less than 24 hours (and has more than 30 minutes left).
+    - name: node-upgrade-backstop
+      rules:
+        # KubeNodeNotReady skips cordoned nodes (kube_node_spec_unschedulable == 0), and tuppr cordons a node before
+        # it drains and reboots it, so a node that never comes back stays cordoned and that alert stays silent. The
+        # tuppr alert TalosUpgradeStuck covers this too, but only after 1 hour. A reboot takes 2 to 7 minutes (the
+        # OSDs on the node were down that long on 2026-11-06 and 2026-11-08). This alert is not in the upgrade
+        # silence on purpose: it pages when a node does not return.
+        - alert: KubeNodeNotReadyCordoned
+          expr: >-
+            kube_node_status_condition{job="kube-state-metrics",condition="Ready",status="true"} == 0
+            and on (cluster, node)
+            kube_node_spec_unschedulable{job="kube-state-metrics"} == 1
+          for: 20m
+          labels:
+            severity: critical
+          annotations:
+            summary: A cordoned node has not been Ready for 20 minutes
+            description: >-
+              Node {{`{{ $labels.node }}`}} is cordoned and NotReady. A Talos upgrade reboot takes under 10 minutes,
+              so the node did not come back. KubeNodeNotReady does not cover cordoned nodes.
