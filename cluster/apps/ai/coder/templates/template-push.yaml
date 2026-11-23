@@ -1,0 +1,145 @@
+{{- if .Values.templatePush.enabled }}
+{{- $tp := .Values.templatePush }}
+# Pushes the Coder workspace templates after every Argo CD sync of this app.
+# A push only creates and activates a new template version. It starts, stops and updates no workspace; running
+# workspaces stay OUTDATED until `coder update` (that restarts the pod, so it stays a manual step).
+# A template is pushed only when its files changed: the version name carries a hash of the files.
+{{- range $tp.templates }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coder-template-{{ .name }}
+  namespace: coder
+data:
+{{- range $path, $_ := $.Files.Glob (printf "%s/*" .dir) }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- end }}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: coder-template-push
+  namespace: coder
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: coder-template-push
+    creationPolicy: Owner
+  data:
+    - secretKey: token
+      remoteRef:
+        key: {{ required "templatePush.tokenBwsId is required when templatePush.enabled" $tp.tokenBwsId | quote }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: coder-template-push
+  namespace: coder
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Only the coder binary is needed from this image.
+        - name: coder-cli
+          image: {{ $tp.image | quote }}
+          command: ["cp", "/opt/coder", "/cli/coder"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: cli
+              mountPath: /cli
+      containers:
+        - name: push
+          image: {{ $tp.toolsImage | quote }}
+          command: ["sh", "-eu", "-c"]
+          args:
+            - |
+              export PATH="/cli:$PATH"
+              api() { curl -fsS -H "Coder-Session-Token: $CODER_SESSION_TOKEN" "$CODER_URL/api/v2/$1"; }
+
+              echo "waiting for Coder"
+              until curl -fsS "$CODER_URL/healthz" >/dev/null; do sleep 5; done
+
+              push() { # name hash
+                name="$1"; hash="$2"; want="gitops-$hash"
+                active=""
+                if id=$(api "organizations/default/templates/$name" | jq -er .active_version_id); then
+                  active=$(api "templateversions/$id" | jq -r .name)
+                fi
+                if [ "$active" = "$want" ]; then
+                  echo "$name: active version $want already matches the repository, skipping"
+                  return 0
+                fi
+                echo "$name: active version '${active:-none}' -> $want"
+                coder templates push "$name" --directory "/templates/$name" \
+                  --name "$want" --message "Pushed by Argo CD sync" --yes
+              }
+              {{- range $tp.templates }}
+              {{- $files := dict }}
+              {{- range $path, $_ := $.Files.Glob (printf "%s/*" .dir) }}{{ $_ := set $files $path ($.Files.Get $path) }}{{ end }}
+              push {{ .name | quote }} {{ $files | toJson | sha256sum | trunc 12 | quote }}
+              {{- end }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: CODER_URL
+              value: http://coder.coder.svc.cluster.local
+            - name: CODER_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: coder-template-push
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: cli
+              mountPath: /cli
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            {{- range $tp.templates }}
+            - name: tpl-{{ .name }}
+              mountPath: /templates/{{ .name }}
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: cli
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- range $tp.templates }}
+        - name: tpl-{{ .name }}
+          configMap:
+            name: coder-template-{{ .name }}
+        {{- end }}
+{{- end }}

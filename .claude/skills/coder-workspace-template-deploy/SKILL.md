@@ -73,6 +73,12 @@ so a workspace delete removes the volumes. A new Bitwarden reference needs a PR 
 
 Usage guide for the workspace itself: `docs/src/k8s/remote-dev-workspace.md`.
 
+## Automatic push
+
+When `templatePush.enabled` is true in `cluster/apps/ai/coder/values.yaml`, an Argo CD PostSync Job pushes all three templates
+after each sync of the coder app (see the "Automatic template push" section of the app README). Then the manual `coder
+templates push` step above is only needed to test an unmerged change. `coder update` stays manual.
+
 ## When to Use
 
 After merging any change to `cluster/apps/ai/coder/workspace-template/main.tf` or `workspace-template-dev-workspace/main.tf` that should apply to already-running workspaces.
