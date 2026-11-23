@@ -20,6 +20,10 @@ false-positive traps worth recording so future audits don't re-walk them.
 
 ## Port-Forward Lifecycle
 
+**In the in-cluster Coder workspace skip this section**: `kubectl port-forward` is forbidden there. Use
+`http://loki.monitoring.svc:3100` instead of `http://localhost:3100` in every command below (see
+`prometheus-portforward-session`, "Where Is the Session Running?"). The lifecycle below is for a host machine.
+
 Same rule as `prometheus-portforward-session`: each Bash tool call is a
 separate shell, so `kill %1` silently does nothing in a later call. Use
 `pkill -f`.

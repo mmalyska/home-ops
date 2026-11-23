@@ -10,7 +10,7 @@ description: Use when performing a periodic operational audit of the home Kubern
 Comprehensive audit using Prometheus + kubectl. Produces a per-app summary with resource sizing flags and action items, saved to `docs/src/audits/YYYY-MM-DD.md`.
 
 **REQUIRED SUB-SKILLS:** Load these before starting:
-- `prometheus-portforward-session` — port-forward lifecycle across Bash calls
+- `prometheus-portforward-session` — port-forward lifecycle across Bash calls, and the direct in-cluster URLs to use instead when running in the Coder workspace pod (port-forward is forbidden there)
 - `prometheus-historical-queries` — point-in-time snapshots for trend comparison
 - `node-disk-health` — disk topology, raw block device trap, and disk-specific queries
 - `loki-log-queries` — cross-namespace error sweep via Loki (aggregate-first pattern, false-positive traps)
