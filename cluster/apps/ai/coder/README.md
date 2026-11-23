@@ -52,7 +52,10 @@ every sync of this app, so a merged change to a `main.tf` (for example a Renovat
 - A push only creates and activates a new template version. Workspaces stay `OUTDATED` until `coder update`, which restarts the
   pod and ends running sessions, so that step stays manual.
 - Each version is named `gitops-<hash of the files>`. The Job compares that name with the active version through the Coder API
-  and pushes only when it differs, so syncs that change nothing create no versions. The first run after enabling pushes all
+  and pushes only when it differs, so syncs that change nothing create no versions. Going back to older content promotes the existing version (Coder rejects a duplicate
+  version name); a version of that name that failed is replaced by a push named `gitops-<hash>-<timestamp>`. The Job pushes from a
+  staged copy of the files, because a mounted ConfigMap is symlinks that Coder does not upload. `bash .github/tests/coder-template-push.sh`
+  runs the script against a fake Coder. The first run after enabling pushes all
   three templates once.
 - The Job copies the `coder` CLI from the server image (`templatePush.image`; keep its version equal to the `coder` chart
   version in `Chart.yaml`) and talks to `http://coder.coder.svc.cluster.local`.

@@ -54,6 +54,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       initContainers:
@@ -76,24 +77,71 @@ spec:
           args:
             - |
               export PATH="/cli:$PATH"
-              api() { curl -fsS -H "Coder-Session-Token: $CODER_SESSION_TOKEN" "$CODER_URL/api/v2/$1"; }
+              auth="Coder-Session-Token: $CODER_SESSION_TOKEN"
+              api() { curl -fsS -H "$auth" "$CODER_URL/api/v2/$1"; }
+              # api_code <path> <output file>: prints the HTTP status, the body goes to the file
+              api_code() { curl -sS -o "$2" -w '%{http_code}' -H "$auth" "$CODER_URL/api/v2/$1"; }
 
               echo "waiting for Coder"
               until curl -fsS "$CODER_URL/healthz" >/dev/null; do sleep 5; done
+              mkdir -p "$STAGE_DIR"
+
+              # Name of the active version of a template, empty when the template does not exist yet.
+              active_name() {
+                code=$(api_code "organizations/default/templates/$1" "$STAGE_DIR/t.json")
+                case "$code" in
+                  200) api "templateversions/$(jq -r .active_version_id "$STAGE_DIR/t.json")" | jq -r .name ;;
+                  404) ;;
+                  *) echo "$1: template lookup returned HTTP $code" >&2; return 1 ;;
+                esac
+              }
+
+              # Job status of a version (succeeded, failed, ...), or "missing".
+              version_status() {
+                code=$(api_code "organizations/default/templates/$1/versions/$2" "$STAGE_DIR/v.json")
+                case "$code" in
+                  200) jq -r .job.status "$STAGE_DIR/v.json" ;;
+                  404) echo missing ;;
+                  *) echo "$1: version lookup returned HTTP $code" >&2; return 1 ;;
+                esac
+              }
 
               push() { # name hash
-                name="$1"; hash="$2"; want="gitops-$hash"
-                active=""
-                if id=$(api "organizations/default/templates/$name" | jq -er .active_version_id); then
-                  active=$(api "templateversions/$id" | jq -r .name)
-                fi
-                if [ "$active" = "$want" ]; then
-                  echo "$name: active version $want already matches the repository, skipping"
-                  return 0
-                fi
-                echo "$name: active version '${active:-none}' -> $want"
-                coder templates push "$name" --directory "/templates/$name" \
-                  --name "$want" --message "Pushed by Argo CD sync" --yes
+                name="$1"; want="gitops-$2"
+                active=$(active_name "$name")
+                case "$active" in
+                  "$want"|"$want"-*) echo "$name: active version $active already matches the repository, skipping"; return 0 ;;
+                esac
+
+                # A version with this name may exist already (revert to older content, or an interrupted push).
+                tries=0
+                while :; do
+                  status=$(version_status "$name" "$want")
+                  case "$status" in pending|running) ;; *) break ;; esac
+                  tries=$((tries + 1))
+                  [ "$tries" -le 60 ] || { echo "$name: version $want is still $status, giving up" >&2; return 1; }
+                  sleep 5
+                done
+
+                case "$status" in
+                  succeeded)
+                    echo "$name: active version '${active:-none}' -> existing version $want (promote)"
+                    coder templates versions promote --template "$name" --template-version "$want"
+                    return 0 ;;
+                  missing) version="$want" ;;
+                  *) version="$want-$(date +%s)"
+                     echo "$name: version $want exists with status $status, pushing $version instead" ;;
+                esac
+
+                # The ConfigMap mount is a set of symlinks into a hidden ..data directory, which Coder does not
+                # upload as files. Stage regular copies (the glob skips the hidden entries).
+                stage="$STAGE_DIR/$name"
+                rm -rf "$stage"; mkdir -p "$stage"
+                for f in "$TEMPLATES_DIR/$name"/*; do cp -L "$f" "$stage/"; done
+
+                echo "$name: active version '${active:-none}' -> $version"
+                coder templates push "$name" --directory "$stage" \
+                  --name "$version" --message "Pushed by Argo CD sync" --yes
               }
               {{- range $tp.templates }}
               {{- $files := dict }}
@@ -103,6 +151,10 @@ spec:
           env:
             - name: HOME
               value: /tmp
+            - name: TEMPLATES_DIR
+              value: /templates
+            - name: STAGE_DIR
+              value: /tmp/stage
             - name: CODER_URL
               value: http://coder.coder.svc.cluster.local
             - name: CODER_SESSION_TOKEN
