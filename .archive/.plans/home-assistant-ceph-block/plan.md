@@ -173,3 +173,5 @@ written to the new volume after the cutover is lost.
 - `home-assistant-main-0` has been 2/2 Ready for 2 days, the claim `home-assistant` is `ceph-block`, no CephFS PVC
   remains in the namespace, and the ReplicationSource ran at 18:00 UTC today.
 - The mgr limit was not changed (out of scope, see Non-goals). `mgr.b` is still 289-439 MiB, well under 1610M.
+- The active mgr still drifted up, 288 to 439 MiB in 48 h (about 75 MiB/day), with no step at the backup marks. The
+  request/limit right-sizing is a TODO item for about 2026-11-30.
