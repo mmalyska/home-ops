@@ -1,0 +1,197 @@
+{{- if .Values.templatePush.enabled }}
+{{- $tp := .Values.templatePush }}
+# Pushes the Coder workspace templates after every Argo CD sync of this app.
+# A push only creates and activates a new template version. It starts, stops and updates no workspace; running
+# workspaces stay OUTDATED until `coder update` (that restarts the pod, so it stays a manual step).
+# A template is pushed only when its files changed: the version name carries a hash of the files.
+{{- range $tp.templates }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coder-template-{{ .name }}
+  namespace: coder
+data:
+{{- range $path, $_ := $.Files.Glob (printf "%s/*" .dir) }}
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- end }}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: coder-template-push
+  namespace: coder
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: bitwarden
+  refreshInterval: 1h
+  target:
+    name: coder-template-push
+    creationPolicy: Owner
+  data:
+    - secretKey: token
+      remoteRef:
+        key: {{ required "templatePush.tokenBwsId is required when templatePush.enabled" $tp.tokenBwsId | quote }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: coder-template-push
+  namespace: coder
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Only the coder binary is needed from this image.
+        - name: coder-cli
+          image: {{ $tp.image | quote }}
+          command: ["cp", "/opt/coder", "/cli/coder"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: cli
+              mountPath: /cli
+      containers:
+        - name: push
+          image: {{ $tp.toolsImage | quote }}
+          command: ["sh", "-eu", "-c"]
+          args:
+            - |
+              export PATH="/cli:$PATH"
+              auth="Coder-Session-Token: $CODER_SESSION_TOKEN"
+              api() { curl -fsS -H "$auth" "$CODER_URL/api/v2/$1"; }
+              # api_code <path> <output file>: prints the HTTP status, the body goes to the file
+              api_code() { curl -sS -o "$2" -w '%{http_code}' -H "$auth" "$CODER_URL/api/v2/$1"; }
+
+              echo "waiting for Coder"
+              until curl -fsS "$CODER_URL/healthz" >/dev/null; do sleep 5; done
+              mkdir -p "$STAGE_DIR"
+
+              # Name of the active version of a template, empty when the template does not exist yet.
+              active_name() {
+                code=$(api_code "organizations/default/templates/$1" "$STAGE_DIR/t.json")
+                case "$code" in
+                  200) api "templateversions/$(jq -r .active_version_id "$STAGE_DIR/t.json")" | jq -r .name ;;
+                  404) ;;
+                  *) echo "$1: template lookup returned HTTP $code" >&2; return 1 ;;
+                esac
+              }
+
+              # Job status of a version (succeeded, failed, ...), or "missing".
+              version_status() {
+                code=$(api_code "organizations/default/templates/$1/versions/$2" "$STAGE_DIR/v.json")
+                case "$code" in
+                  200) jq -r .job.status "$STAGE_DIR/v.json" ;;
+                  404) echo missing ;;
+                  *) echo "$1: version lookup returned HTTP $code" >&2; return 1 ;;
+                esac
+              }
+
+              push() { # name hash
+                name="$1"; want="gitops-$2"
+                active=$(active_name "$name")
+                case "$active" in
+                  "$want"|"$want"-*) echo "$name: active version $active already matches the repository, skipping"; return 0 ;;
+                esac
+
+                # A version with this name may exist already (revert to older content, or an interrupted push).
+                tries=0
+                while :; do
+                  status=$(version_status "$name" "$want")
+                  case "$status" in pending|running) ;; *) break ;; esac
+                  tries=$((tries + 1))
+                  [ "$tries" -le 60 ] || { echo "$name: version $want is still $status, giving up" >&2; return 1; }
+                  sleep 5
+                done
+
+                case "$status" in
+                  succeeded)
+                    echo "$name: active version '${active:-none}' -> existing version $want (promote)"
+                    coder templates versions promote --template "$name" --template-version "$want"
+                    return 0 ;;
+                  missing) version="$want" ;;
+                  *) version="$want-$(date +%s)"
+                     echo "$name: version $want exists with status $status, pushing $version instead" ;;
+                esac
+
+                # The ConfigMap mount is a set of symlinks into a hidden ..data directory, which Coder does not
+                # upload as files. Stage regular copies (the glob skips the hidden entries).
+                stage="$STAGE_DIR/$name"
+                rm -rf "$stage"; mkdir -p "$stage"
+                for f in "$TEMPLATES_DIR/$name"/*; do cp -L "$f" "$stage/"; done
+
+                echo "$name: active version '${active:-none}' -> $version"
+                coder templates push "$name" --directory "$stage" \
+                  --name "$version" --message "Pushed by Argo CD sync" --yes
+              }
+              {{- range $tp.templates }}
+              {{- $files := dict }}
+              {{- range $path, $_ := $.Files.Glob (printf "%s/*" .dir) }}{{ $_ := set $files $path ($.Files.Get $path) }}{{ end }}
+              push {{ .name | quote }} {{ $files | toJson | sha256sum | trunc 12 | quote }}
+              {{- end }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: TEMPLATES_DIR
+              value: /templates
+            - name: STAGE_DIR
+              value: /tmp/stage
+            - name: CODER_URL
+              value: http://coder.coder.svc.cluster.local
+            - name: CODER_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: coder-template-push
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: cli
+              mountPath: /cli
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            {{- range $tp.templates }}
+            - name: tpl-{{ .name }}
+              mountPath: /templates/{{ .name }}
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: cli
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- range $tp.templates }}
+        - name: tpl-{{ .name }}
+          configMap:
+            name: coder-template-{{ .name }}
+        {{- end }}
+{{- end }}

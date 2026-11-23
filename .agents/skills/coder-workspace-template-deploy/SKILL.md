@@ -56,7 +56,7 @@ A second template, `dev-workspace`, lives in the sibling directory `cluster/apps
   ```bash
   coder templates push dev-workspace --directory cluster/apps/ai/coder/workspace-template-dev-workspace --yes
   ```
-  Pushing starts nothing. It is a RUNTIME_MUTATION, so ask first.
+  Pushing starts nothing. A manual push is a RUNTIME_MUTATION, so ask first (the automatic push below is the exception).
 - The template creates one Deployment (`ws-<workspace>`) in the namespace `dev-workspace`. The PVCs (`<workspace>-home`, `<workspace>-src`), backups, RBAC, Talos credential and the BWS-token Secret are owned by GitOps (`cluster/apps/system/dev-workspace`), so a template change never touches the data and deleting a workspace keeps the volumes. A new object the pod needs is a change to that app, not to `main.tf`.
 - Redeploy with `coder update <owner>/<workspace>` as above. The pod restarts, so `/cache` and `/tmp` are empty afterwards (accepted); `/home/vscode` and `/workspaces` survive.
 - A new image is a digest bump in `main.tf`, then push and update. Always pin the digest, never the bare tag. Renovate tracks the digest-pinned `image` in each template's `main.tf` (custom manager in `.github/renovate/customManagers.json5`) and never auto-merges it, because a merge reaches no workspace until the template is pushed and the workspace updated. Before bumping by hand, check that the digest is a multi-arch index (`linux/amd64`, `linux/arm64`); without Docker, read it anonymously from `ghcr.io/v2/mmalyska/dev-workstation/manifests/<digest>` with a pull token from `ghcr.io/token`.
@@ -66,12 +66,21 @@ A second template, `dev-workspace`, lives in the sibling directory `cluster/apps
 ## The `agent-workspace` template
 
 Third template, for AI agents, in `cluster/apps/ai/coder/workspace-template-agent-workspace/`. Push with
-`coder templates push agent-workspace --directory <that dir> --yes` (RUNTIME_MUTATION, ask first). Unlike `dev-workspace`
+`coder templates push agent-workspace --directory <that dir> --yes` (manual push: RUNTIME_MUTATION, ask first). Unlike `dev-workspace`
 it creates its own PVCs, ServiceAccount, Talos credential, ExternalSecrets and ReplicationSources in `agent-workspaces`,
 so a workspace delete removes the volumes. A new Bitwarden reference needs a PR to `allowedBwsRefs` in
 `cluster/apps/ai/agent-workspaces/values.yaml` first. `dev-workspace` and its running workspace stay untouched.
 
 Usage guide for the workspace itself: `docs/src/k8s/remote-dev-workspace.md`.
+
+## Automatic push
+
+With `templatePush.enabled` true in `cluster/apps/ai/coder/values.yaml`, an Argo CD PostSync Job pushes all three templates
+after each sync of the coder app (README section "Automatic template push"). Merging the change is the owner's consent for
+that push, so a merged `main.tf` change needs no manual `coder templates push`; use the manual push only to test an unmerged
+change, and ask first. The Job names versions `gitops-<hash of the files>`, skips a push when the active version already has
+that name and promotes an existing version on a revert. It never updates workspaces: `coder update` restarts the pod, stays
+manual and needs consent.
 
 ## When to Use
 
