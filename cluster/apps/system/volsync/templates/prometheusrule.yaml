@@ -13,9 +13,10 @@ spec:
         # hours after the last good backup with a 6-hourly schedule). No alert used it, so two backups stopped
         # silently: music-assistant from 2026-10-26 (11 days) and coder-mmalyska-devops from 2026-11-02. Both were a
         # VolumeSnapshot stuck in deletion: ceph-csi's provisioner logged "Failed to remove snapshot finalizer ...
-        # the object has been modified" 9 seconds after the snapshot was created (12 times in 30 days, 2 of them
-        # left a snapshot stuck), and VolSync waits for the snapshot to go away ("snap is being deleted -- need to
-        # wait"). In the 14 days before 2026-11-23 only the home-assistant-bootstrap destination was out of sync, for
+        # the object has been modified" 9 seconds after the snapshot was created (12 times in 30 days), and VolSync
+        # waits for the snapshot to go away ("snap is being deleted -- need to wait"). Since 2026-11-06 the
+        # provisioner's SnapshotFinalizerController (v6.3.0) clears these within 2 minutes, so this alert is the
+        # fallback for a snapshot it misses. In the 14 days before 2026-11-23 only the home-assistant-bootstrap destination was out of sync, for
         # 15 minutes, so 1 hour does not page for a normal run. Only sources: a destination runs once.
         - alert: VolSyncVolumeOutOfSync
           expr: volsync_volume_out_of_sync{role="source"} == 1
