@@ -53,11 +53,14 @@ retry, so the finalizer stays. This happened 12 times in 30 days.
 Upstream fixed this in csi-provisioner v6.3.0 (issue kubernetes-csi/external-provisioner#1507, PR #1519): a
 `SnapshotFinalizerController` sweeps for orphaned finalizers and removes them. It has cleaned every conflict since
 2026-11-06 (10 of 10, about 90 seconds after the warning; the log line is `SnapshotFinalizerProtection: removed orphaned
-finalizer from snapshot`). The two stuck snapshots came before that: the provisioner pods that ran from 2026-10-13 to
-2026-11-06 were already on v6.3.0 but never logged the controller starting, and every provisioner pod logs it from the
-restart at 2026-11-06 14:50 UTC (the Talos drain). Why the earlier pods did not run it is not known (missing RBAC for
-the provisioner on VolumeSnapshots is a guess). So a stuck snapshot should be rare now; the alert and the steps below
-are the fallback. If one appears, check that the provisioner pod logs `Starting SnapshotFinalizerProtection controller`.
+finalizer from snapshot`). The two stuck snapshots came before that. Both conflicts were on the same provisioner pod
+(`...ctrlplugin-84bf789b4c-b5w5g`, csi-provisioner v6.3.0, started 2026-10-21 11:39 UTC), and it did not clear either
+snapshot in 11 days, while every pod started since the Talos drain on 2026-11-06 14:50 UTC logs `Starting
+SnapshotFinalizerProtection controller` and clears a conflict in about 90 seconds. Whether that old pod started the
+controller is not known: its startup is older than Loki's retention (about a month, the oldest `rook-ceph` log is from
+2026-10-23). Missing RBAC for the provisioner on VolumeSnapshots is a guess. So a stuck snapshot should be rare now;
+the alert and the steps below are the fallback. If one appears, check that the provisioner pod logs `Starting
+SnapshotFinalizerProtection controller` (read it before Loki drops it) and the ClusterRole.
 
 Check:
 
