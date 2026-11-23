@@ -43,8 +43,8 @@ spec:
           - |
             set -u
             starts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-            ends=$(date -u -d "@$(( $(date +%s) + 10800 ))" +%Y-%m-%dT%H:%M:%SZ)
-            body=$(jq -n --arg re "$ALERTS_RE" --arg s "$starts" --arg e "$ends" '{matchers: [{name: "alertname", value: $re, isRegex: true, isEqual: true}], startsAt: $s, endsAt: $e, createdBy: "tuppr-hook", comment: "tuppr pre hook: Talos upgrade in progress, expired by the post hook (3h hard stop)"}')
+            ends=$(date -u -d "@$(( $(date +%s) + 28800 ))" +%Y-%m-%dT%H:%M:%SZ)
+            body=$(jq -n --arg re "$ALERTS_RE" --arg s "$starts" --arg e "$ends" '{matchers: [{name: "alertname", value: $re, isRegex: true, isEqual: true}], startsAt: $s, endsAt: $e, createdBy: "tuppr-hook", comment: "tuppr pre hook: Talos upgrade in progress, expired by the post hook (8h hard stop)"}')
             if curl -fsS -m 20 -X POST -H 'Content-Type: application/json' -d "$body" "$ALERTMANAGER/api/v2/silences"; then
               echo " silence created until $ends"
             else
@@ -60,7 +60,7 @@ spec:
             value: http://prometheus-stack-kube-prom-alertmanager.monitoring:9093
         args:
           - |
-            set -u
+            set -u -o pipefail
             ids=$(curl -fsS -m 20 "$ALERTMANAGER/api/v2/silences" | jq -r '.[] | select(.createdBy == "tuppr-hook" and .status.state == "active") | .id') || { echo "WARNING: could not list silences"; exit 0; }
             for id in $ids; do
               curl -fsS -m 20 -X DELETE "$ALERTMANAGER/api/v2/silence/$id" && echo "expired silence $id" || echo "WARNING: could not expire $id"
