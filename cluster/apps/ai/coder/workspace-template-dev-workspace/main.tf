@@ -65,7 +65,7 @@ locals {
 
   # Pinned by digest, never by the bare tag (the 1.0.0 tag moves on every rebuild). Bump tag and digest
   # together after checking the multi-arch manifest.
-  image = "ghcr.io/mmalyska/dev-workstation:2.0.0@sha256:35015ea05f4f13e5a9ab0ba038936859a42fde5ba94a5728c44227c058aca443"
+  image = "ghcr.io/mmalyska/dev-workstation:2.0.0@sha256:9782a350d0c9b2489efe64898dbfc98581666e883a1aa1ffb156cc5e748b4753"
 
   labels = {
     "app.kubernetes.io/name"       = "dev-workspace"
