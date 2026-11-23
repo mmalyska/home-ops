@@ -71,7 +71,7 @@ app-template:
         main:
           image:
             repository: ghcr.io/bakito/adguardhome-sync
-            tag: v0.10.0@sha256:5e000484e2fab4d507607e0de01ca59f3937ff6e13bb0c43725e9e3ca81f3c22
+            tag: v0.10.1@sha256:2dc30eedebf07bbb6d2fa8988734cebe41c70f6511829ff1c37b7bc6ab172615
           args: ["run"]
           env:
             ORIGIN_URL: http://adguard-home-web-primary.adguard-home.svc.cluster.local:3000
