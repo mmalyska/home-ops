@@ -54,7 +54,7 @@ from tuppr's source, not observed here.
   (the list is one Helm variable in `templates/talosupgrade.yaml`). `KubeClientCertificateExpiration` is in it because
   short-lived client certificates used during an upgrade trip it (not a real expiry).
   - **Pre and post hook Jobs (the main one):** `spec.hooks.pre` runs once per run, before any node is touched, and creates
-    one Alertmanager silence (creator `tuppr-hook`, 3 hours hard stop); `spec.hooks.post` expires it when the run ends. The
+    one Alertmanager silence (creator `tuppr-hook`, 8 hours hard stop); `spec.hooks.post` expires it when the run ends. The
     Jobs are best effort (the scripts always exit 0, so a missing Alertmanager never blocks the upgrade) and use the
     `alpine/k8s` image (curl, jq) already used elsewhere in the repo.
   - **tuppr's own silence (fallback):** `spec.silences`, `maxDuration: 2h`, a short lease re-extended while the run is
