@@ -1,0 +1,125 @@
+# promtool rule tests for templates/prometheusrule-upgrade-alerts.yaml, run by `task lint:manifests` and CI
+# (.taskfiles/lint/resources/check-manifests.sh). The script renders the chart and writes this app's
+# PrometheusRule groups to rules.yaml next to a copy of this file.
+rule_files:
+  - rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # Talos upgrade, 2026-11-06: about one request a minute with a certificate that has 30 minutes or less left. The
+  # histogram is cumulative, so every bucket from le=1800.0 up grows by the same amount and the difference is 0.
+  - name: temporary upgrade certificate does not alert
+    interval: 1m
+    input_series:
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="1800.0"}'
+        values: "0+1x30"
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="86400.0"}'
+        values: "0+1x30"
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="604800.0"}'
+        values: "0+1x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KubeClientCertificateExpiration
+        exp_alerts: []
+
+  # A certificate with 3 days left: it is in the le=604800.0 bucket but not in le=1800.0 or le=86400.0. Only the
+  # warning fires.
+  - name: certificate with 3 days left warns
+    interval: 1m
+    input_series:
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="1800.0"}'
+        values: "0x30"
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="86400.0"}'
+        values: "0x30"
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="604800.0"}'
+        values: "0+1x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KubeClientCertificateExpiration
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: apiserver
+              instance: 192.168.48.3:6443
+            exp_annotations:
+              summary: Client certificate is about to expire
+              description: >-
+                A client certificate used to authenticate to the Kubernetes API server on 192.168.48.3:6443
+                expires in less than 7 days (and has more than 30 minutes left).
+
+  - name: certificate with 12 hours left is critical
+    interval: 1m
+    input_series:
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="1800.0"}'
+        values: "0x30"
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="86400.0"}'
+        values: "0+1x30"
+      - series: 'apiserver_client_certificate_expiration_seconds_bucket{job="apiserver",instance="192.168.48.3:6443",le="604800.0"}'
+        values: "0+1x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KubeClientCertificateExpiration
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: apiserver
+              instance: 192.168.48.3:6443
+            exp_annotations:
+              summary: Client certificate is about to expire
+              description: >-
+                A client certificate used to authenticate to the Kubernetes API server on 192.168.48.3:6443
+                expires in less than 7 days (and has more than 30 minutes left).
+          - exp_labels:
+              severity: critical
+              job: apiserver
+              instance: 192.168.48.3:6443
+            exp_annotations:
+              summary: Client certificate is about to expire
+              description: >-
+                A client certificate used to authenticate to the Kubernetes API server on 192.168.48.3:6443
+                expires in less than 24 hours (and has more than 30 minutes left).
+
+  # A drained node that reboots is back within 10 minutes: nothing fires. A node that stays NotReady and cordoned
+  # fires after 20 minutes. A NotReady node that is not cordoned is KubeNodeNotReady's job.
+  - name: cordoned node that returns does not alert
+    interval: 1m
+    input_series:
+      - series: 'kube_node_status_condition{job="kube-state-metrics",node="mc1",condition="Ready",status="true"}'
+        values: "0x7 1x40"
+      - series: 'kube_node_spec_unschedulable{job="kube-state-metrics",node="mc1"}'
+        values: "1x47"
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KubeNodeNotReadyCordoned
+        exp_alerts: []
+
+  - name: cordoned node that does not return pages
+    interval: 1m
+    input_series:
+      - series: 'kube_node_status_condition{job="kube-state-metrics",node="mc1",condition="Ready",status="true"}'
+        values: "0x40"
+      - series: 'kube_node_spec_unschedulable{job="kube-state-metrics",node="mc1"}'
+        values: "1x40"
+      - series: 'kube_node_status_condition{job="kube-state-metrics",node="mc2",condition="Ready",status="true"}'
+        values: "0x40"
+      - series: 'kube_node_spec_unschedulable{job="kube-state-metrics",node="mc2"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KubeNodeNotReadyCordoned
+        exp_alerts: []
+      - eval_time: 25m
+        alertname: KubeNodeNotReadyCordoned
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: kube-state-metrics
+              node: mc1
+              condition: Ready
+              status: "true"
+            exp_annotations:
+              summary: A cordoned node has not been Ready for 20 minutes
+              description: >-
+                Node mc1 is cordoned and NotReady. A Talos upgrade reboot takes under 10 minutes,
+                so the node did not come back. KubeNodeNotReady does not cover cordoned nodes.

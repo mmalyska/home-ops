@@ -53,6 +53,13 @@ from tuppr's source, not observed here.
   `CephMonDown|CephMonQuorumAtRisk|CephOSDDown|CephOSDDownHigh|KubeNodeUnreachable|TargetDown|KubeClientCertificateExpiration`
   (the list is one Helm variable in `templates/talosupgrade.yaml`). `KubeClientCertificateExpiration` is in it because
   short-lived client certificates used during an upgrade trip it (not a real expiry).
+  - **Alert rules that make the silence a second line, not the only one (2026-11-23):** `CephOSDDownHigh` has
+    `for: 15m` (`prometheusRuleOverrides` in the rook-ceph cluster values; a node reboot takes 2 to 7 minutes), and
+    `KubeClientCertificateExpiration` is replaced in `prometheus-stack/templates/prometheusrule-upgrade-alerts.yaml` by a
+    version that ignores certificates with 30 minutes or less left (the mixin rule is disabled in the values). A new
+    alert, `KubeNodeNotReadyCordoned` (critical, 20 minutes), is not in the silence on purpose: `KubeNodeNotReady`
+    skips cordoned nodes, so a node that never returns after the drain would otherwise page only through
+    `TalosUpgradeStuck` after 1 hour. Rule tests: `prometheus-stack/tests/upgrade-alerts.promtool.yaml`.
   - **Pre and post hook Jobs (the main one):** `spec.hooks.pre` runs once per run, before any node is touched, and creates
     one Alertmanager silence (creator `tuppr-hook`, 8 hours hard stop); `spec.hooks.post` expires it when the run ends. The
     Jobs are best effort (the scripts always exit 0, so a missing Alertmanager never blocks the upgrade) and use the
