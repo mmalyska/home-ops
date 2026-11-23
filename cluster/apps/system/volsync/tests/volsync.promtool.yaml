@@ -1,0 +1,51 @@
+# promtool rule tests for templates/prometheusrule.yaml, run by `task lint:manifests` and CI
+# (.taskfiles/lint/resources/check-manifests.sh). The script renders the chart and writes this app's
+# PrometheusRule groups to rules.yaml next to a copy of this file.
+rule_files:
+  - rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # 2026-10-26: music-assistant stopped syncing after the 00:00 backup; the metric turned 1 about 12 hours later and
+  # stayed there. It fires 1 hour after that.
+  - name: source stays out of sync, then pages after an hour
+    interval: 1m
+    input_series:
+      - series: 'volsync_volume_out_of_sync{obj_name="music-assistant",obj_namespace="ha-music-assistant",role="source",method="restic"}'
+        values: "0x30 1x200"
+    alert_rule_test:
+      - eval_time: 50m
+        alertname: VolSyncVolumeOutOfSync
+        exp_alerts: []
+      - eval_time: 100m
+        alertname: VolSyncVolumeOutOfSync
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              obj_name: music-assistant
+              obj_namespace: ha-music-assistant
+              role: source
+              method: restic
+            exp_annotations:
+              summary: VolSync backup of ha-music-assistant/music-assistant is out of sync
+              description: >-
+                The ReplicationSource music-assistant in ha-music-assistant has not synced
+                within its schedule for over an hour. Check for a VolumeSnapshot with a deletionTimestamp that is older
+                than an hour (`kubectl -n ha-music-assistant get volumesnapshot -o wide`); the
+                procedure is in cluster/apps/system/volsync/README.md. A stuck backup also holds the tuppr Talos
+                upgrade health check.
+
+  # A run that finishes within the hour (the 15 minutes seen on home-assistant-bootstrap) does not page, and a
+  # destination (role destination) is never checked.
+  - name: short blip and destinations do not page
+    interval: 1m
+    input_series:
+      - series: 'volsync_volume_out_of_sync{obj_name="hermes",obj_namespace="hermes-agent",role="source",method="restic"}'
+        values: "0x10 1x15 0x100"
+      - series: 'volsync_volume_out_of_sync{obj_name="home-assistant-bootstrap",obj_namespace="ha-home-assistant",role="destination",method="restic"}'
+        values: "1x120"
+    alert_rule_test:
+      - eval_time: 100m
+        alertname: VolSyncVolumeOutOfSync
+        exp_alerts: []

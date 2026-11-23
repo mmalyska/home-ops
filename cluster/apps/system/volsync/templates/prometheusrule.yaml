@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: volsync-backups
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: volsync
+      rules:
+        # volsync_volume_out_of_sync is 1 when the last sync is older than the schedule allows (it turned 1 about 12
+        # hours after the last good backup with a 6-hourly schedule). No alert used it, so two backups stopped
+        # silently: music-assistant from 2026-10-26 (11 days) and coder-mmalyska-devops from 2026-11-02. Both were a
+        # VolumeSnapshot stuck in deletion: ceph-csi's provisioner logged "Failed to remove snapshot finalizer ...
+        # the object has been modified" 9 seconds after the snapshot was created (12 times in 30 days, 2 of them
+        # left a snapshot stuck), and VolSync waits for the snapshot to go away ("snap is being deleted -- need to
+        # wait"). In the 14 days before 2026-11-23 only the home-assistant-bootstrap destination was out of sync, for
+        # 15 minutes, so 1 hour does not page for a normal run. Only sources: a destination runs once.
+        - alert: VolSyncVolumeOutOfSync
+          expr: volsync_volume_out_of_sync{role="source"} == 1
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: VolSync backup of {{`{{ $labels.obj_namespace }}`}}/{{`{{ $labels.obj_name }}`}} is out of sync
+            description: >-
+              The ReplicationSource {{`{{ $labels.obj_name }}`}} in {{`{{ $labels.obj_namespace }}`}} has not synced
+              within its schedule for over an hour. Check for a VolumeSnapshot with a deletionTimestamp that is older
+              than an hour (`kubectl -n {{`{{ $labels.obj_namespace }}`}} get volumesnapshot -o wide`); the
+              procedure is in cluster/apps/system/volsync/README.md. A stuck backup also holds the tuppr Talos
+              upgrade health check.
