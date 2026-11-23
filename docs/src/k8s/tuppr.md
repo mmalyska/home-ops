@@ -170,7 +170,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(curl -s 'ht
 A 404 means the alias tag is not published (dispatch the publish from `pr/jetpack7-r39`); a 401 or 403 means the
 package exists but is not public (make it public in the package settings).
 
-Upstreaming the alias tag change to `schwankner/talos-jetson-orin` is tracked in `.plans/TODO.md`.
+Upstreaming the alias tag change to `schwankner/talos-jetson-orin` is tracked in `.plans/TODO.md` (history of the kexec item: `.archive/TODO.md`, "Moved 2026-11-23").
 
 ## Talos API access
 
@@ -341,7 +341,7 @@ fix on this hardware. Each run took about 2 to 3 minutes.
 
 EFI variable writes persisted in separate tests, so the earlier theory that the Jetson firmware drops the installer's
 write was wrong (corrected on schwankner/talos-jetson-orin#69). Why the kexec load fails on this hardware is still not known (the kernel reports no free memory region);
-the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692); see `.plans/TODO.md`.
+the upstream report is [siderolabs/talos#14692](https://github.com/siderolabs/talos/issues/14692); finding the cause is an open item in `.plans/TODO.md`.
 The sysctl is a one-way switch (the value stays 1 until the node reboots), which is why the removal needed the reboot
 above. The kernel error is the same one that failed the reboot sequence on v1.14.4 (there it was followed by
 `failed to load kernel for kexec: ... cannot assign requested address` and `reboot failed: error running phase 13 in
@@ -350,6 +350,11 @@ reboot sequence`); v1.14.5 stops at the "skipped" line instead.
 mc1 to mc3 do kexec-boot, and did on the v1.14.5 upgrade of 2026-11-06 (`phase kexec (13/14)`, `sd-boot:
 LoaderEntryOneShot: kexec reboot`, `prepared kexec environment with kernel and initrd extracted from uki`, about 0.9
 seconds, no skip line). The failure is specific to the Jetson.
+
+Do not run `talosctl upgrade` under `timeout` or any wrapper that kills the client: on 2026-11-06 the client was killed
+mid-upgrade, nv1 stayed cordoned and had to be uncordoned by hand. Let it run to the end (each run takes 2 to 3
+minutes). Source: `.archive/TODO.md`, "Moved 2026-11-23". The v1.14.5 upgrade itself is described in "The second Talos
+upgrade".
 
 ## When things go wrong
 
