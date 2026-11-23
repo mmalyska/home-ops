@@ -52,7 +52,14 @@ On Ceph 20 `bdev_async_discard = true` is a deprecated alias for `bdev_async_dis
 A value from `ceph.conf` beats the central config DB, so use `ceph tell`, not `ceph config set`. Rook only rewrites the ConfigMap; the OSDs read it at their next start.
 
 The cost, accepted by the owner on 2026-10-29: Ceph write latency about 25 to 35 % higher (about 6 to 8 ms), `sda` busy 5.5 % against 3 %. Revert per OSD with `bdev_enable_discard false` and `bdev_async_discard_threads 0`, and remove both lines from the file.
-The two-week wear comparison against the 2026-10-29 baseline is due 2026-11-12; add its result here.
+
+**Result after 25 days (2026-10-29 to 2026-11-23, SMART via the exporter and Prometheus; mc1 / mc2 / mc3):**
+
+- Wear did not improve: used-% went 71 / 68 / 76 to 75 / 72 / 79, about 0.15 % a day against about 0.14 % before.
+- FTL pages per host page over the period were about 2.05 on all three disks. Before discard the same ratio over about 5 days (the 30-day retention) was 0.65, so write amplification inside the SSD did not fall; it looks higher. Host writes were unchanged (about 4.75 million pages a day). Whether an MX500 firmware or kernel effect with queued TRIM explains the rise is not proven; reverting for a week and re-measuring would show it.
+- Ceph write latency stayed higher: about 6.5 to 6.8 ms before, about 9.2 to 9.6 ms (7-day average) now, with `sda` busy about 6 % against 3 %. Pool write throughput was unchanged, so it is not load. Discards run at about 20 to 26 a second per disk.
+- Decision 2026-11-23 (owner): leave discard on. The measured benefit is none and the latency cost persists, so this is a choice to keep the setting, not a result in its favour. Revert as above if the latency matters or a week without discard is wanted for the comparison.
+- Disk replacement: at about 0.15 % a day mc3 (79 %) reaches 95 % around 2027-03-10, mc1 around 2027-04-05 and mc2 around 2027-04-25. Discard gives no relief.
 
 ## Gotchas met on the way
 
