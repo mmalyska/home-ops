@@ -1,6 +1,12 @@
 {
   "packageRules": [
     {
+      "description": "llama.cpp server image of llm-embeddings: upstream republishes the tag nightly and every digest bump recreates the pod (strategy Recreate, RWO model volume), so `embed` fails for 30 to 60 s. Update once a week, at night (timezone CET).",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/ggml-org/llama.cpp"],
+      "schedule": ["before 5am on monday"]
+    },
+    {
       "description": "Wait 3 days before GitHub release and tag updates",
       "matchDatasources": ["github-releases", "github-tags"],
       "minimumReleaseAge": "3 days"
