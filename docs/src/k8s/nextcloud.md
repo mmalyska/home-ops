@@ -27,7 +27,8 @@ same tag shows up as a digest change that has to be bumped in `values.yaml`.
   `preview_max_x/y` cap is 2048 px), plus versions and trash. The alerts `NextcloudDataVolumeLow` (under 15% free, warning) and `NextcloudDataVolumeCritical` (under 7%, critical) watch the NFS volume.
 - **The QNAP holds the only copy.** Phones keep originals until the user frees space, so tell the family not to use
   "free up space" until there is an offsite copy. Recommended: QNAP snapshots on the share, and Hybrid Backup Sync to an
-  encrypted cloud bucket. These are QNAP-side settings and are not in the cluster repo.
+  encrypted cloud bucket. These are QNAP-side settings and are not in the cluster repo. The comparison, sizes and plan
+  are in [Offsite backup of the QNAP](../general/offsite-backup.md).
 
 ## Resources and why
 
