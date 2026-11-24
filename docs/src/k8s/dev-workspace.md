@@ -34,6 +34,31 @@ The first workspace is `dev-workspace`. The Coder template only references these
 external-secrets generator kinds, some of which can hold inline credentials. `dev-workspace-reader` lists each resource
 by name instead. Add a CRD group only after reading its fields for credentials.
 
+## CRD audit (2026-11-24)
+
+The cluster had 24 CRD groups with kinds that `dev-workspace-reader` did not list (for example the LiteLLM operator, so
+a `LiteLLMProxy` could not be read, and the RBAC objects, so a provisioner's ClusterRole could not be checked). Method:
+for each candidate kind, walk its OpenAPI schema (`kubectl get crd -o json`) and list every string field whose name
+suggests a credential (`password`, `token`, `apiKey`, `secretKey`, `accessKey`, `privateKey`, `bearer` and similar),
+then drop the known false positives (URLs such as `tokenUrl`, file paths such as `credentialsFile`, Windows `gmsa`
+fields). A field that is an object (a `secretKeyRef`) holds a name, not a value, and is fine. A kind stays out when a
+plain string can hold a credential.
+
+- **Added:** `clusterroles`, `clusterrolebindings`, `roles` and `rolebindings`; the LiteLLM kinds `litellmproxies`,
+  `litellmteams` and `litellmmcpservers`; the Rook Ceph kinds that were missing, the ceph-csi operator kinds, three
+  Cilium kinds, KEDA `scaledobjects` and `scaledjobs`, Multus `network-attachment-definitions`, NFD, the Intel GPU plugin
+  kind, object bucket claims, four CloudNativePG kinds, the newer Gateway API kinds, `dnsrecords`, the group snapshot
+  kinds and `alertmanagerconfigs`. 49 CRD kinds and the four RBAC kinds.
+- **Left out:** `litellmmodels` (`spec.params.apiKey` is a string, and some models in git use a literal value),
+  `litellmguardrails` (`spec.apiKey`), `litellmvirtualkeys` (`spec.secretKey`), KEDA `triggerauthentications` and
+  `clustertriggerauthentications` (`hashiCorpVault.credential.token`), `scrapeconfigs`, `thanosrulers` and
+  `prometheusagents` (inline bearer tokens and cloud keys), the 18 external-secrets generator kinds, and
+  `serviceaccounts.talos.dev`. Traefik, RabbitMQ, the Intel FPGA kinds and the Grafana `podlogs` have CRDs but no manifests in this repository (instances were not checked: the workspace cannot list them).
+- RBAC objects show who may do what; they carry no secrets. Reading them is how a missing permission is found without
+  asking for a guess.
+
+Run the audit again when a new operator is added: any CRD group that is not in the role is invisible to the workspace.
+
 ## Boundaries
 
 - The workspace can read ExternalSecret specs, which contain Bitwarden references (identifiers, not values). It cannot read
@@ -62,6 +87,10 @@ kubectl auth can-i get nodes --subresource=proxy $A               # no
 kubectl auth can-i create serviceaccounts --subresource=token $A  # no
 kubectl auth can-i get pods --subresource=log $A                  # yes
 ```
+
+After the 2026-11-24 audit, these answer `yes`: `list clusterroles`, `list clusterrolebindings`, `list litellmproxies -n ai`,
+`list cephclients -n rook-ceph`, `list scaledobjects -A`. These still answer `no`: `list litellmmodels -n ai`,
+`list litellmvirtualkeys -n ai`, `list triggerauthentications -A`, `list scrapeconfigs -A`, `list secrets -A`.
 
 The same applies to `attach`, `portforward`, `ephemeralcontainers` and the `pods`, `services` and `nodes` `proxy`
 subresources. Cluster-scoped resources print a harmless "not namespace scoped" warning.
