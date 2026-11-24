@@ -65,7 +65,7 @@ jobs:
 Dependency updates come from Renovate, run by the Renovate app (`app/bendo-bot`). Hermes checks only PRs opened by that app, so a Dependabot PR is never checked, labelled or merged.
 
 - Add `.github/renovate.json5` extending `github>mmalyska/renovate-config`, with `timezone`, `gitAuthor` and `reviewers` as in `homelab-portal`.
-- Add `.github/workflows/scheduled-renovate.yaml`, the hourly caller of `mmalyska/github-workflows/.github/workflows/run-renovate.yaml@main`, with the repository secrets `BOT_APP_ID` and
+- Add `.github/workflows/scheduled-renovate.yaml`, the hourly caller of `mmalyska/github-workflows/.github/workflows/run-renovate.yaml@main`, with the repository secrets `BOT_APP_CLIENT_ID` (the app's Client ID, not its App ID) and
   `BOT_APP_PRIVATE_KEY`, and install the Renovate app on the repository.
 - Do not add `.github/dependabot.yml`, and turn off Dependabot security updates in the repository settings: Renovate reads the same vulnerability alerts.
 
