@@ -8,7 +8,7 @@ that the Coder provisioner must not create. Plan: `.archive/.plans/remote-dev-wo
 | Object                                                                  | Purpose                                                                                                       |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Namespace `dev-workspace`, Pod Security `baseline`                      | Home of the workspace pods                                                                                    |
-| PVC `<workspace>-home` (5 Gi, `ceph-block`)                             | Logins, config, tools added with `mise use -g`; backed up every 6 h                                           |
+| PVC `<workspace>-home` (15 Gi, `ceph-block`)                             | Logins, config, tools added with `mise use -g`; backed up every 6 h                                           |
 | PVC `<workspace>-src` (30 Gi, `ceph-block`)                             | Source code under `/workspaces`; backed up daily                                                              |
 | `ReplicationSource` and restic `ExternalSecret` per PVC                 | VolSync backups from `charts/volsync`, one restic repository per PVC                                          |
 | `ServiceAccount` `<workspace>` and `ClusterRole` `dev-workspace-reader` | Read-only Kubernetes access (explicit lists, no Secrets, no wildcard)                                         |

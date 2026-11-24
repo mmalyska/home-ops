@@ -17,7 +17,7 @@ Names use `<owner>-<workspace name>` (`mmalyska-hermes`), so any number of works
 | Object                                                      | Purpose                                                                                                |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `Deployment` `ws-<id>`                                      | The pod (`dev-workstation` image, same hardening as the personal workspace)                            |
-| PVC `<id>-home`, `<id>-src`                                 | Home (5 Gi, backed up every 6 h) and `/workspaces` (30 Gi, backed up daily)                            |
+| PVC `<id>-home`, `<id>-src`                                 | Home (15 Gi, backed up every 6 h) and `/workspaces` (30 Gi, backed up daily)                            |
 | `Service` `<id>-ssh`                                        | ClusterIP, port 22 to the pod's sshd on 2222; this is how the agent (hermes) logs in                   |
 | `ServiceAccount` `<id>`                                     | Pod identity. Its token is mounted only when Kubernetes access is on                                   |
 | `ExternalSecret` `<id>-env` (when there is a secret)        | The optional `GITHUB_TOKEN` and the extra secrets as environment variables, each fetched by its own ID |

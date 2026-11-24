@@ -34,7 +34,7 @@ Then use VS Code Remote-SSH or the Coder extension, or `coder ssh <owner>/<works
 
 | Path           | Storage                      | Backup    | After a restart            |
 | -------------- | ---------------------------- | --------- | -------------------------- |
-| `/home/vscode` | PVC `<workspace>-home`, 5 Gi | Every 6 h | Kept (logins, mise tools)  |
+| `/home/vscode` | PVC `<workspace>-home`, 15 Gi | Every 6 h | Kept (logins, mise tools)  |
 | `/workspaces`  | PVC `<workspace>-src`, 30 Gi | Daily     | Kept                       |
 | `/cache`       | `emptyDir`, 20 Gi limit      | None      | Empty (rebuildable caches) |
 | `/tmp`         | `emptyDir`, 5 Gi limit       | None      | Empty                      |
