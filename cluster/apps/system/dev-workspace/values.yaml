@@ -11,7 +11,7 @@ workspaces:
     # Talos roles of the workspace credential default to os:reader (`talosRoles` overrides). os:admin was tried and reverted:
     # the Coder provisioner can create a Deployment in this namespace that mounts the credential's Secret (.plans/TODO.md).
     home:
-      size: 5Gi
+      size: 15Gi
     src:
       size: 30Gi
     # References to the Bitwarden secrets (in the project the bitwarden store reads) that hold the
@@ -37,7 +37,7 @@ volsync-dev-workspace-home:
   nameOverride: dev-workspace-home
   pvc:
     existingClaim: dev-workspace-home
-    capacity: 5Gi
+    capacity: 15Gi
     storageClass: ceph-block
     volumeSnapshotClass: csi-ceph-blockpool
   volsync:
