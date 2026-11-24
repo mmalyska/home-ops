@@ -32,5 +32,5 @@ jobs:
       dryRun: ${{ inputs.dryRun || 'false' }}
       renovateLogLevel: ${{ inputs.logLevel || 'debug' }}
     secrets:
-      app_id: ${{ secrets.BOT_APP_ID }}
+      client_id: ${{ secrets.BOT_APP_CLIENT_ID }}
       app_private_key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
