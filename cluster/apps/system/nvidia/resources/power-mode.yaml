@@ -190,13 +190,41 @@ spec:
               apply_settings
               echo "[power-mode] Power mode ${POWER_MODE} applied ✓"
 
-              # Re-assert every 60s (governor/EMC may reset after suspend/resume)
+              # GPU clock cap, as a function so the loop below can apply it as soon as the devfreq node exists.
+              # Returns 1 when a write failed (the node can exist before its files are ready).
+              apply_gpu_caps() {
+                rc=0
+                echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/max_freq" 2>/dev/null || rc=1
+                echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/min_freq" 2>/dev/null || rc=1
+                echo "${GPU_GOV}"  > "${GPU_DEVFREQ}/governor"  2>/dev/null || rc=1
+                return "${rc}"
+              }
+
+              # The r39 nvgpu creates the devfreq node only at the first GPU use, and its default maximum is
+              # 1173 MHz (the Super clock this board must not run). So the node can be missing at start, and a
+              # cap applied only every 60 s would leave the GPU uncapped for up to a minute. Look for the node
+              # every second and cap it at once; the rest is re-asserted every 60 s (governor/EMC may reset
+              # after suspend/resume).
+              GPU_CAPPED=0
+              if [ -d "${GPU_DEVFREQ}" ]; then
+                GPU_CAPPED=1
+              fi
+              TICKS=0
               while true; do
-                sleep 60
+                sleep 1
+                TICKS=$((TICKS + 1))
                 if [ -d "${GPU_DEVFREQ}" ]; then
-                  echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/max_freq" 2>/dev/null || true
-                  echo "${GPU_FREQ}" > "${GPU_DEVFREQ}/min_freq" 2>/dev/null || true
-                  echo "${GPU_GOV}"  > "${GPU_DEVFREQ}/governor"  2>/dev/null || true
+                  if [ "${GPU_CAPPED}" = 0 ] && apply_gpu_caps; then
+                    GPU_CAPPED=1
+                    echo "[power-mode] GPU devfreq appeared, capped at ${GPU_FREQ} Hz (cur_freq=$(cat "${GPU_DEVFREQ}/cur_freq" 2>/dev/null || echo '?') Hz)"
+                  fi
+                else
+                  GPU_CAPPED=0
+                fi
+                [ "${TICKS}" -ge 60 ] || continue
+                TICKS=0
+                if [ -d "${GPU_DEVFREQ}" ]; then
+                  apply_gpu_caps || true
                 fi
                 if [ -f "${EMC_CLK}/rate" ] && [ -f "${EMC_CLK}/mrq_rate_locked" ]; then
                   if [ "${EMC_LOCK}" = "true" ]; then
