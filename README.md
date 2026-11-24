@@ -115,7 +115,7 @@ The Git repository contains the following directories under `cluster` and are or
 │   ├──📁 system - platform services (traefik, cert-manager, monitoring, keycloak, external-secrets...)
 │   ├──📁 default - workload apps (jellyfin, nextcloud, anytype, bookorbit...)
 │   ├──📁 games  - game servers (minecraft-bedrock, vintagestory)
-│   └──📁 home-automation - home automation (home-assistant, mosquitto, zigbee2mqtt, matter-server, music-assistant, whisper, piper, openwakeword)
+│   └──📁 home-automation - home automation (home-assistant, mosquitto, zigbee2mqtt, matter-server, music-assistant, esphome, whisper, piper, openwakeword)
 └──📁 .tools     - utility manifests (rook wipe jobs, etc.)
 ```
 
