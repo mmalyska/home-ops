@@ -144,6 +144,80 @@ rules:
   - apiGroups: [dragonflydb.io]
     resources: [dragonflies]
     verbs: [get, list, watch]
+  # Added 2026-11-24 after an audit of the cluster's CRDs (docs/src/k8s/dev-workspace.md, "CRD audit"): every
+  # field of each kind below was read for inline credentials; kinds with a plain string that can hold one stay out.
+  # RBAC objects: who may do what (read only; Secrets stay unreadable)
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [clusterroles, clusterrolebindings, roles, rolebindings]
+    verbs: [get, list, watch]
+  # LiteLLM operator (not litellmmodels, litellmguardrails and litellmvirtualkeys: apiKey / secretKey are strings)
+  - apiGroups: [litellm.home-operations.com]
+    resources: [litellmproxies, litellmteams, litellmmcpservers]
+    verbs: [get, list, watch]
+  # Rook Ceph: the kinds that were not listed above
+  - apiGroups: [ceph.rook.io]
+    resources:
+      - cephblockpoolradosnamespaces
+      - cephbucketnotifications
+      - cephbuckettopics
+      - cephclients
+      - cephcosidrivers
+      - cephfilesystemmirrors
+      - cephnfses
+      - cephnvmeofgateways
+      - cephobjectrealms
+      - cephobjectstoreaccounts
+      - cephobjectstoreusers
+      - cephobjectzonegroups
+      - cephobjectzones
+      - cephrbdmirrors
+    verbs: [get, list, watch]
+  # ceph-csi operator
+  - apiGroups: [csi.ceph.io]
+    resources: [cephconnections, clientprofilemappings, clientprofilereplications, clientprofiles, drivers, operatorconfigs]
+    verbs: [get, list, watch]
+  - apiGroups: [cilium.io]
+    resources: [ciliumexternalworkloads, ciliumnodeconfigs, ciliumpodippools]
+    verbs: [get, list, watch]
+  # KEDA scalers (not the trigger authentications: a Vault token can be set inline)
+  - apiGroups: [keda.sh]
+    resources: [scaledobjects, scaledjobs]
+    verbs: [get, list, watch]
+  # Multus, Node Feature Discovery, Intel GPU plugin, object bucket claims
+  - apiGroups: [k8s.cni.cncf.io]
+    resources: [network-attachment-definitions]
+    verbs: [get, list, watch]
+  - apiGroups: [nfd.k8s-sigs.io]
+    resources: [nodefeatures, nodefeaturegroups, nodefeaturerules]
+    verbs: [get, list, watch]
+  - apiGroups: [deviceplugin.intel.com]
+    resources: [gpudeviceplugins]
+    verbs: [get, list, watch]
+  - apiGroups: [objectbucket.io]
+    resources: [objectbucketclaims, objectbuckets]
+    verbs: [get, list, watch]
+  # CloudNativePG: roles, publications, subscriptions, failover quorum
+  - apiGroups: [postgresql.cnpg.io]
+    resources: [databaseroles, publications, subscriptions, failoverquorums]
+    verbs: [get, list, watch]
+  # Gateway API: the newer kinds
+  - apiGroups: [gateway.networking.k8s.io]
+    resources: [listenersets]
+    verbs: [get, list, watch]
+  - apiGroups: [gateway.networking.x-k8s.io]
+    resources: [xbackends, xbackendtrafficpolicies, xlistenersets, xmeshes]
+    verbs: [get, list, watch]
+  - apiGroups: [externaldns.k8s.io]
+    resources: [dnsrecords]
+    verbs: [get, list, watch]
+  - apiGroups: [groupsnapshot.storage.k8s.io]
+    resources: [volumegroupsnapshotclasses, volumegroupsnapshotcontents, volumegroupsnapshots]
+    verbs: [get, list, watch]
+  # Prometheus Operator: Alertmanager routing (not scrapeconfigs, thanosrulers and prometheusagents: bearer
+  # tokens and cloud keys can be set inline)
+  - apiGroups: [monitoring.coreos.com]
+    resources: [alertmanagerconfigs]
+    verbs: [get, list, watch]
 ---
 # The Coder provisioner may manage Deployments here and nothing else (D35). No PVC permission: the
 # template only references the existing claims by name, and a Deployment that mounts a claim needs no
