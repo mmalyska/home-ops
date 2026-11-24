@@ -196,6 +196,7 @@ Cilium LB IPAM (`cluster/apps/core/cilium/templates/config.yaml`) has two pools 
 | `192.168.48.60` | Reserved: Home Assistant (macvlan `net1`) |
 | `192.168.48.61` | Matter server (macvlan `net1`, live) |
 | `192.168.48.62` | Music Assistant (macvlan `net1`, live) |
+| `192.168.48.63` | ESPHome dashboard (macvlan `net1`) |
 | `192.168.48.69` | Reserved for temporary test pods that verify a macvlan attachment |
 | `192.168.48.254` | UCG-Max, VLAN 48 gateway |
 | `192.168.50.8` | QNAP NAS (also the UPS NUT server, see below) |
@@ -236,6 +237,17 @@ What the setup relies on (all verified from a test pod on `net1` on 2026-10-02):
 - **Thread network:** the UniFi static route to the OMR prefix (see `matter-thread.md`) works from VLAN 48; a traceroute from `net1` goes gateway, then the SLZB border router.
 - **mDNS:** the UniFi mDNS reflector must forward the relevant services to VLAN 48 (Google Cast, Matter, Thread TREL and Spotify Connect were seen arriving; AirPlay and MeshCoP were not).
 - **macvlan host isolation:** a pod's `net1` cannot talk to its own node's addresses, including a LoadBalancer IP that node announces. In-cluster consumers must use `*.svc.cluster.local` names, never LB IPs.
+
+## ESPHome
+
+The ESPHome dashboard (`home-automation/esphome`, namespace `ha-esphome`) builds and flashes firmware for ESP devices. It replaces the Home Assistant OS add-on the RPi used. It runs on a Multus macvlan `net1` at `192.168.48.63` (see the macvlan section above) and is at `esphome.PRIVATE_DOMAIN` on `envoy-internal` (Service port 6052). The YAML configs are on a Ceph PVC (`/config`, backed up by VolSync); the PlatformIO toolchain cache (`/cache`, 10 Gi) is rebuildable and not backed up. The dashboard has no login of its own: it is reachable only on the LAN, but port 6052 is also open on `192.168.48.63`, so do not publish it on `envoy-external`.
+
+The devices live on the IoT network (VLAN 40), the dashboard and Home Assistant on VLAN 48:
+
+- **mDNS:** enable the UniFi mDNS repeater between VLAN 40 and VLAN 48 so the dashboard and Home Assistant discover devices (`_esphomelib._tcp`) and resolve `<name>.local`. Devices on the IoT network need to reach the repeater, nothing else.
+- **Firewall (VLAN 48 to VLAN 40):** allow TCP 6053 (native API, Home Assistant and dashboard logs) and TCP 3232 (OTA from the dashboard). Do not allow VLAN 40 to open connections to VLAN 48, except for MQTT (`192.168.48.26:1883`) if a device uses it. Devices still need DNS (AdGuard) and NTP.
+- **Home Assistant:** it already routes `192.168.0.0/16` through the gateway on its own `net1`, so the ESPHome integration discovers devices over the mDNS repeater; add one by IP if it does not appear.
+- **First flash:** over USB from a computer (web.esphome.io or the `esphome` CLI) using the `.bin` the dashboard builds; later updates are OTA. Keep the API encryption key and OTA password in the dashboard's `secrets.yaml` on the PVC, never in git.
 
 ## Music Assistant
 
