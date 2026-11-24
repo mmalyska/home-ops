@@ -22,10 +22,11 @@ app-template:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 1Gi
             limits:
-              # firmware compiles peak well above the idle dashboard
-              memory: 2Gi
+              # firmware compiles peak well above the idle dashboard: a
+              # 2Gi limit OOM-killed a compile at ~2Gi resident memory
+              memory: 4Gi
   service:
     main:
       controller: main
