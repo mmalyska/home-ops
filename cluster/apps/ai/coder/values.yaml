@@ -84,7 +84,7 @@ templatePush:
   # Bitwarden secret id of a Coder API token (user with the template-admin role). Required when enabled.
   tokenBwsId: "719b6268-99cf-499f-b272-b50b00abcf4a" #gitleaks:allow #CODER_TEMPLATE_ADMIN_TOKEN
   # Coder CLI, copied into the Job. Keep the version equal to the coder chart version in Chart.yaml.
-  image: ghcr.io/coder/coder:v2.39.4@sha256:2ce6b2ab5b78afe05da8b62184efc7950bb0e53a32dcefab4ef1c9b22c15631a
+  image: ghcr.io/coder/coder:v2.39.5@sha256:40fade40473a8a143d762f8ba0be07c0239be9932651f22046c0c0b21800552d
   # Runs the push script and the Coder API calls (needs sh, curl and jq).
   toolsImage: docker.io/alpine/k8s:1.37.2@sha256:7a82aeefea3d554a43a8676b137f2b88bae6c1fe11c13862b191b3a086cc28c0
   templates:
