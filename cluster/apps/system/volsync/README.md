@@ -58,9 +58,14 @@ finalizer from snapshot`). The two stuck snapshots came before that. Both confli
 snapshot in 11 days, while every pod started since the Talos drain on 2026-11-06 14:50 UTC logs `Starting
 SnapshotFinalizerProtection controller` and clears a conflict in about 90 seconds. Whether that old pod started the
 controller is not known: its startup is older than Loki's retention (about a month, the oldest `rook-ceph` log is from
-2026-10-23). Missing RBAC for the provisioner on VolumeSnapshots is a guess. So a stuck snapshot should be rare now;
-the alert and the steps below are the fallback. If one appears, check that the provisioner pod logs `Starting
-SnapshotFinalizerProtection controller` (read it before Loki drops it) and the ClusterRole.
+2026-10-23). Missing RBAC is ruled out (checked 2026-11-24): the provisioner's ClusterRole
+`rook-ceph-rbd-csi-ceph-com-ctrlplugin-cr` allows `get`, `list`, `watch` and `update` on `volumesnapshots`, which the sweeper
+needs, and ArgoCD last wrote that role on 2026-10-03, before the old pod started on 2026-10-21. (ceph-csi-operator v1.0.4
+did not grant `update` there; v1.1.0 does.) Why the old pod did not clear the snapshots is not known. So a stuck
+snapshot should be rare now; the alert and the steps below are the fallback. If one appears, check that the provisioner
+pod logs `Starting SnapshotFinalizerProtection controller` (read it before Loki drops it) and that the ClusterRole still
+allows `update` on `volumesnapshots`
+(`kubectl get clusterrole rook-ceph-rbd-csi-ceph-com-ctrlplugin-cr -o json | jq '.rules[] | select(.resources | index("volumesnapshots"))'`).
 
 Check:
 
