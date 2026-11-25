@@ -44,18 +44,16 @@ spec:
             - name: metrics
               containerPort: 9400
               protocol: TCP
+          # TCP probes check that httpd answers without running the script: each run is a CPU burst, and
+          # failed scrapes are caught by up and JetsonGpuExporterDown.
           readinessProbe:
-            httpGet:
-              path: /cgi-bin/metrics
+            tcpSocket:
               port: metrics
             periodSeconds: 30
-            timeoutSeconds: 5
           livenessProbe:
-            httpGet:
-              path: /cgi-bin/metrics
+            tcpSocket:
               port: metrics
             periodSeconds: 60
-            timeoutSeconds: 5
             failureThreshold: 3
           securityContext:
             privileged: true
