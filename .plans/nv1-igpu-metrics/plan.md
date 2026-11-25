@@ -30,7 +30,8 @@ GPU load, GPU and EMC clocks, EMC utilization, GPU memory per process and the GP
 
 ## Status
 
-- 2026-11-25: spec written and decided. Waiting on the owner's pre-check report (task 1). Tasks 2-6 can start on jtop's formats; fixtures are replaced when the report arrives.
+- 2026-11-25: spec written and decided.
+- 2026-11-25: owner's pre-check done ([evidence.md](evidence.md)). Changes to the spec: EMC activity exported raw (not a percent), `is_railgated`/`gpu_powered_on` added, `enable_3d_scaling` and `trans_stat` dropped, INA3221 pairing confirmed. Next: task 2.
 
 ## Delivery
 

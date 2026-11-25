@@ -44,19 +44,22 @@ Non-goals: NVENC/NVDEC/NVJPG/VIC/DLA/PVA engine clocks (nothing on nv1 uses them
 
 ## What the node exposes
 
-The workspace cannot read nv1 sysfs or debugfs, so this list comes from earlier work on nv1 and from the jetson-stats (`jtop`) source (`rbonghi/jetson_stats`, `jtop/core/gpu.py`, `memory.py`, `processes.py`, read 2026-11-25). Which candidate exists on r39 is checked in the first rollout: the exporter logs the paths it found at start.
+Checked on nv1 by the owner on 2026-11-25 (raw report: [evidence.md](evidence.md)). Paths and formats first came from the jetson-stats (`jtop`) source (`rbonghi/jetson_stats`, `jtop/core/gpu.py`, `memory.py`, `processes.py`); where nv1 differs, nv1 wins.
 
-Sysfs (GPU device dir `/sys/devices/platform/bus@0/17000000.gpu`):
+Sysfs (GPU device dir `/sys/devices/platform/bus@0/17000000.gpu`, all world-readable):
 
-- `load`: GPU load in tenths of a percent (0–1000). Used to measure "about 95 %" during a `llama-server` request (`docs/src/k8s/nv1-jetson.md`; `.archive/.plans/superpowers/plans/2026-10-07-talos-workload-isolation.md`). jtop reads the same file.
-- `railgate_enable`, `tpc_pg_mask`, `enable_3d_scaling`: gating flags (jtop reads them when readable).
-- `devfreq/17000000.gpu/`: `cur_freq`, `min_freq`, `max_freq`, `governor`, maybe `trans_stat`. **Created only at the first GPU use after boot** (r39), so it can be absent.
+- `load`: GPU load, 0–1000 (999 ≈ 100 %). Idle 0; 892–999 during a `llama-server` request. jtop reads the same file.
+- `is_railgated`, `gpu_powered_on`: whether the GPU is power-gated right now. `railgate_enable` and `tpc_pg_mask` (both 0 on nv1) are settings, not state. `enable_3d_scaling` does not exist on r39.
+- `devfreq/17000000.gpu/`: `cur_freq`, `min_freq`, `max_freq`, `governor`. **Created only at the first GPU use after boot** (r39), so it can be absent. On nv1 all three clocks are 918 MHz with governor `performance`, so `cur_freq` does not move. `trans_stat` exists but its header runs the frequency columns together and cannot be parsed safely.
+- Also present, not used in phase 1: `nvdec{0,1}_load`, `nvenc{0,1}_load`, `nvjpg0_load`, `ofa_load` (engine loads, nothing on nv1 uses the engines), `gpu_temperature_*` (covered by `gpu-thermal`), ECC counters.
 
-Debugfs (`/sys/kernel/debug`, root only):
+Debugfs (`/sys/kernel/debug`):
 
-- EMC clock: `bpmp/debug/clk/emc/{rate,min_rate,max_rate}` (also what `power-mode.yaml` writes).
-- EMC utilization, first match of: `cactmon/mc_all`, `bpmp/debug/actmon/mc_all_avg_activity` (jtop's candidates, in jtop's order; jtop also tries `/sys/kernel/actmon_avg_activity/mc_all`). jtop computes the percentage as `mc_all // emc_rate_kHz` (`jtop/core/memory.py`, citing an NVIDIA forum answer), so the ratio is `mc_all / (rate / 1000) / 100`. To confirm against idle and loaded samples.
-- Per-process GPU memory: `nvmap/iovmm/maps` (jtop: "nvmap debugfs is the authoritative source" on the nvgpu stack). jtop parses lines `<user> <process> <pid> <size><unit>` and a `total <size><unit>` line (`jtop/core/processes.py`, `MEM_TABLE_REG`); the unit is expected to be `K`.
+- EMC clock: `bpmp/debug/clk/emc/{rate,min_rate,max_rate}`, in Hz (3199 MHz locked by `power-mode.yaml`).
+- EMC activity: `bpmp/debug/actmon/mc_all_avg_activity`, the only one of jtop's three candidates on r39. A moving average: idle about 68k–120k, about 27M–35M during a request. jtop's percent formula (`value / (rate / 1000)`) gives 8.4–10.8 under load, so it is **not a percent** and no scale in the data makes it one. The exporter publishes the raw value; the dashboard shows it as relative activity.
+- Per-process GPU memory: `nvmap/iovmm/maps`. A process header line `<client> <process> <pid> <size>K`, then one row per allocation (7 columns, leading whitespace) and, for mapped allocations, an address row `<start> - <end> <size>K`; footer `total <size>K`. Units KiB. During the check: `llama-server` 4510836K.
+
+INA3221 (node-exporter hwmon, chip `i2c_1_1_0040`): `in1`/`curr1` = `VDD_IN`, `in2`/`curr2` = `VDD_CPU_GPU_CV`, `in3`/`curr3` = `VDD_SOC`. Under the test request `VDD_CPU_GPU_CV` current went from about 0.53 A to 1.2–2.2 A.
 
 `tegrastats` is a closed NVIDIA binary, so which files it reads is not known; its output covers the same areas (RAM, CPU, `EMC_FREQ`, `GR3D_FREQ`, engines, temperatures, rails).
 
@@ -100,18 +103,18 @@ Fallback: if busybox CGI proves awkward, run the same script in a loop writing a
 | `jetson_gpu_frequency_min_hz`                         | gauge   | `min_freq`                                                                     |
 | `jetson_gpu_frequency_max_hz`                         | gauge   | `max_freq`                                                                     |
 | `jetson_gpu_governor_info{governor=…}`                | gauge 1 | `governor`                                                                     |
-| `jetson_gpu_railgate_enabled`                         | gauge   | `railgate_enable`                                                              |
-| `jetson_gpu_tpc_power_gating_enabled`                 | gauge   | `tpc_pg_mask` (as jtop interprets it)                                          |
-| `jetson_gpu_3d_scaling_enabled`                       | gauge   | `enable_3d_scaling`                                                            |
-| `jetson_emc_utilization_ratio`                        | gauge   | actmon `mc_all` (first candidate found), scaled as jtop does                   |
+| `jetson_gpu_railgated`                                | gauge   | `is_railgated`                                                                 |
+| `jetson_gpu_powered_on`                               | gauge   | `gpu_powered_on`                                                               |
+| `jetson_gpu_railgate_enabled`                         | gauge   | `railgate_enable` (setting)                                                    |
+| `jetson_gpu_tpc_power_gating_enabled`                 | gauge   | `tpc_pg_mask` (setting)                                                        |
+| `jetson_emc_activity`                                 | gauge   | `bpmp/debug/actmon/mc_all_avg_activity`, raw (not a percent, see above)        |
 | `jetson_emc_frequency_hz`                             | gauge   | `bpmp/debug/clk/emc/rate`                                                      |
 | `jetson_emc_frequency_min_hz`, `_max_hz`              | gauge   | `min_rate`, `max_rate`                                                         |
-| `jetson_gpu_process_memory_bytes{command=…}`          | gauge   | `nvmap/iovmm/maps`, summed per command name (no `pid` label, to avoid churn)   |
-| `jetson_gpu_memory_bytes`                             | gauge   | total of `nvmap/iovmm/maps`                                                    |
-| `jetson_gpu_frequency_seconds_total{frequency_hz=…}`  | counter | `trans_stat` time-in-state, only if the file exists (optional)                 |
+| `jetson_gpu_process_memory_bytes{command=…}`          | gauge   | `nvmap/iovmm/maps` process header lines × 1024, summed per command name (no `pid` label, to avoid churn) |
+| `jetson_gpu_memory_bytes`                             | gauge   | `nvmap/iovmm/maps` `total` line × 1024                                         |
 | `jetson_exporter_source_up{source=…}`                 | gauge   | 1 per source file read, 0 when missing or unreadable; replaces silent gaps     |
 
-`node`/`instance` labels come from the PodMonitor; the pod runs only on nv1. A file that is missing or unreadable yields `source_up 0` and no value; it never fails the scrape.
+`trans_stat` is left out (not parseable, and the clock is pinned). `node`/`instance` labels come from the PodMonitor; the pod runs only on nv1. A file that is missing or unreadable yields `source_up 0` and no value; it never fails the scrape.
 
 ### Alerts
 
@@ -126,15 +129,16 @@ No load- or bandwidth-based alert: high values during inference are normal.
 
 A new dashboard `cluster/apps/system/prometheus-stack/dashboards/jetson-gpu.json` ("Jetson GPU"), added to the `device-dashboards` ConfigMap (`templates/device-dashboards-cm.yaml`) next to `node.json`. A `node` variable from `jetson_gpu_load_ratio`, so a second Jetson node needs no dashboard change. Panels:
 
-- GPU load (%) and EMC utilization (%) on one graph.
+- GPU load (%), and EMC activity on its own panel as `jetson_emc_activity / (jetson_emc_frequency_hz / 1000)` titled "EMC activity (relative, jtop scale)", not a percent.
+- GPU power state (`jetson_gpu_railgated`, `jetson_gpu_powered_on`).
 - GPU clock with min/max cap; EMC clock.
 - GPU memory per process and total.
-- Power per INA3221 rail: `node_hwmon_in_volts` × `node_hwmon_curr_amps` for `VDD_IN`, `VDD_CPU_GPU_CV`, `VDD_SOC`, named through `node_hwmon_sensor_label`. The `inN`/`currN` pairing must be checked before the panel is written (labels exist for `in1..in3`; `curr1..curr4` exist).
+- Power per INA3221 rail: `node_hwmon_in_volts` × `node_hwmon_curr_amps` for `VDD_IN`, `VDD_CPU_GPU_CV`, `VDD_SOC`, named through `node_hwmon_sensor_label`. Pairing checked: `in1`/`curr1`, `in2`/`curr2`, `in3`/`curr3`.
 - Fan PWM and `gpu-thermal` next to them.
 
 ### Docs
 
-`docs/src/k8s/nv1-jetson.md`: a "Metrics" section listing the metrics, the alert, the sysfs and debugfs sources (with the r39 paths the first rollout found) and the INA3221 rail names.
+`docs/src/k8s/nv1-jetson.md`: a "Metrics" section listing the metrics, the alert, the sysfs and debugfs sources (r39 paths from evidence.md) and the INA3221 rail names.
 
 ## Verification
 
@@ -146,13 +150,13 @@ A new dashboard `cluster/apps/system/prometheus-stack/dashboards/jetson-gpu.json
 | Rules parse                                | `promtool check rules` (part of `lint:manifests`)                                                                                 |
 | Live, after merge (owner's sync)           | every `source_up` is 1, or the missing source is explained; `jetson_gpu_load_ratio` and `jetson_emc_utilization_ratio` near 0 idle and high during a `llama-server` request; `jetson_gpu_frequency_max_hz` = 918000000; `llama-server` appears in `jetson_gpu_process_memory_bytes` |
 
-The `iovmm/maps` sample format and the actmon scale are taken from jtop's parser until the first rollout shows the real r39 output; the test fixtures are then replaced with real (redacted, if needed) samples.
+Test fixtures follow the r39 formats in evidence.md.
 
 ## Risks
 
 - **Privileged pod on the GPU node.** A bug in it could, in principle, write to the host. Mitigated by read-only mounts, no input to the script, no host namespaces and a single small script reviewed in the PR. It runs the same image and privilege as `jetson-power-mode` today.
-- **Reading GPU files may affect power gating.** Reading `load` or devfreq every 15 s might wake a rail-gated GPU or keep it from gating. Check after rollout: idle `VDD_CPU_GPU_CV` power before and after the exporter starts. If it changes, skip GPU reads while `railgate` shows the GPU gated, or lengthen the interval.
-- **Paths and formats differ across L4T releases.** All paths come from env vars with r39 defaults; actmon has several candidates; a missing file shows as `source_up 0`.
+- **Reading GPU files may affect power gating.** Reading `load` or devfreq every 15 s might wake a rail-gated GPU or keep it from gating. On nv1 rail gating is off (`railgate_enable=0`), so today this cannot happen; `jetson_gpu_railgated` shows it if that changes. Still compare idle `VDD_CPU_GPU_CV` power before and after the exporter starts. If gating is turned on later and reads keep the GPU awake, skip GPU reads while `is_railgated` is 1.
+- **Paths and formats differ across L4T releases.** All paths come from env vars with the r39 values as defaults; a missing file shows as `source_up 0`.
 - **Deploy impact.** Merging deploys a new DaemonSet to nv1 through Argo CD (the `nvidia` app). No change to existing pods, node-exporter or the power cap.
 
 ## Pre-check from a privileged session
@@ -178,4 +182,4 @@ Hand the report back to the implementing session; it goes into `.plans/nv1-igpu-
 
 ## Open questions
 
-None open. If the pre-check shows no actmon file on r39, EMC utilization drops out of phase 1 and the rest stands.
+None. The pre-check is done (2026-11-25, [evidence.md](evidence.md)). Open but not blocking: a calibrated EMC percent; NVIDIA documents no scale for `mc_all_avg_activity`.
