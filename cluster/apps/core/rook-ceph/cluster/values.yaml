@@ -232,6 +232,20 @@ rook-ceph-cluster:
           memory: "100M"
         limits:
           memory: "1G"
+    # tuppr marks every node with tuppr.home-operations.com/outdated:PreferNoSchedule while a Talos or Kubernetes
+    # upgrade waits for its window. Rook counts any taint the OSD placement does not tolerate as "placement settings do
+    # not match", whatever its effect (NodeIsTolerable in pkg/operator/k8sutil/node.go, v1.21.3), so with the taint on
+    # every node it found 0 valid storage nodes and left the OSDs alone: on 2026-11-25 the v20.2.5 upgrade stopped
+    # after the mons, mgrs and MDS. Tolerate it for the OSDs and their prepare jobs.
+    placement:
+      osd:
+        tolerations:
+          - key: tuppr.home-operations.com/outdated
+            operator: Exists
+      prepareosd:
+        tolerations:
+          - key: tuppr.home-operations.com/outdated
+            operator: Exists
     storage:
       useAllNodes: true
       useAllDevices: false
