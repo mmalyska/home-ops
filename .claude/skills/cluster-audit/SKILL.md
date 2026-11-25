@@ -220,6 +220,11 @@ mgrs, CSI plugins, mons and **all OSDs one at a time**, taking about 10 minutes 
 169-of-169 PGs `active+clean`. A second wave of mon/OSD restarts follows the `requireMsgr2` flip. Volsync
 `FailedScheduling` events and a Grafana `FailedAttachVolume` during the roll are transient. Before flipping
 `requireMsgr2`, check `ceph tell mon.<id> sessions` for clients that connect with `v1`.
+If the operator logs `0 of the N storage nodes are valid` / `not updating OSD <n> ... node no longer exists in the
+storage spec`, Rook is skipping the OSDs because of a node taint its OSD placement does not tolerate, `PreferNoSchedule`
+included (tuppr's `tuppr.home-operations.com/outdated` did this on 2026-11-25; tolerated since in
+`cephClusterSpec.placement.osd` and `prepareosd`). The upgrade then stops after the mons, mgrs and MDS, and the cluster
+still reports `Ready`: check `ceph_osd_metadata` versions, not the CephCluster phase.
 
 ### 10. Top Consumers (for pod-level details)
 
