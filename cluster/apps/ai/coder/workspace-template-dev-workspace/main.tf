@@ -146,7 +146,14 @@ resource "coder_agent" "main" {
     # and never printed.
     sock="${local.signing_dir}/agent.sock"
     if [ -n "$${BWS_ACCESS_TOKEN:-}" ] && [ -n "$${BWS_PROJECT_ID:-}" ]; then
-      [ -S "$sock" ] || ssh-agent -a "$sock" >/dev/null
+      # The memory volume outlives a container restart (an OOM kill, for example), so a socket from an agent that
+      # died with the old container can still be there. ssh-add -l exits 2 when nothing answers (also when there is
+      # no socket at all): then remove the file and start a new agent. Testing the file with -S kept the dead socket.
+      SSH_AUTH_SOCK="$sock" ssh-add -l >/dev/null 2>&1
+      if [ $? -eq 2 ]; then
+        rm -f "$sock"
+        ssh-agent -a "$sock" >/dev/null
+      fi
       if ! SSH_AUTH_SOCK="$sock" ssh-add -l >/dev/null 2>&1; then
         key="${local.signing_dir}/key"
         if bws secret list "$BWS_PROJECT_ID" -o json 2>/dev/null \
