@@ -63,11 +63,11 @@ Jetson has no `nvidia-smi` or DCGM.
 The `jetson-gpu-exporter` DaemonSet (`nvidia-system`, `cluster/apps/system/nvidia/resources/gpu-exporter.yaml`) reads the GPU, EMC and nvmap files in sysfs and debugfs
 and serves them as Prometheus metrics: busybox `httpd` runs `gpu-exporter.sh` as a CGI script on each scrape (PodMonitor, every 15 s, `/cgi-bin/metrics` on port 9400).
 It is privileged because debugfs is root-only, with `/sys`, debugfs and its root filesystem read-only; the script only reads files and takes no input. Test:
-`bash cluster/apps/system/nvidia/resources/gpu-exporter.test.sh`. Design and the raw r39 checks: `.plans/nv1-igpu-metrics/` (`spec.md`, `evidence.md`).
+`bash cluster/apps/system/nvidia/resources/gpu-exporter.test.sh`. Design and the raw r39 checks: `.archive/.plans/nv1-igpu-metrics/` (`spec.md`, `evidence.md`).
 
 | Metric                                                                      | Source (r39)                                                                      | Notes                                                                   |
 | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `jetson_gpu_load_ratio`                                                     | `/sys/devices/platform/bus@0/17000000.gpu/load` / 1000                            | 0 idle, 0.89–1.0 during a `llama-server` request                        |
+| `jetson_gpu_load_ratio`                                                     | `/sys/devices/platform/bus@0/17000000.gpu/load` / 1000                            | 0 idle, 0.90–0.92 during sustained generation                           |
 | `jetson_gpu_railgated`, `jetson_gpu_powered_on`                             | `is_railgated` (`yes`/`no`), `gpu_powered_on` (`on`/`off`) in the same dir        | State right now; words in the files, 0/1 in the metrics                 |
 | `jetson_gpu_railgate_enabled`, `jetson_gpu_tpc_power_gating_enabled`        | `railgate_enable`, `tpc_pg_mask`                                                  | Settings; both 0 on nv1                                                 |
 | `jetson_gpu_devfreq_present`                                                | `/sys/bus/platform/devices/17000000.gpu/devfreq/17000000.gpu` exists              | 0 until the first GPU use after boot; the clock metrics are absent then |
@@ -77,12 +77,23 @@ It is privileged because debugfs is root-only, with `/sys`, debugfs and its root
 | `jetson_gpu_process_memory_bytes{command}`, `jetson_gpu_memory_bytes`       | debugfs `nvmap/iovmm/maps`: process header lines and the `total` line, KiB × 1024 | Summed per process name, no `pid` label                                 |
 | `jetson_exporter_source_up{source}`                                         | one per source                                                                    | 0 when a file is missing or unreadable; the scrape still succeeds       |
 
-- **EMC activity.** jetson-stats shows `mc_all_avg_activity / (EMC clock in kHz)` as a percent, but on nv1 that is about 0.02–0.04 idle and 8.4–10.8 during generation, so it is a relative number with no known scale.
+- **EMC activity.** jetson-stats shows `mc_all_avg_activity / (EMC clock in kHz)` as a percent, but on nv1 that is about 0.02–0.08 idle and a steady 10.9 during sustained generation
+  (raw 34.9M–35.1M; 2026-11-25, 1800 tokens at 29.7 tok/s), so it is a relative number with no known scale.
   The dashboard shows it as "relative, jtop scale". Compare it with itself over time, not with 100.
+- **Resolution.** The values are read at each 15 s scrape, and both GPU load and EMC activity return to idle within one scrape after a request.
+  A 13 s request showed up in one sample, so short requests are undercounted or missed; the metrics describe sustained load.
+  In PromQL, use subqueries with an explicit step (`[5m:15s]`): `[5m:]` evaluates every 30 s (the global interval) and skipped that sample.
+- **GPU memory per process** is the size of what is loaded (4.3 GiB for `llama-server` with LFM3-1.7B), not activity: it stays flat during requests.
 - **Not exported:** `trans_stat` (its header runs the frequency columns together), `enable_3d_scaling` (absent on r39), the NVDEC/NVENC/NVJPG/OFA load files (nothing on nv1 uses those engines).
 - **Power** comes from node-exporter, not this exporter: the INA3221 (hwmon chip `i2c_1_1_0040`, `chip_name="ina3221"`)
   has `in1`/`curr1` = `VDD_IN` (the whole module), `in2`/`curr2` = `VDD_CPU_GPU_CV`, `in3`/`curr3` = `VDD_SOC`; watts are `node_hwmon_in_volts × node_hwmon_curr_amps` per pair.
   On 2026-11-25 `VDD_CPU_GPU_CV` went from about 0.5 A idle to 1.2–2.2 A during a request (at about 5 V). Fan: `node_hwmon_pwm{chip="platform_pwm_fan"}` (0–255).
+  Reading the GPU files every 15 s does not keep the GPU awake: idle `VDD_CPU_GPU_CV` was 2.638 W before the exporter started and 2.628 W after.
+- **Keep the script cheap.** The first version started a process per file read (about 25 per scrape) and its probes ran the script;
+  the bursts were throttled in 58 % of CPU periods under the 100m limit and `CPUThrottlingHigh` fired (#6466, fixed in #6467).
+  The script now reads files with the shell's `read`, starts only `awk`, and the probes are TCP; `gpu-exporter.test.sh` fails if anything but `awk` is needed.
+- **Script changes leave the old ConfigMap.** The script is a generated ConfigMap with a content hash, so a change rolls the pod; `nvidia` has `prune: false`,
+  so Argo CD then shows the app OutOfSync on the old `jetson-gpu-exporter-<hash>` ConfigMap until it is pruned (an owner action). Nothing uses it.
 - **Dashboard:** "Jetson GPU" (folder "Devices Metrics", `cluster/apps/system/prometheus-stack/dashboards/jetson-gpu.json`):
   load, EMC activity, clocks with the 918 MHz cap, GPU memory per process, power per rail, GPU temperature and fan, exporter sources.
 - **Alerts** (`gpu-exporter-rules.yaml`, tests in `cluster/apps/system/nvidia/tests/`):

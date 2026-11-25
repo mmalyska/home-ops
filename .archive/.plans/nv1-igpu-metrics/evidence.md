@@ -66,3 +66,23 @@ total                                             4510836K
 - The exporter's process-header filter (`NF==4 && $2!="-" && $3 ~ /^[0-9]+$/ && $4 ~ /^[0-9]+K$/`) matched exactly one line, `user llama-server 3335 4510836K`, and nothing else (not allocation rows, map rows, the `total` line or column headers). Its size equals the `total` line. Only one GPU process existed, so the layout with several processes is not seen; the parser sums every header line, which does not depend on what separates them.
 - The tail of the file is an allocation row, an empty line, then `total  4510836K`.
 - The 25-line raw excerpt asked for in step 3 was not in the pasted report; test fixtures are built from the format above.
+
+## Live checks after rollout (2026-11-25, read-only)
+
+#6466 merged 12:40 UTC (`315d206d`), exporter pod Ready at 12:40:23; #6467 merged 14:02 UTC (`e3b10dbf`), new pod Ready at 14:02:43.
+
+| Check                             | #6466 (process per file, HTTP probes)                            | #6467 (shell `read`, one awk, TCP probes) |
+| --------------------------------- | ---------------------------------------------------------------- | ----------------------------------------- |
+| Pod Ready, restarts               | yes, 0 (busybox `httpd` CGI through the ConfigMap symlink works) | yes, 0                                    |
+| `jetson_exporter_source_up`       | all 9 = 1                                                        | all 9 = 1                                 |
+| Scrape duration (max over 15 min) | 0.37 s                                                           | 0.011 s                                   |
+| CPU (rate over 10 min)            | 0.0047 cores                                                     | 0.0005 cores                              |
+| Throttled CPU periods (15 min)    | 58 %, `CPUThrottlingHigh` (info) firing                          | 0 %, no alert in `nvidia-system`          |
+| Working set (max over 15 min)     | 1.8 MB                                                           | 1.4 MB                                    |
+
+- Idle values matched the pre-check: GPU clock 918 MHz (current, min, max), governor `performance`, EMC 3199 MHz (min 204 MHz), load 0, powered on 1, rail-gated 0, both gating settings 0, `llama-server` 4,619,096,064 bytes (= total).
+- Load (owner's elevated session, port-forward to `svc/llama-server`): a 13 s request (12:44:29–12:44:42, 400 tokens) was caught by one scrape (12:44:45): load 0.881, EMC activity 31,305,604, relative 9.79. The owner's `max_over_time((…)[5m:])` gave 0.0384: the subquery runs every 30 s (global interval) and skipped that sample. A 60 s request (12:47:19–12:48:19, 1800 tokens at 29.7 tok/s): load 0.90–0.92, EMC activity 34.9M–35.1M, relative 10.90–10.96, idle again within one scrape. GPU memory stayed flat.
+- Power: `VDD_CPU_GPU_CV` averaged 2.638 W over 12:05–12:35 (before) and 2.628 W over 12:49–12:57 (after, idle); `VDD_IN` 8.04 W and 7.78 W. Reading the GPU files does not keep the GPU awake.
+- Both alert rules loaded, healthy and inactive.
+- Argo CD: after #6467 `nvidia` shows OutOfSync on the old ConfigMap `jetson-gpu-exporter-t62mmd9bck`. Every script change makes a ConfigMap with a new hash, and `nvidia` has `prune: false`, so the old one stays until pruned (owner's action). Nothing uses it.
+- The workspace could not send the request itself: the `llm` NetworkPolicies drop it and it may not port-forward.
