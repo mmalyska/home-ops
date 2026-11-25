@@ -92,6 +92,8 @@ It is privileged because debugfs is root-only, with `/sys`, debugfs and its root
 - **Keep the script cheap.** The first version started a process per file read (about 25 per scrape) and its probes ran the script;
   the bursts were throttled in 58 % of CPU periods under the 100m limit and `CPUThrottlingHigh` fired (#6466, fixed in #6467).
   The script now reads files with the shell's `read`, starts only `awk`, and the probes are TCP; `gpu-exporter.test.sh` fails if anything but `awk` is needed.
+- **Series labels.** The PodMonitor sets `instance` to the node name and drops `pod`, so a restarted exporter continues the same series.
+  Until 2026-11-25 each pod had its own series (pod name and IP), which split the dashboard lines at the #6467 rollout; the dashboard aggregates by `node` to join that history.
 - **Script changes leave the old ConfigMap.** The script is a generated ConfigMap with a content hash, so a change rolls the pod; `nvidia` has `prune: false`,
   so Argo CD then shows the app OutOfSync on the old `jetson-gpu-exporter-<hash>` ConfigMap until it is pruned (an owner action). Nothing uses it.
 - **Dashboard:** "Jetson GPU" (folder "Devices Metrics", `cluster/apps/system/prometheus-stack/dashboards/jetson-gpu.json`):

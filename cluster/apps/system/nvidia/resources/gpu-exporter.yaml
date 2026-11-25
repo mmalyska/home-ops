@@ -105,6 +105,14 @@ spec:
       path: /cgi-bin/metrics
       interval: 15s
       scrapeTimeout: 10s
+      # One exporter per node, so the series are named by the node: instance is the node name and the pod
+      # label is dropped. Otherwise every pod restart (script change, image bump, node reboot) starts new
+      # series with a new pod name and pod IP and splits each dashboard line. The DaemonSet stops the old pod
+      # before it starts the new one, so two targets never share these labels.
       relabelings:
         - sourceLabels: [__meta_kubernetes_pod_node_name]
           targetLabel: node
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: instance
+        - action: labeldrop
+          regex: pod
