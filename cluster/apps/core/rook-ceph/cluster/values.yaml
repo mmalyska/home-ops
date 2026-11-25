@@ -3,6 +3,13 @@ dashboard:
 
 rook-ceph-cluster:
   operatorNamespace: rook-ceph
+  # Temporary override (2026-11-25): Ceph v20.2.5 for the active-mgr memory leak fixed by ceph/ceph#69857 (not in
+  # v20.2.4); the active mgr grew 80-150 MiB a day and was OOM-killed at its limit on 2026-11-04 and 2026-11-21.
+  # Chart v1.21.3 still defaults to v20.2.4. Remove this block (and its Renovate rule in
+  # .github/renovate/disabledDatasources.json5) once the chart's default cephImage.tag is v20.2.5 or newer.
+  cephImage:
+    repository: quay.io/ceph/ceph
+    tag: v20.2.5
   configOverride: |
     [mon]
     mon_data_avail_warn = 10
