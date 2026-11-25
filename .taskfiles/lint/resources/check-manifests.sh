@@ -101,13 +101,23 @@ fi
 
 # 3. promtool check rules, one file per PrometheusRule. Without --lint-fatal: upstream kube-prometheus-stack has a
 # duplicate recording rule that is only a lint warning.
+# yq writes the split files relative to its working directory and, since v4.54, refuses a path outside it, so it
+# runs inside the rules directory. A count of the rendered PrometheusRules guards against an extraction that
+# silently writes nothing.
+expected=0
 for f in ./*.yaml; do
   app=$(basename "$f" .yaml)
-  yq -s "\"$tmp/rules/$app-\" + \$index" 'select(.kind == "PrometheusRule") | .spec' "$f"
+  n=$(yq ea '[select(.kind == "PrometheusRule")] | length' "$f") || n=0
+  [[ $n -gt 0 ]] || continue
+  expected=$((expected + n))
+  (cd "$tmp/rules" && yq -s "\"$app-\" + \$index" 'select(.kind == "PrometheusRule") | .spec' "$manifests/$app.yaml") ||
+    echo "check-manifests: could not extract the PrometheusRules of $app" >&2
 done
 rule_files=("$tmp"/rules/*.yml)
-if [[ ${#rule_files[@]} -eq 0 ]]; then
+if [[ $expected -eq 0 ]]; then
   result promtool PASS "no PrometheusRule rendered"
+elif [[ ${#rule_files[@]} -ne $expected ]]; then
+  result promtool FAIL "extracted ${#rule_files[@]} of $expected PrometheusRules"
 elif promtool check rules "${rule_files[@]}" >"$tmp/promtool.txt" 2>&1; then
   result promtool PASS "${#rule_files[@]} PrometheusRules"
 else
