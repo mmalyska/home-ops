@@ -8,6 +8,13 @@
       "enabled": false
     },
     {
+      "description": "Do not track the temporary Ceph image override in the rook-ceph-cluster values: the chart default is the source of truth, and the override is removed by hand once the default reaches v20.2.5 (see the comment in that file)",
+      "matchManagers": ["helm-values"],
+      "matchPackageNames": ["quay.io/ceph/ceph"],
+      "matchFileNames": ["cluster/apps/core/rook-ceph/cluster/values.yaml"],
+      "enabled": false
+    },
+    {
       "description": "Disable default manager for prometheus node-exporter (custom regex manager handles tag+distroless+digest fields separately)",
       "matchManagers": ["helm-values"],
       "matchPackageNames": ["ghcr.io/prometheus/node-exporter"],
