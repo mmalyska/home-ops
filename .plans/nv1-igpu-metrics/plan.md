@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 0de93ed44110a7783f8166d6856ebb0ffe8e9491
 branch: feat/nv1-igpu-metrics
 worktree: .worktrees/feat/nv1-igpu-metrics
-pr: "#6466"
+pr: "#6466, #6467"
 started: 2026-11-25
 updated: 2026-11-25
 ---
