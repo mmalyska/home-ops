@@ -68,6 +68,20 @@ Names only; values live in the dev BWS project and nothing here names the projec
 | `ARGOCD_AUTH_TOKEN`, `ARGOCD_SERVER` | Same; see the Argo CD account in [Dev workspace namespace](dev-workspace.md)     |
 | `SSH_SIGNING_KEY`                    | Read at start into a memory volume and an in-pod `ssh-agent`, then deleted       |
 
+If commits fail with `Couldn't get agent socket?` or `Couldn't find key in agent?`, check the agent with
+`ssh-add -l`: exit code 2 means nothing answers on `/run/signing/agent.sock`, 1 means the agent runs without the key.
+`/run/signing` is a memory `emptyDir`, so it survives a container restart (an OOM kill on 2026-11-25, for example) while the
+agent does not. The startup script replaces a socket that does not answer and reloads the key; a template from before this
+check kept the dead socket. To recover without a restart, run in a terminal (it reads the key from BWS, so it is the
+owner's action; the key goes through the memory volume and is deleted at once):
+
+```sh
+( umask 077; export SSH_AUTH_SOCK=/run/signing/agent.sock; key=/run/signing/key
+  ssh-add -l >/dev/null 2>&1; [ $? -eq 2 ] && { rm -f "$SSH_AUTH_SOCK"; ssh-agent -a "$SSH_AUTH_SOCK" >/dev/null; }
+  bws secret list "$BWS_PROJECT_ID" -o json | jq -r '.[] | select(.key == "SSH_SIGNING_KEY") | .value' > "$key" \
+    && ssh-add "$key"; rm -f "$key"; ssh-add -l )
+```
+
 ## Cluster access
 
 - **Kubernetes**: read-only through the pod ServiceAccount. No Secrets, no exec, no proxy. `kubectl` uses the in-cluster configuration and no kubeconfig exists.

@@ -46,7 +46,8 @@ allows Deployments only.
 1. `cp -rn /etc/skel/. "$HOME"/` fills an empty home volume.
 2. If `BWS_ACCESS_TOKEN` and `BWS_PROJECT_ID` are set, the script reads the secret named `SSH_SIGNING_KEY` from that BWS project
    into the memory volume, loads it into an `ssh-agent` on `/run/signing/agent.sock` (`SSH_AUTH_SOCK` is set for every
-   session), and deletes the file. The key is never written to a volume and never printed.
+   session), and deletes the file. The key is never written to a volume and never printed. A socket that does not answer (left by an agent
+   that died with the previous container; the memory volume outlives a container restart) is removed and a new agent started.
 
 ## Bootstrap (`bootstrap.sh`)
 
