@@ -6,7 +6,7 @@ topology: HANDOFF
 base_sha: 0de93ed44110a7783f8166d6856ebb0ffe8e9491
 branch: feat/nv1-igpu-metrics
 worktree: .worktrees/feat/nv1-igpu-metrics
-pr: not-opened
+pr: "#6466"
 started: 2026-11-25
 updated: 2026-11-25
 ---
@@ -39,6 +39,7 @@ GPU load, GPU and EMC clocks, EMC utilization, GPU memory per process and the GP
 - 2026-11-25: task 5 done. "Jetson GPU" dashboard, 14 panels in 5 rows. Every query run against live Prometheus with nv1 filled in: all parse; node-exporter panels return data (VDD_IN 8.3 W, VDD_CPU_GPU_CV 3.0 W, VDD_SOC 2.7 W, gpu-thermal 57 °C, fan 35 %), exporter panels are empty until it is deployed. Rendered ConfigMap JSON valid; `device-dashboards` is about 734 KB of the 1 MiB limit (node.json is 662 KB). Next: task 6 (docs).
 - 2026-11-25: task 6 done: `docs/src/k8s/nv1-jetson.md` "Metrics" (exporter, metric table with r39 sources, EMC activity caveat, what is not exported, INA3221 rails, dashboard, alerts). Next: task 7 (review and gates).
 - 2026-11-25: task 7 done. Review fixes: `check-manifests.sh` fails when counting a file's PrometheusRules fails (it used to count that as none), the nvmap comment (allocation rows have 6 or 7 fields), the spec's resource limits. Gates: exporter test PASS (44), shellcheck PASS, `check-manifests.sh` all apps PASS (render 74, kubeconform 1210 resources, promtool 47 PrometheusRules, rule tests 4 apps), `task lint:all` no finding in a changed file except older lines of `docs/src/k8s/nv1-jetson.md` (same as `main`), yamllint PASS, `check-plans` PASS. NOT RUN: the exporter under busybox (sh, awk, httpd CGI through the ConfigMap symlink); fetching the pinned busybox image to test it locally was denied by the session's permission check, so the first rollout is the first busybox run. markdownlint is not run on `.plans/` by `lint:all`; the plan files have long lines. Next: task 8 (PR, on the owner's instruction).
+- 2026-11-25: task 8 done: PR #6466 opened on the owner's instruction (labels enhancement, area/cluster, docs). Next: CI, the owner's review and merge, then task 9 (live checks).
 
 ## Delivery
 
