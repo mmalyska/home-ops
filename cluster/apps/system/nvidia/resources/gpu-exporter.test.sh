@@ -149,5 +149,19 @@ AFTER=$(snapshot "${R}")
 if [ "${BEFORE}" = "${AFTER}" ]; then echo "PASS read-only tree unchanged (content, modes, mtimes)"
 else echo "FAIL read-only tree changed"; diff <(echo "${BEFORE}") <(echo "${AFTER}"); FAIL=1; fi
 
+# 6. No process per file: with awk as the only external command, the output is complete and unchanged.
+#    (A process per file was throttled under the 100m CPU limit; see the header of gpu-exporter.sh.)
+mkdir -p "${TMP}/bin"
+ln -s "$(command -v awk)" "${TMP}/bin/awk"
+R="${TMP}/full"
+FULL=$(run "${R}")
+ONLYAWK=$(ROOT="${R}" PATH="${TMP}/bin" "$(command -v sh)" "${HERE}/gpu-exporter.sh" </dev/null 2>&1 | sed '1,/^\r*$/d')
+if [ "${ONLYAWK}" = "${FULL}" ]; then echo "PASS only awk is needed"
+else echo "FAIL output differs with only awk on PATH"; diff <(echo "${FULL}") <(echo "${ONLYAWK}"); FAIL=1; fi
+
+# 7. Leading zeros are not read as octal.
+R="${TMP}/octal"; tree "${R}"; echo 0089 >"${R}/${GPU}/load"
+has "leading zeros" "$(run "${R}")" "jetson_gpu_load_ratio 0.089"
+
 [ "${FAIL}" = 0 ] && echo "ALL PASSED" || echo "FAILURES"
 exit "${FAIL}"
