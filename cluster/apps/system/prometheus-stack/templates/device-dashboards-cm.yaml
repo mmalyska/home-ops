@@ -12,3 +12,5 @@ data:
 {{ .Files.Get "dashboards/qnap.json" | indent 4 }}
   smart-disk-health.json: |
 {{ .Files.Get "dashboards/smart-disk-health.json" | indent 4 }}
+  jetson-gpu.json: |
+{{ .Files.Get "dashboards/jetson-gpu.json" | indent 4 }}
