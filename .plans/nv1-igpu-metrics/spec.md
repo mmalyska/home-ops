@@ -49,7 +49,7 @@ Checked on nv1 by the owner on 2026-11-25 (raw report: [evidence.md](evidence.md
 Sysfs (GPU device dir `/sys/devices/platform/bus@0/17000000.gpu`, all world-readable):
 
 - `load`: GPU load, 0–1000 (999 ≈ 100 %). Idle 0; 892–999 during a `llama-server` request. jtop reads the same file.
-- `is_railgated`, `gpu_powered_on`: whether the GPU is power-gated right now. `railgate_enable` and `tpc_pg_mask` (both 0 on nv1) are settings, not state. `enable_3d_scaling` does not exist on r39.
+- `is_railgated`, `gpu_powered_on`: whether the GPU is power-gated right now. They hold words (`no`/`yes`, `on`/`off`), not numbers; on nv1 `no` and `on`. `railgate_enable` and `tpc_pg_mask` (both 0 on nv1) are settings, not state. `enable_3d_scaling` does not exist on r39.
 - `devfreq/17000000.gpu/`: `cur_freq`, `min_freq`, `max_freq`, `governor`. **Created only at the first GPU use after boot** (r39), so it can be absent. On nv1 all three clocks are 918 MHz with governor `performance`, so `cur_freq` does not move. `trans_stat` exists but its header runs the frequency columns together and cannot be parsed safely.
 - Also present, not used in phase 1: `nvdec{0,1}_load`, `nvenc{0,1}_load`, `nvjpg0_load`, `ofa_load` (engine loads, nothing on nv1 uses the engines), `gpu_temperature_*` (covered by `gpu-thermal`), ECC counters.
 
@@ -103,8 +103,8 @@ Fallback: if busybox CGI proves awkward, run the same script in a loop writing a
 | `jetson_gpu_frequency_min_hz`                         | gauge   | `min_freq`                                                                     |
 | `jetson_gpu_frequency_max_hz`                         | gauge   | `max_freq`                                                                     |
 | `jetson_gpu_governor_info{governor=…}`                | gauge 1 | `governor`                                                                     |
-| `jetson_gpu_railgated`                                | gauge   | `is_railgated`                                                                 |
-| `jetson_gpu_powered_on`                               | gauge   | `gpu_powered_on`                                                               |
+| `jetson_gpu_railgated`                                | gauge   | `is_railgated`: `yes`/`1` → 1, `no`/`0` → 0                                    |
+| `jetson_gpu_powered_on`                               | gauge   | `gpu_powered_on`: `on`/`1` → 1, `off`/`0` → 0                                  |
 | `jetson_gpu_railgate_enabled`                         | gauge   | `railgate_enable` (setting)                                                    |
 | `jetson_gpu_tpc_power_gating_enabled`                 | gauge   | `tpc_pg_mask` (setting)                                                        |
 | `jetson_emc_activity`                                 | gauge   | `bpmp/debug/actmon/mc_all_avg_activity`, raw (not a percent, see above)        |

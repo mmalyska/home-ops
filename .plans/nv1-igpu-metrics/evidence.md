@@ -57,3 +57,12 @@ total                                             4510836K
 - `load` 0–1000; 999 ≈ 100 %.
 - `mc_all_avg_activity / (rate / 1000)` (jtop's formula): idle ≈ 0.02–0.04, load ≈ 8.4–10.8. Not 0–100, and no divisor in the data makes it a percent. It is a moving average: it climbs over the load samples and decays slowly at idle.
 - File modes under `/sys/kernel/debug` on the host were not checked (root in the container).
+
+## Follow-up (2026-11-25, owner, read-only, nothing started)
+
+- `is_railgated=no`, `gpu_powered_on=on`, `usage_count=16`, all mode 444. **The two state files hold words, not 0/1**: the exporter maps `yes`/`no` and `on`/`off` (and accepts `1`/`0`).
+- `nvmap/iovmm/maps`: 264 lines, 32,938 bytes, read in about 60 ms (the slowest read; well inside a 15 s scrape).
+- `mc_all_avg_activity` (217644) and EMC `rate` together read in under 10 ms.
+- The exporter's process-header filter (`NF==4 && $2!="-" && $3 ~ /^[0-9]+$/ && $4 ~ /^[0-9]+K$/`) matched exactly one line, `user llama-server 3335 4510836K`, and nothing else (not allocation rows, map rows, the `total` line or column headers). Its size equals the `total` line. Only one GPU process existed, so the layout with several processes is not seen; the parser sums every header line, which does not depend on what separates them.
+- The tail of the file is an allocation row, an empty line, then `total  4510836K`.
+- The 25-line raw excerpt asked for in step 3 was not in the pasted report; test fixtures are built from the format above.
