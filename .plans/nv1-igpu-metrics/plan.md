@@ -37,6 +37,7 @@ GPU load, GPU and EMC clocks, EMC utilization, GPU memory per process and the GP
 - 2026-11-25: lint fixed in this PR (owner's request): `check-manifests.sh` runs yq inside the rules directory and fails when fewer rule files are extracted than PrometheusRules rendered. Full run: 46 PrometheusRules checked, PASS; with a yq that fails on split: `promtool FAIL extracted 0 of 1`, exit 1.
 - 2026-11-25: task 4 done. `JetsonGpuClockAboveCap` (critical, 2m) and `JetsonGpuExporterDown` (warning, 15m) with 8 promtool test cases; `check-manifests.sh nvidia`: promtool PASS (1 rule), rule-tests PASS. A deliberately wrong threshold and `for:` made the tests fail.
 - 2026-11-25: task 5 done. "Jetson GPU" dashboard, 14 panels in 5 rows. Every query run against live Prometheus with nv1 filled in: all parse; node-exporter panels return data (VDD_IN 8.3 W, VDD_CPU_GPU_CV 3.0 W, VDD_SOC 2.7 W, gpu-thermal 57 °C, fan 35 %), exporter panels are empty until it is deployed. Rendered ConfigMap JSON valid; `device-dashboards` is about 734 KB of the 1 MiB limit (node.json is 662 KB). Next: task 6 (docs).
+- 2026-11-25: task 6 done: `docs/src/k8s/nv1-jetson.md` "Metrics" (exporter, metric table with r39 sources, EMC activity caveat, what is not exported, INA3221 rails, dashboard, alerts). Next: task 7 (review and gates).
 
 ## Delivery
 

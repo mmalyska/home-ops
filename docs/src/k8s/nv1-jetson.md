@@ -57,6 +57,39 @@ nv1 runs the JetPack 7 build of the custom installer (`ghcr.io/mmalyska/custom-i
 | Kubelet restarts every 10–20 min                                                                 | Extra DHCP address on the NIC flapping the static IP | See below                                                                                                           |
 | `cilium-envoy`/`node-exporter` CrashLoopBackOff, DNS timeouts, llama-server slows to a few tok/s | Node-wide OOM (see memory budget below)              | Check `talosctl -n 192.168.48.5 dmesg \| grep -i oom` and `read /proc/meminfo`; keep llama-server within its budget |
 
+## Metrics
+
+Jetson has no `nvidia-smi` or DCGM.
+The `jetson-gpu-exporter` DaemonSet (`nvidia-system`, `cluster/apps/system/nvidia/resources/gpu-exporter.yaml`) reads the GPU, EMC and nvmap files in sysfs and debugfs
+and serves them as Prometheus metrics: busybox `httpd` runs `gpu-exporter.sh` as a CGI script on each scrape (PodMonitor, every 15 s, `/cgi-bin/metrics` on port 9400).
+It is privileged because debugfs is root-only, with `/sys`, debugfs and its root filesystem read-only; the script only reads files and takes no input. Test:
+`bash cluster/apps/system/nvidia/resources/gpu-exporter.test.sh`. Design and the raw r39 checks: `.plans/nv1-igpu-metrics/` (`spec.md`, `evidence.md`).
+
+| Metric                                                                      | Source (r39)                                                                      | Notes                                                                   |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `jetson_gpu_load_ratio`                                                     | `/sys/devices/platform/bus@0/17000000.gpu/load` / 1000                            | 0 idle, 0.89–1.0 during a `llama-server` request                        |
+| `jetson_gpu_railgated`, `jetson_gpu_powered_on`                             | `is_railgated` (`yes`/`no`), `gpu_powered_on` (`on`/`off`) in the same dir        | State right now; words in the files, 0/1 in the metrics                 |
+| `jetson_gpu_railgate_enabled`, `jetson_gpu_tpc_power_gating_enabled`        | `railgate_enable`, `tpc_pg_mask`                                                  | Settings; both 0 on nv1                                                 |
+| `jetson_gpu_devfreq_present`                                                | `/sys/bus/platform/devices/17000000.gpu/devfreq/17000000.gpu` exists              | 0 until the first GPU use after boot; the clock metrics are absent then |
+| `jetson_gpu_frequency_hz`, `_min_hz`, `_max_hz`, `jetson_gpu_governor_info` | devfreq `cur_freq`, `min_freq`, `max_freq`, `governor`                            | All 918 MHz, `performance` (pinned by `jetson-power-mode`)              |
+| `jetson_emc_frequency_hz`, `_min_hz`, `_max_hz`                             | debugfs `bpmp/debug/clk/emc/{rate,min_rate,max_rate}`                             | 3199 MHz, locked in MAXN                                                |
+| `jetson_emc_activity`                                                       | debugfs `bpmp/debug/actmon/mc_all_avg_activity`, raw                              | A moving average, **not a percent**: see below                          |
+| `jetson_gpu_process_memory_bytes{command}`, `jetson_gpu_memory_bytes`       | debugfs `nvmap/iovmm/maps`: process header lines and the `total` line, KiB × 1024 | Summed per process name, no `pid` label                                 |
+| `jetson_exporter_source_up{source}`                                         | one per source                                                                    | 0 when a file is missing or unreadable; the scrape still succeeds       |
+
+- **EMC activity.** jetson-stats shows `mc_all_avg_activity / (EMC clock in kHz)` as a percent, but on nv1 that is about 0.02–0.04 idle and 8.4–10.8 during generation, so it is a relative number with no known scale.
+  The dashboard shows it as "relative, jtop scale". Compare it with itself over time, not with 100.
+- **Not exported:** `trans_stat` (its header runs the frequency columns together), `enable_3d_scaling` (absent on r39), the NVDEC/NVENC/NVJPG/OFA load files (nothing on nv1 uses those engines).
+- **Power** comes from node-exporter, not this exporter: the INA3221 (hwmon chip `i2c_1_1_0040`, `chip_name="ina3221"`)
+  has `in1`/`curr1` = `VDD_IN` (the whole module), `in2`/`curr2` = `VDD_CPU_GPU_CV`, `in3`/`curr3` = `VDD_SOC`; watts are `node_hwmon_in_volts × node_hwmon_curr_amps` per pair.
+  On 2026-11-25 `VDD_CPU_GPU_CV` went from about 0.5 A idle to 1.2–2.2 A during a request (at about 5 V). Fan: `node_hwmon_pwm{chip="platform_pwm_fan"}` (0–255).
+- **Dashboard:** "Jetson GPU" (folder "Devices Metrics", `cluster/apps/system/prometheus-stack/dashboards/jetson-gpu.json`):
+  load, EMC activity, clocks with the 918 MHz cap, GPU memory per process, power per rail, GPU temperature and fan, exporter sources.
+- **Alerts** (`gpu-exporter-rules.yaml`, tests in `cluster/apps/system/nvidia/tests/`):
+  - `JetsonGpuClockAboveCap` (critical, 2 min): the GPU clock or its devfreq maximum is above 918 MHz, the MAXN cap in `power-mode.yaml`. Change the two together.
+    Check the `jetson-power-mode` logs; if the cap does not hold, scale `llama-server` to 0.
+  - `JetsonGpuExporterDown` (warning, 15 min): an exporter pod on a Ready node has no successful scrape, so the clock alert is blind.
+
 ## Talos: platform DHCP left in META (fixed 2026-09-25)
 
 nv1 had a leftover platform network config in the Talos META partition (key `0x0a`) with `operators: [dhcp4 enP8p1s0]`. It leased `192.168.48.210` beside the static `192.168.48.5`; lease churn flapped `.5`, and Talos restarted the kubelet. Machine-config `dhcp: false` does **not** remove a platform-layer operator.
