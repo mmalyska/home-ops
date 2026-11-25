@@ -88,7 +88,7 @@ A new DaemonSet `jetson-gpu-exporter` in `nvidia-system`, next to `jetson-power-
   - The CGI script takes no input: it ignores the query string and the request body, and `httpd` serves nothing else (empty document root apart from `cgi-bin/metrics`).
   - No network policy: on 2026-11-25 there were none in `nvidia-system` and no cluster-wide Cilium policies, so one here would be the cluster's first. The endpoint serves metrics only.
 - A separate DaemonSet, not a container in `jetson-power-mode`: that pod writes clocks; the exporter only reads, and a crash or restart in one must not restart the other.
-- Resources: requests 5m / 8Mi, limits 50m / 16Mi; adjust after the first rollout (parsing `nvmap/iovmm/maps` is the largest read).
+- Resources: requests 5m / 8Mi, limits 100m / 32Mi (a lower CPU limit trips CPUThrottlingHigh on short shell bursts, as for the other nvidia shell containers); adjust after the first rollout (reading `nvmap/iovmm/maps` is the largest read, about 60 ms).
 - `PodMonitor` in `nvidia-system` (the operator selects all PodMonitors: `podMonitorSelectorNilUsesHelmValues: false`), interval 15s.
 
 Fallback: if busybox CGI proves awkward, run the same script in a loop writing a file and serve that file statically with `httpd`. Same metrics.

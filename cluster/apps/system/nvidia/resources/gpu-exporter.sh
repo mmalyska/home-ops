@@ -101,8 +101,8 @@ if v=$(num "${ACTMON_FILE}"); then
 else up emc_activity 0; fi
 
 # ── GPU memory per process (nvmap iovmm), KiB in the file ──────────────────────
-# Process header lines: <client> <process> <pid> <size>K. Allocation rows have 7+ fields, address rows have
-# "-" as field 2, the footer is "total <size>K". Summed per process name, without a pid label.
+# Process header lines: <client> <process> <pid> <size>K. Allocation rows have 6 or 7 fields (MAPS can be
+# empty), address rows have "-" as field 2, the footer is "total <size>K". Summed per process name, without a pid label.
 if [ -r "${NVMAP_MAPS}" ] && maps=$(cat "${NVMAP_MAPS}" 2>/dev/null); then
   printf '%s\n' "${maps}" | awk '
     NF == 4 && $2 != "-" && $3 ~ /^[0-9]+$/ && $4 ~ /^[0-9]+K$/ {
