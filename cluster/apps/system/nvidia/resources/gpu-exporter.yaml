@@ -1,0 +1,112 @@
+# gpu-exporter.yaml — Jetson Orin iGPU metrics exporter DaemonSet and PodMonitor
+#
+# Jetson has no nvidia-smi or DCGM, so this reads the GPU, EMC and nvmap files in sysfs and debugfs
+# and serves them as Prometheus metrics: busybox httpd runs gpu-exporter.sh as a CGI script on each scrape.
+# Metric list, file formats and design: .plans/nv1-igpu-metrics/spec.md, docs/src/k8s/nv1-jetson.md ("Metrics").
+#
+# Privileged because debugfs (EMC clock and activity, nvmap per-process memory) is root-only; the same
+# access jetson-power-mode has. Limits on what it can do: /sys and debugfs are mounted read-only, the root
+# filesystem is read-only, no host namespaces, and the script reads files and takes no input.
+# Kept apart from jetson-power-mode, which writes clocks: a crash or restart of one does not touch the other.
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: jetson-gpu-exporter
+  namespace: nvidia-system
+  labels:
+    app: jetson-gpu-exporter
+spec:
+  selector:
+    matchLabels:
+      app: jetson-gpu-exporter
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: jetson-gpu-exporter
+    spec:
+      nodeSelector:
+        accelerator: jetson-orin
+      tolerations:
+        - operator: Exists
+      priorityClassName: system-node-critical
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: exporter
+          image: busybox:1.38@sha256:365a051f12e05767b598e643676f14a450fb678a75ccf2beb0052c95d5c73b83
+          imagePullPolicy: IfNotPresent
+          # -f foreground; serves /www, where only cgi-bin/metrics exists.
+          command: ["busybox", "httpd", "-f", "-p", "9400", "-h", "/www"]
+          ports:
+            - name: metrics
+              containerPort: 9400
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /cgi-bin/metrics
+              port: metrics
+            periodSeconds: 30
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /cgi-bin/metrics
+              port: metrics
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              # Short bursts (a few cat and one awk per scrape, about 60 ms for nvmap); a low CPU limit
+              # trips CPUThrottlingHigh, as it did for jetson-power-mode and the device-plugin watchdog.
+              cpu: 100m
+              memory: 32Mi
+          volumeMounts:
+            - name: script
+              mountPath: /www/cgi-bin
+              readOnly: true
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: jetson-gpu-exporter
+            defaultMode: 0555
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: jetson-gpu-exporter
+  namespace: nvidia-system
+spec:
+  selector:
+    matchLabels:
+      app: jetson-gpu-exporter
+  podMetricsEndpoints:
+    - port: metrics
+      path: /cgi-bin/metrics
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node

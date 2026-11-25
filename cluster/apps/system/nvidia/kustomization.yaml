@@ -7,7 +7,11 @@ resources:
   - resources/cdi-setup.yaml
   - resources/device-plugin.yaml
   - resources/power-mode.yaml
+  - resources/gpu-exporter.yaml
 configMapGenerator:
   - name: nvidia-device-plugin-watchdog
     files:
       - watchdog.sh=resources/watchdog.sh
+  - name: jetson-gpu-exporter
+    files:
+      - metrics=resources/gpu-exporter.sh

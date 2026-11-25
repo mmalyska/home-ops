@@ -13,18 +13,18 @@ Decided by the owner on 2026-11-25:
 
 nv1 (Jetson Orin NX 16GB, GA10B iGPU, JetPack 7 / r39 `nvgpu`) runs `llama-server`, but Prometheus has no metric for how busy the GPU or the memory controller is, or at which clocks they run. Jetson has no `nvidia-smi` and no DCGM, so the usual NVIDIA exporters do not apply. Today we see:
 
-| Signal                               | Source                                                     | State (checked 2026-11-25)                                     |
-| ------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------- |
-| GPU temperature                      | node-exporter `node_thermal_zone_temp{type="gpu-thermal"}` | present, on "Cluster Nodes" → "Thermal Zones"                  |
-| Board power rails                    | node-exporter hwmon, chip `i2c_1_1_0040` (`ina3221`)       | **present but unused**: `VDD_IN`, `VDD_CPU_GPU_CV`, `VDD_SOC`  |
-| Fan PWM                              | node-exporter hwmon, chip `platform_pwm_fan`               | present, unused                                                |
-| GPU load                             | —                                                          | **missing**                                                    |
-| GPU clock (current, min, max)        | —                                                          | **missing**                                                    |
-| GPU devfreq governor / present        | only in `jetson-power-mode` logs                           | **missing** as a metric                                        |
-| GPU power gating state               | —                                                          | missing                                                        |
-| Memory controller (EMC) utilization  | —                                                          | **missing**                                                    |
-| EMC clock                            | only in `jetson-power-mode` logs (debugfs)                 | missing as a metric                                            |
-| GPU memory per process               | —                                                          | **missing**                                                    |
+| Signal                              | Source                                                     | State (checked 2026-11-25)                                    |
+| ----------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| GPU temperature                     | node-exporter `node_thermal_zone_temp{type="gpu-thermal"}` | present, on "Cluster Nodes" → "Thermal Zones"                 |
+| Board power rails                   | node-exporter hwmon, chip `i2c_1_1_0040` (`ina3221`)       | **present but unused**: `VDD_IN`, `VDD_CPU_GPU_CV`, `VDD_SOC` |
+| Fan PWM                             | node-exporter hwmon, chip `platform_pwm_fan`               | present, unused                                               |
+| GPU load                            | —                                                          | **missing**                                                   |
+| GPU clock (current, min, max)       | —                                                          | **missing**                                                   |
+| GPU devfreq governor / present      | only in `jetson-power-mode` logs                           | **missing** as a metric                                       |
+| GPU power gating state              | —                                                          | missing                                                       |
+| Memory controller (EMC) utilization | —                                                          | **missing**                                                   |
+| EMC clock                           | only in `jetson-power-mode` logs (debugfs)                 | missing as a metric                                           |
+| GPU memory per process              | —                                                          | **missing**                                                   |
 
 Two of these matter beyond curiosity:
 
@@ -65,11 +65,11 @@ INA3221 (node-exporter hwmon, chip `i2c_1_1_0040`): `in1`/`curr1` = `VDD_IN`, `i
 
 ## Options
 
-| Option                                                                                | For                                                              | Against                                                                                                                                                                                                                   |
-| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A. jetson-stats (`jtop`) + a jtop Prometheus exporter                                 | Widest metric set, maintained upstream, community dashboards     | Needs the `jtop` service (Python, a socket, privileged for debugfs anyway) and assumes L4T userspace (`/etc/nv_tegra_release`, `nvpmodel`) that Talos lacks; third-party exporters are small; two images to track. |
-| B. `tegrastats` in a sidecar, parsed into node-exporter's textfile collector          | Familiar output                                                  | `tegrastats` comes from the L4T `.deb`s, not on the node; closed binary; a parser plus a shared hostPath; enabling the textfile collector changes node-exporter on all four nodes.                                         |
-| **C. Read sysfs and debugfs directly, serve `/metrics` from a small exporter (chosen)** | No new image (busybox, already pinned), no L4T userspace, nv1 only | We own the script and the metric names; privileged for debugfs (same as A would need).                                                                                                                                   |
+| Option                                                                                  | For                                                                | Against                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A. jetson-stats (`jtop`) + a jtop Prometheus exporter                                   | Widest metric set, maintained upstream, community dashboards       | Needs the `jtop` service (Python, a socket, privileged for debugfs anyway) and assumes L4T userspace (`/etc/nv_tegra_release`, `nvpmodel`) that Talos lacks; third-party exporters are small; two images to track. |
+| B. `tegrastats` in a sidecar, parsed into node-exporter's textfile collector            | Familiar output                                                    | `tegrastats` comes from the L4T `.deb`s, not on the node; closed binary; a parser plus a shared hostPath; enabling the textfile collector changes node-exporter on all four nodes.                                 |
+| **C. Read sysfs and debugfs directly, serve `/metrics` from a small exporter (chosen)** | No new image (busybox, already pinned), no L4T userspace, nv1 only | We own the script and the metric names; privileged for debugfs (same as A would need).                                                                                                                             |
 
 The metrics that make A and B richer than a sysfs-only exporter are almost all debugfs reads; C reads the same files. jtop's source is the reference for paths and unit conversions.
 
@@ -95,24 +95,24 @@ Fallback: if busybox CGI proves awkward, run the same script in a loop writing a
 
 ### Metrics
 
-| Metric                                                | Type    | Source                                                                         |
-| ----------------------------------------------------- | ------- | ------------------------------------------------------------------------------ |
-| `jetson_gpu_load_ratio`                               | gauge   | `load` / 1000                                                                  |
-| `jetson_gpu_devfreq_present`                          | gauge   | 1 when the devfreq dir exists, else 0 (the devfreq metrics are then omitted)   |
-| `jetson_gpu_frequency_hz`                             | gauge   | `cur_freq`                                                                     |
-| `jetson_gpu_frequency_min_hz`                         | gauge   | `min_freq`                                                                     |
-| `jetson_gpu_frequency_max_hz`                         | gauge   | `max_freq`                                                                     |
-| `jetson_gpu_governor_info{governor=…}`                | gauge 1 | `governor`                                                                     |
-| `jetson_gpu_railgated`                                | gauge   | `is_railgated`: `yes`/`1` → 1, `no`/`0` → 0                                    |
-| `jetson_gpu_powered_on`                               | gauge   | `gpu_powered_on`: `on`/`1` → 1, `off`/`0` → 0                                  |
-| `jetson_gpu_railgate_enabled`                         | gauge   | `railgate_enable` (setting)                                                    |
-| `jetson_gpu_tpc_power_gating_enabled`                 | gauge   | `tpc_pg_mask` (setting)                                                        |
-| `jetson_emc_activity`                                 | gauge   | `bpmp/debug/actmon/mc_all_avg_activity`, raw (not a percent, see above)        |
-| `jetson_emc_frequency_hz`                             | gauge   | `bpmp/debug/clk/emc/rate`                                                      |
-| `jetson_emc_frequency_min_hz`, `_max_hz`              | gauge   | `min_rate`, `max_rate`                                                         |
-| `jetson_gpu_process_memory_bytes{command=…}`          | gauge   | `nvmap/iovmm/maps` process header lines × 1024, summed per command name (no `pid` label, to avoid churn) |
-| `jetson_gpu_memory_bytes`                             | gauge   | `nvmap/iovmm/maps` `total` line × 1024                                         |
-| `jetson_exporter_source_up{source=…}`                 | gauge   | 1 per source file read, 0 when missing or unreadable; replaces silent gaps     |
+| Metric                                       | Type    | Source                                                                                                   |
+| -------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `jetson_gpu_load_ratio`                      | gauge   | `load` / 1000                                                                                            |
+| `jetson_gpu_devfreq_present`                 | gauge   | 1 when the devfreq dir exists, else 0 (the devfreq metrics are then omitted)                             |
+| `jetson_gpu_frequency_hz`                    | gauge   | `cur_freq`                                                                                               |
+| `jetson_gpu_frequency_min_hz`                | gauge   | `min_freq`                                                                                               |
+| `jetson_gpu_frequency_max_hz`                | gauge   | `max_freq`                                                                                               |
+| `jetson_gpu_governor_info{governor=…}`       | gauge 1 | `governor`                                                                                               |
+| `jetson_gpu_railgated`                       | gauge   | `is_railgated`: `yes`/`1` → 1, `no`/`0` → 0                                                              |
+| `jetson_gpu_powered_on`                      | gauge   | `gpu_powered_on`: `on`/`1` → 1, `off`/`0` → 0                                                            |
+| `jetson_gpu_railgate_enabled`                | gauge   | `railgate_enable` (setting)                                                                              |
+| `jetson_gpu_tpc_power_gating_enabled`        | gauge   | `tpc_pg_mask` (setting)                                                                                  |
+| `jetson_emc_activity`                        | gauge   | `bpmp/debug/actmon/mc_all_avg_activity`, raw (not a percent, see above)                                  |
+| `jetson_emc_frequency_hz`                    | gauge   | `bpmp/debug/clk/emc/rate`                                                                                |
+| `jetson_emc_frequency_min_hz`, `_max_hz`     | gauge   | `min_rate`, `max_rate`                                                                                   |
+| `jetson_gpu_process_memory_bytes{command=…}` | gauge   | `nvmap/iovmm/maps` process header lines × 1024, summed per command name (no `pid` label, to avoid churn) |
+| `jetson_gpu_memory_bytes`                    | gauge   | `nvmap/iovmm/maps` `total` line × 1024                                                                   |
+| `jetson_exporter_source_up{source=…}`        | gauge   | 1 per source file read, 0 when missing or unreadable; replaces silent gaps                               |
 
 `trans_stat` is left out (not parseable, and the clock is pinned). `node`/`instance` labels come from the PodMonitor; the pod runs only on nv1. A file that is missing or unreadable yields `source_up 0` and no value; it never fails the scrape.
 
@@ -142,13 +142,13 @@ A new dashboard `cluster/apps/system/prometheus-stack/dashboards/jetson-gpu.json
 
 ## Verification
 
-| Check                                      | How                                                                                                                               |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Script output is valid exposition format   | test script against fake trees: devfreq present and absent, each actmon candidate, unreadable files, an `iovmm/maps` sample; `promtool check metrics` |
-| Script never writes                        | test runs the script against a read-only fake tree                                                                                |
-| Manifests render and validate              | `kubectl kustomize`, `task lint:manifests -- nvidia`, `task lint:all`                                                             |
-| Rules parse                                | `promtool check rules` (part of `lint:manifests`)                                                                                 |
-| Live, after merge (owner's sync)           | every `source_up` is 1, or the missing source is explained; `jetson_gpu_load_ratio` and `jetson_emc_utilization_ratio` near 0 idle and high during a `llama-server` request; `jetson_gpu_frequency_max_hz` = 918000000; `llama-server` appears in `jetson_gpu_process_memory_bytes` |
+| Check                                    | How                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Script output is valid exposition format | test script against fake trees: devfreq present and absent, each actmon candidate, unreadable files, an `iovmm/maps` sample; `promtool check metrics`                                                                                                                               |
+| Script never writes                      | test runs the script against a read-only fake tree                                                                                                                                                                                                                                  |
+| Manifests render and validate            | `kubectl kustomize`, `task lint:manifests -- nvidia`, `task lint:all`                                                                                                                                                                                                               |
+| Rules parse                              | `promtool check rules` (part of `lint:manifests`)                                                                                                                                                                                                                                   |
+| Live, after merge (owner's sync)         | every `source_up` is 1, or the missing source is explained; `jetson_gpu_load_ratio` and `jetson_emc_utilization_ratio` near 0 idle and high during a `llama-server` request; `jetson_gpu_frequency_max_hz` = 918000000; `llama-server` appears in `jetson_gpu_process_memory_bytes` |
 
 Test fixtures follow the r39 formats in evidence.md.
 
