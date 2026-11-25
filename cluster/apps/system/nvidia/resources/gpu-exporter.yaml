@@ -2,7 +2,7 @@
 #
 # Jetson has no nvidia-smi or DCGM, so this reads the GPU, EMC and nvmap files in sysfs and debugfs
 # and serves them as Prometheus metrics: busybox httpd runs gpu-exporter.sh as a CGI script on each scrape.
-# Metric list, file formats and design: .plans/nv1-igpu-metrics/spec.md, docs/src/k8s/nv1-jetson.md ("Metrics").
+# Metric list, file formats and design: .archive/.plans/nv1-igpu-metrics/spec.md, docs/src/k8s/nv1-jetson.md ("Metrics").
 #
 # Privileged because debugfs (EMC clock and activity, nvmap per-process memory) is root-only; the same
 # access jetson-power-mode has. Limits on what it can do: /sys and debugfs are mounted read-only, the root

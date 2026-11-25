@@ -10,6 +10,7 @@
 - [Cluster access permission rules](feedback_cluster_access_rules.md) — read-only free, mutating ops need user confirmation
 - [talosctl talosconfig location](feedback_talosctl_config.md) — use TALOSCONFIG=/workspaces/home-ops/provision/talos/clusterconfig/talosconfig
 - [Push and PR only on instruction](feedback_push_and_pr_after_branch.md) — no standing authorization (D4); commit is allowed, push and gh pr create need an instruction
+- [Elevated-session checks](feedback_elevated_session_checks.md) — node files, exec, port-forward and LLM requests go through the owner's elevated session: give a paste-ready read-only prompt, record the report as evidence
 - [Never write the private domain literally](feedback_no_domain_in_comments.md) — not in comments, not in memory files; grep before writing
 - [Grafana: no anonymous access, ever](feedback_grafana_no_anonymous_access.md) — user's explicit call, even though Grafana route is LAN-only
 

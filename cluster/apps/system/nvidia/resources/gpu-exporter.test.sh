@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Behavior test for gpu-exporter.sh: fake sysfs/debugfs trees in the r39 formats (.plans/nv1-igpu-metrics/evidence.md).
+# Behavior test for gpu-exporter.sh: fake sysfs/debugfs trees in the r39 formats (.archive/.plans/nv1-igpu-metrics/evidence.md).
 # Run as a non-root user (unreadable-file cases rely on file modes):
 #   bash cluster/apps/system/nvidia/resources/gpu-exporter.test.sh
 # Uses promtool to validate the exposition format when it is on PATH.

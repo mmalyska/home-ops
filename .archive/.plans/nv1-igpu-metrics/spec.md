@@ -86,7 +86,7 @@ A new DaemonSet `jetson-gpu-exporter` in `nvidia-system`, next to `jetson-power-
   - `/sys` and `/sys/kernel/debug` hostPath mounts with `readOnly: true`; the script only reads.
   - `readOnlyRootFilesystem: true`; no host network, PID or IPC namespace.
   - The CGI script takes no input: it ignores the query string and the request body, and `httpd` serves nothing else (empty document root apart from `cgi-bin/metrics`).
-  - No network policy: on 2026-11-25 there were none in `nvidia-system` and no cluster-wide Cilium policies, so one here would be the cluster's first. The endpoint serves metrics only.
+  - No network policy: on 2026-11-25 there were none in `nvidia-system` and no cluster-wide Cilium policies. (Corrected 2026-11-25: "the cluster's first" was wrong; only `nvidia-system` and cluster-wide policies had been checked, and `llm` has NetworkPolicies for `llama-server` and `llm-embeddings`.) The endpoint serves metrics only.
 - A separate DaemonSet, not a container in `jetson-power-mode`: that pod writes clocks; the exporter only reads, and a crash or restart in one must not restart the other.
 - Resources: requests 5m / 8Mi, limits 100m / 32Mi (a lower CPU limit trips CPUThrottlingHigh on short shell bursts, as for the other nvidia shell containers); adjust after the first rollout (reading `nvmap/iovmm/maps` is the largest read, about 60 ms).
 - `PodMonitor` in `nvidia-system` (the operator selects all PodMonitors: `podMonitorSelectorNilUsesHelmValues: false`), interval 15s.
@@ -164,7 +164,7 @@ Test fixtures follow the r39 formats in evidence.md.
 Run by the owner before implementation, so the script, fixtures and tests are written against real r39 output instead of jtop's assumptions. Every command only reads. It uses the existing `jetson-power-mode` pod, which already mounts `/sys` and debugfs; `kubectl exec` is the owner's action, not this workspace's. Paste this into a Claude session that has `kubectl exec` rights:
 
 ```text
-Read-only checks on nv1 for .plans/nv1-igpu-metrics/spec.md in mmalyska/home-ops. Do not write to any file, change any setting, or restart anything.
+Read-only checks on nv1 for .archive/.plans/nv1-igpu-metrics/spec.md in mmalyska/home-ops. Do not write to any file, change any setting, or restart anything.
 Run each command with: kubectl exec -n nvidia-system ds/jetson-power-mode -c power-mode -- sh -c '<command>'
 1. GPU dir: ls -l /sys/devices/platform/bus@0/17000000.gpu/ ; for f in load railgate_enable tpc_pg_mask enable_3d_scaling; do echo "$f=$(cat /sys/devices/platform/bus@0/17000000.gpu/$f 2>&1)"; done
 2. devfreq: D=/sys/bus/platform/devices/17000000.gpu/devfreq/17000000.gpu; ls -l $D; for f in cur_freq min_freq max_freq governor available_frequencies; do echo "$f=$(cat $D/$f 2>&1)"; done; head -5 $D/trans_stat 2>&1
@@ -178,7 +178,7 @@ Run each command with: kubectl exec -n nvidia-system ds/jetson-power-mode -c pow
 Report the raw outputs, then: which actmon path exists; whether mc_all / (rate/1000) gives a 0-100 value that rises under load; the exact iovmm/maps line format and unit; which INA3221 inN/currN belong to VDD_IN, VDD_CPU_GPU_CV, VDD_SOC; any file that is root-only.
 ```
 
-Hand the report back to the implementing session; it goes into `.plans/nv1-igpu-metrics/evidence.md` and the test fixtures. Process names in `iovmm/maps` are not secret; nothing else in this output is sensitive.
+Hand the report back to the implementing session; it goes into `.archive/.plans/nv1-igpu-metrics/evidence.md` and the test fixtures. Process names in `iovmm/maps` are not secret; nothing else in this output is sensitive.
 
 ## Open questions
 
