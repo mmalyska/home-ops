@@ -155,7 +155,7 @@ patches the live config to it, so git holds the plain alias tag `ghcr.io/mmalysk
 (`provision/talos/patches/node/nv1/20-install-image.yaml.tpl`), not the compound `v<talos>-<kernel>-nvgpu...` tag.
 The JetPack 7 installer has its own repository `custom-installer-jp7` (the r36 line stays in `custom-installer`). The
 fork `mmalyska/talos-jetson-orin` pushes that alias tag (same digest as the compound tag) next to the compound
-tag, and the package must stay public. The kernel and nvgpu part stay in the fork's release notes. A change of the kernel or
+tag, and the package must stay public. The kernel and nvgpu part stay in the fork's release notes. **Upstream since 2026-11-24:** the alias commit (`4e07d0e7b4`, "release: also tag each installer with the plain Talos version") is on upstream `main` with `schwankner/talos-jetson-orin#65`, and upstream publishes `ghcr.io/schwankner/custom-installer-jp7:v<talos>` (`:v1.14.7` checked 2026-11-25); nv1 still uses the fork's alias (see `.plans/TODO.md`). A change of the kernel or
 nvgpu part is built in the fork first and its alias re-pointed.
 
 **Done 2026-10-12:** the fork change lives on branch `pr/jetpack7-r39` of `mmalyska/talos-jetson-orin` (the head of the
@@ -324,6 +324,28 @@ there is no free memory region for the kernel` and reboots normally. From 2026-1
 `kernel.kexec_load_disabled: "1"` (`patches/node/nv1/42-sysctl-kexec.yaml`, now removed). `policy.rebootMode: powercycle`
 on the `TalosUpgrade` would also skip kexec but applies to every node of the CR (it was set for a few hours on
 2026-10-21 before the sysctl was found).
+
+**Why the load fails (found 2026-11-25, from the kernel source and nv1's boot log; not tested).** Talos calls
+`kexec_file_load` with no flags (`internal/app/machined/pkg/runtime/v1alpha1/bootloader/kexec/kexec.go`), so since
+Linux 6.17 (commit `07d24902977e`, "kexec: enable CMA based contiguous allocation") the kernel first tries to put
+each kexec segment in the default CMA pool. `kexec_alloc_contig()` (`kernel/kexec_file.c`, unchanged on master) does
+not check the segment's `buf_min`/`buf_max`. On arm64, `image_load()` places the kernel first and
+`load_other_segments()` then needs the initrd **above the kernel's end in one free memblock range**. On nv1:
+
+- the device tree creates a 256 MiB CMA pool at `0x44c000000` (`Reserved memory: created CMA memory pool at
+  0x000000044c000000, size 256 MiB`), near the top of RAM;
+- the kernel segment is about 74 MB (`Memory:` line: code, data, rodata, init and bss), so CMA takes it at
+  `0x44c000000`;
+- the initrd is about 522 MiB (`Freeing initrd memory: 534384K`), too big for CMA, and above `0x44c000000` RAM is
+  only fragments (`node 0: [mem ...]` ranges up to `0x47fffffff`, the largest about 65 MB);
+- `image_load()` retries with the next kernel position, but each retry again lands in CMA or higher, until nothing
+  fits: `Could not find any suitable kernel location!` and `EADDRNOTAVAIL`.
+
+The free low ranges (`0x80000000`, about 990 MB, and `0xc2000000`, about 930 MB) would hold both, and the
+memblock search alone would pick them. The amd64 nodes have no default CMA pool, which fits kexec working there.
+A fix on the Talos side would be to pass `KEXEC_FILE_NO_CMA` (`0x10`), or retry with it after `EADDRNOTAVAIL`. Not
+tested: a load with that flag on nv1 needs a privileged pod with `CAP_SYS_BOOT` (the owner's action). Data from
+`talosctl -n <nv1> dmesg` (boot 2026-11-24 10:01; Loki starts about 26 s into a boot and misses these lines).
 
 Evidence, 2026-10-21, three same-version upgrades of nv1 with `talosctl upgrade --image .../custom-installer-jp7:v1.14.4`
 and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs another v1.14.4 UKI named
