@@ -343,9 +343,18 @@ not check the segment's `buf_min`/`buf_max`. On arm64, `image_load()` places the
 
 The free low ranges (`0x80000000`, about 990 MB, and `0xc2000000`, about 930 MB) would hold both, and the
 memblock search alone would pick them. The amd64 nodes have no default CMA pool, which fits kexec working there.
-A fix on the Talos side would be to pass `KEXEC_FILE_NO_CMA` (`0x10`), or retry with it after `EADDRNOTAVAIL`. Not
-tested: a load with that flag on nv1 needs a privileged pod with `CAP_SYS_BOOT` (the owner's action). Data from
-`talosctl -n <nv1> dmesg` (boot 2026-11-24 10:01; Loki starts about 26 s into a boot and misses these lines).
+A fix on the Talos side would be to pass `KEXEC_FILE_NO_CMA` (`0x10`), or retry with it after `EADDRNOTAVAIL`. Data
+from `talosctl -n <nv1> dmesg` (boot 2026-11-24 10:01; Loki starts about 26 s into a boot and misses these lines).
+
+**Not tested, and a pod cannot test it.** On 2026-11-25 a privileged pod on nv1 loaded the booted UKI's kernel and
+initrd with `kexec_file_load`, with and without `KEXEC_FILE_NO_CMA`: both calls returned `EPERM` before any segment
+was placed (`kexec_loaded` 0 before and after, `CmaFree` unchanged, `llama-server` unaffected). Talos drops
+`cap_sys_boot` and `cap_sys_module` from the bounding set of the CRI (`DefaultDroppedCapabilities` in
+`pkg/machinery/constants/constants.go`, applied in `internal/app/machined/pkg/system/services/cri.go`), so no pod on
+a Talos node can kexec, privileged or not; only `machined` can. A real test needs either a Talos build whose
+`kexec.Load()` passes the flag, or the CMA pool moved low with a kernel argument (`cma=<size>@<low range>`, which
+replaces the device-tree pool) followed by a same-version upgrade with kexec enabled; both are node changes for the
+owner, for a reboot path that already works.
 
 Evidence, 2026-10-21, three same-version upgrades of nv1 with `talosctl upgrade --image .../custom-installer-jp7:v1.14.4`
 and the Talos logs in Loki (`{source=~"talos-.*", node="nv1"}`); each installs another v1.14.4 UKI named
