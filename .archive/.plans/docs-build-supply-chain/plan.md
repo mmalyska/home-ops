@@ -1,14 +1,14 @@
 ---
-status: blocked
+status: shipped
 owner: repository owner
 profile: STANDARD
 topology: HANDOFF
 base_sha: 3633f41aff58b5e53f66744f52369bd8ebcf2354
 branch: chore/docs-build-supply-chain
 worktree: .worktrees/chore/docs-build-supply-chain
-pr: "#6315"
+pr: "#6300, #6301, #6315, #6339"
 started: 2026-11-16
-updated: 2026-11-16
+updated: 2026-11-25
 ---
 
 # Docs build supply chain implementation plan
