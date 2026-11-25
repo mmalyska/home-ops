@@ -8,6 +8,7 @@ resources:
   - resources/device-plugin.yaml
   - resources/power-mode.yaml
   - resources/gpu-exporter.yaml
+  - resources/gpu-exporter-rules.yaml
 configMapGenerator:
   - name: nvidia-device-plugin-watchdog
     files:

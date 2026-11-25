@@ -34,7 +34,8 @@ GPU load, GPU and EMC clocks, EMC utilization, GPU memory per process and the GP
 - 2026-11-25: owner's pre-check done ([evidence.md](evidence.md)). Changes to the spec: EMC activity exported raw (not a percent), `is_railgated`/`gpu_powered_on` added, `enable_3d_scaling` and `trans_stat` dropped, INA3221 pairing confirmed.
 - 2026-11-25: follow-up pre-check done (state files hold words). Task 2 done: `gpu-exporter.sh` and `gpu-exporter.test.sh` (44 checks pass, shellcheck and promtool clean; run with dash and mawk, busybox not available here). Next: task 3.
 - 2026-11-25: task 3 done: `gpu-exporter.yaml` (DaemonSet, PodMonitor with a `node` label), ConfigMap generated from the script with a hash suffix. Found: the promtool step of `task lint:manifests` without an app name renders no rules, because yq v4.54 rejects the `-s` output path ("path must stay within the current directory"), and reports PASS. CI (`manifest-lint`) had the same false PASS.
-- 2026-11-25: lint fixed in this PR (owner's request): `check-manifests.sh` runs yq inside the rules directory and fails when fewer rule files are extracted than PrometheusRules rendered. Full run: 46 PrometheusRules checked, PASS; with a yq that fails on split: `promtool FAIL extracted 0 of 1`, exit 1. Next: task 4.
+- 2026-11-25: lint fixed in this PR (owner's request): `check-manifests.sh` runs yq inside the rules directory and fails when fewer rule files are extracted than PrometheusRules rendered. Full run: 46 PrometheusRules checked, PASS; with a yq that fails on split: `promtool FAIL extracted 0 of 1`, exit 1.
+- 2026-11-25: task 4 done. `JetsonGpuClockAboveCap` (critical, 2m) and `JetsonGpuExporterDown` (warning, 15m) with 8 promtool test cases; `check-manifests.sh nvidia`: promtool PASS (1 rule), rule-tests PASS. A deliberately wrong threshold and `for:` made the tests fail. Next: task 5 (dashboard).
 
 ## Delivery
 

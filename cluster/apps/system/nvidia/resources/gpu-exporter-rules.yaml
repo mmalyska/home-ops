@@ -1,0 +1,54 @@
+# gpu-exporter-rules.yaml — alerts on the Jetson iGPU exporter (gpu-exporter.yaml)
+#
+# Tests: cluster/apps/system/nvidia/tests/gpu-exporter.promtool.yaml, run by `task lint:manifests` and CI.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: jetson-gpu-exporter
+  namespace: nvidia-system
+  labels:
+    app: kube-prometheus-stack
+    release: prometheus-stack
+spec:
+  groups:
+    - name: jetson-gpu
+      rules:
+        # 918 MHz is the MAXN GPU cap that jetson-power-mode writes (power-mode.yaml, GPU_FREQ). Change both
+        # together. The Orin NX on this carrier board must not run the 1173 MHz Super clock. The current clock
+        # is checked as well as the maximum, in case a governor ignores max_freq. max by (node) keeps one alert
+        # per node when both are high.
+        - alert: JetsonGpuClockAboveCap
+          expr: >-
+            max by (node) ({__name__=~"jetson_gpu_frequency_hz|jetson_gpu_frequency_max_hz", job="nvidia-system/jetson-gpu-exporter"}) > 918e6
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: The Jetson GPU on {{ $labels.node }} can run above the 918 MHz cap
+            description: >-
+              The GPU clock or its devfreq maximum is {{ $value | humanize }}Hz. This board cannot cool the
+              1173 MHz Super clock. Check the jetson-power-mode logs in nvidia-system (it re-applies the cap every
+              second while the devfreq node is new and every 60 s after); if the cap does not hold, stop the GPU
+              workload (scale llama-server to 0) until it does.
+        # A ready node with an exporter pod but no successful scrape: the pod crash-loops, the httpd or script
+        # fails, or the scrape fails. A node that is not Ready is left to the node alerts, and a pod that is never
+        # created to the KubeDaemonSet* alerts.
+        - alert: JetsonGpuExporterDown
+          expr: >-
+            (
+              max by (node) (kube_pod_info{namespace="nvidia-system", created_by_kind="DaemonSet", created_by_name="jetson-gpu-exporter"})
+              unless on (node)
+              max by (node) (up{job="nvidia-system/jetson-gpu-exporter"} == 1)
+            )
+            and on (node)
+            (kube_node_status_condition{condition="Ready", status="true"} == 1)
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: No Jetson GPU metrics from {{ $labels.node }}
+            description: >-
+              The jetson-gpu-exporter pod on {{ $labels.node }} has not been scraped successfully for 15 minutes,
+              so JetsonGpuClockAboveCap cannot fire. Check the pod and its logs in nvidia-system, and
+              jetson_exporter_source_up once it answers.
