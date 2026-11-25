@@ -81,7 +81,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_load_ratio{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_load_ratio{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -140,7 +140,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -185,7 +185,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_emc_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_emc_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -230,7 +230,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_memory_bytes{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_memory_bytes{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -293,7 +293,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_railgated{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_railgated{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "Rail-gated",
           "range": true,
           "refId": "A"
@@ -304,7 +304,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_powered_on{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_powered_on{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "Powered on",
           "range": true,
           "refId": "B"
@@ -315,7 +315,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_devfreq_present{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_devfreq_present{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "Devfreq",
           "range": true,
           "refId": "C"
@@ -379,7 +379,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg(jetson_exporter_source_up{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
+          "expr": "avg(min by (node, source) (jetson_exporter_source_up{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}))",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -449,7 +449,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_load_ratio{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_load_ratio{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "GPU",
           "range": true,
           "refId": "A"
@@ -507,7 +507,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_emc_activity{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"} / (jetson_emc_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"} / 1000)",
+          "expr": "max by (node) (jetson_emc_activity{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}) / (max by (node) (jetson_emc_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}) / 1000)",
           "legendFormat": "EMC activity",
           "range": true,
           "refId": "A"
@@ -597,7 +597,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "current",
           "range": true,
           "refId": "A"
@@ -608,7 +608,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_frequency_min_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_frequency_min_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "min",
           "range": true,
           "refId": "B"
@@ -619,7 +619,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_frequency_max_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_frequency_max_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "max",
           "range": true,
           "refId": "C"
@@ -677,7 +677,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_emc_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_emc_frequency_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "current",
           "range": true,
           "refId": "A"
@@ -688,7 +688,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_emc_frequency_min_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_emc_frequency_min_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "min",
           "range": true,
           "refId": "B"
@@ -699,7 +699,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_emc_frequency_max_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_emc_frequency_max_hz{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "max",
           "range": true,
           "refId": "C"
@@ -797,7 +797,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_process_memory_bytes{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node, command) (jetson_gpu_process_memory_bytes{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "{{command}}",
           "range": true,
           "refId": "A"
@@ -808,7 +808,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_gpu_memory_bytes{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "max by (node) (jetson_gpu_memory_bytes{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "total",
           "range": true,
           "refId": "B"
@@ -1073,7 +1073,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jetson_exporter_source_up{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"}",
+          "expr": "min by (node, source) (jetson_exporter_source_up{job=\"nvidia-system/jetson-gpu-exporter\",node=\"$node\"})",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"
@@ -1149,5 +1149,5 @@
   "timezone": "browser",
   "title": "Jetson GPU",
   "uid": "jetson-gpu",
-  "version": 1
+  "version": 2
 }
