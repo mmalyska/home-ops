@@ -120,6 +120,13 @@ ConfigMaps (`cluster/apps/default/sync-probe`); real applications follow, one re
 exclusions: Argo CD itself, bootstrap and the ApplicationSets, access-control infrastructure, storage operators and the
 `dev-workspace` app.
 
+**What the allowlist adds (checked 2026-11-26).** Every application has automated sync, and all but `minecraft-bedrock`,
+`vintagestory` and `wow` have self-heal, so a merged change deploys without a manual sync and the workspace can already
+refresh any application. Automated prune is off everywhere except `anytype`, so what `sync` on the allowlist adds is
+mainly prune (removing resources deleted from git), a manual sync of the three games, and retrying a failed sync. The owner
+kept the allowlist at `default/sync-probe` for that reason; add an application only when there is a concrete need to prune
+or re-sync it from the workspace. Source: the item archived in `.archive/TODO.md` under "Moved 2026-11-26".
+
 **Token.** The owner generates it (`argocd account generate-token --account dev-workspace`) and stores it, with the server
 address, in the dev BWS project as `ARGOCD_AUTH_TOKEN` and `ARGOCD_SERVER` (the address contains the private domain, so it is a
 secret value, not text in this repository). The token is in the environment of every process in the pod (the template exports the BWS project, see the template README), so an agent can read it; the permission rules and the argocd RBAC are the limit, not secrecy. Using it to sync or prune still needs the
