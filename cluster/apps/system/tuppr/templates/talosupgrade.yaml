@@ -10,7 +10,7 @@ metadata:
 spec:
   talos:
     # renovate: datasource=github-releases depName=siderolabs/talos
-    version: v1.14.6
+    version: v1.14.7
   policy:
     waitForVolumeDetach: true
     timeout: 30m
