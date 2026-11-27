@@ -6,7 +6,8 @@ description: >
 when_to_use: >
   Trigger phrases: "task command", "task list", "bootstrap", "lint", "format",
   "CI", "PR workflow", "branch name", "devcontainer", "direnv", "pre-commit",
-  "renovate update", "argocd login", "terraform apply".
+  "renovate update", "argocd login", "terraform apply", "stuck sync", "terminate-op",
+  "sync waiting for healthy state".
 ---
 
 # Dev Workflow Reference
@@ -79,6 +80,36 @@ Several apps depend on local charts via `repository: file://../../.../charts/<na
 ### Removing a field ArgoCD cannot prune (`ApplyOutOfSyncOnly=true`)
 
 When an app has `ApplyOutOfSyncOnly=true` and a field was added by the `argocd-controller` `Update` field manager, deleting that field from git does not remove it from the live object: the app still shows Synced. Seen on the Rook `CephCluster` `spec.monitoring.interval` (2026-10-23). Fix: remove the field live with `kubectl patch <kind> <name> --type json -p '[{"op":"remove","path":"..."}]'` (needs consent), keep git without the field, and check the live object afterwards. Operators may also have written related state elsewhere (Rook set `mgr/prometheus/scrape_interval`), so revert that too.
+
+### Stuck sync: a fix merges but never deploys
+
+Argo CD runs one operation per app. An automated sync whose new manifests never become healthy (a crash-looping
+DaemonSet, a Deployment that never becomes ready) stays `Running` indefinitely, so the sync of the fix cannot start: the
+app shows `OutOfSync` on the fix's revision while the live object keeps the broken spec. Seen on 2026-11-27: the
+kube-prometheus-stack 94.1.0 bump crash-looped node-exporter, and the fix (#6490) waited until the owner stepped in.
+
+Check (read-only): the running operation targets the old revision and waits for health.
+
+```sh
+argocd app get <app> -o json | jq -r '.status.operationState
+  | "\(.phase) rev=\(.operation.sync.revision[0:7]) started=\(.startedAt) msg=\(.message)"'
+# Running rev=<old> ... msg=waiting for healthy state of apps/DaemonSet/<name>
+```
+
+Fix: stop the operation, then sync the fix. Both are RUNTIME_MUTATION and need consent for each action.
+
+```sh
+argocd app terminate-op <app>
+argocd app sync <app> --async   # automated sync may not start by itself after the terminate
+```
+
+- The workspace token may do both on every app except the exclusions in `docs/src/k8s/dev-workspace.md` (`core/*`,
+  `root-app`, access control, the workspaces, storage operators). For those, the owner runs them. A `permission denied`
+  error means an excluded app: stop and ask, do not retry.
+- Never add `--prune`, `--replace` or `--force` to unblock a sync: they are DESTRUCTIVE and the owner's action.
+- Check the exit code of each command before the next (`terminate-op` then `sync`), not one pipeline that hides a failure.
+- Afterwards: `Synced`/`Healthy` on the fix's revision, the workload rolled out, and its Prometheus targets `up`. The
+  dead pods' last `up=0` stays visible for up to 5 minutes, so an alert such as `TargetDown` can outlast the fix briefly.
 
 ### Manifest lint (`task lint:manifests`)
 
