@@ -88,7 +88,9 @@ owner's action; the key goes through the memory volume and is deleted at once):
 - **Talos**: `os:reader` only. The config has no nodes list, so pass `--nodes`. Mutating Talos work (`apply-config`, `upgrade`)
   stays on the local devcontainer. A wider role in this pod would also be reachable through the Coder provisioner, which can
   create a Deployment here that mounts the credential's Secret.
-- **Argo CD**: read everything; hard refresh; sync and prune only for applications on the allowlist.
+- **Argo CD**: read everything; hard refresh; sync and stop a sync (`terminate-op`) on every application except the
+  exclusions in `dev-workspace.md` (Argo CD, bootstrap, access control, storage operators, the workspaces). Prune, replace
+  and force are the owner's action.
 - The consent rules of `AGENTS.md` and `.claude/settings.json` apply here as they do locally. A token that can sync does not
   replace consent for each action.
 
@@ -100,5 +102,5 @@ devcontainer, which has the full toolset and the mutating Talos access.
 ## Operating it
 
 Template and workspace changes follow the `coder-workspace-template-deploy` skill. Pushing a template starts nothing;
-creating, restarting or updating a workspace and every Argo CD sync need the owner's consent. Deleting a workspace or a template
-version does not delete the volumes.
+creating, restarting or updating a workspace and every Argo CD sync or `terminate-op` need the owner's consent. Deleting a
+workspace or a template version does not delete the volumes.

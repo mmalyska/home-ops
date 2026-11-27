@@ -8,7 +8,7 @@ that the Coder provisioner must not create. Plan: `.archive/.plans/remote-dev-wo
 | Object                                                                  | Purpose                                                                                                       |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Namespace `dev-workspace`, Pod Security `baseline`                      | Home of the workspace pods                                                                                    |
-| PVC `<workspace>-home` (15 Gi, `ceph-block`)                             | Logins, config, tools added with `mise use -g`; backed up every 6 h                                           |
+| PVC `<workspace>-home` (15 Gi, `ceph-block`)                            | Logins, config, tools added with `mise use -g`; backed up every 6 h                                           |
 | PVC `<workspace>-src` (30 Gi, `ceph-block`)                             | Source code under `/workspaces`; backed up daily                                                              |
 | `ReplicationSource` and restic `ExternalSecret` per PVC                 | VolSync backups from `charts/volsync`, one restic repository per PVC                                          |
 | `ServiceAccount` `<workspace>` and `ClusterRole` `dev-workspace-reader` | Read-only Kubernetes access (explicit lists, no Secrets, no wildcard)                                         |
@@ -101,56 +101,74 @@ The workspace gets its own Argo CD local account (`argocd-cm`: `accounts.dev-wor
 login). SSO is not used from the workspace: the owner's identity and the `ArgoCDAdmins` group map to `role:admin` in
 `argocd-rbac-cm`, so an SSO session in the workspace would give a compromised workspace admin rights.
 
-| Capability                                                              | Granted            | Why                                                                                |
-| ----------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
-| Read applications, hard refresh                                         | all applications   | `get` is the only permission a refresh needs (checked in the v3.5.7 source)        |
-| Sync, and prune as a sync option                                        | the allowlist only | `sync` is the only permission a prune needs; the allowlist holds only `sync-probe` |
-| Sync to another revision than `targetRevision`                          | never              | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on |
-| Read projects (`projects, get`)                                         | all projects       | `argocd app get` fetches the project too; the response has no credentials          |
-| Delete, create, update, actions, exec, repositories, clusters, accounts | never              | not in the policy                                                                  |
-| Create, update or delete projects                                       | never              | not in the policy                                                                  |
+| Capability                                                              | Granted                | Why                                                                                   |
+| ----------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------- |
+| Read applications, hard refresh                                         | all applications       | `get` is the only permission a refresh needs (checked in the v3.5.7 source)           |
+| Sync, stop a running sync (`terminate-op`), prune as a sync option      | all but the exclusions | all three check `sync` (v3.6.2 source: `Sync`, `TerminateOperation`)                  |
+| Rollback                                                                | never                  | `server.rbac.rollback.enforce.enable` makes it check `rollback`, which is not granted |
+| Sync to another revision than `targetRevision`                          | never                  | needs `override`; `application.sync.requireOverridePrivilegeForRevisionSync` is on    |
+| Read projects (`projects, get`)                                         | all projects           | `argocd app get` fetches the project too; the response has no credentials             |
+| Delete, create, update, actions, exec, repositories, clusters, accounts | never                  | not in the policy                                                                     |
+| Create, update or delete projects                                       | never                  | not in the policy                                                                     |
 
 Responses mask live Secret values (`get` does not expose them).
 
-**Add an application to the allowlist** by a reviewed PR: one line in `argocd-rbac-cm`
-(`p, dev-workspace, applications, sync, <project>/<application>, allow`) and `argocd.argoproj.io/sync-options: Prune=false`
-on that application's PVCs and stateful owners (this stops Argo CD pruning those objects; it does not stop a destructive
-update or a deletion by another controller). The first entry is `default/sync-probe`, a disposable application of two
-ConfigMaps (`cluster/apps/default/sync-probe`); real applications follow, one reviewed PR each. Initial
-exclusions: Argo CD itself, bootstrap and the ApplicationSets, access-control infrastructure, storage operators and the
-`dev-workspace` app.
+**Sync scope.** `argocd-rbac-cm` allows `sync` on `*/*` and denies it on the exclusions; a `deny` line wins over the
+`allow` (`policy_effect` in Argo CD's `model.conf`). The exclusions:
 
-**What the allowlist adds (checked 2026-11-26).** Every application has automated sync, and all but `minecraft-bedrock`,
-`vintagestory` and `wow` have self-heal, so a merged change deploys without a manual sync and the workspace can already
-refresh any application. Automated prune is off everywhere except `anytype`, so what `sync` on the allowlist adds is
-mainly prune (removing resources deleted from git), a manual sync of the three games, and retrying a failed sync. The owner
-kept the allowlist at `default/sync-probe` for that reason; add an application only when there is a concrete need to prune
-or re-sync it from the workspace. Source: the item archived in `.archive/TODO.md` under "Moved 2026-11-26".
+- Argo CD itself, the CNI and Rook Ceph: the whole `core` project (`core/*`), so an application added to `core` later is
+  excluded too.
+- Bootstrap: `default/root-app`, which deploys the projects and the ApplicationSets.
+- Access control: `system/keycloak`, `system/external-secrets`, `system/cert-manager`, `system/kubelet-csr-approver`.
+- The workspaces: `system/dev-workspace`, `ai/agent-workspaces` and the Coder platform `ai/coder`.
+- Storage operators outside `core`: `system/cloudnative-pg`, `system/volsync`, `system/snapshot-controller`.
+
+An application added to any other project can be synced from the workspace without a policy change. To exclude it, add a
+`deny` line by a reviewed PR.
+
+**Why.** Every application has automated sync, so a merged change normally deploys without a manual sync. A sync can
+still get stuck: Argo CD runs one operation per application, and an automated sync that waits for a resource to become
+healthy waits indefinitely if it never does. On 2026-11-27 a kube-prometheus-stack bump broke the node-exporter DaemonSet;
+the sync of the bump waited for it, and the sync of the fix could not start until the owner ran `terminate-op` and
+`sync` by hand. With this scope the workspace can do both, with the owner's consent.
+
+**Prune, replace and force are the owner's action.** Argo CD has no separate permission for them: the token that may sync
+may also pass `--prune`, `--replace` or `--force`. A prune of an application that ships CRDs deletes the CRDs and every
+resource of those kinds, and `--replace`/`--force` delete and recreate objects. Claude denies the three flags
+(`.claude/settings.json`, DESTRUCTIVE in `.agents/policy/permissions.md`); for other harnesses that rule is instruction
+only. `argocd.argoproj.io/sync-options: Prune=false` on a PVC or stateful owner still stops a prune of that object. The
+disposable `default/sync-probe` application keeps its prune test (`probe-prune-me`).
 
 **Token.** The owner generates it (`argocd account generate-token --account dev-workspace`) and stores it, with the server
 address, in the dev BWS project as `ARGOCD_AUTH_TOKEN` and `ARGOCD_SERVER` (the address contains the private domain, so it is a
-secret value, not text in this repository). The token is in the environment of every process in the pod (the template exports the BWS project, see the template README), so an agent can read it; the permission rules and the argocd RBAC are the limit, not secrecy. Using it to sync or prune still needs the
+secret value, not text in this repository). The token is in the environment of every process in the pod (the template exports the BWS project, see the template README), so an agent can read it; the permission rules and the argocd RBAC are the limit, not secrecy. Using it to sync, or to stop a sync, still needs the
 owner's consent for each action.
 
 **Checks after the sync of this change** (run by the owner, with the token, because they use the token):
 
 ```sh
-argocd account can-i get applications '*/*'      # yes
-argocd account can-i get projects '*'            # yes (also `argocd app get <name>` works)
-argocd account can-i create projects '*'         # no
-argocd account can-i sync applications 'default/sync-probe'  # yes
-argocd account can-i sync applications 'default/<any other>' # no
-argocd account can-i override applications '*/*' # no
-argocd account can-i delete applications '*/*'   # no
-argocd account can-i create applications '*/*'   # no
+argocd account can-i get applications '*/*'                         # yes
+argocd account can-i get projects '*'                               # yes (also `argocd app get <name>` works)
+argocd account can-i create projects '*'                            # no
+argocd account can-i sync applications 'system/prometheus-stack'    # yes (also covers terminate-op)
+argocd account can-i sync applications 'default/sync-probe'         # yes
+argocd account can-i sync applications 'core/argocd'                # no
+argocd account can-i sync applications 'default/root-app'           # no
+argocd account can-i sync applications 'system/dev-workspace'       # no
+argocd account can-i rollback applications 'system/prometheus-stack' # no
+argocd account can-i override applications '*/*'                    # no
+argocd account can-i delete applications '*/*'                      # no
+argocd account can-i create applications '*/*'                      # no
 ```
 
-The live `argocd-cm` must show `application.sync.requireOverridePrivilegeForRevisionSync: "true"`.
+The live `argocd-cm` must show `application.sync.requireOverridePrivilegeForRevisionSync: "true"` and
+`server.rbac.rollback.enforce.enable: "true"`. To check a policy change before merging it, evaluate the file offline:
+`argocd admin settings rbac can dev-workspace sync applications <project>/<app> --policy-file <policy.csv>`.
 
 **Sync test on `sync-probe`** (each sync is a RUNTIME_MUTATION: the owner runs it, or consents per action):
 
 1. `argocd app sync sync-probe` succeeds.
-2. `argocd app sync <a real application>` is refused (`permission denied`).
+2. `argocd app sync root-app` is refused (`permission denied`).
 3. `argocd app sync sync-probe --revision <non-main branch>` is refused (needs `override`).
 4. Prune: a later PR removes `probe-prune-me` from git. Auto-sync leaves it in the cluster (`prune: false`), the app shows
-   `OutOfSync`; `argocd app sync sync-probe --prune` deletes it.
+   `OutOfSync`; the owner runs `argocd app sync sync-probe --prune`, which deletes it.

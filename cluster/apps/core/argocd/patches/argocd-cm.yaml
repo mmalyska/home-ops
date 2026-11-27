@@ -17,6 +17,9 @@ data:
   # A sync to a revision other than the application's targetRevision (an unmerged branch, an older commit)
   # needs the `override` action, which no policy grants to dev-workspace. New since Argo CD v3.2.
   application.sync.requireOverridePrivilegeForRevisionSync: "true"
+  # Rollback checks its own `rollback` action instead of `sync`, so the dev-workspace account's sync
+  # permission does not include rollback. No policy grants `rollback` to dev-workspace.
+  server.rbac.rollback.enforce.enable: "true"
   oidc.config: |
     name: Keycloak
     issuer: https://l.<secret:private-domain>/realms/home
