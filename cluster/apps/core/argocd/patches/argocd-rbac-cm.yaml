@@ -17,16 +17,29 @@ data:
     # Read projects: `argocd app get` also fetches the application's project and fails without it. Project
     # `get` returns the project spec (source repositories, destinations, roles) and no credentials.
     p, dev-workspace, projects, get, *, allow
-    # Sync, and prune (a sync option, not a separate permission): only the allowlist below. The owner adds
-    # one line per application by reviewed PR, in the form
-    #   p, dev-workspace, applications, sync, <project>/<application>, allow
-    # and puts argocd.argoproj.io/sync-options: Prune=false on that application's PVCs and stateful
-    # owners. Never grant: override (selects another revision), delete, create, update, action/*, exec,
-    # and anything on repositories, clusters, accounts or certificates, and any project action other than
-    # `get`. Initial exclusions:
-    # argocd itself, bootstrap and the ApplicationSets, access-control infrastructure, storage
-    # operators and the dev-workspace app.
-    # First entry: the disposable test application (two ConfigMaps, no storage). Real applications come
-    # later, one reviewed PR each.
-    p, dev-workspace, applications, sync, default/sync-probe, allow
+    # Sync every application except the exclusions below. The same `sync` permission also covers
+    # terminate-op (stopping a running sync) and prune (a sync option, not a separate permission).
+    # Rollback needs its own `rollback` action (server.rbac.rollback.enforce.enable in argocd-cm), and a
+    # sync to another revision than targetRevision needs `override`: neither is granted. A `deny` line
+    # wins over the `allow` (policy_effect in Argo CD's model.conf). Never grant: override, rollback,
+    # delete, create, update, action/*, exec, anything on repositories, clusters, accounts or
+    # certificates, and any project action other than `get`. docs/src/k8s/dev-workspace.md explains the scope.
+    p, dev-workspace, applications, sync, */*, allow
+    # Argo CD itself, the CNI and Rook Ceph: the whole core project, including apps added to it later.
+    p, dev-workspace, applications, sync, core/*, deny
+    # Bootstrap: the app-of-apps that deploys the projects and the ApplicationSets.
+    p, dev-workspace, applications, sync, default/root-app, deny
+    # Access control: identity, secret delivery, certificates and node certificate approval.
+    p, dev-workspace, applications, sync, system/keycloak, deny
+    p, dev-workspace, applications, sync, system/external-secrets, deny
+    p, dev-workspace, applications, sync, system/cert-manager, deny
+    p, dev-workspace, applications, sync, system/kubelet-csr-approver, deny
+    # The workspaces' own RBAC and the Coder platform that runs them.
+    p, dev-workspace, applications, sync, system/dev-workspace, deny
+    p, dev-workspace, applications, sync, ai/agent-workspaces, deny
+    p, dev-workspace, applications, sync, ai/coder, deny
+    # Storage operators outside core.
+    p, dev-workspace, applications, sync, system/cloudnative-pg, deny
+    p, dev-workspace, applications, sync, system/volsync, deny
+    p, dev-workspace, applications, sync, system/snapshot-controller, deny
   # scopes: '[email]'

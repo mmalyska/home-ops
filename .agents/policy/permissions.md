@@ -99,7 +99,7 @@ Claude patterns (`ask`):
 
 - GitHub: `Bash(gh workflow run*)`, `Bash(gh run rerun*)`
 - Kubernetes: `Bash(kubectl apply*)`, `Bash(kubectl create*)`, `Bash(kubectl delete*)`, `Bash(kubectl patch*)`, `Bash(kubectl replace*)`, `Bash(kubectl edit*)`, `Bash(kubectl set *)`, `Bash(kubectl annotate*)`, `Bash(kubectl label*)`, `Bash(kubectl taint*)`, `Bash(kubectl scale*)`, `Bash(kubectl exec*)`, `Bash(kubectl cp *)`, `Bash(kubectl drain*)`, `Bash(kubectl cordon*)`, `Bash(kubectl uncordon*)`, `Bash(kubectl rollout restart*)`, `Bash(kubectl rollout undo*)`, `Bash(kubectl rollout pause*)`, `Bash(kubectl rollout resume*)`, `Bash(kubectl config set*)`, `Bash(kubectl config use*)`, `Bash(kubectl config delete-*)`, `Bash(kubectl config rename-context*)`, `Bash(kubectl config unset*)`
-- ArgoCD: `Bash(argocd app sync*)`, `Bash(argocd app set*)`, `Bash(argocd app patch*)`, `Bash(argocd app create*)`, `Bash(argocd app delete*)`, `Bash(argocd app rollback*)`, `Bash(argocd app get *--refresh*)`, `Bash(argocd app get *--hard-refresh*)`, `Bash(argocd app diff *--refresh*)`, `Bash(argocd app diff *--hard-refresh*)`
+- ArgoCD: `Bash(argocd app sync*)`, `Bash(argocd app terminate-op*)`, `Bash(argocd app set*)`, `Bash(argocd app patch*)`, `Bash(argocd app create*)`, `Bash(argocd app delete*)`, `Bash(argocd app rollback*)`, `Bash(argocd app get *--refresh*)`, `Bash(argocd app get *--hard-refresh*)`, `Bash(argocd app diff *--refresh*)`, `Bash(argocd app diff *--hard-refresh*)`
 - Helm local configuration: `Bash(helm repo add*)`, `Bash(helm repo remove*)`, `Bash(helm repo update*)`, `Bash(helm repo index*)`
 - Talos: `Bash(talosctl apply-config*)`, `Bash(talosctl upgrade*)`, `Bash(talosctl patch*)`, `Bash(talosctl edit*)`, `Bash(talosctl bootstrap*)`, `Bash(talosctl reboot*)`, `Bash(talosctl shutdown*)`
 - Terraform: `Bash(terraform apply*)`, `Bash(terraform import*)`, `Bash(terraform state mv*)`, `Bash(terraform state rm*)`, `Bash(terraform taint*)`, `Bash(terraform refresh*)`
@@ -115,9 +115,9 @@ Data or identity loss. Use the deepest review level, record backup and rollback 
 Claude patterns:
 
 - `ask`: `Bash(talosctl reset*)`
-- `deny`: `Bash(terraform destroy*)`
+- `deny`: `Bash(terraform destroy*)`, `Bash(argocd app sync*--prune*)`, `Bash(argocd app sync*--replace*)`, `Bash(argocd app sync*--force*)`
 
-Policy: PVC, namespace or CRD deletion; Ceph OSD, pool or mon removal (`ceph osd purge`); CNPG cluster or backup deletion; S3 backup bucket changes; key or credential rotation; node reset. `terraform destroy` stays denied. `kubectl delete` is RUNTIME_MUTATION in general and DESTRUCTIVE for the objects above.
+Policy: PVC, namespace or CRD deletion; Ceph OSD, pool or mon removal (`ceph osd purge`); CNPG cluster or backup deletion; S3 backup bucket changes; key or credential rotation; node reset. `terraform destroy` stays denied. An Argo CD sync with `--prune`, `--replace` or `--force` deletes or recreates live objects (a prune of an app that ships CRDs deletes every resource of those kinds): it is the owner's action, and Claude denies it. The dev-workspace token is allowed to sync, so this rule, not the token, is the limit (`docs/src/k8s/dev-workspace.md`). `kubectl delete` is RUNTIME_MUTATION in general and DESTRUCTIVE for the objects above.
 
 ## Enforcement per harness
 
