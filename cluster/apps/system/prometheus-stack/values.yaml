@@ -457,9 +457,9 @@ kube-prometheus-stack:
       tag: master
       distroless: true
       digest: sha256:61a40a79b3320d24d583669af8038426b54ac52e825e4c0143db90d28c18f70f
+    # Filesystem exclude flags come from the subchart's defaultArgs (prometheus-node-exporter 6.0.0+).
+    # Do not repeat them here: extraArgs is appended after defaultArgs and node-exporter rejects a repeated flag.
     extraArgs:
-      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
-      - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
       - --collector.nvme
       # drm: Intel GPU frequency/engine metrics on mc nodes; nv1 has no DRM card, collector is a no-op there
       - --collector.drm
